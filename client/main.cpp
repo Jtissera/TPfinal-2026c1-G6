@@ -1,5 +1,3 @@
-#include "common/foo.h"
-
 #include <iostream>
 #include <exception>
 
@@ -8,36 +6,30 @@
 
 using namespace SDL2pp;
 
-int main()
-try
-{
-	// Initialize SDL library
-	SDL sdl(SDL_INIT_VIDEO);
+int main() try {
+    std::cout << "[Client] Argentum Online client starting..." << std::endl;
 
-	// Create main window: 640x480 dimensions, resizable, "SDL2pp demo" title
-	Window window("SDL2pp demo",
-				  SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-				  640, 480,
-				  SDL_WINDOW_RESIZABLE);
+    SDL sdl(SDL_INIT_VIDEO);
 
-	// Create accelerated video renderer with default driver
-	Renderer renderer(window, -1, SDL_RENDERER_ACCELERATED);
+    Window window(
+        "Argentum Online",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        640, 480,
+        SDL_WINDOW_RESIZABLE
+    );
 
-	// Clear screen
-	renderer.Clear();
+    Renderer renderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-	// Show rendered frame
-	renderer.Present();
+    renderer.SetDrawColor(0, 0, 0, 255);
+    renderer.Clear();
+    renderer.Present();
 
-	// 5 second delay
-	SDL_Delay(5000);
+    std::cout << "[Client] Window open. Closing in 3 seconds..." << std::endl;
+    SDL_Delay(3000);
 
-	// Here all resources are automatically released and library deinitialized
-	return 0;
+    return 0;
+} catch (std::exception& e) {
+    std::cerr << "[Client] Error: " << e.what() << std::endl;
+    return 1;
 }
-catch (std::exception &e)
-{
-	// If case of error, print it and exit with error
-	std::cerr << e.what() << std::endl;
-	return 1;
-}
+

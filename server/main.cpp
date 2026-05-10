@@ -1,5 +1,9 @@
-#include "common/foo.h"
+#include <iostream>
+#include <exception>
 
 int main() {
-    return foo(6);
+    std::cout << "[Server] Argentum Online server starting..." << std::endl;
+    std::cout << "[Server] Running. Press Ctrl+C to stop." << std::endl;
+    return 0;
 }
+

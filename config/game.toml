@@ -1,0 +1,36 @@
+# Argentum Online - Configuracion del juego
+# Todas las constantes numericas del juego viven aqui.
+# El servidor informa error claro si falta una clave requerida.
+
+[server]
+host = "localhost"
+port = 8080
+tick_rate_ms = 100          # milisegundos entre ticks del game loop
+max_clients = 50
+
+[player]
+# Stats base (antes de aplicar modificadores de raza/clase)
+base_health     = 100
+base_mana       = 50
+base_agility    = 10
+base_strength   = 10
+recovery_health_ms = 5000   # cada cuanto recupera vida (ms)
+recovery_mana_ms   = 3000   # cada cuanto recupera mana (ms)
+
+[combat]
+min_damage = 1
+max_damage = 10
+critical_multiplier = 2.0
+dodge_base_chance   = 0.05  # 5% base de evasion
+
+[experience]
+# XP requerida = base * (nivel ^ exponent)
+base  = 100
+exponent = 1.5
+
+[gold]
+max_carry       = 9999
+overflow_drop   = 0.20      # fraccion que se tira al suelo al morir con exceso
+
+[meditation]
+mana_per_tick = 5           # mana recuperado por tick al meditar

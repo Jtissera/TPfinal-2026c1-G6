@@ -1,8 +1,8 @@
 target_sources(taller_common
     PRIVATE
     # .cpp files
-    foo.cpp
+    version.cpp
     PUBLIC
     # .h files
-    foo.h
+    version.h
     )
