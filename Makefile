@@ -12,6 +12,10 @@ help:
 	@echo "  run-editor   Compila y ejecuta el editor"
 	@echo "  clean        Elimina el directorio build/"
 	@echo "  all          clean + test"
+	@echo "  install      Compila, testea e instala"
+
+setup:
+	bash scripts/install_deps.sh
 
 build:
 	mkdir -p $(BUILD_DIR)
@@ -20,6 +24,15 @@ build:
 
 test: build
 	./$(BUILD_DIR)/taller_tests
+
+valgrind: build
+	valgrind --leak-check=full --error-exitcode=1 ./$(BUILD_DIR)/taller_tests
+
+install: setup test
+	cmake --install $(BUILD_DIR) --prefix $(HOME)
+	@echo "Binarios instalados en ~/.local/bin"
+	@echo "Assets instalados en ~/.local/share/argentum"
+	@echo "Config instalada en ~/.config/argentum"
 
 run-server: build
 	./$(BUILD_DIR)/taller_server
