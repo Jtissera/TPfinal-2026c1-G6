@@ -1,7 +1,13 @@
+file(GLOB_RECURSE CLIENT_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+)
+
+file(GLOB_RECURSE CLIENT_HEADERS CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
+)
+
 target_sources(taller_client
     PRIVATE
-    # .cpp files
-    main.cpp
-    PUBLIC
-    # .h files
-    )
+        ${CLIENT_SOURCES}
+        ${CLIENT_HEADERS}
+)

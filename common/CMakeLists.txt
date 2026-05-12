@@ -1,8 +1,13 @@
+file(GLOB_RECURSE COMMON_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+)
+
+file(GLOB_RECURSE COMMON_HEADERS CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
+)
+
 target_sources(taller_common
     PRIVATE
-    # .cpp files
-    version.cpp
-    PUBLIC
-    # .h files
-    version.h
-    )
+        ${COMMON_SOURCES}
+        ${COMMON_HEADERS}
+)
