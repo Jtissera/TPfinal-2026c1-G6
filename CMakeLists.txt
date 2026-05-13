@@ -209,3 +209,19 @@ if(TALLER_TESTS)
         GTest::gtest_main
     )
 endif()
+
+
+# Install
+# 
+
+install(TARGETS taller_client taller_server taller_editor
+    RUNTIME DESTINATION $ENV{HOME}/.local/bin
+)
+
+install(DIRECTORY assets/
+    DESTINATION $ENV{HOME}/.local/share/argentum
+)
+
+install(FILES config/game.toml
+    DESTINATION $ENV{HOME}/.config/argentum
+)

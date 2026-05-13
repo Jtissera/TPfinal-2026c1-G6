@@ -8,29 +8,132 @@ port = 8080
 tick_rate_ms = 100          # milisegundos entre ticks del game loop
 max_clients = 50
 
+
+
+
 [player]
 # Stats base (antes de aplicar modificadores de raza/clase)
 base_health     = 100
 base_mana       = 50
 base_agility    = 10
 base_strength   = 10
+base_intelligence = 10
 recovery_health_ms = 5000   # cada cuanto recupera vida (ms)
 recovery_mana_ms   = 3000   # cada cuanto recupera mana (ms)
+newbie_max_level = 12
+
+
+
 
 [combat]
-min_damage = 1
-max_damage = 10
+max_level_diff  = 10         # diferencia maxima de nivel para poder atacar
 critical_multiplier = 2.0
 dodge_base_chance   = 0.05  # 5% base de evasion
+npc_gold_drop_max = 0.2      # Oro = rand(0, 0.2) * VidaMaxNPC
+npc_xp_bonus_max  = 0.1      # Exp adicional = rand(0, 0.1) * VidaMax...
+attack_range      = 1        # distancia para cuerpo a cuerpo
+melee_range = 1
+
 
 [experience]
 # XP requerida = base * (nivel ^ exponent)
-base  = 100
-exponent = 1.5
+base  = 1000
+exponent = 1.8
 
 [gold]
-max_carry       = 9999
+gold_level_base     = 100
 overflow_drop   = 0.20      # fraccion que se tira al suelo al morir con exceso
+gold_level_exponent = 1.1   # OroMax = 100 * Nivel^1.1
+
 
 [meditation]
 mana_per_tick = 5           # mana recuperado por tick al meditar
+
+[npc]
+spawn_interval_ms  = 5000
+max_population     = 100
+aggro_range        = 5       # tiles de distancia para que el NPC ataque
+drop_chance_nothing  = 0.80
+drop_chance_gold     = 0.08
+drop_chance_potion   = 0.01
+drop_chance_item     = 0.01
+
+[clans]
+max_members     = 16
+min_level_found = 6          # nivel minimo para fundar un clan
+clan_bonus_per_member = 0.05 # 5% de bonus de ataque/defensa por miembro cercano
+
+
+[items]
+stats de cada item definidos en el enunciado
+ 
+[items.espada]
+damage_min = 2
+damage_max = 5
+ 
+[items.hacha]
+damage_min = 4
+damage_max = 5
+ 
+[items.martillo]
+damage_min = 1
+damage_max = 9
+ 
+[items.vara_fresno]
+damage_min  = 2
+damage_max  = 4
+mana_cost   = 5
+ 
+[items.flauta_elfica]
+mana_cost   = 100   # hechizo de curacion
+ 
+[items.baculo_nudoso]
+damage_min  = 4
+damage_max  = 8
+mana_cost   = 15
+ 
+[items.baculo_engarzado]
+damage_min  = 8
+damage_max  = 20
+mana_cost   = 30
+ 
+[items.arco_simple]
+damage_min = 1
+damage_max = 4
+ 
+[items.arco_compuesto]
+damage_min = 4
+damage_max = 16
+ 
+[items.armadura_cuero]
+defense_min = 2
+defense_max = 6
+ 
+[items.armadura_placas]
+defense_min = 15
+defense_max = 30
+ 
+[items.tunica_azul]
+defense_min = 6
+defense_max = 10
+ 
+[items.capucha]
+defense_min = 1
+defense_max = 4
+ 
+[items.casco_hierro]
+defense_min = 4
+defense_max = 8
+ 
+[items.escudo_tortuga]
+defense_min = 1
+defense_max = 2
+ 
+[items.escudo_hierro]
+defense_min = 1
+defense_max = 4
+ 
+[items.sombrero_magico]
+defense_min = 4
+defense_max = 12
+ 
