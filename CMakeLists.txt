@@ -102,6 +102,7 @@ endif()
 # Program section
 # ---------------
 if(TALLER_CLIENT)
+
     # HEY!! TODO XXX: Change the name of the executable to the one you like!
     add_executable(taller_client)
 
@@ -119,6 +120,7 @@ if(TALLER_CLIENT)
 
     # Link the taller_common lib target
     target_link_libraries(taller_client taller_common SDL2pp::SDL2pp)
+
 endif()
 
 if(TALLER_SERVER)

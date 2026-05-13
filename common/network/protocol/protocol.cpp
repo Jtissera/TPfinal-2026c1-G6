@@ -13,24 +13,31 @@ void Protocol::send(const Message &message)
     packet.writeUint16(static_cast<uint16_t>(bodyWriter.size()));
     packet.writeBytes(bodyWriter.data(), bodyWriter.size());
 
-    socket.sendall(packet.data(), packet.size());
+    if (socket.sendall(packet.data(), packet.size()) == 0)
+        throw ClosedSocket();
 }
 
 std::unique_ptr<Message> Protocol::receive()
 {
-    uint8_t opcode;
+
+    uint8_t msgType;
     uint16_t bodyLengthNet;
 
-    socket.recvall(&opcode, sizeof(opcode));
-    socket.recvall(&bodyLengthNet, sizeof(bodyLengthNet));
+    if (socket.recvall(&msgType, sizeof(msgType)) == 0)
+        throw ClosedSocket();
+
+    if (socket.recvall(&bodyLengthNet, sizeof(bodyLengthNet)) == 0)
+        throw ClosedSocket();
 
     const uint16_t bodyLength = ntohs(bodyLengthNet);
 
     std::vector<uint8_t> body(bodyLength);
-
     if (bodyLength > 0)
-        socket.recvall(body.data(), bodyLength);
+    {
+        if (socket.recvall(body.data(), bodyLength) == 0)
+            throw ClosedSocket();
+    }
 
     PacketReader reader(body.data(), body.size());
-    return registry->deserialize(opcode, reader);
+    return registry->deserialize(msgType, reader);
 }

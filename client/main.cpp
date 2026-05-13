@@ -4,11 +4,20 @@
 #include <SDL2pp/SDL2pp.hh>
 #include <SDL2/SDL.h>
 
+#include "client_client.h"
+
 using namespace SDL2pp;
 
-int main()
+int main(int argc, char *argv[])
 try
 {
+
+    if (argc != 3)
+    {
+        std::cerr << "Bad program call. Expected " << argv[0] << " <hostname> <servname>\n";
+        return 1;
+    }
+
     std::cout << "[Client] Argentum Online client starting..." << std::endl;
 
     SDL sdl(SDL_INIT_VIDEO);
@@ -24,6 +33,12 @@ try
     renderer.SetDrawColor(0, 0, 0, 255);
     renderer.Clear();
     renderer.Present();
+
+    char *hostname = argv[1];
+    char *servname = argv[2];
+
+    Client client(hostname, servname);
+    client.run();
 
     std::cout << "[Client] Window open. Closing in 3 seconds..." << std::endl;
     SDL_Delay(3000);

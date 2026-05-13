@@ -6,6 +6,10 @@
 #include "registry.h"
 #include "packetReader.h"
 #include "packetWriter.h"
+#include <arpa/inet.h>
+#include <cstdint>
+#include <vector>
+#include "../../liberror.h"
 
 class Protocol
 {
