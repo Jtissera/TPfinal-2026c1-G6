@@ -141,23 +141,21 @@ if(TALLER_SERVER)
 endif()
 
 if(TALLER_EDITOR)
-    # HEY!! TODO XXX: Change the name of the executable to the one you like!
+    # Qt5 (required for the map editor)
+    find_package(Qt5 REQUIRED COMPONENTS Widgets)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTORCC ON)
+
     add_executable(taller_editor)
 
-    # Make them depend on taller_common lib
-    add_dependencies(taller_editor taller_common SDL2pp::SDL2pp)
+    add_dependencies(taller_editor taller_common)
 
-    # Add source files and enable warnings
-    # HEY!! TODO XXX: add more subfolders here
     add_subdirectory(editor)
 
     set_project_warnings(taller_editor ${TALLER_MAKE_WARNINGS_AS_ERRORS} FALSE)
 
-    # add libSDL2pp's headers
-    target_include_directories(taller_editor PRIVATE ${libSDL2pp_SOURCE_DIR})
-
-    # Link the taller_common lib target
-    target_link_libraries(taller_editor taller_common SDL2pp::SDL2pp)
+    target_link_libraries(taller_editor taller_common Qt5::Widgets)
 endif()
 
 

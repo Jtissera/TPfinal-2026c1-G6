@@ -41,7 +41,7 @@ run-client: build
 	./$(BUILD_DIR)/taller_client 127.0.0.1 8080
 
 run-editor: build
-	./$(BUILD_DIR)/taller_editor
+	LD_PRELOAD=/lib/x86_64-linux-gnu/libpthread.so.0 ./$(BUILD_DIR)/taller_editor
 
 clean:
 	rm -rf $(BUILD_DIR)/

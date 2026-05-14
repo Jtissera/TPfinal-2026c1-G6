@@ -1,9 +1,13 @@
-#include <iostream>
-#include <exception>
+#include <QApplication>
+#include "mainWindow.h"
 
-int main() {
-    std::cout << "[Editor] Argentum Online map editor starting..." << std::endl;
-    std::cout << "[Editor] (Qt UI not yet implemented)" << std::endl;
-    return 0;
+int main(int argc, char* argv[]) {
+    QApplication app(argc, argv);
+    app.setApplicationName("Argentum Online - Editor de mapas");
+    app.setApplicationVersion("0.1.0");
+
+    MainWindow window;
+    window.show();
+
+    return app.exec();
 }
-
