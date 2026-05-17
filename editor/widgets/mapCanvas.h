@@ -6,8 +6,14 @@
 #include <QWheelEvent>
 #include "../map/mapData.h"
 #include "../map/tile.h"
+#include "common/npcType.h"
 
-// Canvas interactivo donde se pinta el mapa tile por tile.
+// Modos de edicion del canvas
+enum class EditMode {
+    TILES,   // Pintar tipos de tile y zonas
+    NPCS,    // Poner/sacar npcs
+};
+
 class MapCanvas : public QWidget {
     Q_OBJECT
 
@@ -16,12 +22,15 @@ public:
 
     void setMap(MapData* map);
 
-    // Tile que se pinta al hacer click
+    void setEditMode(EditMode mode) { _editMode = mode; update(); }
+
     void setActiveTileType(TileType type)   { _activeTileType = type; }
     void setActiveZoneType(ZoneType zone)   { _activeZoneType = zone; }
     void setActiveWalkable(bool walkable)   { _activeWalkable = walkable; }
 
-    static constexpr int TILE_SIZE = 32;  // pixeles por tile
+    void setActiveNpc(NpcType npc)          { _activeNpc = npc; }
+
+    static constexpr int TILE_SIZE = 32;
 
 signals:
     void tileChanged(uint16_t x, uint16_t y);
@@ -31,18 +40,23 @@ protected:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
 
 private:
     MapData* _map = nullptr;
 
+    EditMode _editMode       = EditMode::TILES;
+
     TileType _activeTileType = TileType::GRASS;
     ZoneType _activeZoneType = ZoneType::SAFE;
     bool     _activeWalkable = true;
+    NpcType  _activeNpc      = NpcType::NONE;
 
     bool     _painting = false;
 
     QColor tileColor(const Tile& tile) const;
-    void   paintTileAt(uint16_t x, uint16_t y);
+    void   applyToTile(uint16_t x, uint16_t y);
     bool   screenToTile(const QPoint& pos, uint16_t& tx, uint16_t& ty) const;
+    void   drawNpcIndicator(QPainter& painter, const QRect& r, NpcType npc) const;
 };

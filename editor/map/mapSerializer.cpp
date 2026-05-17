@@ -1,4 +1,5 @@
 #include "mapSerializer.h"
+#include "common/npcType.h"
 
 #include <fstream>
 #include <stdexcept>
@@ -47,7 +48,7 @@ void MapSerializer::save(const MapData& map, const std::string& filepath) {
             f.put(static_cast<char>(t.type));
             f.put(static_cast<char>(t.zone));
             f.put(static_cast<char>(walkable));
-            writeU16(f, t.npcId);
+            f.put(static_cast<char>(t.npc));
         }
     }
 
@@ -87,7 +88,7 @@ MapData MapSerializer::load(const std::string& filepath) {
             t.type     = static_cast<TileType>(f.get());
             t.zone     = static_cast<ZoneType>(f.get());
             t.walkable = (f.get() != 0);
-            t.npcId    = readU16(f);
+            t.npc      = static_cast<NpcType>(f.get());
             map.at(x, y) = t;
         }
     }

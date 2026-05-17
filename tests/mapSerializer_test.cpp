@@ -1,12 +1,13 @@
 #include "gtest/gtest.h"
 
 #include <filesystem>
-#include <stdexcept>
 #include <fstream>
+#include <stdexcept>
 
 #include "editor/map/mapData.h"
 #include "editor/map/mapSerializer.h"
 #include "editor/map/tile.h"
+#include "common/npcType.h"
 
 namespace {
 
@@ -21,7 +22,7 @@ protected:
     }
 };
 
-// -------------------------------- Guardado y carga básica --------------------------------
+// -------------------------------- Guardado y carga basica --------------------------------
 
 TEST_F(MapSerializerTest, SaveAndLoadPreservesDimensions) {
     MapData map(15, 8);
@@ -70,13 +71,13 @@ TEST_F(MapSerializerTest, SaveAndLoadPreservesWalkable) {
     EXPECT_FALSE(loaded.at(1, 1).walkable);
 }
 
-TEST_F(MapSerializerTest, SaveAndLoadPreservesNpcId) {
+TEST_F(MapSerializerTest, SaveAndLoadPreservesNpc) {
     MapData map(5, 5);
-    map.at(4, 4).npcId = 42;
+    map.at(4, 4).npc = NpcType::MERCHANT;
     MapSerializer::save(map, TMP_PATH);
 
     MapData loaded = MapSerializer::load(TMP_PATH);
-    EXPECT_EQ(loaded.at(4, 4).npcId, 42);
+    EXPECT_EQ(loaded.at(4, 4).npc, NpcType::MERCHANT);
 }
 
 TEST_F(MapSerializerTest, AllTileTypesRoundtrip) {

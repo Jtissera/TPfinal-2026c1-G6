@@ -2,6 +2,7 @@
 
 #include <string>
 #include "mapData.h"
+#include "common/npcType.h"
 
 // Formato del archivo binario:
 //   Header: "ARGMAP\0\0" (8 bytes magic)
@@ -14,7 +15,7 @@
 //     uint8_t  type
 //     uint8_t  zone
 //     uint8_t  walkable  (0 o 1)
-//     uint16_t npcId
+//     uint8_t  npc      (NpcType)
 
 class MapSerializer {
 public:

@@ -9,11 +9,12 @@ TilePalette::TilePalette(QWidget* parent) : QWidget(parent) {
     auto* tileGroup = new QGroupBox("Tipo de tile", this);
     auto* tileLayout = new QVBoxLayout(tileGroup);
 
-    _rbGrass = new QRadioButton("Pasto",   tileGroup);
-    _rbWater = new QRadioButton("Agua",    tileGroup);
-    _rbWall  = new QRadioButton("Pared",   tileGroup);
-    _rbFloor = new QRadioButton("Piso",    tileGroup);
-    _rbDoor  = new QRadioButton("Puerta",  tileGroup);
+    _rbGrass   = new QRadioButton("Pasto",                    tileGroup);
+    _rbWater   = new QRadioButton("Agua",                     tileGroup);
+    _rbWall    = new QRadioButton("Pared",                    tileGroup);
+    _rbFloor   = new QRadioButton("Piso",                     tileGroup);
+    _rbDoor    = new QRadioButton("Puerta",                   tileGroup);
+    _rbDungeon = new QRadioButton("Entrada a caverna/mazmorra", tileGroup);
     _rbGrass->setChecked(true);
 
     auto* tileButtons = new QButtonGroup(this);
@@ -22,18 +23,20 @@ TilePalette::TilePalette(QWidget* parent) : QWidget(parent) {
     tileButtons->addButton(_rbWall);
     tileButtons->addButton(_rbFloor);
     tileButtons->addButton(_rbDoor);
+    tileButtons->addButton(_rbDungeon);
 
     tileLayout->addWidget(_rbGrass);
     tileLayout->addWidget(_rbWater);
     tileLayout->addWidget(_rbWall);
     tileLayout->addWidget(_rbFloor);
     tileLayout->addWidget(_rbDoor);
+    tileLayout->addWidget(_rbDungeon);
     mainLayout->addWidget(tileGroup);
 
     auto* zoneGroup = new QGroupBox("Zona", this);
     auto* zoneLayout = new QVBoxLayout(zoneGroup);
 
-    _rbSafe   = new QRadioButton("Segura (ciudad)",  zoneGroup);
+    _rbSafe   = new QRadioButton("Segura (ciudad)",   zoneGroup);
     _rbCombat = new QRadioButton("Combate (caverna)", zoneGroup);
     _rbSafe->setChecked(true);
 
@@ -66,10 +69,11 @@ TilePalette::TilePalette(QWidget* parent) : QWidget(parent) {
 }
 
 TileType TilePalette::selectedTileType() const {
-    if (_rbWater->isChecked()) return TileType::WATER;
-    if (_rbWall->isChecked())  return TileType::WALL;
-    if (_rbFloor->isChecked()) return TileType::FLOOR;
-    if (_rbDoor->isChecked())  return TileType::DOOR;
+    if (_rbWater->isChecked())   return TileType::WATER;
+    if (_rbWall->isChecked())    return TileType::WALL;
+    if (_rbFloor->isChecked())   return TileType::FLOOR;
+    if (_rbDoor->isChecked())    return TileType::DOOR;
+    if (_rbDungeon->isChecked()) return TileType::DUNGEON_ENTRANCE;
     return TileType::GRASS;
 }
 

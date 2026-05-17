@@ -1,16 +1,18 @@
 #include "mainWindow.h"
 
+#include <QApplication>
 #include <QMenuBar>
 #include <QStatusBar>
-#include <QDockWidget>
 #include <QScrollArea>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QTabWidget>
+#include <QCloseEvent>
+#include <QFileInfo>
 
-#include <QApplication>
 #include "map/mapSerializer.h"
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
@@ -20,34 +22,28 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setupStatusBar();
     updateTitle();
 
-    // Mapa inicial vacio 20x15
     _map = std::make_unique<MapData>(20, 15);
     _canvas->setMap(_map.get());
 }
 
-// -------------------------------- Setup --------------------------------
-
 void MainWindow::setupMenuBar() {
-    // Menu de Archivo
     QMenu* fileMenu = menuBar()->addMenu("&Archivo");
 
-    QAction* actNew  = fileMenu->addAction("&Nuevo mapa",  this, &MainWindow::onNewMap,  QKeySequence::New);
-    QAction* actOpen = fileMenu->addAction("&Abrir mapa",  this, &MainWindow::onOpenMap, QKeySequence::Open);
+    fileMenu->addAction("&Nuevo mapa",   this, &MainWindow::onNewMap,    QKeySequence::New);
+    fileMenu->addAction("&Abrir mapa",   this, &MainWindow::onOpenMap,   QKeySequence::Open);
     fileMenu->addSeparator();
-    _actSave   = fileMenu->addAction("&Guardar",    this, &MainWindow::onSaveMap,   QKeySequence::Save);
+    _actSave   = fileMenu->addAction("&Guardar",       this, &MainWindow::onSaveMap,   QKeySequence::Save);
     _actSaveAs = fileMenu->addAction("Guardar &como...", this, &MainWindow::onSaveMapAs, QKeySequence::SaveAs);
     fileMenu->addSeparator();
     fileMenu->addAction("&Salir", qApp, &QApplication::quit, QKeySequence::Quit);
 
-    (void)actNew; (void)actOpen;
-
-    // Menu de Ayuda
     QMenu* helpMenu = menuBar()->addMenu("A&yuda");
     helpMenu->addAction("Acerca de", this, [this]() {
         QMessageBox::about(this, "Editor de Mapas",
             "Argentum Online - Editor de Mapas\n"
             "Taller de Programación I - FIUBA\n\n"
-            "Click izquierdo + arrastrar para pintar tiles.");
+            "Pestaña Tiles: pintá el terreno y las zonas.\n"
+            "Pestaña NPCs: colocá personajes y criaturas.");
     });
 }
 
@@ -57,17 +53,57 @@ void MainWindow::setupCentralWidget() {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    _palette = new TilePalette(central);
-    connect(_palette, &TilePalette::selectionChanged,
+    // Panel lateral con tabs: Tiles | NPCs
+    _tabs = new QTabWidget(central);
+    _tabs->setFixedWidth(170);
+
+    _tilePalette = new TilePalette();
+    connect(_tilePalette, &TilePalette::selectionChanged,
             this, &MainWindow::onPaletteChanged);
-    layout->addWidget(_palette);
+    _tabs->addTab(_tilePalette, "Tiles");
+
+    _npcPalette = new NpcPalette();
+    connect(_npcPalette, &NpcPalette::selectionChanged,
+            this, &MainWindow::onNpcPaletteChanged);
+    _tabs->addTab(_npcPalette, "NPCs");
+
+    connect(_tabs, &QTabWidget::currentChanged,
+            this, &MainWindow::onTabChanged);
+
+    _tabs->setCurrentIndex(0);
+
+    layout->addWidget(_tabs);
+
     _scrollArea = new QScrollArea(central);
     _canvas = new MapCanvas(_scrollArea);
-    connect(_canvas, &MapCanvas::tileChanged,
-            this, &MainWindow::onTileChanged);
+    _canvas->setEditMode(EditMode::TILES);
+    onPaletteChanged();
+    connect(_canvas, &MapCanvas::tileChanged, this,
+            [this](uint16_t x, uint16_t y) {
+                // Marcar cambios pendientes
+                if (!_unsavedChanges) {
+                    _unsavedChanges = true;
+                    updateTitle();
+                }
+                if (!_map) return;
+                const Tile& t = _map->at(x, y);
+                QString npcStr = (t.npc != NpcType::NONE)
+                    ? QString(" | NPC: %1").arg(
+                        QString::fromStdString(npcTypeName(t.npc)))
+                    : "";
+                _coordLabel->setText(
+                    QString("  Tile: (%1, %2)%3").arg(x).arg(y).arg(npcStr));
+            });
     connect(_canvas, &MapCanvas::mapClicked, this,
             [this](uint16_t x, uint16_t y) {
-                _coordLabel->setText(QString("  Tile: (%1, %2)").arg(x).arg(y));
+                if (!_map) return;
+                const Tile& t = _map->at(x, y);
+                QString npcStr = (t.npc != NpcType::NONE)
+                    ? QString(" | NPC: %1").arg(
+                        QString::fromStdString(npcTypeName(t.npc)))
+                    : "";
+                _coordLabel->setText(
+                    QString("  Tile: (%1, %2)%3").arg(x).arg(y).arg(npcStr));
             });
 
     _scrollArea->setWidget(_canvas);
@@ -81,10 +117,8 @@ void MainWindow::setupCentralWidget() {
 void MainWindow::setupStatusBar() {
     _coordLabel = new QLabel("  Tile: (-, -)", this);
     statusBar()->addWidget(_coordLabel);
-    statusBar()->showMessage("Listo");
+    statusBar()->showMessage("Listo — Pestaña Tiles activa");
 }
-
-// -------------------------------- Slots --------------------------------
 
 void MainWindow::onNewMap() {
     if (!confirmUnsavedChanges()) return;
@@ -124,15 +158,12 @@ void MainWindow::onOpenMap() {
         statusBar()->showMessage("Mapa cargado: " + path);
     } catch (const std::exception& e) {
         QMessageBox::critical(this, "Error al abrir",
-                              QString("No se pudo cargar el mapa:\n%1").arg(e.what()));
+                              QString("No se pudo cargar:\n%1").arg(e.what()));
     }
 }
 
 void MainWindow::onSaveMap() {
-    if (_currentFilePath.isEmpty()) {
-        onSaveMapAs();
-        return;
-    }
+    if (_currentFilePath.isEmpty()) { onSaveMapAs(); return; }
     try {
         MapSerializer::save(*_map, _currentFilePath.toStdString());
         _unsavedChanges = false;
@@ -156,19 +187,28 @@ void MainWindow::onSaveMapAs() {
 
 void MainWindow::onPaletteChanged() {
     if (!_canvas) return;
-    _canvas->setActiveTileType(_palette->selectedTileType());
-    _canvas->setActiveZoneType(_palette->selectedZoneType());
-    _canvas->setActiveWalkable(_palette->selectedWalkable());
+    _canvas->setActiveTileType(_tilePalette->selectedTileType());
+    _canvas->setActiveZoneType(_tilePalette->selectedZoneType());
+    _canvas->setActiveWalkable(_tilePalette->selectedWalkable());
 }
 
-void MainWindow::onTileChanged(uint16_t, uint16_t) {
-    if (!_unsavedChanges) {
-        _unsavedChanges = true;
-        updateTitle();
+void MainWindow::onNpcPaletteChanged() {
+    if (!_canvas) return;
+    _canvas->setActiveNpc(_npcPalette->selectedNpc());
+}
+
+void MainWindow::onTabChanged(int index) {
+    if (!_canvas) return;
+    if (index == 0) {
+        _canvas->setEditMode(EditMode::TILES);
+        onPaletteChanged();
+        statusBar()->showMessage("Pestaña Tiles activa — click para pintar terreno");
+    } else {
+        _canvas->setEditMode(EditMode::NPCS);
+        onNpcPaletteChanged();
+        statusBar()->showMessage("Pestaña NPCs activa — click para colocar/borrar NPCs");
     }
 }
-
-// -------------------------------- Helpers --------------------------------
 
 void MainWindow::updateTitle() {
     QString title = "Editor de Mapas - Argentum Online";

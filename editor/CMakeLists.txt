@@ -12,9 +12,10 @@ target_sources(taller_editor
         widgets/mapCanvas.cpp
         widgets/tilePalette.h
         widgets/tilePalette.cpp
+        widgets/npcPalette.h
+        widgets/npcPalette.cpp
 )
 
-# Necesario para que Qt encuentre los headers del proyecto raiz
 target_include_directories(taller_editor
     PRIVATE
         ${CMAKE_SOURCE_DIR}

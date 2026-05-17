@@ -5,11 +5,13 @@
 #include <QLabel>
 #include <QAction>
 #include <QCloseEvent>
+#include <QTabWidget>
 #include <memory>
 
 #include "map/mapData.h"
 #include "widgets/mapCanvas.h"
 #include "widgets/tilePalette.h"
+#include "widgets/npcPalette.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -27,7 +29,8 @@ private slots:
     void onSaveMap();
     void onSaveMapAs();
     void onPaletteChanged();
-    void onTileChanged(uint16_t x, uint16_t y);
+    void onNpcPaletteChanged();
+    void onTabChanged(int index);
 
 private:
     void setupMenuBar();
@@ -36,13 +39,20 @@ private:
     void updateTitle();
     bool confirmUnsavedChanges();
 
-    MapCanvas*    _canvas   = nullptr;
-    TilePalette*  _palette  = nullptr;
-    QLabel*       _coordLabel = nullptr;
-    QScrollArea*  _scrollArea = nullptr;
+    // Widgets
+    MapCanvas*    _canvas      = nullptr;
+    TilePalette*  _tilePalette = nullptr;
+    NpcPalette*   _npcPalette  = nullptr;
+    QTabWidget*   _tabs        = nullptr;
+    QLabel*       _coordLabel  = nullptr;
+    QScrollArea*  _scrollArea  = nullptr;
+
+    // Estado
     std::unique_ptr<MapData> _map;
     QString   _currentFilePath;
     bool      _unsavedChanges = false;
+
+    // Actions
     QAction* _actSave   = nullptr;
     QAction* _actSaveAs = nullptr;
 };

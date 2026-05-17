@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "common/npcType.h"
 
 // Tipos de tile del mapa
 enum class TileType : uint8_t {
@@ -9,6 +10,7 @@ enum class TileType : uint8_t {
     WALL      = 2,
     FLOOR     = 3,
     DOOR      = 4,
+    DUNGEON_ENTRANCE = 5,
 };
 
 // Tipos de zona
@@ -22,5 +24,5 @@ struct Tile {
     TileType  type     = TileType::GRASS;
     ZoneType  zone     = ZoneType::SAFE;
     bool      walkable = true;
-    uint16_t  npcId    = 0;   // 0 = sin NPC
+    NpcType   npc      = NpcType::NONE;   // NPC fijo en este tile
 };

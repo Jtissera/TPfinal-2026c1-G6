@@ -28,6 +28,7 @@ private:
     QRadioButton* _rbWall;
     QRadioButton* _rbFloor;
     QRadioButton* _rbDoor;
+    QRadioButton* _rbDungeon;  // Entrada a caverna/mazmorra
     QRadioButton* _rbSafe;
     QRadioButton* _rbCombat;
     QCheckBox* _cbWalkable;
