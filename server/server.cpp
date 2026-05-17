@@ -1,14 +1,18 @@
 #include "server.h"
 
-Server::Server(const char *servname) : monitor(),
-                                       gameQueue(),
-                                       gameLoop(gameQueue, monitor),
-                                       socket(servname),
-                                       acceptor(std::move(socket), gameQueue, monitor) {}
+Server::Server(const char *servname)
+    : lobbyMonitor(),
+      lobbyQueue(),
+      clientRegistry(),
+      receiverRegistry(),
+      gameManager(),
+      lobbyHandler(lobbyQueue, lobbyMonitor, gameManager, clientRegistry, receiverRegistry),
+      socket(servname),
+      acceptor(std::move(socket), lobbyQueue, lobbyMonitor, clientRegistry, gameManager, receiverRegistry) {}
 
 int Server::run()
 {
-    gameLoop.start();
+    lobbyHandler.start();
     acceptor.start();
 
     while (std::cin.get() != 'q')
@@ -18,8 +22,10 @@ int Server::run()
     acceptor.stop();
     acceptor.join();
 
-    gameLoop.stop();
-    gameLoop.join();
+    lobbyHandler.stop();
+    lobbyHandler.join();
+
+    gameManager.stopAll();
 
     return 0;
 }

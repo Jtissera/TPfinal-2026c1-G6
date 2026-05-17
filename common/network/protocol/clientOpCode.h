@@ -9,6 +9,9 @@ enum class ClientOpCode : uint8_t
     MSG_LOGIN = 0x02,
     MSG_CREATE_CHAR = 0x03,
     MSG_DISCONNECT = 0x04,
+    MSG_LIST_GAMES = 0x05,
+    MSG_CREATE_GAME = 0x06,
+    MSG_JOIN_GAME = 0x07,
 
     MSG_MOVE = 0x10,
     MSG_ATTACK = 0x11,

@@ -1,0 +1,31 @@
+#pragma once
+
+#include <vector>
+#include <string>
+#include <cstdint>
+
+#include "../../message.h"
+#include "../../../protocol/serverOpCode.h"
+#include "../../../protocol/packetWriter.h"
+
+struct GameInfo
+{
+    uint32_t gameId;
+    std::string gameName;
+    uint8_t playerCount;
+    uint8_t maxPlayers;
+};
+
+class GameListMessage : public Message
+{
+public:
+    explicit GameListMessage(std::vector<GameInfo> games);
+
+    const std::vector<GameInfo> &getGames() const;
+
+    uint8_t opCode() const override;
+    void serializeBody(PacketWriter &writer) const override;
+
+private:
+    std::vector<GameInfo> games;
+};

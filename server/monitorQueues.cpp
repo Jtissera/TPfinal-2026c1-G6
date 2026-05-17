@@ -26,6 +26,12 @@ void Monitor::sendTo(uint32_t clientId, const std::shared_ptr<const Message> &me
     }
 }
 
+uint8_t Monitor::size() const
+{
+    std::unique_lock<std::mutex> lock(mutex);
+    return static_cast<uint8_t>(entries.size());
+}
+
 void Monitor::broadcast(const std::shared_ptr<const Message> &message)
 {
     std::unique_lock<std::mutex> lock(mutex);

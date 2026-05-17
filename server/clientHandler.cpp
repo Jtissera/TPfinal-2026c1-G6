@@ -52,3 +52,8 @@ bool ClientHandler::isDead() const
 {
     return !receiver.is_alive() || !sender.is_alive();
 }
+
+Receiver &ClientHandler::getReceiver()
+{
+    return receiver;
+}

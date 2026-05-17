@@ -7,8 +7,8 @@
 
 #include "clientMessage.h"
 #include "monitorQueues.h"
-#include "queue.h"
-#include "thread.h"
+#include "../common/queue.h"
+#include "../common/thread.h"
 
 class GameLoop : public Thread
 {

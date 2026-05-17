@@ -1,26 +1,50 @@
 #include "acceptor.h"
 
-Acceptor::Acceptor(Socket &&acceptorSocket, Queue<ClientMessage> &gameQueue, Monitor &monitor)
+Acceptor::Acceptor(Socket &&acceptorSocket,
+                   Queue<ClientMessage> &lobbyQueue,
+                   Monitor &lobbyMonitor,
+                   ClientRegistry &clientRegistry,
+                   GameManager &gameManager,
+                   ReceiverRegistry &receiverRegistry)
     : factory(),
       acceptorSocket(std::move(acceptorSocket)),
-      gameQueue(gameQueue),
-      monitor(monitor) {}
+      lobbyQueue(lobbyQueue),
+      lobbyMonitor(lobbyMonitor),
+      gameManager(gameManager),
+      receiverRegistry(receiverRegistry),
+      clientRegistry(clientRegistry) {}
 
 void Acceptor::run()
 {
+    running = true;
+    std::thread reaper([this]()
+                       {
+        while (running)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::unique_lock<std::mutex> lock(clientsMutex);
+            reap();
+        } });
+
     try
     {
         while (true)
         {
             Socket peer = acceptorSocket.accept();
-            reap();
 
             uint32_t clientId = nextClientId++;
-            auto handler = std::make_unique<ClientHandler>(std::move(peer), clientId, factory, gameQueue);
+            auto handler = std::make_unique<ClientHandler>(
+                std::move(peer), clientId, factory, lobbyQueue);
 
-            monitor.addQueue(clientId, handler->getClientQueue());
+            lobbyMonitor.addQueue(clientId, handler->getClientQueue());
+            clientRegistry.add(clientId, handler->getClientQueue());
+            receiverRegistry.add(clientId, handler->getReceiver());
             handler->start();
-            clients.push_back(std::move(handler));
+
+            {
+                std::unique_lock<std::mutex> lock(clientsMutex);
+                clients.push_back(std::move(handler));
+            }
         }
     }
     catch (const LibError &)
@@ -30,11 +54,15 @@ void Acceptor::run()
     {
         std::cerr << "[Acceptor] unexpected error: " << e.what() << std::endl;
     }
+
+    running = false;
+    reaper.join();
     clear();
 }
 
 void Acceptor::stop()
 {
+    running = false;
     try
     {
         acceptorSocket.shutdown(SHUT_RDWR);
@@ -51,10 +79,14 @@ void Acceptor::stop()
 
 void Acceptor::reap()
 {
+    // ya se llama con clientsMutex tomado
     clients.remove_if([this](auto &handler)
                       {
         if (handler->isDead()) {
-            monitor.removeQueue(handler->id());
+            lobbyMonitor.removeQueue(handler->id());
+            clientRegistry.remove(handler->id());
+            gameManager.removeClient(handler->id());
+            receiverRegistry.remove(handler->id());
             handler->stop();
             handler->join();
             return true;
@@ -64,9 +96,13 @@ void Acceptor::reap()
 
 void Acceptor::clear()
 {
+    std::unique_lock<std::mutex> lock(clientsMutex);
     for (auto &handler : clients)
     {
-        monitor.removeQueue(handler->id());
+        lobbyMonitor.removeQueue(handler->id());
+        clientRegistry.remove(handler->id());
+        gameManager.removeClient(handler->id());
+        receiverRegistry.remove(handler->id());
         handler->stop();
         handler->join();
     }
