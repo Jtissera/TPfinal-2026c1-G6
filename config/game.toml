@@ -171,3 +171,63 @@ heal_amount = 100
 [items.pocion_mana]
 slot = "CONSUMABLE"
 mana_amount = 100 
+
+[races.human]
+health       = 1.0
+mana         = 1.0
+recovery     = 1.0
+constitution = 10
+intelligence = 10
+strength     = 10
+agility      = 10
+
+[races.elf]
+health       = 0.8
+mana         = 1.3
+recovery     = 1.1
+constitution = 7
+intelligence = 14
+strength     = 8
+agility      = 14
+
+[races.dwarf]
+health       = 1.3
+mana         = 0.8
+recovery     = 0.9
+constitution = 14
+intelligence = 7
+strength     = 14
+agility      = 7
+
+[races.gnome]
+health       = 1.1
+mana         = 1.2
+recovery     = 1.0
+constitution = 12
+intelligence = 13
+strength     = 8
+agility      = 8
+
+[classes.mage]
+health      = 0.8
+mana        = 1.5
+meditation  = 2.0
+can_use_magic = true
+
+[classes.cleric]
+health      = 1.0
+mana        = 1.2
+meditation  = 1.5
+can_use_magic = true
+
+[classes.paladin]
+health      = 1.2
+mana        = 0.8
+meditation  = 1.0
+can_use_magic = true
+
+[classes.warrior]
+health      = 1.5
+mana        = 0.0
+meditation  = 0.0
+can_use_magic = false
