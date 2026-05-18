@@ -1,0 +1,40 @@
+#pragma once
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "../common/queue.h"
+#include "clientMessage.h"
+#include "gameLoop.h"
+#include "monitorQueues.h"
+
+class GameRoom
+{
+public:
+    GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers);
+
+    void addClient(uint32_t clientId, Queue<std::shared_ptr<const Message>> &clientQueue);
+    void removeClient(uint32_t clientId);
+
+    uint32_t getId() const;
+    const std::string &getName() const;
+    uint8_t getPlayerCount() const;
+    uint8_t getMaxPlayers() const;
+    bool isFull() const;
+
+    Queue<ClientMessage> &getGameQueue();
+
+    void start();
+    void stop();
+    void join();
+
+private:
+    uint32_t gameId;
+    std::string gameName;
+    uint8_t maxPlayers;
+
+    Monitor monitor;
+    Queue<ClientMessage> gameQueue;
+    GameLoop gameLoop;
+};

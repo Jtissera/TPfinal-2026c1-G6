@@ -1,9 +1,16 @@
 #include "receiver.h"
 
-Receiver::Receiver(Protocol protocol, uint32_t clientId, Queue<ClientMessage> &gameQueue)
+Receiver::Receiver(Protocol protocol,
+                   uint32_t clientId,
+                   Queue<ClientMessage> &lobbyQueue)
     : protocol(std::move(protocol)),
       clientId(clientId),
-      gameQueue(gameQueue) {}
+      currentQueue(&lobbyQueue) {}
+
+void Receiver::setQueue(Queue<ClientMessage> &newQueue)
+{
+    currentQueue.store(&newQueue);
+}
 
 void Receiver::run()
 {
@@ -12,7 +19,7 @@ void Receiver::run()
         while (true)
         {
             auto message = protocol.receive();
-            gameQueue.push(ClientMessage{clientId, std::move(message)});
+            currentQueue.load()->push(ClientMessage{clientId, std::move(message)});
         }
     }
     catch (const ClosedSocket &)
@@ -23,6 +30,7 @@ void Receiver::run()
     }
     catch (const std::exception &e)
     {
-        std::cerr << "[Receiver] client=" << clientId << " error: " << e.what() << std::endl;
+        std::cerr << "[Receiver] client=" << clientId
+                  << " error: " << e.what() << std::endl;
     }
 }

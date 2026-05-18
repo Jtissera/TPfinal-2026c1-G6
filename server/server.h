@@ -1,14 +1,13 @@
 #pragma once
 
-#include <utility>
-
 #include "../common/network/sockets.h"
-
-#include "acceptor.h"
+#include "../common/queue.h"
 #include "clientMessage.h"
-#include "gameLoop.h"
 #include "monitorQueues.h"
-#include "queue.h"
+#include "gameManager.h"
+#include "lobbyHandler.h"
+#include "acceptor.h"
+#include "receiverRegistry.h"
 
 class Server
 {
@@ -16,13 +15,13 @@ public:
     explicit Server(const char *servname);
     int run();
 
-    Server(const Server &) = delete;
-    Server &operator=(const Server &) = delete;
-
 private:
-    Monitor monitor;
-    Queue<ClientMessage> gameQueue;
-    GameLoop gameLoop;
+    Monitor lobbyMonitor;
+    Queue<ClientMessage> lobbyQueue;
+    ClientRegistry clientRegistry;
+    ReceiverRegistry receiverRegistry;
+    GameManager gameManager;
+    LobbyHandler lobbyHandler;
     Socket socket;
     Acceptor acceptor;
 };

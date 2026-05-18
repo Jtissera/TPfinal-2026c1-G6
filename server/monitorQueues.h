@@ -7,7 +7,7 @@
 
 #include "../common/network/messages/message.h"
 
-#include "queue.h"
+#include "../common/queue.h"
 
 class Monitor
 {
@@ -22,6 +22,8 @@ public:
 
     void broadcast(const std::shared_ptr<const Message> &message);
 
+    uint8_t size() const;
+
     Monitor(const Monitor &) = delete;
     Monitor &operator=(const Monitor &) = delete;
 
@@ -32,6 +34,6 @@ private:
         Queue<std::shared_ptr<const Message>> &queue;
     };
 
-    std::mutex mutex;
+    mutable std::mutex mutex;
     std::list<Entry> entries;
 };

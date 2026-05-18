@@ -12,10 +12,10 @@
 
 #include "network/serverProtocolFactory.h"
 #include "clientMessage.h"
-#include "queue.h"
+#include "../common/queue.h"
 #include "receiver.h"
 #include "sender.h"
-#include "thread.h"
+#include "../common/thread.h"
 
 class ClientHandler
 {
@@ -32,6 +32,8 @@ public:
     uint32_t id() const;
     Queue<std::shared_ptr<const Message>> &getClientQueue();
     bool isDead() const;
+
+    Receiver &getReceiver();
 
     ClientHandler(const ClientHandler &) = delete;
     ClientHandler &operator=(const ClientHandler &) = delete;

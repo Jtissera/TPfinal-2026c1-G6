@@ -10,16 +10,24 @@
 #include "../common/network/sockets.h"
 
 #include "network/serverProtocolFactory.h"
+#include "clientRegistry.h"
+#include "receiverRegistry.h"
 #include "clientHandler.h"
 #include "clientMessage.h"
 #include "monitorQueues.h"
-#include "queue.h"
-#include "thread.h"
+#include "../common/queue.h"
+#include "../common/thread.h"
+#include "gameManager.h"
 
 class Acceptor : public Thread
 {
 public:
-    Acceptor(Socket &&acceptorSocket, Queue<ClientMessage> &gameQueue, Monitor &monitor);
+    Acceptor(Socket &&acceptorSocket,
+             Queue<ClientMessage> &lobbyQueue,
+             Monitor &lobbyMonitor,
+             ClientRegistry &clientRegistry,
+             GameManager &gameManager,
+             ReceiverRegistry &receiverRegistry);
 
     void run() override;
     void stop() override;
@@ -33,8 +41,13 @@ private:
 
     ServerProtocolFactory factory;
     Socket acceptorSocket;
-    Queue<ClientMessage> &gameQueue;
-    Monitor &monitor;
+    Queue<ClientMessage> &lobbyQueue;
+    Monitor &lobbyMonitor;
+    GameManager &gameManager;
+    ReceiverRegistry &receiverRegistry;
+    ClientRegistry &clientRegistry;
     std::list<std::unique_ptr<ClientHandler>> clients;
     uint32_t nextClientId = 1;
+    std::mutex clientsMutex;
+    std::atomic<bool> running{false};
 };

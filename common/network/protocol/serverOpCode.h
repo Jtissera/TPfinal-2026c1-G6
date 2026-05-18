@@ -11,6 +11,9 @@ enum class ServerOpCode : uint8_t
     MSG_LOGIN_ERROR = 0x43,
     MSG_CREATE_OK = 0x44,
     MSG_CREATE_ERROR = 0x45,
+    MSG_GAME_LIST = 0x46,
+    MSG_GAME_CREATED = 0x47,
+    MSG_JOIN_OK = 0x48,
 
     MSG_WORLD_UPDATE = 0x50,
     MSG_ENTITY_SPAWN = 0x51,

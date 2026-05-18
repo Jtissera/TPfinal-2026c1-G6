@@ -5,6 +5,7 @@
 #include "../../common/network/protocol/protocol.h"
 #include "../../common/network/protocol/registry.h"
 #include "deserializers/authClientDeserializersModule.h"
+#include "deserializers/lobbyClientDeserializersModule.h"
 
 class Socket;
 

@@ -13,6 +13,10 @@ std::shared_ptr<const Registry> ServerProtocolFactory::buildRegistry()
 
     AuthClientDeserializersModule auth;
     auth.registerDeserializers(*registry);
+
+    LobbyClientDeserializersModule lobby;
+    lobby.registerDeserializers(*registry);
+
     // ACA LOS VAMOS AGREGANDO CUANDO VAMOS REALIZANDO LAS FUNCIONALIDADES
 
     return registry;

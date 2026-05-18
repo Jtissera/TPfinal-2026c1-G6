@@ -123,12 +123,18 @@ if(TALLER_CLIENT)
 
 endif()
 
+add_library(taller_server_lib STATIC)
+add_dependencies(taller_server_lib taller_common)
+target_include_directories(taller_server_lib PUBLIC .)
+target_link_libraries(taller_server_lib taller_common)
+
+
 if(TALLER_SERVER)
     # HEY!! TODO XXX: Change the name of the executable to the one you like!
     add_executable(taller_server)
 
     # Make them depend on taller_common lib
-    add_dependencies(taller_server taller_common)
+    add_dependencies(taller_server taller_common taller_server_lib)
 
     # Add source files and enable warnings
     # HEY!! TODO XXX: add more subfolders here
@@ -137,7 +143,7 @@ if(TALLER_SERVER)
     set_project_warnings(taller_server ${TALLER_MAKE_WARNINGS_AS_ERRORS} FALSE)
 
     # Link the taller_common lib target
-    target_link_libraries(taller_server taller_common)
+    target_link_libraries(taller_server taller_common taller_server_lib)
 endif()
 
 if(TALLER_EDITOR)
@@ -182,7 +188,7 @@ if(TALLER_TESTS)
 
     # HEY!! TODO XXX: I'm assuming that the code under testing is in taller_common
     # Change this if you have to.
-    add_dependencies(taller_tests taller_common)
+    add_dependencies(taller_tests taller_common taller_server_lib)
 
     # Say where to find the xoz headers
     # HEY!! TODO XXX: add more subfolders here
@@ -206,6 +212,7 @@ if(TALLER_TESTS)
     # Change this if you have to.
     target_link_libraries(taller_tests
         taller_common
+        taller_server_lib
         GTest::gtest_main
     )
 endif()

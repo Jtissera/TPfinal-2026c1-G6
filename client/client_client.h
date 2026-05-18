@@ -5,6 +5,16 @@
 
 #include "../common/liberror.h"
 #include "../common/network/sockets.h"
+#include "../common/network/messages/client/auth/connectMessage.h"
+#include "../common/network/messages/client/lobby/listGamesMessage.h"
+#include "../common/network/messages/client/lobby/createGameMessage.h"
+#include "../common/network/messages/client/lobby/joinGameMessage.h"
+
+#include "../common/network/messages/server/lobby/gameCreatedMessage.h"
+#include "../common/network/messages/server/lobby/gameListMessage.h"
+#include "../common/network/messages/server/lobby/joinOkMessage.h"
+
+#include "../common/network/messages/server/error/errorMessage.h"
 
 #include "network/clientProtocolFactory.h"
 

@@ -8,5 +8,5 @@
 struct ClientMessage
 {
     uint32_t clientId;
-    std::unique_ptr<Message> message;
+    std::shared_ptr<Message> message;
 };
