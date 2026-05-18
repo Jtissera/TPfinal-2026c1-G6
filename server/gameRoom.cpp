@@ -1,27 +1,21 @@
 #include "gameRoom.h"
 
 GameRoom::GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers)
-    : gameId(gameId),
-      gameName(std::move(gameName)),
-      maxPlayers(maxPlayers),
-      monitor(),
-      gameQueue(),
-      gameLoop(gameQueue, monitor) {}
+    : gameId(gameId), gameName(std::move(gameName)), maxPlayers(maxPlayers),
+      monitor(), gameQueue(), gameLoop(gameQueue, monitor),
+      // map(MapSerializer::load(mapPath))  {}
 
-void GameRoom::addClient(uint32_t clientId, Queue<std::shared_ptr<const Message>> &clientQueue)
-{
-    monitor.addQueue(clientId, clientQueue);
+      void GameRoom::addClient(uint32_t clientId,
+                               Queue<std::shared_ptr<const Message>> &
+                                   clientQueue) {
+  monitor.addQueue(clientId, clientQueue);
 }
 
-void GameRoom::removeClient(uint32_t clientId)
-{
-    monitor.removeQueue(clientId);
+void GameRoom::removeClient(uint32_t clientId) {
+  monitor.removeQueue(clientId);
 }
 
-Queue<ClientMessage> &GameRoom::getGameQueue()
-{
-    return gameQueue;
-}
+Queue<ClientMessage> &GameRoom::getGameQueue() { return gameQueue; }
 
 uint32_t GameRoom::getId() const { return gameId; }
 

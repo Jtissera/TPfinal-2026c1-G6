@@ -68,72 +68,106 @@ clan_bonus_per_member = 0.05 # 5% de bonus de ataque/defensa por miembro cercano
 stats de cada item definidos en el enunciado
  
 [items.espada]
+slot = "WEAPON"
+is_ranged = false
 damage_min = 2
 damage_max = 5
  
 [items.hacha]
+slot = "WEAPON"
+is_ranged = false
 damage_min = 4
 damage_max = 5
  
 [items.martillo]
+slot = "WEAPON"
+is_ranged = false
 damage_min = 1
 damage_max = 9
  
 [items.vara_fresno]
+slot      = "STAFF"
+is_ranged = true
 damage_min  = 2
 damage_max  = 4
 mana_cost   = 5
  
 [items.flauta_elfica]
+slot      = "STAFF"
+is_ranged = true
 mana_cost   = 100   # hechizo de curacion
+effect     = "heal"
  
 [items.baculo_nudoso]
+slot      = "STAFF"
+is_ranged = true
 damage_min  = 4
 damage_max  = 8
 mana_cost   = 15
  
 [items.baculo_engarzado]
+slot      = "STAFF"
+is_ranged = true
 damage_min  = 8
 damage_max  = 20
 mana_cost   = 30
  
 [items.arco_simple]
+slot = "WEAPON"
+is_ranged = true
 damage_min = 1
 damage_max = 4
  
 [items.arco_compuesto]
+slot = "WEAPON"
+is_ranged = true
 damage_min = 4
 damage_max = 16
  
 [items.armadura_cuero]
+slot        = "ARMOR"
 defense_min = 2
 defense_max = 6
  
 [items.armadura_placas]
+slot        = "ARMOR"
 defense_min = 15
 defense_max = 30
  
 [items.tunica_azul]
+slot        = "ARMOR"
 defense_min = 6
 defense_max = 10
  
 [items.capucha]
+slot        = "HELMET"
 defense_min = 1
 defense_max = 4
  
 [items.casco_hierro]
+slot        = "HELMET"
 defense_min = 4
 defense_max = 8
  
 [items.escudo_tortuga]
+slot        = "SHIELD"
 defense_min = 1
 defense_max = 2
  
 [items.escudo_hierro]
+slot        = "SHIELD"
 defense_min = 1
 defense_max = 4
  
 [items.sombrero_magico]
+slot        = "HELMET"
 defense_min = 4
 defense_max = 12
  
+[items.pocion_vida]
+slot = "CONSUMABLE"
+heal_amount = 100 
+
+[items.pocion_mana]
+slot = "CONSUMABLE"
+mana_amount = 100 
