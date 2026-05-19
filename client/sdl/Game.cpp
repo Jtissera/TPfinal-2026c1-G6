@@ -44,21 +44,30 @@ void Game::init(const char* title, int width, int height, bool fullscreen) {
     isRunning = true;
 
     // Cargar assets
-    assets->AddTexture("terrain", "assets/sprites/MapAssets/terrain_ss.png");
-    assets->AddTexture("player", "assets/sprites/llama.png");
-    assets->AddFont("arial",      "assets/sprites/MapAssets/arial.ttf", 16);
-
+    assets->AddTexture("terrain",  "assets/sprites/MapAssets/terrain_ss.png");
+    assets->AddTexture("player", "assets/sprites/spritesprueba/PNG/Vampires1/Without_shadow/Vampires1_Walk_without_shadow.png");
+    assets->AddTexture("skeleton", "assets/sprites/llama.png");
+    assets->AddFont("arial", "assets/sprites/MapAssets/arial.ttf", 16);
     // Mapa
     map = new Map(manager, "terrain", 3, 32);
     map->LoadMap("assets/sprites/MapAssets/map.map", 25, 20);
 
     // Jugador
     player = &manager.addEntity();
-    player->addComponent<TransformComponent>(1500.0f, 1200.0f, 48, 48, 2);
+    player->addComponent<TransformComponent>(1500.0f, 1200.0f, 64, 64, 2);
     player->addComponent<SpriteComponent>("player", true);
     player->addComponent<KeyboardController>();
     player->addComponent<ColliderComponent>("player");
     player->addGroup(groupPlayers);
+    // Include del gameTypes si no está
+    NPCData goblin;
+    goblin.x     = 1600.0f;
+    goblin.y     = 1200.0f;
+    goblin.hp    = 50;
+    goblin.hpMax = 50;
+    goblin.type  = NpcType::SKELETON;
+
+    enemy = assets->CreateEnemy(goblin);
 
     // Label de debug
     label = &manager.addEntity();
@@ -97,6 +106,14 @@ void Game::update() {
         }
     }
 
+    // opcional por ahora
+    for (auto& e : manager.getGroup(groupEnemies)) {
+        SDL_Rect eCol = e->getComponent<ColliderComponent>().collider;
+        if (Collision::AABB(playerCol, eCol)) {
+            std::cout << "Colision con enemigo!" << std::endl;
+        }
+    }
+
     // Colisiones con proyectiles
     for (auto& p : projectiles) {
         if (Collision::AABB(player->getComponent<ColliderComponent>().collider,
@@ -123,6 +140,7 @@ void Game::render() {
     for (auto& c : manager.getGroup(groupColliders))   c->draw();
     for (auto& p : manager.getGroup(groupPlayers))     p->draw();
     for (auto& p : manager.getGroup(groupProjectiles)) p->draw();
+    for (auto& e :manager.getGroup(groupEnemies)) e->draw();
 
     label->draw();
 

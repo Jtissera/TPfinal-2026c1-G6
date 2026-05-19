@@ -8,9 +8,11 @@
 #include "ECS/Vector2D.h"
 #include "ECS/ECS.h"
 #include "SDL_ttf.h"
-
+#include "../../common/dtos/gameTypes.h"
 class AssetManager
 {
+
+
 public:
     AssetManager(Manager* man);
     ~AssetManager();
@@ -18,6 +20,9 @@ public:
     //gameobjects
 
     void CreateProjectile(Vector2D pos, Vector2D vel, int range, int speed, std::string id);
+    Entity* CreateNpc(const NPCData& data);
+    Entity* CreateEnemy(const NPCData& data);
+    Entity* CreatePlayer(const PlayerDto& data);
 
     //texture management
     void AddTexture(std::string id, const char* path);
@@ -26,11 +31,14 @@ public:
     void AddFont(std::string id, std::string path, int fontSize);
     TTF_Font* GetFont(std::string id);
 
+
 private:
 
     Manager* manager;
     std::map<std::string, SDL_Texture*> textures;
     std::map<std::string, TTF_Font*> fonts;
+    std::string textureForNPC(NpcType type);
+
 };
 
 #endif //PRUEBA_SDL_ASSETMANAGER_H

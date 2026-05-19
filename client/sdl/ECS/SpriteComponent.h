@@ -17,6 +17,7 @@ public:
 
     SpriteComponent() = default;
     explicit SpriteComponent(const char* path);
+    SpriteComponent(const std::string& id, bool isAnimated, std::map<std::string, Animation> anims);
     SpriteComponent(const std::string& id, bool isAnimated);
     ~SpriteComponent() = default;
 

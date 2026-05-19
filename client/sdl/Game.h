@@ -35,7 +35,9 @@ public:
         groupMap,
         groupPlayers,
         groupColliders,
-        groupProjectiles
+        groupProjectiles,
+        groupNPC,
+        groupEnemies,
     };
 
 private:
@@ -45,6 +47,7 @@ private:
 
     Entity* player = nullptr;
     Entity* label  = nullptr;
+    Entity*     enemy  = nullptr;  // ← nuevo
 };
 
 

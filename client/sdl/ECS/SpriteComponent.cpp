@@ -7,10 +7,31 @@ SpriteComponent::SpriteComponent(const char* path) {
     setText(path);
 }
 
+// SpriteComponent::SpriteComponent(const std::string& id, bool isAnimated) {
+//     animated = isAnimated;
+//     animations.emplace("Idle", Animation(0, 6, 200));
+//     animations.emplace("Walk", Animation(0, 6, 100));
+//     Play("Idle");
+//     setText(id);
+// }
+
 SpriteComponent::SpriteComponent(const std::string& id, bool isAnimated) {
     animated = isAnimated;
-    animations.emplace("Idle", Animation(0, 6, 200));
-    animations.emplace("Walk", Animation(0, 6, 100));
+    // index = fila (0=sur, 1=oeste, 2=este, 3=norte)
+    // frames = cantidad de frames en esa fila
+    // speed  = ms por frame
+    animations.emplace("Idle",   Animation(0, 4,  150));
+    animations.emplace("Walk",   Animation(0, 6,  100));
+    //animations.emplace("Attack", Animation(0, 12, 80));
+    //animations.emplace("Hurt",   Animation(0, 4,  100));
+    Play("Idle");
+    setText(id);
+}
+
+SpriteComponent::SpriteComponent(const std::string& id, bool isAnimated,
+                                 std::map<std::string, Animation> anims) {
+    animated = isAnimated;
+    animations = anims;
     Play("Idle");
     setText(id);
 }
