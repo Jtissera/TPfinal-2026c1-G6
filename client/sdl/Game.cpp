@@ -45,7 +45,7 @@ void Game::init(const char* title, int width, int height, bool fullscreen) {
 
     // Cargar assets
     assets->AddTexture("terrain", "assets/sprites/MapAssets/terrain_ss.png");
-    assets->AddTexture("player",  "assets/llama.png");
+    assets->AddTexture("player", "assets/sprites/llama.png");
     assets->AddFont("arial",      "assets/sprites/MapAssets/arial.ttf", 16);
 
     // Mapa
@@ -54,7 +54,7 @@ void Game::init(const char* title, int width, int height, bool fullscreen) {
 
     // Jugador
     player = &manager.addEntity();
-    player->addComponent<TransformComponent>(400.0f, 320.0f, 32, 32, 1);
+    player->addComponent<TransformComponent>(1500.0f, 1200.0f, 48, 48, 2);
     player->addComponent<SpriteComponent>("player", true);
     player->addComponent<KeyboardController>();
     player->addComponent<ColliderComponent>("player");
@@ -74,7 +74,7 @@ void Game::handleEvents() {
 }
 
 void Game::update() {
-    auto& players    = manager.getGroup(groupPlayers);
+    //auto& players    = manager.getGroup(groupPlayers);
     auto& colliders  = manager.getGroup(groupColliders);
     auto& projectiles = manager.getGroup(groupProjectiles);
 
@@ -112,6 +112,8 @@ void Game::update() {
     camera.y = static_cast<int>(playerPos.y) - 320;
     if (camera.x < 0) camera.x = 0;
     if (camera.y < 0) camera.y = 0;
+    if (camera.x > 25 * 96 - 800) camera.x = 25 * 96 - 800;
+    if (camera.y > 20 * 96 - 640) camera.y = 20 * 96 - 640;
 }
 
 void Game::render() {

@@ -13,7 +13,7 @@ class SpriteComponent : public Component {
 public:
     int animationIndex = 0;
     SDL_RendererFlip spriteFlip = SDL_FLIP_NONE;
-    std::map<const char*, Animation> animations;
+    std::map<std::string, Animation> animations;
 
     SpriteComponent() = default;
     explicit SpriteComponent(const char* path);

@@ -9,6 +9,8 @@
 #include "Collision.h"
 #include <vector>
 
+#include "Map.h"
+
 
 class Game {
 public:

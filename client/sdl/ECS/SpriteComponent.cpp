@@ -9,8 +9,8 @@ SpriteComponent::SpriteComponent(const char* path) {
 
 SpriteComponent::SpriteComponent(const std::string& id, bool isAnimated) {
     animated = isAnimated;
-    animations.emplace("Idle", Animation(0, 3, 100));
-    animations.emplace("Walk", Animation(1, 6, 100));
+    animations.emplace("Idle", Animation(0, 6, 200));
+    animations.emplace("Walk", Animation(0, 6, 100));
     Play("Idle");
     setText(id);
 }
@@ -20,9 +20,11 @@ void SpriteComponent::setText(const std::string& id) {
 }
 
 void SpriteComponent::Play(const char* animName) {
-    frames         = animations[animName].frames;
-    animationIndex = animations[animName].index;
-    speed          = animations[animName].speed;
+    std::string name(animName);
+    if (animations.count(name) == 0) return;
+    frames         = animations[name].frames;
+    animationIndex = animations[name].index;
+    speed          = animations[name].speed;
 }
 
 void SpriteComponent::init() {
@@ -33,7 +35,7 @@ void SpriteComponent::init() {
 }
 
 void SpriteComponent::update() {
-    if (animated) {
+    if (animated && frames > 0) {  // ← agregar el frames > 0
         srcRect.x = srcRect.w * static_cast<int>((SDL_GetTicks() / speed) % frames);
     }
     srcRect.y = animationIndex * transform->height;

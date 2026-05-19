@@ -1,7 +1,6 @@
 
 #ifndef PRUEBA_SDL_COLLISION_H
 #define PRUEBA_SDL_COLLISION_H
-#include "../SDL_rect.h"
 #include "cmake-build-debug/_deps/sdl2-src/include/SDL_rect.h"
 
 class ColliderComponent;
