@@ -2,6 +2,7 @@
 
 #include "../common/network/messages/client/auth/connectMessage.h"
 #include "../common/network/protocol/clientOpCode.h"
+#include "sdl/Game.h"
 
 static constexpr uint8_t PROTOCOL_VERSION = 0x01; // A modificar
 
@@ -171,9 +172,25 @@ int Client::run()
 
         if (inGame)
         {
-            std::cout << "[Client] En partida. Presiona Enter para salir..." << std::endl;
-            std::string dummy;
-            std::getline(std::cin, dummy);
+            const int FPS = 60;
+            const int frameDelay = 1000/FPS;
+
+            Uint32 frameStart;
+            int frameTime;
+
+            Game *game = new Game();
+            game->init("Argentum",800,640,false);
+            while (game->running()) {
+                frameStart = SDL_GetTicks();
+                game->handleEvents();
+                game->update();
+                game->render();
+                frameTime = SDL_GetTicks() - frameStart;
+                if (frameDelay > frameTime) {
+                    SDL_Delay(frameDelay - frameTime);
+                }
+            }
+            game->clean();
         }
     }
     catch (const ClosedSocket &)
