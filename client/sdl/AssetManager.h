@@ -9,12 +9,14 @@
 #include "ECS/ECS.h"
 #include "SDL_ttf.h"
 #include "../../common/dtos/gameTypes.h"
+#include "common/network/protocol/protocol.h"
+
 class AssetManager
 {
 
 
 public:
-    AssetManager(Manager* man);
+    AssetManager(Manager* man, Protocol* protocol);
     ~AssetManager();
 
     //gameobjects
@@ -35,6 +37,7 @@ public:
 private:
 
     Manager* manager;
+    Protocol* protocol;
     std::map<std::string, SDL_Texture*> textures;
     std::map<std::string, TTF_Font*> fonts;
     std::string textureForNPC(NpcType type);

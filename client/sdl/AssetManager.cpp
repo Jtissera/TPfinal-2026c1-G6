@@ -5,8 +5,8 @@
 #include "ECS/Components.h"
 
 
-AssetManager::AssetManager(Manager* man) : manager(man)
-{}
+AssetManager::AssetManager(Manager* man, Protocol* proto)
+    : manager(man), protocol(proto) {}
 
 AssetManager::~AssetManager()
 {}
@@ -55,7 +55,7 @@ Entity* AssetManager::CreatePlayer(const PlayerDto& data) {
     auto& player = manager->addEntity();
     player.addComponent<TransformComponent>(data.xpos, data.ypos, 48, 48, 2);
     player.addComponent<SpriteComponent>("player", true,playerAnims);
-    player.addComponent<KeyboardController>();
+    player.addComponent<KeyboardController>(*protocol);
     player.addComponent<ColliderComponent>("player");
     player.addGroup(Game::groupPlayers);
     return &player;

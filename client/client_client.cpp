@@ -179,10 +179,11 @@ int Client::run()
             int frameTime;
 
             Game *game = new Game();
-            game->init("Argentum",800,640,false);
+            game->init("Argentum",800,640,false,protocol);
             while (game->running()) {
                 frameStart = SDL_GetTicks();
                 game->handleEvents();
+
                 game->update();
                 game->render();
                 frameTime = SDL_GetTicks() - frameStart;

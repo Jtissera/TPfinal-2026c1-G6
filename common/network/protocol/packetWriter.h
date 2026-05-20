@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <string>
 
+
 class PacketWriter
 {
 private:
@@ -26,4 +27,5 @@ public:
     size_t size() const;
 
     void clear();
+
 };

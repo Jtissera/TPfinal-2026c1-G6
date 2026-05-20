@@ -4,32 +4,37 @@
 
 GameLoop::GameLoop(Queue<ClientMessage> &gameQueue, Monitor &monitor) : gameQueue(gameQueue), monitor(monitor) {}
 
-void GameLoop::run()
-{
-    try
-    {
-        while (true)
-        {
+void GameLoop::run() {
+    try {
+        while (true) {
             ClientMessage incoming = gameQueue.pop();
 
-            std::cout << "[GameLoop] client=" << incoming.clientId
-                      << " opcode=0x" << std::hex
-                      << static_cast<int>(incoming.message->opCode())
-                      << std::dec << std::endl;
+            if (incoming.message->opCode() ==
+                static_cast<uint8_t>(ClientOpCode::MSG_MOVE)) {
 
-            // Aca hay que manejar la llegada de mensajes
-            auto response = std::make_shared<const ConnectOkMessage>();
-            monitor.sendTo(incoming.clientId, response);
+                const auto& move =
+                    static_cast<const MoveMessage&>(*incoming.message);
+
+                switch (move.getDirection()) {
+                    case Direction::UP:    playerY -= SPEED; break;
+                    case Direction::DOWN:  playerY += SPEED; break;
+                    case Direction::LEFT:  playerX -= SPEED; break;
+                    case Direction::RIGHT: playerX += SPEED; break;
+                    default: break;
+                }
+
+                auto response = std::make_shared<const EntityMoveMessage>(
+                    static_cast<uint8_t>(incoming.clientId), playerX, playerY);
+                monitor.sendTo(incoming.clientId, response);
+                }
         }
     }
-    catch (const ClosedQueue &)
-    {
-    }
-    catch (const std::exception &e)
-    {
+    catch (const ClosedQueue&) {}
+    catch (const std::exception& e) {
         std::cerr << "[GameLoop] error: " << e.what() << std::endl;
     }
 }
+
 
 void GameLoop::stop()
 {

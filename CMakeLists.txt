@@ -27,7 +27,8 @@ message(CMAKE_CXX_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}")
 # Define target: lib common between client, server and editor programs
 # HEY TODO XXX: change the name to something that you like
 add_library(taller_common STATIC
-        common/dtos/gameTypes.h)
+        common/dtos/gameTypes.h
+        common/network/messages/client/movement/moveMessage.h)
 
 # add the source files that make the lib
 # HEY!! TODO XXX: add more subfolders here
@@ -105,8 +106,7 @@ endif()
 if(TALLER_CLIENT)
 
     # HEY!! TODO XXX: Change the name of the executable to the one you like!
-    add_executable(taller_client
-            client/sdl/ECS/UILabel.h)
+    add_executable(taller_client)
 
     # Make them depend on taller_common lib
     add_dependencies(taller_client taller_common SDL2pp::SDL2pp)
@@ -132,7 +132,9 @@ if(TALLER_CLIENT)
 
 endif()
 
-add_library(taller_server_lib STATIC)
+add_library(taller_server_lib STATIC
+        server/network/deserializers/GameClientDeserializersModule.cpp
+        server/network/deserializers/GameClientDeserializersModule.h)
 add_dependencies(taller_server_lib taller_common)
 target_include_directories(taller_server_lib PUBLIC .)
 target_link_libraries(taller_server_lib taller_common)

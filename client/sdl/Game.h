@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "Map.h"
+#include "../../../common/network/protocol/protocol.h"
 
 
 class Game {
@@ -17,12 +18,13 @@ public:
     Game();
     ~Game();
 
-    void init(const char* title, int width, int height, bool fullscreen);
+    void init(const char* title, int width, int height, bool fullscreen,Protocol& protocol);
     void handleEvents();
     void update();
     void render();
     void clean();
     bool running() const;
+    void renderHUD();
 
     // Estáticos — accedidos por los componentes
     static bool         isRunning;
@@ -44,7 +46,7 @@ private:
     SDL_Window* window = nullptr;
     Manager     manager;
     Map*        map    = nullptr;
-
+    Protocol* protocol;
     Entity* player = nullptr;
     Entity* label  = nullptr;
     Entity*     enemy  = nullptr;  // ← nuevo

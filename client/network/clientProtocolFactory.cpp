@@ -1,5 +1,7 @@
 #include "clientProtocolFactory.h"
 
+#include "deserializers/GameServerDeserializerModule.h"
+
 ClientProtocolFactory::ClientProtocolFactory() : registry(buildRegistry()) {}
 
 Protocol ClientProtocolFactory::createProtocol(Socket &socket) const
@@ -19,6 +21,9 @@ std::shared_ptr<const Registry> ClientProtocolFactory::buildRegistry()
 
     ErrorDeserializersModule error;
     error.registerDeserializers(*registry);
+
+    GameServerDeserializersModule game;    
+    game.registerDeserializers(*registry);
 
     // ACA LOS VAMOS AGREGANDO CUANDO VAMOS REALIZANDO LAS FUNCIONALIDADES
 

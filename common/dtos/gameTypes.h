@@ -1,4 +1,4 @@
-
+#pragma once
 #include <string>
 #include <cstdint>
 
@@ -32,8 +32,8 @@ struct PlayerDto {
     int manaMax;
     int oro;
     int oroMax;
-    float xpos;
-    float ypos;
+    uint16_t xpos;
+    uint16_t ypos;
     int exp;
     int expMax;
     bool esFantasma;
@@ -47,10 +47,18 @@ struct NPCData {
     std::string nombre;
     uint8_t npcID;
     NpcType type;
-    float x;
-    float y;
+    uint16_t x;
+    uint16_t y;
     int      hp;
     int      hpMax;
     bool estaVivo;
     bool estaMoviendo;
+};
+
+enum class Direction : uint8_t {
+    UP    = 0,
+    DOWN  = 1,
+    LEFT  = 2,
+    RIGHT = 3,
+    NONE  = 4
 };

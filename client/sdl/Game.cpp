@@ -15,7 +15,6 @@ SDL_Rect     Game::camera{0, 0, 800, 640};
 AssetManager* Game::assets  = nullptr;
 
 Game::Game() {
-    assets = new AssetManager(&manager);
 }
 
 Game::~Game() {
@@ -23,7 +22,10 @@ Game::~Game() {
     delete map;
 }
 
-void Game::init(const char* title, int width, int height, bool fullscreen) {
+void Game::init(const char* title, int width, int height, bool fullscreen, Protocol& proto) {
+    this->protocol = &proto;
+    this->assets = new AssetManager(&manager, this->protocol);
+
     int flags = fullscreen ? SDL_WINDOW_FULLSCREEN : 0;
 
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -56,7 +58,7 @@ void Game::init(const char* title, int width, int height, bool fullscreen) {
     player = &manager.addEntity();
     player->addComponent<TransformComponent>(1500.0f, 1200.0f, 64, 64, 2);
     player->addComponent<SpriteComponent>("player", true);
-    player->addComponent<KeyboardController>();
+    player->addComponent<KeyboardController>(*protocol);
     player->addComponent<ColliderComponent>("player");
     player->addGroup(groupPlayers);
     // Include del gameTypes si no está
@@ -147,6 +149,7 @@ void Game::render() {
     SDL_RenderPresent(renderer);
 }
 
+
 void Game::clean() {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
@@ -159,3 +162,21 @@ bool Game::running() const {
     return isRunning;
 }
 
+void Game::renderHUD() {
+    // === PANEL DERECHO ===
+
+    //fondo panel
+
+    //borde
+
+    // === VIDA ===
+
+    // === MANA ===
+
+
+    // === EXP ===
+
+
+
+
+}

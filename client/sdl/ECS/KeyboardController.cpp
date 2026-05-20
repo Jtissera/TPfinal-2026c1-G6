@@ -1,6 +1,10 @@
 #include "KeyboardController.h"
 #include "../Game.h"
+#include "common/network/messages/client/movement/moveMessage.h"
 
+
+KeyboardController::KeyboardController(Protocol& protocol)
+    : protocol(protocol) {}
 void KeyboardController::init() {
     transform = &entity->getComponent<TransformComponent>();
     sprite    = &entity->getComponent<SpriteComponent>();
@@ -12,20 +16,20 @@ void KeyboardController::update() {
     if (event.type == SDL_KEYDOWN) {
         switch (event.key.keysym.sym) {
             case SDLK_w:
-                transform->velocity.y = -1;
+                protocol.send(MoveMessage(Direction::UP));
                 sprite->Play("Walk");
                 break;
             case SDLK_s:
-                transform->velocity.y = 1;
+                protocol.send(MoveMessage(Direction::DOWN));
                 sprite->Play("Walk");
                 break;
             case SDLK_a:
-                transform->velocity.x = -1;
+                protocol.send(MoveMessage(Direction::LEFT));
                 sprite->Play("Walk");
                 sprite->spriteFlip = SDL_FLIP_HORIZONTAL;
                 break;
             case SDLK_d:
-                transform->velocity.x = 1;
+                protocol.send(MoveMessage(Direction::RIGHT));
                 sprite->Play("Walk");
                 break;
             default:
@@ -36,20 +40,12 @@ void KeyboardController::update() {
     if (event.type == SDL_KEYUP) {
         switch (event.key.keysym.sym) {
             case SDLK_w:
-                transform->velocity.y = 0;
-                sprite->Play("Idle");
-                break;
             case SDLK_s:
-                transform->velocity.y = 0;
-                sprite->Play("Idle");
-                break;
             case SDLK_a:
-                transform->velocity.x = 0;
-                sprite->Play("Idle");
                 sprite->spriteFlip = SDL_FLIP_NONE;
+                sprite->Play("Idle");
                 break;
             case SDLK_d:
-                transform->velocity.x = 0;
                 sprite->Play("Idle");
                 break;
             case SDLK_ESCAPE:
