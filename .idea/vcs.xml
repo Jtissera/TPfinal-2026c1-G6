@@ -3,6 +3,7 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/assets/Recursos" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/build/_deps/sdl2-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/build/_deps/sdl2_image-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/build/_deps/sdl2_image-src/external/dav1d" vcs="Git" />
