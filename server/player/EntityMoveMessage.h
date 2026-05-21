@@ -1,0 +1,8 @@
+//
+// Created by mauro on 20/5/26.
+//
+
+#ifndef TALLER_TP_ENTITYMOVEMESSAGE_H
+#define TALLER_TP_ENTITYMOVEMESSAGE_H
+
+#endif //TALLER_TP_ENTITYMOVEMESSAGE_H

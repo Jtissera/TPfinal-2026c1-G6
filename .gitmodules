@@ -1,0 +1,3 @@
+[submodule "assets/Recursos"]
+	path = assets/Recursos
+	url = https://github.com/ao-org/Recursos.git
