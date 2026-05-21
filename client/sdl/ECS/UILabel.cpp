@@ -3,7 +3,7 @@
 //
 
 #include "UILabel.h"
-#include "../Game.h"
+#include "../../Game.h"
 
 UILabel::UILabel(int xpos, int ypos, const std::string& text,
                  const std::string& font, SDL_Color colour)

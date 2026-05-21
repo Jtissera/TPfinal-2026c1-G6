@@ -1,6 +1,6 @@
 
 #include "ProjectileComponent.h"
-#include "../Game.h"
+#include "../../Game.h"
 #include <iostream>
 
 ProjectileComponent::ProjectileComponent(int range, int speed, Vector2D vel)

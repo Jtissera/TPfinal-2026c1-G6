@@ -1,7 +1,7 @@
 
 #include "TileComponent.h"
 #include "../TextureManager.h"
-#include "../Game.h"
+#include "../../Game.h"
 
 TileComponent::TileComponent(int srcX, int srcY, int xpos, int ypos,
                              int tsize, int tscale, const std::string& id) {

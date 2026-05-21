@@ -3,7 +3,7 @@
 #define PRUEBA_SDL_GAMEOBJECT_H
 #include <SDL2/SDL.h>
 
-#include "Game.h"
+#include "../Game.h"
 
 class GameObject {
 

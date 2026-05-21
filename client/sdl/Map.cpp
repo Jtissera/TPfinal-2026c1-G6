@@ -1,7 +1,7 @@
 
 #include "Map.h"
 #include "ECS/Components.h"
-#include "Game.h"
+#include "../Game.h"
 #include <fstream>
 
 Map::Map(Manager& manager, const std::string& textID, int mapScale, int tileSize)

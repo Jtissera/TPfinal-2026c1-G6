@@ -9,14 +9,15 @@
 #include "ECS/ECS.h"
 #include "SDL_ttf.h"
 #include "../../common/dtos/gameTypes.h"
-#include "common/network/protocol/protocol.h"
+#include "common/queue.h"
+#include "common/network/messages/message.h"
 
 class AssetManager
 {
 
 
 public:
-    AssetManager(Manager* man, Protocol* protocol);
+    AssetManager(Manager* man, Queue<std::shared_ptr<const Message>>& sendQueue);
     ~AssetManager();
 
     //gameobjects
@@ -37,7 +38,7 @@ public:
 private:
 
     Manager* manager;
-    Protocol* protocol;
+    Queue<std::shared_ptr<const Message>>& sendQueue;
     std::map<std::string, SDL_Texture*> textures;
     std::map<std::string, TTF_Font*> fonts;
     std::string textureForNPC(NpcType type);

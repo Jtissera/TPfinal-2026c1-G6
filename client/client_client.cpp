@@ -2,7 +2,8 @@
 
 #include "../common/network/messages/client/auth/connectMessage.h"
 #include "../common/network/protocol/clientOpCode.h"
-#include "sdl/Game.h"
+#include "Game.h"
+#include "GameClient.h"
 
 static constexpr uint8_t PROTOCOL_VERSION = 0x01; // A modificar
 
@@ -172,26 +173,23 @@ int Client::run()
 
         if (inGame)
         {
-            const int FPS = 60;
-            const int frameDelay = 1000/FPS;
+            if (inGame) {
+                // PlayerDto mockeado por ahora
+                // después vendrá del servidor
+                PlayerDto playerDto;
+                playerDto.nombre = username;
+                playerDto.xpos   = 1500;
+                playerDto.ypos   = 1200;
+                playerDto.hp     = 100;
+                playerDto.hpMax  = 100;
+                playerDto.mana   = 100;
+                playerDto.manaMax = 100;
+                playerDto.level  = 1;
+                playerDto.oro    = 2000;
 
-            Uint32 frameStart;
-            int frameTime;
-
-            Game *game = new Game();
-            game->init("Argentum",800,640,false,protocol);
-            while (game->running()) {
-                frameStart = SDL_GetTicks();
-                game->handleEvents();
-
-                game->update();
-                game->render();
-                frameTime = SDL_GetTicks() - frameStart;
-                if (frameDelay > frameTime) {
-                    SDL_Delay(frameDelay - frameTime);
-                }
+                GameClient gameClient(socket, 1, playerDto);
+                gameClient.run();
             }
-            game->clean();
         }
     }
     catch (const ClosedSocket &)

@@ -1,6 +1,6 @@
 #include "ColliderComponent.h"
 #include "../TextureManager.h"
-#include "../Game.h"
+#include "../../Game.h"
 
 ColliderComponent::ColliderComponent(const std::string& t) {
     tag = t;

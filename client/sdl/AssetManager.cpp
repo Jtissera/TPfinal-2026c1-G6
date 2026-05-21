@@ -1,12 +1,12 @@
 
 #include "AssetManager.h"
 
-#include "Game.h"
+#include "../Game.h"
 #include "ECS/Components.h"
 
 
-AssetManager::AssetManager(Manager* man, Protocol* proto)
-    : manager(man), protocol(proto) {}
+AssetManager::AssetManager(Manager* man, Queue<std::shared_ptr<const Message>>& sendQueue)
+    : manager(man), sendQueue(sendQueue) {}
 
 AssetManager::~AssetManager()
 {}
@@ -49,13 +49,13 @@ Entity* AssetManager::CreateEnemy(const NPCData& data) {
 Entity* AssetManager::CreatePlayer(const PlayerDto& data) {
 
     std::map<std::string, Animation> playerAnims;
-    playerAnims.emplace("Idle", Animation(0, 6, 200));
+    playerAnims.emplace("Idle", Animation(0, 4, 150));
     playerAnims.emplace("Walk", Animation(0, 6, 100));
 
     auto& player = manager->addEntity();
-    player.addComponent<TransformComponent>(data.xpos, data.ypos, 48, 48, 2);
+    player.addComponent<TransformComponent>(data.xpos, data.ypos, 64, 64, 2);
     player.addComponent<SpriteComponent>("player", true,playerAnims);
-    player.addComponent<KeyboardController>(*protocol);
+    player.addComponent<KeyboardController>(sendQueue);
     player.addComponent<ColliderComponent>("player");
     player.addGroup(Game::groupPlayers);
     return &player;

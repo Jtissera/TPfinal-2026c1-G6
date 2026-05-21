@@ -4,13 +4,13 @@
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_image.h"
 #include "SDL2/SDL_ttf.h"
-#include "ECS/ECS.h"
-#include "AssetManager.h"
-#include "Collision.h"
+#include "sdl/ECS/ECS.h"
+#include "sdl/AssetManager.h"
+#include "sdl/Collision.h"
 #include <vector>
 
-#include "Map.h"
-#include "../../../common/network/protocol/protocol.h"
+#include "sdl/Map.h"
+#include "common/queue.h"
 
 
 class Game {
@@ -18,7 +18,9 @@ public:
     Game();
     ~Game();
 
-    void init(const char* title, int width, int height, bool fullscreen,Protocol& protocol);
+    void init(const char* title, int width, int height, bool fullscreen,Queue<std::shared_ptr<const Message>>& sendQueue,
+              Queue<std::shared_ptr<const Message>>& receiveQueue,
+              const PlayerDto& playerDto);
     void handleEvents();
     void update();
     void render();
@@ -46,10 +48,12 @@ private:
     SDL_Window* window = nullptr;
     Manager     manager;
     Map*        map    = nullptr;
-    Protocol* protocol;
     Entity* player = nullptr;
     Entity* label  = nullptr;
     Entity*     enemy  = nullptr;  // ← nuevo
+    Queue<std::shared_ptr<const Message>>* sendQueue    = nullptr;
+    Queue<std::shared_ptr<const Message>>* receiveQueue = nullptr;
+    PlayerDto playerDto;
 };
 
 

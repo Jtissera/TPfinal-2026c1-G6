@@ -3,7 +3,7 @@
 #include "TextureManager.h"
 #include <iostream>
 
-#include "Game.h"
+#include "../Game.h"
 
 GameObject::GameObject(const char *textureSheet,int x, int y) {
 

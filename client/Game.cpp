@@ -1,11 +1,14 @@
 
 #include "Game.h"
-#include "Map.h"
-#include "TextureManager.h"
-#include "ECS/Components.h"
-#include "ECS/UILabel.h"
+#include "sdl/Map.h"
+#include "sdl/TextureManager.h"
+#include "sdl/ECS/Components.h"
+#include "sdl/ECS/UILabel.h"
 #include <sstream>
 #include <iostream>
+
+#include "common/network/messages/server/player/EntityMoveMessage.h"
+#include "common/network/protocol/serverOpCode.h"
 
 // Definicion de estaticos
 bool         Game::isRunning = false;
@@ -21,10 +24,14 @@ Game::~Game() {
     delete assets;
     delete map;
 }
-
-void Game::init(const char* title, int width, int height, bool fullscreen, Protocol& proto) {
-    this->protocol = &proto;
-    this->assets = new AssetManager(&manager, this->protocol);
+void Game::init(const char* title, int width, int height, bool fullscreen,
+                Queue<std::shared_ptr<const Message>>& sendQ,
+                Queue<std::shared_ptr<const Message>>& receiveQ,
+                const PlayerDto& pDto) {
+    this->sendQueue    = &sendQ;
+    this->receiveQueue = &receiveQ;
+    this->playerDto    = pDto;
+    this->assets       = new AssetManager(&manager, *sendQueue);
 
     int flags = fullscreen ? SDL_WINDOW_FULLSCREEN : 0;
 
@@ -42,36 +49,26 @@ void Game::init(const char* title, int width, int height, bool fullscreen, Proto
                                 width, height, flags);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-
     isRunning = true;
 
-    // Cargar assets
     assets->AddTexture("terrain",  "assets/sprites/MapAssets/terrain_ss.png");
-    assets->AddTexture("player", "assets/sprites/spritesprueba/PNG/Vampires1/Without_shadow/Vampires1_Walk_without_shadow.png");
+    assets->AddTexture("player",   "assets/sprites/spritesprueba/PNG/Vampires1/Without_shadow/Vampires1_Walk_without_shadow.png");
     assets->AddTexture("skeleton", "assets/sprites/llama.png");
-    assets->AddFont("arial", "assets/sprites/MapAssets/arial.ttf", 16);
-    // Mapa
+    assets->AddFont("arial",       "assets/sprites/MapAssets/arial.ttf", 16);
+
     map = new Map(manager, "terrain", 3, 32);
     map->LoadMap("assets/sprites/MapAssets/map.map", 25, 20);
 
-    // Jugador
-    player = &manager.addEntity();
-    player->addComponent<TransformComponent>(1500.0f, 1200.0f, 64, 64, 2);
-    player->addComponent<SpriteComponent>("player", true);
-    player->addComponent<KeyboardController>(*protocol);
-    player->addComponent<ColliderComponent>("player");
-    player->addGroup(groupPlayers);
-    // Include del gameTypes si no está
+    player = assets->CreatePlayer(playerDto);
+
     NPCData goblin;
-    goblin.x     = 1600.0f;
+    goblin.x     = 1800.0f;
     goblin.y     = 1200.0f;
     goblin.hp    = 50;
     goblin.hpMax = 50;
     goblin.type  = NpcType::SKELETON;
-
     enemy = assets->CreateEnemy(goblin);
 
-    // Label de debug
     label = &manager.addEntity();
     SDL_Color white = {255, 255, 255, 255};
     label->addComponent<UILabel>(10, 10, "Argentum Online", "arial", white);
@@ -79,19 +76,30 @@ void Game::init(const char* title, int width, int height, bool fullscreen, Proto
 
 void Game::handleEvents() {
     SDL_PollEvent(&event);
-    if (event.type == SDL_QUIT) {
+    if (event.type == SDL_QUIT)
         isRunning = false;
-    }
+    if (event.type == SDL_KEYDOWN && event.key.repeat != 0)
+        event.type = SDL_USEREVENT;
 }
 
 void Game::update() {
-    //auto& players    = manager.getGroup(groupPlayers);
-    auto& colliders  = manager.getGroup(groupColliders);
+    auto& colliders   = manager.getGroup(groupColliders);
     auto& projectiles = manager.getGroup(groupProjectiles);
 
     Vector2D playerPos = player->getComponent<TransformComponent>().position;
 
-    // Debug label
+    // Procesar mensajes del servidor
+    std::shared_ptr<const Message> msg;
+    while (receiveQueue->try_pop(msg)) {
+        if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE)) {
+            const auto& moveMsg = static_cast<const EntityMoveMessage&>(*msg);
+            player->getComponent<TransformComponent>().position.x =
+                static_cast<float>(moveMsg.getX());
+            player->getComponent<TransformComponent>().position.y =
+                static_cast<float>(moveMsg.getY());
+        }
+    }
+
     std::stringstream ss;
     ss << "Pos: " << playerPos;
     label->getComponent<UILabel>().SetLabelText(ss.str(), "arial");
@@ -99,24 +107,19 @@ void Game::update() {
     manager.refresh();
     manager.update();
 
-    // Colisiones con terreno
     SDL_Rect playerCol = player->getComponent<ColliderComponent>().collider;
     for (auto& c : colliders) {
         SDL_Rect cCol = c->getComponent<ColliderComponent>().collider;
-        if (Collision::AABB(cCol, playerCol)) {
+        if (Collision::AABB(cCol, playerCol))
             player->getComponent<TransformComponent>().position = playerPos;
-        }
     }
 
-    // opcional por ahora
     for (auto& e : manager.getGroup(groupEnemies)) {
         SDL_Rect eCol = e->getComponent<ColliderComponent>().collider;
-        if (Collision::AABB(playerCol, eCol)) {
+        if (Collision::AABB(playerCol, eCol))
             std::cout << "Colision con enemigo!" << std::endl;
-        }
     }
 
-    // Colisiones con proyectiles
     for (auto& p : projectiles) {
         if (Collision::AABB(player->getComponent<ColliderComponent>().collider,
                             p->getComponent<ColliderComponent>().collider)) {
@@ -125,10 +128,9 @@ void Game::update() {
         }
     }
 
-    // Cámara sigue al jugador
     playerPos = player->getComponent<TransformComponent>().position;
-    camera.x = static_cast<int>(playerPos.x) - 400;
-    camera.y = static_cast<int>(playerPos.y) - 320;
+    camera.x  = static_cast<int>(playerPos.x) - 400;
+    camera.y  = static_cast<int>(playerPos.y) - 320;
     if (camera.x < 0) camera.x = 0;
     if (camera.y < 0) camera.y = 0;
     if (camera.x > 25 * 96 - 800) camera.x = 25 * 96 - 800;
@@ -137,18 +139,15 @@ void Game::update() {
 
 void Game::render() {
     SDL_RenderClear(renderer);
-
     for (auto& t : manager.getGroup(groupMap))         t->draw();
     for (auto& c : manager.getGroup(groupColliders))   c->draw();
     for (auto& p : manager.getGroup(groupPlayers))     p->draw();
     for (auto& p : manager.getGroup(groupProjectiles)) p->draw();
-    for (auto& e :manager.getGroup(groupEnemies)) e->draw();
-
+    for (auto& e : manager.getGroup(groupEnemies))     e->draw();
     label->draw();
-
+    renderHUD();
     SDL_RenderPresent(renderer);
 }
-
 
 void Game::clean() {
     SDL_DestroyRenderer(renderer);
@@ -158,25 +157,8 @@ void Game::clean() {
     std::cout << "Game cleaned." << std::endl;
 }
 
-bool Game::running() const {
-    return isRunning;
-}
+bool Game::running() const { return isRunning; }
 
 void Game::renderHUD() {
-    // === PANEL DERECHO ===
-
-    //fondo panel
-
-    //borde
-
-    // === VIDA ===
-
-    // === MANA ===
-
-
-    // === EXP ===
-
-
-
-
+    // TODO: implementar HUD
 }

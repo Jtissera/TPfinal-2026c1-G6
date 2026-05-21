@@ -1,6 +1,6 @@
 
 #include "TextureManager.h"
-#include "Game.h"
+#include "../Game.h"
 #include <iostream>
 
 std::map<std::string, SDL_Texture*> TextureManager::textureCache;
@@ -33,7 +33,7 @@ SDL_Texture* TextureManager::loadTexture(const char* path) {
 }
 
 void TextureManager::Draw(SDL_Texture* tex, SDL_Rect src, SDL_Rect dest, SDL_RendererFlip flip) {
-    SDL_RenderCopyEx(Game::renderer, tex, &src, &dest, 0.0, NULL, flip);
+    SDL_RenderCopyEx(Game::renderer, tex, &src, &dest, 0.0, nullptr, flip);
 }
 
 
