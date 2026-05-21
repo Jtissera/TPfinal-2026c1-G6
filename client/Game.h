@@ -1,9 +1,9 @@
 
 #ifndef PRUEBA_SDL_GAME_H
 #define PRUEBA_SDL_GAME_H
-#include "SDL2/SDL.h"
-#include "SDL2/SDL_image.h"
-#include "SDL2/SDL_ttf.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 #include "sdl/ECS/ECS.h"
 #include "sdl/AssetManager.h"
 #include "sdl/Collision.h"
