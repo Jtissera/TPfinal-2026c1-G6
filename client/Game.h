@@ -1,4 +1,3 @@
-
 #ifndef PRUEBA_SDL_GAME_H
 #define PRUEBA_SDL_GAME_H
 #include <SDL2/SDL.h>
@@ -54,7 +53,7 @@ private:
     Queue<std::shared_ptr<const Message>>* sendQueue    = nullptr;
     Queue<std::shared_ptr<const Message>>* receiveQueue = nullptr;
     PlayerDto playerDto;
+    void loadAssets();
 };
-
 
 #endif //PRUEBA_SDL_GAME_H

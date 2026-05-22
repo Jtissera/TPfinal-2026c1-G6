@@ -1,4 +1,3 @@
-
 #include "GameClient.h"
 
 GameClient::GameClient(Socket& socket, uint32_t idPlayer, const PlayerDto& playerDto)
@@ -19,7 +18,7 @@ void GameClient::run() {
        Uint32 frameStart;
        int frameTime;
 
-       this->gameLoop.init("Argentum",800,640,false,sendQueue,receiveQueue,playerDto);
+       this->gameLoop.init("Argentum",1080,640,false,sendQueue,receiveQueue,playerDto);
        while (gameLoop.running()) {
               frameStart = SDL_GetTicks();
               gameLoop.handleEvents();
