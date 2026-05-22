@@ -1,4 +1,3 @@
-
 #include "GameClient.h"
 
 GameClient::GameClient(Socket& socket, uint32_t idPlayer, const PlayerDto& playerDto)
