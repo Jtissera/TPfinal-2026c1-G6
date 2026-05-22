@@ -51,11 +51,7 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     isRunning = true;
 
-    assets->AddTexture("terrain",  "assets/sprites/MapAssets/terrain_ss.png");
-    assets->AddTexture("player",   "assets/sprites/spritesprueba/PNG/Vampires1/Without_shadow/Vampires1_Walk_without_shadow.png");
-    assets->AddTexture("skeleton", "assets/sprites/llama.png");
-    assets->AddFont("arial",       "assets/sprites/MapAssets/arial.ttf", 16);
-
+    loadAssets();
     map = new Map(manager, "terrain", 3, 32);
     map->LoadMap("assets/sprites/MapAssets/map.map", 25, 20);
 
@@ -134,16 +130,16 @@ void Game::update() {
     if (camera.x < 0) camera.x = 0;
     if (camera.y < 0) camera.y = 0;
     if (camera.x > 25 * 96 - 800) camera.x = 25 * 96 - 800;
-    if (camera.y > 20 * 96 - 640) camera.y = 20 * 96 - 640;
+    if (camera.y > 20 * 96 - 507) camera.y = 20 * 96 - 507;
 }
 
 void Game::render() {
     SDL_RenderClear(renderer);
     for (auto& t : manager.getGroup(groupMap))         t->draw();
-    for (auto& c : manager.getGroup(groupColliders))   c->draw();
+    //for (auto& c : manager.getGroup(groupColliders))   c->draw();
     for (auto& p : manager.getGroup(groupPlayers))     p->draw();
     for (auto& p : manager.getGroup(groupProjectiles)) p->draw();
-    for (auto& e : manager.getGroup(groupEnemies))     e->draw();
+    //for (auto& e : manager.getGroup(groupEnemies))     e->draw();
     label->draw();
     renderHUD();
     SDL_RenderPresent(renderer);
@@ -160,5 +156,115 @@ void Game::clean() {
 bool Game::running() const { return isRunning; }
 
 void Game::renderHUD() {
-    // TODO: implementar HUD
+
+//1. Fondo/marco     ← primero (abajo)
+// 2. Barras          ← encima del fondo
+// 3. Slots/items     ← encima de las barras
+// 4. Textos          ← último (arriba de todo)
+
+
+    //
+    // // 1. Cargar la textura una vez en loadAssets()
+
+    //
+    // // 2. En renderHUD(), dibujar la imagen donde querés el fondo
+    // SDL_Texture* fondo = assets->GetTexture("fondo_inventario");
+    //
+    // // Define dónde y qué tamaño en pantalla
+    // SDL_Rect destino = {800, 0, 280, 640};  // x, y, ancho, alto
+    //
+    // // Dibuja la imagen estirada para llenar ese rectángulo
+    // SDL_RenderCopy(renderer, fondo, nullptr, &destino);
+    //
+    // // Después dibujás todo lo demás ENCIMA (barras, slots, texto)
+
+    // === BARRA TOP (full ancho) ===
+    SDL_Texture* texTop = assets->GetTexture("hud_top");
+    SDL_Rect topDest = {0, 0, 1080, 33};
+    SDL_RenderCopy(renderer, texTop, nullptr, &topDest);
+
+    // === LOGO (sobre la barra top) ===
+    SDL_Texture* texLogo = assets->GetTexture("hud_logo");
+    SDL_Rect logoDest = {5, 0, 177, 33};
+    SDL_RenderCopy(renderer, texLogo, nullptr, &logoDest);
+
+    // === CHAT ===
+    SDL_Texture* texChat = assets->GetTexture("hud_chat");
+    SDL_Rect chatDest = {0, 33, 800, 100};
+    SDL_RenderCopy(renderer, texChat, nullptr, &chatDest);
+
+    // === PANEL DERECHO - PJ INFO ===
+    SDL_Texture* texPjInfo = assets->GetTexture("hud_pj_info");
+    SDL_Rect pjInfoDest = {800, 33, 280, 100};
+    SDL_RenderCopy(renderer, texPjInfo, nullptr, &pjInfoDest);
+
+    // === PANEL DERECHO - INVENTARIO ===
+    SDL_Texture* texInv = assets->GetTexture("hud_inv");
+    SDL_Rect invDest = {800, 133, 280, 267};
+    SDL_RenderCopy(renderer, texInv, nullptr, &invDest);
+
+    // === PANEL DERECHO - STATS ===
+    SDL_Texture* texStats = assets->GetTexture("hud_stats");
+    SDL_Rect statsDest = {800, 400, 280, 240};
+    SDL_RenderCopy(renderer, texStats, nullptr, &statsDest);
+
+    // === BARRAS DE VIDA MANA EXP ===
+    int hpActual = 75,   hpMax   = 100;
+    int manaActual = 40, manaMax = 100;
+    int expActual = 300, expMax  = 1000;
+
+    SDL_Texture* texVida = assets->GetTexture("barra_vida");
+    SDL_Rect vidaDest = {810, 510, 216, 16};
+    SDL_RenderCopy(renderer, texVida, nullptr, &vidaDest);
+    int vidaAncho = (216 * hpActual) / hpMax;
+    SDL_Rect vidaSrc  = {0, 0, vidaAncho, 16};
+    SDL_Rect vidaFill = {810, 510, vidaAncho, 16};
+    SDL_RenderCopy(renderer, texVida, &vidaSrc, &vidaFill);
+
+    SDL_Texture* texMana = assets->GetTexture("barra_mana");
+    SDL_Rect manaDest = {810, 545, 216, 16};
+    SDL_RenderCopy(renderer, texMana, nullptr, &manaDest);
+    int manaAncho = (216 * manaActual) / manaMax;
+    SDL_Rect manaSrc  = {0, 0, manaAncho, 16};
+    SDL_Rect manaFill = {810, 545, manaAncho, 16};
+    SDL_RenderCopy(renderer, texMana, &manaSrc, &manaFill);
+
+    SDL_Texture* texExp = assets->GetTexture("barra_exp");
+    SDL_Rect expDest = {810, 580, 216, 16};
+    SDL_RenderCopy(renderer, texExp, nullptr, &expDest);
+    int expAncho = (216 * expActual) / expMax;
+    SDL_Rect expSrc  = {0, 0, expAncho, 16};
+    SDL_Rect expFill = {810, 580, expAncho, 16};
+    SDL_RenderCopy(renderer, texExp, &expSrc, &expFill);
+}
+
+void Game::loadAssets() {
+
+    // HUD - fondos
+    assets->AddTexture("hud_top",      "assets/Recursos/BabelUI/static/media/main_top..png");
+    assets->AddTexture("hud_chat",     "assets/Recursos/BabelUI/static/media/main_chat..png");
+    assets->AddTexture("hud_pj_info",  "assets/Recursos/BabelUI/static/media/main_pj_info..png");
+    assets->AddTexture("hud_inv",      "assets/Recursos/BabelUI/static/media/inventory-bg..png");
+    assets->AddTexture("hud_stats",    "assets/Recursos/BabelUI/static/media/stats-bg..png");
+    assets->AddTexture("hud_logo",     "assets/Recursos/BabelUI/static/media/ao20_logo_med..png");
+    assets->AddTexture("hud_pergamino","assets/Recursos/BabelUI/static/media/titulo_pergamino..png");
+
+    // Mapa
+    assets->AddTexture("terrain", "assets/sprites/MapAssets/terrain_ss.png");
+
+    // Personaje
+    assets->AddTexture("player", "assets/sprites/spritesprueba/PNG/Vampires1/Without_shadow/Vampires1_Walk_without_shadow.png");
+
+    // Enemigos — por ahora todos usan el mismo sprite
+    assets->AddTexture("skeleton", "assets/sprites/llama.png");
+    assets->AddTexture("goblin",   "assets/sprites/llama.png");
+    assets->AddTexture("zombie",   "assets/sprites/llama.png");
+
+    // HUD
+    assets->AddTexture("barra_vida", "assets/Recursos/interface/es_barradevida.bmp");
+    assets->AddTexture("barra_mana", "assets/Recursos/interface/es_barrademana.bmp");
+    assets->AddTexture("barra_exp",  "assets/Recursos/interface/es_barraexperiencia.bmp");
+
+    // Fuentes
+    assets->AddFont("arial", "assets/sprites/MapAssets/arial.ttf", 16);
 }

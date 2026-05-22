@@ -54,6 +54,9 @@ private:
     Queue<std::shared_ptr<const Message>>* sendQueue    = nullptr;
     Queue<std::shared_ptr<const Message>>* receiveQueue = nullptr;
     PlayerDto playerDto;
+
+    void loadAssets();
+
 };
 
 

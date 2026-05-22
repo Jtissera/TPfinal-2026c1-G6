@@ -7,14 +7,6 @@ SpriteComponent::SpriteComponent(const char* path) {
     setText(path);
 }
 
-// SpriteComponent::SpriteComponent(const std::string& id, bool isAnimated) {
-//     animated = isAnimated;
-//     animations.emplace("Idle", Animation(0, 6, 200));
-//     animations.emplace("Walk", Animation(0, 6, 100));
-//     Play("Idle");
-//     setText(id);
-// }
-
 SpriteComponent::SpriteComponent(const std::string& id, bool isAnimated) {
     animated = isAnimated;
     // index = fila (0=sur, 1=oeste, 2=este, 3=norte)
@@ -62,7 +54,7 @@ void SpriteComponent::update() {
     srcRect.y = animationIndex * transform->height;
 
     destRect.x = static_cast<int>(transform->position.x) - Game::camera.x;
-    destRect.y = static_cast<int>(transform->position.y) - Game::camera.y;
+    destRect.y = static_cast<int>(transform->position.y) - Game::camera.y + 133;
     destRect.w = transform->width  * transform->scale;
     destRect.h = transform->height * transform->scale;
 }

@@ -18,7 +18,7 @@ TileComponent::~TileComponent() {
 
 void TileComponent::update() {
     destRect.x = static_cast<int>(position.x - Game::camera.x);
-    destRect.y = static_cast<int>(position.y - Game::camera.y);
+    destRect.y = static_cast<int>(position.y - Game::camera.y)+133;
 }
 
 void TileComponent::draw() {
