@@ -6,7 +6,7 @@
 
 #include "client_client.h"
 
-static constexpr int WINDOW_W = 800;
+static constexpr int WINDOW_W = 1080;
 static constexpr int WINDOW_H = 640;
 
 int main(int argc, char* argv[])
