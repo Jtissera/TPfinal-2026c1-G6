@@ -19,7 +19,7 @@ void GameClient::run() {
        Uint32 frameStart;
        int frameTime;
 
-       this->gameLoop.init("Argentum",1080,640,false,sendQueue,receiveQueue,playerDto);
+       this->gameLoop.init("Argentum",1280,720,false,sendQueue,receiveQueue,playerDto);
        while (gameLoop.running()) {
               frameStart = SDL_GetTicks();
               gameLoop.handleEvents();

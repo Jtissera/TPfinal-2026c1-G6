@@ -28,6 +28,8 @@ public:
     bool running() const;
     void renderHUD();
 
+
+
     // Estáticos — accedidos por los componentes
     static bool         isRunning;
     static SDL_Renderer* renderer;
@@ -50,11 +52,18 @@ private:
     Map*        map    = nullptr;
     Entity* player = nullptr;
     Entity* label  = nullptr;
+    // Entity* labelName = nullptr;
+    // Entity* labelLevel= nullptr;
+    // Entity* labelClas = nullptr;
+    // Entity* labelHP = nullptr;
+    // Entity* labelMana = nullptr;
+    // Entity* labelXP = nullptr;
+    // Entity* labelGold = nullptr;
     Entity*     enemy  = nullptr;  // ← nuevo
     Queue<std::shared_ptr<const Message>>* sendQueue    = nullptr;
     Queue<std::shared_ptr<const Message>>* receiveQueue = nullptr;
     PlayerDto playerDto;
-
+    void loadText();
     void loadAssets();
 
 };
