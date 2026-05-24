@@ -1,49 +1,39 @@
-
 #include "Map.h"
 #include "ECS/Components.h"
 #include "../Game.h"
-#include <fstream>
+#include "../../editor/map/mapSerializer.h"
 
 Map::Map(Manager& manager, const std::string& textID, int mapScale, int tileSize)
     : manager(manager), textID(textID), mapScale(mapScale), tileSize(tileSize) {
     scaledSize = mapScale * tileSize;
 }
 
-void Map::LoadMap(const std::string& path, int sizeX, int sizeY) {
-    std::fstream mapFile(path);
-    int tileIndex;
-
-    // Primera pasada: tiles visuales
-    for (int y = 0; y < sizeY; y++) {
-        for (int x = 0; x < sizeX; x++) {
-            mapFile >> tileIndex;
-            mapFile.ignore();
-            int srcX = (tileIndex % 10) * tileSize;
-            int srcY = (tileIndex / 10) * tileSize;
-            AddTile(srcX, srcY, x * scaledSize, y * scaledSize);
-        }
+static const char* tileTypeToTexture(TileType t) {
+    switch(t) {
+        case TileType::GRASS:            return "tile_grass";
+        case TileType::WATER:            return "tile_water";
+        case TileType::FLOOR:            return "tile_floor";
+        case TileType::WALL:             return "tile_floor";
+        case TileType::DOOR:             return "tile_floor";
+        case TileType::DUNGEON_ENTRANCE: return "tile_floor";
+        default:                         return "tile_grass";
     }
-
-    // Segunda pasada: colisiones
-    for (int y = 0; y < sizeY; y++) {
-        for (int x = 0; x < sizeX; x++) {
-            mapFile >> tileIndex;
-            mapFile.ignore();
-            if (tileIndex == 1) {
-                auto& tcol = manager.addEntity();
-                tcol.addComponent<ColliderComponent>("terrain",
-                    x * scaledSize, y * scaledSize, scaledSize);
-                tcol.addGroup(Game::groupColliders);
-            }
-        }
-    }
-
-    mapFile.close();
 }
 
-void Map::AddTile(int srcX, int srcY, int xpos, int ypos) {
+void Map::LoadMap(const std::string& path) {
+    MapData mapData = MapSerializer::load(path);
+
+    for (int y = 0; y < mapData.height(); y++) {
+        for (int x = 0; x < mapData.width(); x++) {
+            const Tile& t = mapData.at(x, y);
+            const char* texId = tileTypeToTexture(t.type);
+            AddTile(texId, x * scaledSize, y * scaledSize);
+        }
+    }
+}
+
+void Map::AddTile(const char* texId, int xpos, int ypos) {
     auto& tile = manager.addEntity();
-    tile.addComponent<TileComponent>(srcX, srcY, xpos, ypos, tileSize, mapScale, textID);
+    tile.addComponent<TileComponent>(0, 0, xpos, ypos, tileSize, mapScale, texId);
     tile.addGroup(Game::groupMap);
 }
-

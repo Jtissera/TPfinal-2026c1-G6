@@ -8,6 +8,7 @@
 #include "common/network/messages/server/auth/connectOKMessage.h"
 #include "common/network/protocol/clientOpCode.h"
 #include "common/network/protocol/serverOpCode.h"
+#include "common/network/messages/server/player/EntityMoveMessage.h"
 
 namespace
 {
@@ -339,4 +340,44 @@ namespace
         EXPECT_FALSE(frameReader.hasMore());
     }
 
+
+    TEST(EntityMoveMessageTest, OpCode) {
+    EntityMoveMessage msg(1, 400, 320);
+    EXPECT_EQ(msg.opCode(), static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE));
+}
+
+TEST(EntityMoveMessageTest, RoundTrip) {
+    EntityMoveMessage original(1, 400, 320);
+
+    PacketWriter writer;
+    original.serializeBody(writer);
+
+    PacketReader reader(writer.data(), writer.size());
+    auto id = reader.readUint8();
+    auto x  = reader.readUint16();
+    auto y  = reader.readUint16();
+
+    EXPECT_EQ(id, 1);
+    EXPECT_EQ(x, 400);
+    EXPECT_EQ(y, 320);
+    EXPECT_FALSE(reader.hasMore());
+}
+
+TEST(EntityMoveMessageTest, Getters) {
+    EntityMoveMessage msg(3, 1500, 960);
+    EXPECT_EQ(msg.getId(), 3);
+    EXPECT_EQ(msg.getX(), 1500);
+    EXPECT_EQ(msg.getY(), 960);
+}
+
+TEST(EntityMoveMessageTest, MaxMapCoords) {
+    // Máximo del mapa: 25*96=2400, 20*96=1920
+    EntityMoveMessage msg(1, 2400, 1920);
+    PacketWriter writer;
+    msg.serializeBody(writer);
+    PacketReader reader(writer.data(), writer.size());
+    reader.readUint8();
+    EXPECT_EQ(reader.readUint16(), 2400);
+    EXPECT_EQ(reader.readUint16(), 1920);
+}
 }

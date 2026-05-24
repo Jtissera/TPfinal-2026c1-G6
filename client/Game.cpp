@@ -10,7 +10,7 @@
 #include "common/network/messages/server/player/EntityMoveMessage.h"
 #include "common/network/protocol/serverOpCode.h"
 
-// Definicion de estaticos
+// Definicion de estaticos, hay que fletarlo
 bool         Game::isRunning = false;
 SDL_Renderer* Game::renderer = nullptr;
 SDL_Event    Game::event;
@@ -24,6 +24,7 @@ Game::~Game() {
     delete assets;
     delete map;
 }
+
 void Game::init(const char* title, int width, int height, bool fullscreen,
                 Queue<std::shared_ptr<const Message>>& sendQ,
                 Queue<std::shared_ptr<const Message>>& receiveQ,
@@ -62,7 +63,7 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     player = assets->CreatePlayer(playerDto);
 
     map = new Map(manager, "terrain", 3, 32);
-    map->LoadMap("assets/sprites/MapAssets/map.map", 25, 20);
+    map->LoadMap("assets/sprites/MapAssets/mapa.argmap");
 
     label = &manager.addEntity();
     SDL_Color white = {255, 255, 255, 255};
@@ -70,20 +71,20 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
 }
 
 void Game::handleEvents() {
-    SDL_PollEvent(&event);
-    if (event.type == SDL_QUIT)
-        isRunning = false;
-    if (event.type == SDL_KEYDOWN && event.key.repeat != 0)
-        event.type = SDL_USEREVENT;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT){
+            isRunning = false;
+        } 
+
+        if (event.type == SDL_KEYDOWN && event.key.repeat != 0){
+            event.type = SDL_USEREVENT;
+        }
+            
+    }
 }
 
 void Game::update() {
-    auto& colliders   = manager.getGroup(groupColliders);
-    auto& projectiles = manager.getGroup(groupProjectiles);
-
-    Vector2D playerPos = player->getComponent<TransformComponent>().position;
-
-    // Procesar mensajes del servidor
+    // 1. PRIMERO: aplicar posiciones del servidor
     std::shared_ptr<const Message> msg;
     while (receiveQueue->try_pop(msg)) {
         if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE)) {
@@ -92,54 +93,37 @@ void Game::update() {
                 static_cast<float>(moveMsg.getX());
             player->getComponent<TransformComponent>().position.y =
                 static_cast<float>(moveMsg.getY());
+            std::cout << "[client] pos recibida del server: " 
+                      << moveMsg.getX() << ", " << moveMsg.getY() << std::endl;
         }
     }
 
-    std::stringstream ss;
-    ss << "Pos: " << playerPos;
-    label->getComponent<UILabel>().SetLabelText(ss.str(), "arial");
-
+    // 2. DESPUÉS: actualizar el resto (animaciones, cámara, etc.)
     manager.refresh();
     manager.update();
 
-    SDL_Rect playerCol = player->getComponent<ColliderComponent>().collider;
-    for (auto& c : colliders) {
-        SDL_Rect cCol = c->getComponent<ColliderComponent>().collider;
-        if (Collision::AABB(cCol, playerCol))
-            player->getComponent<TransformComponent>().position = playerPos;
-    }
-
-    // for (auto& e : manager.getGroup(groupEnemies)) {
-    //     SDL_Rect eCol = e->getComponent<ColliderComponent>().collider;
-    //     if (Collision::AABB(playerCol, eCol))
-    //         std::cout << "Colision con enemigo!" << std::endl;
-    // }
-
-    for (auto& p : projectiles) {
-        if (Collision::AABB(player->getComponent<ColliderComponent>().collider,
-                            p->getComponent<ColliderComponent>().collider)) {
-            std::cout << "Hit player!" << std::endl;
-            p->destroy();
-        }
-    }
-
-    playerPos = player->getComponent<TransformComponent>().position;
-    camera.x  = static_cast<int>(playerPos.x) - 400;
-    camera.y  = static_cast<int>(playerPos.y) - 320;
+    // 3. Cámara basada en posición ya actualizada
+    Vector2D playerPos = player->getComponent<TransformComponent>().position;
+    camera.x = static_cast<int>(playerPos.x) - 450;
+    camera.y = static_cast<int>(playerPos.y) - 343;
     if (camera.x < 0) camera.x = 0;
     if (camera.y < 0) camera.y = 0;
-    if (camera.x > 25 * 96 - 800) camera.x = 25 * 96 - 800;
-    if (camera.y > 20 * 96 - 587) camera.y = 20 * 96 - 587;
+    if (camera.x > 15 * 96 - 800) camera.x = 15 * 96 - 800;
+    if (camera.y > 20 * 96 - 687) camera.y = 20 * 96 - 687;
+
+    std::cout << "[client] transform pos: " 
+              << playerPos.x << ", " << playerPos.y << std::endl;
 }
+
 
 void Game::render() {
     SDL_RenderClear(renderer);
-    for (auto& t : manager.getGroup(groupMap))         t->draw();
-    //for (auto& c : manager.getGroup(groupColliders))   c->draw();
-    for (auto& p : manager.getGroup(groupPlayers))     p->draw();
-    for (auto& p : manager.getGroup(groupProjectiles)) p->draw();
-    //for (auto& e : manager.getGroup(groupEnemies))     e->draw();
 
+    SDL_Rect mapArea = {0, 33, 900, 687};
+    SDL_RenderSetClipRect(renderer, &mapArea);
+    for (auto& t : manager.getGroup(groupMap))     t->draw();
+    for (auto& p : manager.getGroup(groupPlayers)) p->draw();
+    SDL_RenderSetClipRect(renderer, nullptr);
     renderHUD();
 
     label->draw();
@@ -159,36 +143,6 @@ void Game::clean() {
 
 bool Game::running() const { return isRunning; }
 
-// void Game::loadText() {
-//     SDL_Color white  = {255, 255, 255, 255};
-//     SDL_Color yellow = {255, 215, 0,   255};
-//     SDL_Color red    = {220, 50,  50,  255};
-//     SDL_Color blue   = {50,  100, 220, 255};
-//     SDL_Color green  = {50,  200, 50,  255};
-//
-//     labelName = &manager.addEntity();
-//     labelName->addComponent<UILabel>(910, 45, playerDto.nombre, "ao_bold", yellow);
-//
-//     labelLevel = &manager.addEntity();
-//     labelLevel->addComponent<UILabel>(910, 65, "Nivel: " + std::to_string(playerDto.level), "ao_regular", white);
-//
-//     labelClas = &manager.addEntity();
-//     labelClas->addComponent<UILabel>(910, 85, "Guerrero", "ao_regular", white);
-//
-//     labelHP = &manager.addEntity();
-//     labelHP->addComponent<UILabel>(910, 520, std::to_string(playerDto.hp) + "/" + std::to_string(playerDto.hpMax), "ao_regular", red);
-//
-//     labelMana = &manager.addEntity();
-//     labelMana->addComponent<UILabel>(910, 557, std::to_string(playerDto.mana) + "/" + std::to_string(playerDto.manaMax), "ao_regular", blue);
-//
-//     labelXP = &manager.addEntity();
-//     labelXP->addComponent<UILabel>(910, 592, std::to_string(playerDto.exp) + "/" + std::to_string(playerDto.expMax), "ao_regular", green);
-//
-//     labelGold = &manager.addEntity();
-//     labelGold->addComponent<UILabel>(910, 445, "Oro: " + std::to_string(playerDto.oro), "ao_regular", yellow);
-//
-//
-// }
 
 void Game::renderHUD() {
 
@@ -298,21 +252,18 @@ void Game::renderHUD() {
     // Clase
     drawTextAt("Guerrero", fontRegular, 968, 75, white);
 
-    // === EQUIPAMIENTO (4 slots: Arma, Casco, Armadura, Escudo) ===
+    // === EQUIPAMIENTO (4 slots con frame) ===
     drawTextCentered("Equipamiento", fontRegular, 900, 140, 380, 20, white);
 
-    int eqSlotSize = 55;
+    SDL_Texture* texFrame = assets->GetTexture("hud_frame");
+    int eqSlotSize = 70;  // tamaño en pantalla
     int eqY = 165;
-    int eqStartX = 915;
+    int eqStartX = 910;
     std::string eqLabels[] = {"Arma", "Casco", "Armadura", "Escudo"};
 
     for (int i = 0; i < 4; i++) {
-        SDL_Rect slot = {eqStartX + i * (eqSlotSize + 10), eqY, eqSlotSize, eqSlotSize};
-        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
-        SDL_RenderFillRect(renderer, &slot);
-        SDL_SetRenderDrawColor(renderer, 100, 80, 40, 255);
-        SDL_RenderDrawRect(renderer, &slot);
-        // Label debajo del slot
+        SDL_Rect slot = {eqStartX + i * (eqSlotSize + 5), eqY, eqSlotSize, eqSlotSize};
+        SDL_RenderCopy(renderer, texFrame, nullptr, &slot);
         drawTextCentered(eqLabels[i], fontRegular,
                          slot.x, slot.y + eqSlotSize + 2,
                          eqSlotSize, 14, white);
@@ -326,7 +277,7 @@ void Game::renderHUD() {
     int invStartY   = 268;
 
     for (int fila = 0; fila < 3; fila++) {
-        for (int col = 0; col < 4; col++) {
+        for (int col = 0; col < 6; col++) {
             SDL_Rect slot = {
                 invStartX + col * (invSlotSize + 8),
                 invStartY + fila * (invSlotSize + 5),
@@ -400,7 +351,7 @@ void Game::loadAssets() {
     assets->AddFont("ao_regular", "assets/Recursos/BabelUI/static/media/Alegreya-Sans-AO-Regular..ttf", 14);
     assets->AddFont("cardo",      "assets/Recursos/BabelUI/static/media/Cardo-Regular..ttf",            14);
     // Mapa
-    assets->AddTexture("terrain", "assets/sprites/MapAssets/terrain_ss.png");
+
 
     // Personaje
     assets->AddTexture("player", "assets/sprites/spritesprueba/PNG/Vampires1/Without_shadow/Vampires1_Walk_without_shadow.png");
@@ -414,7 +365,12 @@ void Game::loadAssets() {
     assets->AddTexture("barra_vida", "assets/Recursos/interface/es_barradevida.bmp");
     assets->AddTexture("barra_mana", "assets/Recursos/interface/es_barrademana.bmp");
     assets->AddTexture("barra_exp",  "assets/Recursos/interface/es_barraexperiencia.bmp");
+    assets->AddTexture("hud_frame", "assets/Recursos/BabelUI/static/media/frame..png");
 
     // Fuentes
     assets->AddFont("arial", "assets/sprites/MapAssets/arial.ttf", 16);
+
+    assets->AddTexture("tile_grass", "assets/sprites/MapAssets/tile_grass.png");
+    assets->AddTexture("tile_water", "assets/sprites/MapAssets/tile_water.png");
+    assets->AddTexture("tile_floor", "assets/sprites/MapAssets/tile_floor.png");
 }

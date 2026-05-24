@@ -1,8 +1,13 @@
 #include "gameLoop.h"
+#include "../common/network/messages/server/player/EntityMoveMessage.h"
+#include "../common/network/messages/client/movement/moveMessage.h"
+#include "../common/network/protocol/clientOpCode.h"
 
-#include "../common/network/messages/server/auth/connectOKMessage.h"
+GameLoop::GameLoop(Queue<ClientMessage>& q, Monitor& m, GameWorld& w)
+    : gameQueue(q), monitor(m), world(w) {}
 
-GameLoop::GameLoop(Queue<ClientMessage> &gameQueue, Monitor &monitor) : gameQueue(gameQueue), monitor(monitor) {}
+
+//GameLoop::GameLoop(Queue<ClientMessage> &gameQueue, Monitor &monitor) : gameQueue(gameQueue), monitor(monitor) {}
 
 void GameLoop::run() {
     try {
@@ -14,19 +19,17 @@ void GameLoop::run() {
 
                 const auto& move =
                     static_cast<const MoveMessage&>(*incoming.message);
+                uint32_t id = incoming.clientId;
 
-                switch (move.getDirection()) {
-                    case Direction::UP:    playerY -= SPEED; break;
-                    case Direction::DOWN:  playerY += SPEED; break;
-                    case Direction::LEFT:  playerX -= SPEED; break;
-                    case Direction::RIGHT: playerX += SPEED; break;
-                    default: break;
+                if (world.movePlayer(id, move.getDirection())) {
+                    auto response = std::make_shared<const EntityMoveMessage>(
+                        static_cast<uint8_t>(id),
+                        world.getX(id),
+                        world.getY(id));
+                    monitor.sendTo(id, response);
                 }
-
-                auto response = std::make_shared<const EntityMoveMessage>(
-                    static_cast<uint8_t>(incoming.clientId), playerX, playerY);
-                monitor.sendTo(incoming.clientId, response);
-                }
+            }
+  
         }
     }
     catch (const ClosedQueue&) {}

@@ -12,24 +12,12 @@ void KeyboardController::init() {
 }
 
 void KeyboardController::update() {
-    SDL_Event& event = Game::event;
-    // En update():
-    if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
-        switch (event.key.keysym.sym) {
-            case SDLK_w: movingUp    = true; break;
-            case SDLK_s: movingDown  = true; break;
-            case SDLK_a: movingLeft  = true; break;
-            case SDLK_d: movingRight = true; break;
-        }
-    }
-    if (event.type == SDL_KEYUP) {
-        switch (event.key.keysym.sym) {
-            case SDLK_w: movingUp    = false; break;
-            case SDLK_s: movingDown  = false; break;
-            case SDLK_a: movingLeft  = false; break;
-            case SDLK_d: movingRight = false; break;
-        }
-    }
+    const Uint8* keys = SDL_GetKeyboardState(NULL);
+
+    movingUp    = keys[SDL_SCANCODE_W];
+    movingDown  = keys[SDL_SCANCODE_S];
+    movingLeft  = keys[SDL_SCANCODE_A];
+    movingRight = keys[SDL_SCANCODE_D];
 
     // Mandar el mensaje según qué tecla está activa
     if (movingUp)    sendQueue.push(std::make_shared<MoveMessage>(Direction::UP));
