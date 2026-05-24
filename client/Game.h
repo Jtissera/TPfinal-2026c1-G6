@@ -1,9 +1,8 @@
-
 #ifndef PRUEBA_SDL_GAME_H
 #define PRUEBA_SDL_GAME_H
-#include "SDL2/SDL.h"
-#include "SDL2/SDL_image.h"
-#include "SDL2/SDL_ttf.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 #include "sdl/ECS/ECS.h"
 #include "sdl/AssetManager.h"
 #include "sdl/Collision.h"
@@ -27,8 +26,6 @@ public:
     void clean();
     bool running() const;
     void renderHUD();
-
-
 
     // Estáticos — accedidos por los componentes
     static bool         isRunning;
@@ -65,8 +62,6 @@ private:
     PlayerDto playerDto;
     void loadText();
     void loadAssets();
-
 };
-
 
 #endif //PRUEBA_SDL_GAME_H

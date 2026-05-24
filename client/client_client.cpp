@@ -1,209 +1,152 @@
 #include "client_client.h"
 
+#include <iostream>
+#include <stdexcept>
+
+#include "../common/liberror.h"
+#include "../common/network/sockets.h"
 #include "../common/network/messages/client/auth/connectMessage.h"
-#include "../common/network/protocol/clientOpCode.h"
+#include "../common/network/messages/client/auth/createCharMessage.h"
+#include "../common/network/messages/client/lobby/listGamesMessage.h"
+#include "../common/network/messages/client/lobby/createGameMessage.h"
+#include "../common/network/messages/client/lobby/joinGameMessage.h"
+#include "../common/network/messages/server/lobby/gameCreatedMessage.h"
+#include "../common/network/messages/server/lobby/gameListMessage.h"
+#include "../common/network/messages/server/lobby/joinOkMessage.h"
+#include "../common/network/messages/server/error/errorMessage.h"
+#include "../common/network/protocol/serverOpCode.h"
+#include "network/clientProtocolFactory.h"
+
 #include "Game.h"
 #include "GameClient.h"
+#include "sdl/screens/Screen.h"
+#include "sdl/screens/MainMenuScreen.h"
+#include "sdl/screens/CreateCharScreen.h"
+#include "sdl/screens/PlaceholderLobbyScreen.h"
 
-static constexpr uint8_t PROTOCOL_VERSION = 0x01; // A modificar
+static void flushSDLEvents() {
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {}
+}
 
-Client::Client(const char *hostname, const char *servname)
-    : socket(hostname, servname),
-      factory(),
-      protocol(factory.createProtocol(socket)) {}
+Client::Client(const char* hostname, const char* servname,
+               SDL_Renderer* renderer, int windowW, int windowH)
+    : hostname(hostname), servname(servname),
+      renderer(renderer), windowW(windowW), windowH(windowH)
+{}
 
 int Client::run()
 {
-    try
+    std::string pendingError;
+
+    while (true)
     {
-        std::cout << "Nombre de jugador: ";
+        flushSDLEvents();
+
+        // ---------------------- 1. Menu principal ----------------------
+        ScreenResult menuResult;
+        {
+            MainMenuScreen menu(renderer, windowW, windowH, FONT_PATH);
+            if (!pendingError.empty()) {
+                menu.setError(pendingError);
+                pendingError.clear();
+            }
+            menuResult = menu.run();
+        }
+
+        if (menuResult == ScreenResult::QUIT)   return 0;
+        if (menuResult == ScreenResult::GO_CONFIG) continue;  // AR-80 pendiente
+
+        // ---------------------- 2. Pantalla crear personaje/login ----------------------
+        bool isCreate = (menuResult == ScreenResult::GO_CREATE_CHAR);
+
         std::string username;
-        std::getline(std::cin, username);
+        Raza  raza  = Raza::HUMANO;
+        Clase clase = Clase::MAGO;
 
-        protocol.send(ConnectMessage(PROTOCOL_VERSION, username));
-
-        auto connectResponse = protocol.receive();
-        if (connectResponse->opCode() != static_cast<uint8_t>(ServerOpCode::MSG_CONNECT_OK))
         {
-            std::cerr << "[Client] Conexion rechazada." << std::endl;
-            return 1;
+            flushSDLEvents();
+            auto mode = isCreate ? CreateCharScreen::Mode::CREATE
+                                 : CreateCharScreen::Mode::LOGIN;
+            CreateCharScreen charScreen(renderer, windowW, windowH, FONT_PATH, mode);
+            ScreenResult charResult = charScreen.run();
+
+            if (charResult == ScreenResult::QUIT)         return 0;
+            if (charResult == ScreenResult::GO_MAIN_MENU) continue;
+
+            username = charScreen.getUsername();
+            raza     = charScreen.getRaza();
+            clase    = charScreen.getClase();
         }
 
-        std::cout << "[Client] Conectado como " << username << "." << std::endl;
-
-        bool inGame = false;
-
-        while (!inGame)
+        // ---------------------- 3. Conectar al servidor ----------------------
+        try
         {
-            std::cout << "\nOpciones:\n"
-                      << "  1) Listar partidas\n"
-                      << "  2) Crear partida\n"
-                      << "  3) Unirse a partida\n"
-                      << "  q) Salir\n"
-                      << "> ";
+            Socket socket(hostname.c_str(), servname.c_str());
+            ClientProtocolFactory factory;
+            Protocol protocol = factory.createProtocol(socket);
 
-            std::string option;
-            std::getline(std::cin, option);
+            protocol.send(ConnectMessage(PROTOCOL_VERSION, username));
 
-            if (option == "q")
+            auto connectResponse = protocol.receive();
+            if (connectResponse->opCode() != static_cast<uint8_t>(ServerOpCode::MSG_CONNECT_OK))
             {
-                std::cout << "[Client] Saliendo." << std::endl;
-                break;
+                pendingError = "Error: el servidor rechazo la conexion.";
+                continue;
             }
-            else if (option == "1")
-            {
-                protocol.send(ListGamesMessage());
 
-                auto response = protocol.receive();
-                if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_GAME_LIST))
-                {
-                    const auto &listMsg = static_cast<const GameListMessage &>(*response);
-                    if (listMsg.getGames().empty())
-                    {
-                        std::cout << "  No hay partidas disponibles." << std::endl;
-                    }
-                    else
-                    {
-                        std::cout << "  Partidas disponibles:" << std::endl;
-                        for (const auto &game : listMsg.getGames())
-                        {
-                            std::cout << "    id=" << game.gameId
-                                      << " nombre=" << game.gameName
-                                      << " jugadores=" << static_cast<int>(game.playerCount)
-                                      << "/" << static_cast<int>(game.maxPlayers)
-                                      << std::endl;
-                        }
-                    }
+            if (isCreate) {
+                protocol.send(CreateCharMessage(username, raza, clase));
+                auto createResponse = protocol.receive();
+                if (createResponse->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR)) {
+                    const auto& err = static_cast<const ErrorMessage&>(*createResponse);
+                    pendingError = err.getReason();
+                    continue;
                 }
+                // MSG_CREATE_OK: sigue al lobby
             }
-            else if (option == "2")
+
+            // ---------------------- 4. Lobby SDL placeholder (AR-79 lo reemplaza) ----------------------
             {
-                std::cout << "Nombre de partida: ";
-                std::string gameName;
-                std::getline(std::cin, gameName);
+                flushSDLEvents();
+                PlaceholderLobbyScreen lobby(renderer, windowW, windowH, FONT_PATH,
+                                             protocol, username);
+                ScreenResult lobbyResult = lobby.run();
 
-                std::cout << "Maximo de jugadores: ";
-                std::string maxStr;
-                std::getline(std::cin, maxStr);
-                uint8_t maxPlayers = static_cast<uint8_t>(std::stoi(maxStr));
+                if (lobbyResult == ScreenResult::QUIT)         return 0;
+                if (lobbyResult == ScreenResult::GO_MAIN_MENU) continue;
 
-                protocol.send(CreateGameMessage(gameName, maxPlayers));
+                // GO_LOBBY: el usuario se unió a una partida
+                if (lobbyResult == ScreenResult::GO_LOBBY) {
+                    PlayerDto playerDto;
+                    playerDto.nombre  = username;
+                    playerDto.raza    = raza;
+                    playerDto.clase   = clase;
+                    playerDto.xpos    = 1500;
+                    playerDto.ypos    = 1200;
+                    playerDto.hp      = 100;
+                    playerDto.hpMax   = 100;
+                    playerDto.mana    = 100;
+                    playerDto.manaMax = 100;
+                    playerDto.level   = 1;
+                    playerDto.oro     = 2000;
 
-                auto response = protocol.receive();
-                if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_GAME_CREATED))
-                {
-                    const auto &created = static_cast<const GameCreatedMessage &>(*response);
-
-                    // Unirse automaticamente a la partida recien creada
-                    protocol.send(JoinGameMessage(created.getGameId()));
-
-                    auto joinResponse = protocol.receive();
-                    if (joinResponse->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_JOIN_OK))
-                    {
-                        const auto &joinOk = static_cast<const JoinOkMessage &>(*joinResponse);
-                        std::cout << "[Client] Partida creada y unido a \""
-                                  << joinOk.getGameName() << "\" (id="
-                                  << joinOk.getGameId() << ")." << std::endl;
-                        inGame = true;
-                    }
-                    else if (joinResponse->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR))
-                    {
-                        const auto &err = static_cast<const ErrorMessage &>(*joinResponse);
-                        std::cerr << "[Client] Error al unirse: " << err.getReason() << std::endl;
-                    }
-                }
-                else if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR))
-                {
-                    const auto &err = static_cast<const ErrorMessage &>(*response);
-                    std::cerr << "[Client] Error al crear: " << err.getReason() << std::endl;
+                    GameClient gameClient(socket, 1, playerDto);
+                    gameClient.run();
                 }
             }
-            else if (option == "3")
-            {
-                // Primero listar para que el usuario vea las opciones
-                protocol.send(ListGamesMessage());
 
-                auto listResponse = protocol.receive();
-                if (listResponse->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_GAME_LIST))
-                {
-                    const auto &listMsg = static_cast<const GameListMessage &>(*listResponse);
-                    if (listMsg.getGames().empty())
-                    {
-                        std::cout << "  No hay partidas disponibles." << std::endl;
-                        continue;
-                    }
-
-                    std::cout << "  Partidas disponibles:" << std::endl;
-                    for (const auto &game : listMsg.getGames())
-                    {
-                        std::cout << "    id=" << game.gameId
-                                  << " nombre=" << game.gameName
-                                  << " jugadores=" << static_cast<int>(game.playerCount)
-                                  << "/" << static_cast<int>(game.maxPlayers)
-                                  << std::endl;
-                    }
-                }
-
-                std::cout << "ID de partida: ";
-                std::string idStr;
-                std::getline(std::cin, idStr);
-                uint32_t gameId = static_cast<uint32_t>(std::stoul(idStr));
-
-                protocol.send(JoinGameMessage(gameId));
-
-                auto response = protocol.receive();
-                if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_JOIN_OK))
-                {
-                    const auto &joinOk = static_cast<const JoinOkMessage &>(*response);
-                    std::cout << "[Client] Unido a \"" << joinOk.getGameName()
-                              << "\" (id=" << joinOk.getGameId() << ")." << std::endl;
-                    inGame = true;
-                }
-                else if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR))
-                {
-                    const auto &err = static_cast<const ErrorMessage &>(*response);
-                    std::cerr << "[Client] Error: " << err.getReason() << std::endl;
-                }
-            }
-            else
-            {
-                std::cout << "Opcion invalida." << std::endl;
-            }
+            continue;
         }
-
-        if (inGame)
+        catch (const ClosedSocket&)
         {
-            if (inGame) {
-                // PlayerDto mockeado por ahora
-                // después vendrá del servidor
-                PlayerDto playerDto;
-                playerDto.nombre = username;
-                playerDto.xpos   = 1500;
-                playerDto.ypos   = 1200;
-                playerDto.hp     = 25;
-                playerDto.hpMax  = 1000;
-                playerDto.mana   = 75;
-                playerDto.manaMax = 1000;
-                playerDto.level  = 1;
-                playerDto.oro    = 200000;
-                playerDto.exp    = 750;
-                playerDto.expMax = 10000;
-
-                GameClient gameClient(socket, 1, playerDto);
-                gameClient.run();
-            }
+            pendingError = "Conexion cerrada por el servidor. (Operacion no soportada todavia)";
+            continue;
+        }
+        catch (const std::exception& e)
+        {
+            pendingError = std::string("Error: ") + e.what();
+            continue;
         }
     }
-    catch (const ClosedSocket &)
-    {
-        std::cerr << "[Client] Conexion cerrada por el servidor." << std::endl;
-        return 1;
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "[Client] Error: " << e.what() << std::endl;
-        return 1;
-    }
-
-    return 0;
 }
