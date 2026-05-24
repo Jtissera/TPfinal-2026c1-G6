@@ -7,6 +7,13 @@
 #include "../../../common/network/protocol/protocol.h"
 #include "common/queue.h"
 
+
+enum class FacingDirection {
+    Down,
+    Up,
+    Left,
+    Right
+};
 class KeyboardController : public Component {
 public:
     explicit KeyboardController(Queue<std::shared_ptr<const Message>>& sendQueue);
@@ -16,6 +23,7 @@ public:
 private:
     TransformComponent* transform = nullptr;
     SpriteComponent*    sprite    = nullptr;
+    FacingDirection lastDirection = FacingDirection::Down;
     Queue<std::shared_ptr<const Message>>& sendQueue;
     bool movingUp    = false;
     bool movingDown  = false;
