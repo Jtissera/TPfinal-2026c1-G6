@@ -298,21 +298,18 @@ void Game::renderHUD() {
     // Clase
     drawTextAt("Guerrero", fontRegular, 968, 75, white);
 
-    // === EQUIPAMIENTO (4 slots: Arma, Casco, Armadura, Escudo) ===
+    // === EQUIPAMIENTO (4 slots con frame) ===
     drawTextCentered("Equipamiento", fontRegular, 900, 140, 380, 20, white);
 
-    int eqSlotSize = 55;
+    SDL_Texture* texFrame = assets->GetTexture("hud_frame");
+    int eqSlotSize = 70;  // tamaño en pantalla
     int eqY = 165;
-    int eqStartX = 915;
+    int eqStartX = 910;
     std::string eqLabels[] = {"Arma", "Casco", "Armadura", "Escudo"};
 
     for (int i = 0; i < 4; i++) {
-        SDL_Rect slot = {eqStartX + i * (eqSlotSize + 10), eqY, eqSlotSize, eqSlotSize};
-        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
-        SDL_RenderFillRect(renderer, &slot);
-        SDL_SetRenderDrawColor(renderer, 100, 80, 40, 255);
-        SDL_RenderDrawRect(renderer, &slot);
-        // Label debajo del slot
+        SDL_Rect slot = {eqStartX + i * (eqSlotSize + 5), eqY, eqSlotSize, eqSlotSize};
+        SDL_RenderCopy(renderer, texFrame, nullptr, &slot);
         drawTextCentered(eqLabels[i], fontRegular,
                          slot.x, slot.y + eqSlotSize + 2,
                          eqSlotSize, 14, white);
@@ -326,7 +323,7 @@ void Game::renderHUD() {
     int invStartY   = 268;
 
     for (int fila = 0; fila < 3; fila++) {
-        for (int col = 0; col < 4; col++) {
+        for (int col = 0; col < 6; col++) {
             SDL_Rect slot = {
                 invStartX + col * (invSlotSize + 8),
                 invStartY + fila * (invSlotSize + 5),
@@ -414,6 +411,7 @@ void Game::loadAssets() {
     assets->AddTexture("barra_vida", "assets/Recursos/interface/es_barradevida.bmp");
     assets->AddTexture("barra_mana", "assets/Recursos/interface/es_barrademana.bmp");
     assets->AddTexture("barra_exp",  "assets/Recursos/interface/es_barraexperiencia.bmp");
+    assets->AddTexture("hud_frame", "assets/Recursos/BabelUI/static/media/frame..png");
 
     // Fuentes
     assets->AddFont("arial", "assets/sprites/MapAssets/arial.ttf", 16);
