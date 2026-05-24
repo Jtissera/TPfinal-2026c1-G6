@@ -23,10 +23,7 @@ void GameRoom::removeClient(uint32_t clientId)
     world.removePlayer(clientId);
 }
 
-Queue<ClientMessage> &GameRoom::getGameQueue()
-{
-    return gameQueue;
-}
+Queue<ClientMessage> &GameRoom::getGameQueue() { return gameQueue; }
 
 uint32_t GameRoom::getId() const { return gameId; }
 

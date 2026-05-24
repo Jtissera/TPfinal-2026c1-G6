@@ -1,0 +1,1 @@
+enum class ItemEffect { NONE, HEAL, DAMAGE };
