@@ -84,7 +84,6 @@ void Game::handleEvents() {
 }
 
 void Game::update() {
-    // 1. PRIMERO: aplicar posiciones del servidor
     std::shared_ptr<const Message> msg;
     while (receiveQueue->try_pop(msg)) {
         if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE)) {
@@ -98,21 +97,17 @@ void Game::update() {
         }
     }
 
-    // 2. DESPUÉS: actualizar el resto (animaciones, cámara, etc.)
     manager.refresh();
     manager.update();
 
-    // 3. Cámara basada en posición ya actualizada
     Vector2D playerPos = player->getComponent<TransformComponent>().position;
     camera.x = static_cast<int>(playerPos.x) - 450;
     camera.y = static_cast<int>(playerPos.y) - 343;
     if (camera.x < 0) camera.x = 0;
     if (camera.y < 0) camera.y = 0;
-    if (camera.x > 15 * 96 - 800) camera.x = 15 * 96 - 800;
-    if (camera.y > 20 * 96 - 687) camera.y = 20 * 96 - 687;
+    if (camera.x > 20 * 96 - 900) camera.x = 20 * 96 - 900;
+    if (camera.y > 15 * 96 - 687) camera.y = 15 * 96 - 687;
 
-    std::cout << "[client] transform pos: " 
-              << playerPos.x << ", " << playerPos.y << std::endl;
 }
 
 

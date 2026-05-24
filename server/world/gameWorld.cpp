@@ -28,9 +28,8 @@ bool GameWorld::movePlayer(uint32_t id, Direction dir) {
     }
 
 
-    // Límites del mapa
-if (nx + Player::HITBOX_OFFSET_X + Player::HITBOX_W > 15 * 96) return false;
-if (ny + Player::HITBOX_OFFSET_Y + Player::HITBOX_H > 20 * 96) return false;
+    if (nx + Player::HITBOX_OFFSET_X + Player::HITBOX_W > 20 * 96) return false;
+    if (ny + Player::HITBOX_OFFSET_Y + Player::HITBOX_H > 15 * 96) return false;
 
     if (wouldCollide(nx, ny)) return false;
 
