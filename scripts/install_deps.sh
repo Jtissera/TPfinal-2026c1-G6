@@ -16,6 +16,10 @@ sudo apt-get install -y \
     libxmp-dev libfluidsynth-dev fluidsynth \
     libwavpack1 libwavpack-dev \
     libfreetype-dev wavpack \
+    libsdl2-dev \
+    libsdl2-image-dev \
+    libsdl2-mixer-dev \
+    libsdl2-ttf-dev \
     qtbase5-dev
 
 pipx install pre-commit cpplint
