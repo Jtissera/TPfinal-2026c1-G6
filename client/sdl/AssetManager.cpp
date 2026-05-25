@@ -49,12 +49,29 @@ Entity* AssetManager::CreateEnemy(const NPCData& data) {
 Entity* AssetManager::CreatePlayer(const PlayerDto& data) {
 
     std::map<std::string, Animation> playerAnims;
-    playerAnims.emplace("Idle", Animation(0, 4, 150));
-    playerAnims.emplace("Walk", Animation(0, 6, 100));
+    // Animaciones quietas.
+    // Cada una usa 1 frame de la fila correspondiente.
+    playerAnims.emplace("IdleDown",  Animation(0, 1, 150));
+    playerAnims.emplace("IdleUp",    Animation(1, 1, 150));
+    playerAnims.emplace("IdleRight", Animation(3, 1, 150));
+    playerAnims.emplace("IdleLeft",  Animation(2, 1, 150));
+
+    playerAnims.emplace("WalkDown",  Animation(0, 6, 100));
+    playerAnims.emplace("WalkUp",    Animation(1, 6, 100));
+    playerAnims.emplace("WalkRight", Animation(3, 6, 100));
+    playerAnims.emplace("WalkLeft",  Animation(2, 6, 100));
+
+    SpriteSheetConfig warriorConfig {
+        27, // frameWidth: ancho del frame en el spritesheet.
+        47, // frameHeight: alto del frame en el spritesheet.
+        2   // scale: tamaño visual en pantalla.
+    };
+
 
     auto& player = manager->addEntity();
-    player.addComponent<TransformComponent>(data.xpos, data.ypos, 64, 64, 2);
-    player.addComponent<SpriteComponent>("player", true,playerAnims);
+    player.addComponent<TransformComponent>(data.xpos, data.ypos);
+    player.addComponent<SpriteComponent>("player", true, playerAnims, warriorConfig);
+    player.getComponent<SpriteComponent>().setHeadTexture("heads_elf", 0);
     player.addComponent<KeyboardController>(sendQueue);
     player.addComponent<ColliderComponent>("player");
     player.addGroup(Game::groupPlayers);
@@ -68,6 +85,11 @@ void AssetManager::AddTexture(std::string id, const char* path)
 
 SDL_Texture* AssetManager::GetTexture(std::string id)
 {
+    if (textures.find(id) == textures.end()) {
+        std::cerr << "No existe textura con id: " << id << std::endl;
+        return nullptr;
+    }
+
     return textures[id];
 }
 

@@ -348,8 +348,12 @@ void Game::loadAssets() {
     // Mapa
 
 
-    // Personaje
-    assets->AddTexture("player", "assets/sprites/spritesprueba/PNG/Vampires1/Without_shadow/Vampires1_Walk_without_shadow.png");
+    // Cuerpo/base del jugador.
+    assets->AddTexture("player", "assets/sprites/1032_transparent.png");
+
+    // Cabeza/rostro del jugador.
+    // Cambiá el path por el nombre real de tu archivo.
+    assets->AddTexture("heads_elf", "assets/sprites/heads_elf.png");
 
     // Enemigos — por ahora todos usan el mismo sprite
     assets->AddTexture("skeleton", "assets/sprites/llama.png");
