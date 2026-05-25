@@ -96,23 +96,24 @@ void SpriteComponent::draw() {
         SDL_Rect headSrc;
         SDL_Rect headDst;
 
-        // Elegimos la columna de la cabeza seleccionada.
+        // Selecciona qué cabeza usar dentro del spritesheet.
         headSrc.x = headStartX + headIndex * headStepX;
 
+        // Mapeo dirección del cuerpo -> fila de cabeza.
+        // animationIndex del cuerpo:
+        // 0 = abajo/frente
+        // 1 = arriba/espalda
+        // 2 = izquierda
+        // 3 = derecha
         int headDirectionRow = 0;
 
-        // Mapeo dirección cuerpo -> fila de cabeza.
         if (animationIndex == 0) {
-            // Abajo / frente.
             headDirectionRow = 0;
         } else if (animationIndex == 1) {
-            // Arriba / espalda.
             headDirectionRow = 1;
         } else if (animationIndex == 2) {
-            // Izquierda.
             headDirectionRow = 2;
         } else if (animationIndex == 3) {
-            // Derecha.
             headDirectionRow = 3;
         }
 
@@ -124,15 +125,15 @@ void SpriteComponent::draw() {
         headDst.w = 22;
         headDst.h = 22;
 
-        // Offset según dirección.
+        // Offset visual según dirección.
         if (animationIndex == 0) {
-            // Frente.
+            // Frente / abajo.
             headDst.x = destRect.x + 10;
             headDst.y = destRect.y + 1;
 
         } else if (animationIndex == 1) {
-            // Espalda.
-            headDst.x = destRect.x + 10;
+            // Espalda / arriba.
+            headDst.x = destRect.x + 11;
             headDst.y = destRect.y + 1;
 
         } else if (animationIndex == 2) {

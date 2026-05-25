@@ -53,11 +53,9 @@ private:
     int scale = 1;
 
     bool hasHead = false;
-
     int headIndex = 0;          // Qué cabeza elegimos.
     int headFrameWidth = 16;    // Tamaño del recorte.
     int headFrameHeight = 16;
-
     int headStartX = 7;         // Donde empieza la primera cabeza.
     int headStartY = 14;        // Donde empieza la primera fila de cabezas.
     int headStepX = 27;         // Distancia entre una cabeza y otra.
