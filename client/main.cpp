@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 
 #include "client_client.h"
 
@@ -26,14 +27,18 @@ try {
         return 1;
     }
 
+    // SDL_mixer — opcional: si falla, el juego corre sin audio
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) == -1)
+        std::cerr << "[Audio] Mix_OpenAudio: " << Mix_GetError() << " (sin audio)\n";
+
     SDL_Window* window = SDL_CreateWindow(
         "Argentum Online",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         WINDOW_W, WINDOW_H,
-        SDL_WINDOW_SHOWN);
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if (!window) {
         std::cerr << "SDL_CreateWindow: " << SDL_GetError() << "\n";
-        TTF_Quit(); SDL_Quit();
+        Mix_CloseAudio(); TTF_Quit(); SDL_Quit();
         return 1;
     }
 
@@ -41,18 +46,19 @@ try {
     if (!renderer) {
         std::cerr << "SDL_CreateRenderer: " << SDL_GetError() << "\n";
         SDL_DestroyWindow(window);
-        TTF_Quit(); SDL_Quit();
+        Mix_CloseAudio(); TTF_Quit(); SDL_Quit();
         return 1;
     }
 
     int ret = 0;
     {
-        Client client(argv[1], argv[2], renderer, WINDOW_W, WINDOW_H);
+        Client client(argv[1], argv[2], renderer, window, WINDOW_W, WINDOW_H);
         ret = client.run();
     }
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    Mix_CloseAudio();
     TTF_Quit();
     SDL_Quit();
     return ret;

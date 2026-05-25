@@ -23,6 +23,7 @@
 #include "sdl/screens/MainMenuScreen.h"
 #include "sdl/screens/CreateCharScreen.h"
 #include "sdl/screens/PlaceholderLobbyScreen.h"
+#include "sdl/screens/ConfigScreen.h"
 
 static void flushSDLEvents() {
     SDL_Event e;
@@ -30,9 +31,12 @@ static void flushSDLEvents() {
 }
 
 Client::Client(const char* hostname, const char* servname,
-               SDL_Renderer* renderer, int windowW, int windowH)
+               SDL_Renderer* renderer, SDL_Window* window,
+               int windowW, int windowH)
     : hostname(hostname), servname(servname),
-      renderer(renderer), windowW(windowW), windowH(windowH)
+      renderer(renderer), window(window),
+      windowW(windowW), windowH(windowH),
+      config(ClientConfig::load())       // carga ~/.config/argentum/client.toml
 {}
 
 int Client::run()
@@ -54,8 +58,16 @@ int Client::run()
             menuResult = menu.run();
         }
 
-        if (menuResult == ScreenResult::QUIT)   return 0;
-        if (menuResult == ScreenResult::GO_CONFIG) continue;  // AR-80 pendiente
+        if (menuResult == ScreenResult::QUIT) return 0;
+
+        // ---------------------- AR-80: Configuracion ----------------------
+        if (menuResult == ScreenResult::GO_CONFIG) {
+            flushSDLEvents();
+            ConfigScreen cfg(renderer, window, windowW, windowH, FONT_PATH, config);
+            ScreenResult cfgResult = cfg.run();
+            if (cfgResult == ScreenResult::QUIT) return 0;
+            continue;  // vuelve al menú
+        }
 
         // ---------------------- 2. Pantalla crear personaje/login ----------------------
         bool isCreate = (menuResult == ScreenResult::GO_CREATE_CHAR);
@@ -103,10 +115,9 @@ int Client::run()
                     pendingError = err.getReason();
                     continue;
                 }
-                // MSG_CREATE_OK: sigue al lobby
             }
 
-            // ---------------------- 4. Lobby SDL placeholder (AR-79 lo reemplaza) ----------------------
+            // ---------------------- 4. Lobby ----------------------
             {
                 flushSDLEvents();
                 PlaceholderLobbyScreen lobby(renderer, windowW, windowH, FONT_PATH,
@@ -116,7 +127,6 @@ int Client::run()
                 if (lobbyResult == ScreenResult::QUIT)         return 0;
                 if (lobbyResult == ScreenResult::GO_MAIN_MENU) continue;
 
-                // GO_LOBBY: el usuario se unió a una partida
                 if (lobbyResult == ScreenResult::GO_LOBBY) {
                     PlayerDto playerDto;
                     playerDto.nombre  = username;
