@@ -58,8 +58,8 @@ Entity* AssetManager::CreatePlayer(const PlayerDto& data) {
 
     playerAnims.emplace("WalkDown",  Animation(0, 6, 100));
     playerAnims.emplace("WalkUp",    Animation(1, 6, 100));
-    playerAnims.emplace("WalkRight", Animation(3, 6, 100));
-    playerAnims.emplace("WalkLeft",  Animation(2, 6, 100));
+    playerAnims.emplace("WalkRight", Animation(3, 5, 100));
+    playerAnims.emplace("WalkLeft",  Animation(2, 5, 100));
 
     SpriteSheetConfig warriorConfig {
         27, // frameWidth: ancho del frame en el spritesheet.

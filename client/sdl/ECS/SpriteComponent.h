@@ -60,6 +60,7 @@ private:
     int headStartY = 14;        // Donde empieza la primera fila de cabezas.
     int headStepX = 27;         // Distancia entre una cabeza y otra.
     int headStepY = 64;         // Distancia entre una dirección y otra.
+    std::string currentAnim = "";
 };
 
 

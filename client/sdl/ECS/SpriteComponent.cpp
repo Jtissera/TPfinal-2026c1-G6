@@ -52,6 +52,8 @@ void SpriteComponent::setText(const std::string& id) {
 void SpriteComponent::Play(const char* animName) {
     std::string name(animName);
     if (animations.count(name) == 0) return;
+    if (currentAnim == name)return;
+    currentAnim = name;
     frames         = animations[name].frames;
     animationIndex = animations[name].index;
     speed          = animations[name].speed;
@@ -88,6 +90,11 @@ void SpriteComponent::update() {
     // Tamaño visual en pantalla.
     destRect.w = frameWidth * scale;
     destRect.h = frameHeight * scale;
+    
+    if (animationIndex == 2 || animationIndex == 3) {
+        std::cout << "srcRect x=" << srcRect.x << " y=" << srcRect.y
+                  << " w=" << srcRect.w << " h=" << srcRect.h << std::endl;
+    }
 }
 
 void SpriteComponent::draw() {
@@ -122,29 +129,29 @@ void SpriteComponent::draw() {
         headSrc.h = headFrameHeight;
 
         // Tamaño visual de la cabeza.
-        headDst.w = 22;
-        headDst.h = 22;
+        headDst.w = 23;
+        headDst.h = 23;
 
         // Offset visual según dirección.
         if (animationIndex == 0) {
             // Frente / abajo.
-            headDst.x = destRect.x + 10;
-            headDst.y = destRect.y + 1;
+            headDst.x = destRect.x + 18;
+            headDst.y = destRect.y - 3;
 
         } else if (animationIndex == 1) {
             // Espalda / arriba.
-            headDst.x = destRect.x + 11;
-            headDst.y = destRect.y + 1;
+            headDst.x = destRect.x +18;
+            headDst.y = destRect.y -3;
 
         } else if (animationIndex == 2) {
             // Izquierda.
-            headDst.x = destRect.x + 9;
-            headDst.y = destRect.y + 1;
+            headDst.x = destRect.x +18;
+            headDst.y = destRect.y -3;
 
         } else if (animationIndex == 3) {
             // Derecha.
-            headDst.x = destRect.x + 11;
-            headDst.y = destRect.y + 1;
+            headDst.x = destRect.x + 18;
+            headDst.y = destRect.y -3;
         }
 
         TextureManager::Draw(headTexture, headSrc, headDst, spriteFlip);

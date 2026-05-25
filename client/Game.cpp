@@ -349,7 +349,7 @@ void Game::loadAssets() {
 
 
     // Cuerpo/base del jugador.
-    assets->AddTexture("player", "assets/sprites/1032_transparent.png");
+    assets->AddTexture("player", "assets/sprites/1032.png");
 
     // Cabeza/rostro del jugador.
     // Cambiá el path por el nombre real de tu archivo.
