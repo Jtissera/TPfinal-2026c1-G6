@@ -1,8 +1,8 @@
 #pragma once
 #include <map>
 #include <string>
-#include "../../../common/game/classStats.h"
-#include <toml++/toml.h>
+#include "classStats.h"
+#include <toml++/toml.hpp>
 
 class ClassRepository {
 public:

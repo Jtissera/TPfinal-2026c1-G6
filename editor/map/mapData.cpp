@@ -8,7 +8,7 @@ MapData::MapData(uint16_t width, uint16_t height)
   resize(_width, _height);
 }
 
-bool MapData::inBounds(int16_t x, int16_t y) const {
+bool MapData::inBounds(uint16_t x, uint16_t y) const {
   return x < _width && y < _height;
 }
 

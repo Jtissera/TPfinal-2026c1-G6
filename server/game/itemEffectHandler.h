@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../player/player.h"
-#include "../../game/inventory/item.h"
+#include "Player.h"
+#include "item.h"
 
 class ItemEffectHandler {
 public:
@@ -11,4 +11,5 @@ public:
 private:
     bool applyConsumable(const Item& item, Player& user);
     bool applyHeal(const Item& item, Player& user, Player* target);
+     bool applyStaffHeal(const Item& item, Player& user, Player* target); 
 };

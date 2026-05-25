@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <toml++/toml.hpp>
 
 class ItemRepository {
 public:
@@ -17,7 +18,7 @@ private:
     ItemStats stats;
   };
 
-  std::unordered_map<std::string, ItemTemplate> templates;
+  std::unordered_map<std::string, Item> templates;
   uint32_t nextId = 1;
 
   ItemSlot parseSlot(const std::string &raw, const std::string &typeName);

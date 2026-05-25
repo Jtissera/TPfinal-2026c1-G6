@@ -1,4 +1,4 @@
-#include "Inventory.h"
+#include "inventory.h"
 #include <algorithm>
 
 std::optional<EquipSlot> toEquipSlot(ItemSlot slot) {

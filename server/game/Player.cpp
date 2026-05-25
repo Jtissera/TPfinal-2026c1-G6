@@ -1,4 +1,4 @@
-#include "player.h"
+#include "Player.h"
 #include <algorithm>
 
 Player::Player(uint32_t clientId,
@@ -74,9 +74,10 @@ void Player::die() {
     hp    = 0;
 }
 
-void Player::resurrect(Position nearHealer) {
+void Player::resurrect(int spawnX, int spawnY) {
     state = PlayerState::ALIVE;
-    pos   = nearHealer;
+    x = spawnX;
+    y = spawnY;
     hp    = maxHp / 2;
     mana  = 0;
 }

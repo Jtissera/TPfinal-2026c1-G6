@@ -1,9 +1,11 @@
 #pragma once
 
-#include "ItemRepository.h"
+#include "itemRepository.h"
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <vector>
+#include "EquipSlot.h"
 
 std::optional<EquipSlot> toEquipSlot(ItemSlot slot);
 

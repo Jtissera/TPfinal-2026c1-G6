@@ -1,8 +1,9 @@
 #pragma once
 #include <map>
 #include <string>
-#include "../../../common/game/raceStats.h"
-#include <toml++/toml.h>
+#include "raceStats.h"
+#include <vector>
+#include <toml++/toml.hpp>
 
 class RaceRepository {
 public:

@@ -1,4 +1,4 @@
-#include "ItemRepository.h"
+#include "itemRepository.h"
 #include <stdexcept>
 #include <string>
 
@@ -79,7 +79,6 @@ ItemEffect ItemRepository::parseEffect(const std::string &raw,
                            "' en item '" + typeName + "'");
 }
 
-/
 
     ItemStats ItemRepository::parseStats(const toml::table &entry) {
   ItemStats stats;

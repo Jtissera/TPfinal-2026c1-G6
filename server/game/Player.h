@@ -3,19 +3,20 @@
 #include <cstdint>
 #include <string>
 
-#include "../../../common/game/position.h"
-#include "../../../common/game/direction.h"
-#include "../../game/inventory/inventory.h"
-#include "../repositories/raceRepository.h"
-#include "../repositories/classRepository.h"
+#include "../../common/dtos/gameTypes.h" 
+#include "inventory.h"
+#include "raceRepository.h"
+#include "classRepository.h"
 #include "playerState.h"
 
 class Player {
 public:
     Player(uint32_t clientId,
-           std::string name,
-           const RaceStats& race,
-           const ClassStats& cls);
+       std::string name,
+       const RaceStats& race,
+       const ClassStats& cls,
+       int16_t maxHp,
+       int16_t maxMana);
 
     bool isAlive() const;
     bool isGhost() const;
@@ -32,24 +33,36 @@ public:
     void stopMeditating();
 
     void die();
-    void resurrect(Position nearHealer);
+    void resurrect(int spawnX, int spawnY);
 
-    void tick(float deltaSeconds);
+    void tick(float hpGained, float manaGained);
 
     bool spendMana(int16_t cost);
 
+    int getX() const { 
+        return x; 
+    }
+    
+    int getY() const { 
+        return y; 
+    }
+    
+    void setPos(int nx, int ny) { 
+        x = nx; y = ny; 
+    }
+
 
 private:
-
+    int x = 0;
+    int y = 0;
+    
     uint32_t clientId;
     std::string name;
     const RaceStats& race;
     const ClassStats& cls;
 
     uint8_t level = 1;
-
-    Position pos;
-
+    
     int16_t hp = 0;
     int16_t maxHp = 0;
     int16_t mana = 0;

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include "../repositories/raceRepository.h"
-#include "../repositories/classRepository.h"
+#include "raceRepository.h"
+#include "classRepository.h"
 
 class GameFormulas {
 public:
