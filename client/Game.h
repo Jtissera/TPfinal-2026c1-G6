@@ -5,7 +5,6 @@
 #include <SDL2/SDL_ttf.h>
 #include "sdl/ECS/ECS.h"
 #include "sdl/AssetManager.h"
-#include "sdl/Collision.h"
 #include <vector>
 
 #include "sdl/Map.h"

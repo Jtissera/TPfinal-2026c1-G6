@@ -136,7 +136,7 @@ add_library(taller_server_lib STATIC
         server/network/deserializers/GameClientDeserializersModule.cpp
         server/network/deserializers/GameClientDeserializersModule.h)
 add_dependencies(taller_server_lib taller_common)
-target_include_directories(taller_server_lib PUBLIC .)
+target_include_directories(taller_server_lib PUBLIC . third_party)
 target_link_libraries(taller_server_lib taller_common)
 
 

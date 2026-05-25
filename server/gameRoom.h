@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+
+#include "world/gameWorld.h"
 #include "../common/queue.h"
 #include "clientMessage.h"
 #include "gameLoop.h"
@@ -37,4 +39,5 @@ private:
     Monitor monitor;
     Queue<ClientMessage> gameQueue;
     GameLoop gameLoop;
+    GameWorld world;
 };

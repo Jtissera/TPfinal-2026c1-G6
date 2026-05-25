@@ -80,6 +80,9 @@ void SpriteComponent::update() {
 
     // Posición final en pantalla, ajustada por cámara.
     destRect.x = static_cast<int>(transform->position.x) - Game::camera.x;
+    destRect.y = static_cast<int>(transform->position.y) - Game::camera.y;
+    destRect.w = transform->width  * transform->scale;
+    destRect.h = transform->height * transform->scale;
     destRect.y = static_cast<int>(transform->position.y) - Game::camera.y + 133;
 
     // Tamaño visual en pantalla.
@@ -144,7 +147,7 @@ void SpriteComponent::draw() {
         }
 
         TextureManager::Draw(headTexture, headSrc, headDst, spriteFlip);
-    }   
+    }
 }
 
 void SpriteComponent::setHeadTexture(const std::string& textureId, int selectedHeadIndex) {

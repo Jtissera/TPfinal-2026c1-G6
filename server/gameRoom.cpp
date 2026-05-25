@@ -6,22 +6,24 @@ GameRoom::GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers)
       maxPlayers(maxPlayers),
       monitor(),
       gameQueue(),
-      gameLoop(gameQueue, monitor) {}
+      world("assets/sprites/MapAssets/mapa.argmap"),
+      gameLoop(gameQueue, monitor, world)
+       {}
 
 void GameRoom::addClient(uint32_t clientId, Queue<std::shared_ptr<const Message>> &clientQueue)
 {
     monitor.addQueue(clientId, clientQueue);
+    world.addPlayer(clientId, 6 * 96, 7 * 96); 
+
 }
 
 void GameRoom::removeClient(uint32_t clientId)
 {
     monitor.removeQueue(clientId);
+    world.removePlayer(clientId);
 }
 
-Queue<ClientMessage> &GameRoom::getGameQueue()
-{
-    return gameQueue;
-}
+Queue<ClientMessage> &GameRoom::getGameQueue() { return gameQueue; }
 
 uint32_t GameRoom::getId() const { return gameId; }
 

@@ -3,7 +3,7 @@
 #include "EntityMoveMessage.h"
 
 
-EntityMoveMessage::EntityMoveMessage(uint8_t id, uint16_t x, uint16_t y) : entityId(id), x(x), y(y) {}
+EntityMoveMessage::EntityMoveMessage(uint8_t id, int16_t x, int16_t y) : entityId(id), x(x), y(y) {}
 
 uint8_t EntityMoveMessage::opCode() const {
     return static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE);
@@ -20,10 +20,10 @@ uint8_t EntityMoveMessage::getId() const {
     return entityId;
 }
 
-uint16_t EntityMoveMessage::getX() const {
+int16_t EntityMoveMessage::getX() const {
     return x;
 }
 
-uint16_t EntityMoveMessage::getY() const {
+int16_t EntityMoveMessage::getY() const {
     return y;
 }

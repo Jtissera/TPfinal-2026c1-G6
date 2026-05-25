@@ -5,8 +5,8 @@ TransformComponent::TransformComponent() {
 }
 
 TransformComponent::TransformComponent(int sc) {
-    position.x = 400;
-    position.y = 320;
+    position.x = 576;
+    position.y = 676;
     scale = sc;
 }
 
@@ -29,8 +29,8 @@ void TransformComponent::setPos(float x, float y) {
 }
 
 void TransformComponent::update() {
-    position.x += velocity.x * speed;
-    position.y += velocity.y * speed;
+    //position.x += velocity.x * speed;
+    //position.y += velocity.y * speed;
 }
 
 void TransformComponent::init() {
