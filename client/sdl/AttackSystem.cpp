@@ -13,11 +13,11 @@ void AttackSystem::handleMouseClick(
     int screenX,
     int screenY,
     const SDL_Rect& camera,
-    const std::map<uint32_t, Entity*>& enemies,
+    std::map<uint32_t, Entity*>& enemies,
     Queue<std::shared_ptr<const Message>>* sendQueue
 ) {
     // Convertimos coordenadas de pantalla a coordenadas de mundo.
-    // El +133 compensa que el mapa empieza debajo del HUD superior/chat.
+    // El -133 compensa el offset vertical del HUD/mapa.
     int worldX = screenX + camera.x;
     int worldY = screenY - 133 + camera.y;
 
@@ -27,16 +27,18 @@ void AttackSystem::handleMouseClick(
             continue;
         }
 
+        // Obtenemos la posición del enemigo.
         auto& tf = entity->getComponent<TransformComponent>();
 
         int enemyX = static_cast<int>(tf.position.x);
         int enemyY = static_cast<int>(tf.position.y);
 
-        // Skeleton actual: frame 32x64 escalado x2.
-        // Más adelante esto debería venir del collider o del sprite config.
+        // Tamaño visual aproximado del skeleton:
+        // frame 32x64 escalado x2 => 64x128.
         int enemyW = 64;
         int enemyH = 128;
 
+        // Verificamos si el click cayó dentro del rectángulo del enemigo.
         bool clickedEnemy =
             worldX >= enemyX &&
             worldX <= enemyX + enemyW &&
@@ -44,26 +46,53 @@ void AttackSystem::handleMouseClick(
             worldY <= enemyY + enemyH;
 
         if (clickedEnemy) {
-            // Primero creamos efecto local para feedback visual inmediato.
+            //efecto visual de ataque.
             createLocalAttackEffect(id, *entity);
 
-            // Por ahora NO mandamos al servidor para evitar caída de socket.
-            // Cuando el protocolo esté listo, se descomenta dentro de sendAttackMessage().
+            // Por ahora está comentado dentro de sendAttackMessage.
             sendAttackMessage(id, sendQueue);
+
+            // Para demo: cada ataque hace 25 de daño.
+            bool isDead = applyDamage(id, 25);
+
+            if (isDead) {
+                entity->destroy();
+                enemies.erase(id);
+                enemyHealth.erase(id);
+            }
 
             return;
         }
     }
 }
+bool AttackSystem::applyDamage(uint32_t targetId, int damage) {
+    // Si el enemigo todavía no tiene vida registrada, le damos vida inicial.
+    // Para demo: skeleton con 100 de vida.
+    if (enemyHealth.find(targetId) == enemyHealth.end()) {
+        enemyHealth[targetId] = 100;
+    }
+
+    // Aplicamos daño.
+    enemyHealth[targetId] -= damage;
+
+    std::cout << "Enemigo id=" << targetId
+              << " vida restante=" << enemyHealth[targetId]
+              << std::endl;
+
+    // Devuelve true si murió.
+    return enemyHealth[targetId] <= 0;
+}
 
 void AttackSystem::createLocalAttackEffect(uint32_t targetId, Entity& target) {
+    // Obtenemos la posición del objetivo.
     auto& tf = target.getComponent<TransformComponent>();
 
     // Guardamos coordenadas de mundo.
-    // Le sumamos un offset para que el efecto no quede en la esquina superior.
+    // Sumamos offset para que el efecto no quede en la esquina superior.
     int worldX = static_cast<int>(tf.position.x);
     int worldY = static_cast<int>(tf.position.y) + 20;
 
+    // Creamos el efecto visual local.
     attackEffects.push_back({
         worldX,
         worldY,
@@ -78,13 +107,11 @@ void AttackSystem::sendAttackMessage(
     uint32_t targetId,
     Queue<std::shared_ptr<const Message>>* sendQueue
 ) {
-    // Mantener desactivado hasta que el servidor/protocolo soporte AttackMessage.
-    // Si al activar esto se cierra el socket, el problema está en red/protocolo,
-    // no en SDL ni en el render del efecto.
-
+    // Evitamos warnings de variables no usadas mientras el socket está desactivado.
     (void)targetId;
     (void)sendQueue;
 
+    // Cuando el protocolo de ataque esté listo, se reactiva esto:
     // auto msg = std::make_shared<AttackMessage>(targetId);
     // sendQueue->push(msg);
 }

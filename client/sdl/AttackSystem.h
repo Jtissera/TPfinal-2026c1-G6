@@ -8,6 +8,7 @@
 #include "ECS/Components.h"
 #include "AssetManager.h"
 #include "cmake-build-debug/_deps/sdl2-src/include/SDL_rect.h"
+#include <unordered_map>
 
 // Representa un efecto visual de ataque activo.
 // Por ahora solo guarda posición, tiempo de creación y duración.
@@ -32,7 +33,7 @@ public:
         int screenX,
         int screenY,
         const SDL_Rect& camera,
-        const std::map<uint32_t, Entity*>& enemies,
+        std::map<uint32_t, Entity*>& enemies,
         Queue<std::shared_ptr<const Message>>* sendQueue
     );
 
@@ -49,8 +50,14 @@ public:
 private:
     std::vector<AttackEffect> attackEffects;
 
+    // Vida local de enemigos para demo.
+    std::unordered_map<uint32_t, int> enemyHealth;
+
     // Crea el efecto local de ataque sobre el enemigo.
     void createLocalAttackEffect(uint32_t targetId, Entity& target);
+
+    // Aplica daño y devuelve true si el enemigo murió.
+    bool applyDamage(uint32_t targetId, int damage);
 
     // Más adelante acá se reactiva el envío al servidor.
     void sendAttackMessage(
