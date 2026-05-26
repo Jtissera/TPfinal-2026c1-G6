@@ -98,7 +98,12 @@ if(TALLER_CLIENT OR TALLER_EDITOR)
         URL https://github.com/libSDL2pp/libSDL2pp/archive/cc198c9a5657048bee67ece82de620b2d5661084.zip
     )
 
-    FetchContent_MakeAvailable(SDL2 SDL2_image SDL2_mixer SDL2_ttf libSDL2pp)
+    FetchContent_Declare(
+        nlohmann_json
+        URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+    )
+
+    FetchContent_MakeAvailable(SDL2 SDL2_image SDL2_mixer SDL2_ttf libSDL2pp nlohmann_json)
 endif()
 
 # Program section
@@ -128,6 +133,7 @@ if(TALLER_CLIENT)
             SDL2_image::SDL2_image
             SDL2_ttf::SDL2_ttf
             SDL2_mixer::SDL2_mixer
+            nlohmann_json::nlohmann_json
     )
 
 endif()

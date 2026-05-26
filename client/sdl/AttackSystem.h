@@ -7,7 +7,7 @@
 #include <SDL_render.h>
 #include "ECS/Components.h"
 #include "AssetManager.h"
-#include "cmake-build-debug/_deps/sdl2-src/include/SDL_rect.h"
+#include <SDL2/SDL_rect.h>
 #include <unordered_map>
 
 // Representa un efecto visual de ataque activo.
