@@ -1,5 +1,8 @@
 #ifndef PRUEBA_SDL_GAME_H
 #define PRUEBA_SDL_GAME_H
+
+#include "../common/network/messages/server/player/playerStatsMessage.h"
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>

@@ -6,16 +6,20 @@ GameWorld::GameWorld(const std::string& mapPath)
 
 void GameWorld::addPlayer(Player player) {
     uint32_t id = player.getId();
+    std::cout << "[GameWorld] addPlayer id=" << id 
+              << " x=" << player.getX() << " y=" << player.getY() << std::endl;
     players.emplace(id, std::move(player));
 }
-
 void GameWorld::removePlayer(uint32_t id) {
     players.erase(id);
 }
 
 bool GameWorld::movePlayer(uint32_t id, Direction dir) {
     auto it = players.find(id);
-    if (it == players.end()) return false;
+    if (it == players.end()) {
+        std::cout << "[GameWorld] movePlayer: player " << id << " not found" << std::endl;
+        return false;
+    }
 
     Player& p = it->second;
     int nx = p.getX(), ny = p.getY();
@@ -59,3 +63,43 @@ bool GameWorld::wouldCollide(int x, int y) const {
 
 int GameWorld::getX(uint32_t id) const { return players.at(id).getX(); }
 int GameWorld::getY(uint32_t id) const { return players.at(id).getY(); }
+
+const Player& GameWorld::getPlayer(uint32_t id) const {
+    auto it = players.find(id);
+    if (it == players.end())
+        throw std::runtime_error("Player not found");
+
+    return it->second;
+}
+std::vector<uint32_t> GameWorld::tick(float deltaSeconds) {
+    std::vector<uint32_t> changed;
+
+    for (auto& [id, player] : players) {
+        if (!player.isAlive() && !player.isMeditating())
+            continue;
+
+        float hpGained = formulas.calcHpRegen(
+            player.getRace(),
+            deltaSeconds
+        );
+
+        float manaGained;
+        if (player.isMeditating()) {
+            manaGained = formulas.calcManaRegenMeditating(
+                player.getCls(),
+                player.getRace(),
+                deltaSeconds
+            );
+        } else {
+            manaGained = formulas.calcManaRegen(
+                player.getRace(),
+                deltaSeconds
+            );
+        }
+
+        player.tick(hpGained, manaGained);
+        changed.push_back(id);
+    }
+
+    return changed;
+}

@@ -5,5 +5,6 @@ target_sources(taller_tests
     mapSerializer_test.cpp
     ../editor/map/mapData.cpp
     ../editor/map/mapSerializer.cpp
+    lobby_test.cpp
 
 )

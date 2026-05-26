@@ -40,8 +40,8 @@ void LobbyHandler::run() {
             } else if (opcode == static_cast<uint8_t>(ClientOpCode::MSG_JOIN_GAME)) {
                 handleJoinGame(incoming.clientId, *incoming.message);
             } else {
-                auto error = std::make_shared<const ErrorMessage>("Not in a game");
-                lobbyMonitor.sendTo(incoming.clientId, error);
+                lobbyMonitor.sendTo(incoming.clientId,
+                    std::make_shared<const ErrorMessage>("Not in a game"));
             }
         }
     }
@@ -62,8 +62,7 @@ void LobbyHandler::handleConnect(uint32_t clientId, const Message& message) {
               << " username=" << connectMsg.getUsername()
               << " connected" << std::endl;
 
-    auto response = std::make_shared<const ConnectOkMessage>();
-    lobbyMonitor.sendTo(clientId, response);
+    lobbyMonitor.sendTo(clientId, std::make_shared<const ConnectOkMessage>());
 }
 
 void LobbyHandler::handleCreateChar(uint32_t clientId, const Message& message) {
@@ -77,27 +76,26 @@ void LobbyHandler::handleCreateChar(uint32_t clientId, const Message& message) {
             6 * 96, 7 * 96
         );
         playerRepo.save(clientId, std::move(player));
-        auto response = std::make_shared<const CreateOkMessage>();
-        lobbyMonitor.sendTo(clientId, response);
+        lobbyMonitor.sendTo(clientId, std::make_shared<const CreateOkMessage>());
     } catch (const std::exception& e) {
-        auto error = std::make_shared<const ErrorMessage>(e.what());
-        lobbyMonitor.sendTo(clientId, error);
+        lobbyMonitor.sendTo(clientId,
+            std::make_shared<const ErrorMessage>(e.what()));
     }
 }
 
 void LobbyHandler::handleListGames(uint32_t clientId) {
     auto games = gameManager.listGames();
-    auto response = std::make_shared<const GameListMessage>(std::move(games));
-    lobbyMonitor.sendTo(clientId, response);
+    lobbyMonitor.sendTo(clientId,
+        std::make_shared<const GameListMessage>(std::move(games)));
 }
 
 void LobbyHandler::handleCreateGame(uint32_t clientId, const Message& message) {
     const auto& createMsg = static_cast<const CreateGameMessage&>(message);
     uint32_t gameId = gameManager.createGame(createMsg.getGameName(),
                                              createMsg.getMaxPlayers());
-    auto response = std::make_shared<const GameCreatedMessage>(
-        gameId, createMsg.getGameName(), createMsg.getMaxPlayers());
-    lobbyMonitor.sendTo(clientId, response);
+    lobbyMonitor.sendTo(clientId,
+        std::make_shared<const GameCreatedMessage>(
+            gameId, createMsg.getGameName(), createMsg.getMaxPlayers()));
 }
 
 void LobbyHandler::handleJoinGame(uint32_t clientId, const Message& message) {
@@ -118,25 +116,26 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message& message) {
         return;
     }
 
-    std::string gameName;
-    for (const auto& info : gameManager.listGames()) {
-        if (info.gameId == gameId) { gameName = info.gameName; break; }
-    }
-
-    if (!gameManager.joinGame(gameId, clientId, *clientQueue, std::move(*player))) {
+    if (!gameManager.joinGame(gameId, clientId, *clientQueue)) {
         lobbyMonitor.sendTo(clientId,
             std::make_shared<const ErrorMessage>("Game not found or full"));
         return;
     }
 
-    playerRepo.remove(clientId);  // ya está en GameWorld, no lo necesitamos más acá
+    gameManager.addPlayerToGame(gameId, std::move(*player));
+    playerRepo.remove(clientId);
 
     auto* receiver = receiverRegistry.get(clientId);
+    std::cout << "[LobbyHandler] receiver for client=" << clientId 
+          << " is " << (receiver ? "found" : "NULL") << std::endl;
     if (receiver)
         receiver->setQueue(gameManager.getGameQueue(gameId));
 
     lobbyMonitor.removeQueue(clientId);
 
-    auto response = std::make_shared<const JoinOkMessage>(gameId, gameName);
-    clientQueue->try_push(response);
+    std::string gameName;
+    for (const auto& info : gameManager.listGames())
+        if (info.gameId == gameId) { gameName = info.gameName; break; }
+
+    clientQueue->try_push(std::make_shared<const JoinOkMessage>(gameId, gameName));
 }

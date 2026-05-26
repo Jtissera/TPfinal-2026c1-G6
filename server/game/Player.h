@@ -51,10 +51,18 @@ public:
         x = nx; y = ny; 
     }
 
-
-    uint32_t getId() const { return clientId; }
     
     uint32_t getClientId() const { return clientId; } // logica en cpp, hay que pasarlo
+    const RaceStats&  getRace() const { return race; }
+    const ClassStats& getCls()  const { return cls;  }
+    uint8_t  getLevel()   const { return level;      }
+    int16_t  getHp()      const { return hp;         }
+    int16_t  getMaxHp()   const { return maxHp;      }
+    int16_t  getMana()    const { return mana;        }
+    int16_t  getMaxMana() const { return maxMana;     }
+    uint32_t getExp()     const { return experience;  }
+    uint32_t getGold()    const { return gold;        }
+    uint32_t getId()      const { return clientId;    }
 
     Player(const Player&)            = delete;
     Player& operator=(const Player&) = delete;
