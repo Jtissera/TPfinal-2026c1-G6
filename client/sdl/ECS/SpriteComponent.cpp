@@ -82,7 +82,6 @@ void SpriteComponent::update() {
 
     // Posición final en pantalla, ajustada por cámara.
     destRect.x = static_cast<int>(transform->position.x) - Game::camera.x;
-    destRect.y = static_cast<int>(transform->position.y) - Game::camera.y;
     destRect.w = transform->width  * transform->scale;
     destRect.h = transform->height * transform->scale;
     destRect.y = static_cast<int>(transform->position.y) - Game::camera.y + 133;
@@ -90,11 +89,7 @@ void SpriteComponent::update() {
     // Tamaño visual en pantalla.
     destRect.w = frameWidth * scale;
     destRect.h = frameHeight * scale;
-    
-    if (animationIndex == 2 || animationIndex == 3) {
-        std::cout << "srcRect x=" << srcRect.x << " y=" << srcRect.y
-                  << " w=" << srcRect.w << " h=" << srcRect.h << std::endl;
-    }
+
 }
 
 void SpriteComponent::draw() {

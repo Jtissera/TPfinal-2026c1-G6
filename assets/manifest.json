@@ -1,0 +1,8 @@
+{
+  "assetFiles": [
+    "assets/sprites/players/players.json",
+    "assets/sprites/enemies/enemies.json",
+    "assets/sprites/equipment/equipment.json",
+    "assets/sprites/effects/effects.json"
+  ]
+}

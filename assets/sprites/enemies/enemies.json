@@ -1,0 +1,8 @@
+{
+  "textures": [
+    {
+      "id": "skeleton",
+      "path": "assets/sprites/enemies/skeleton.png"
+    }
+  ]
+}

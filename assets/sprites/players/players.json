@@ -1,0 +1,8 @@
+{
+  "textures": [
+    {
+      "id": "heads_elf",
+      "path": "assets/sprites/players/heads_elf_male.png"
+    }
+  ]
+}

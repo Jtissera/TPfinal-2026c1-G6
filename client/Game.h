@@ -9,8 +9,7 @@
 
 #include "sdl/Map.h"
 #include "common/queue.h"
-
-
+#include "sdl/AttackSystem.h"
 class Game {
 public:
     Game();
@@ -44,23 +43,22 @@ public:
 
 private:
     SDL_Window* window = nullptr;
-    Manager     manager;
-    Map*        map    = nullptr;
+    Manager manager;
+    Map* map = nullptr;
     Entity* player = nullptr;
-    Entity* label  = nullptr;
-    // Entity* labelName = nullptr;
-    // Entity* labelLevel= nullptr;
-    // Entity* labelClas = nullptr;
-    // Entity* labelHP = nullptr;
-    // Entity* labelMana = nullptr;
-    // Entity* labelXP = nullptr;
-    // Entity* labelGold = nullptr;
-    Entity*     enemy  = nullptr;  // ← nuevo
-    Queue<std::shared_ptr<const Message>>* sendQueue    = nullptr;
+    Entity* label = nullptr;
+
+    Queue<std::shared_ptr<const Message>>* sendQueue = nullptr;
     Queue<std::shared_ptr<const Message>>* receiveQueue = nullptr;
+
     PlayerDto playerDto;
-    void loadText();
+
+    std::map<uint32_t, Entity*> enemies;
+
+    AttackSystem attackSystem;
+
     void loadAssets();
+
 };
 
 #endif //PRUEBA_SDL_GAME_H

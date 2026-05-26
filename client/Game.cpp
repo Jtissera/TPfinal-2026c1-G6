@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iostream>
 
+#include "common/network/messages/client/combat/attackMessage.h"
 #include "common/network/messages/server/player/EntityMoveMessage.h"
 #include "common/network/protocol/serverOpCode.h"
 
@@ -68,6 +69,17 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     label = &manager.addEntity();
     SDL_Color white = {255, 255, 255, 255};
     label->addComponent<UILabel>(10, 10, "Argentum Online", "arial", white);
+
+    // En Game.cpp, al final de init(), después de crear el player
+    NPCData fakeEnemy;
+    fakeEnemy.npcID   = 99;          // ID falso
+    fakeEnemy.type = NpcType::SKELETON;
+    fakeEnemy.x    = 600;         // posición en píxeles de mundo
+    fakeEnemy.y    = 400;
+
+    Entity* e = assets->CreateEnemy(fakeEnemy);
+    enemies[fakeEnemy.npcID] = e;    // guardás el puntero en el mapa
+
 }
 
 void Game::handleEvents() {
@@ -79,7 +91,9 @@ void Game::handleEvents() {
         if (event.type == SDL_KEYDOWN && event.key.repeat != 0){
             event.type = SDL_USEREVENT;
         }
-            
+        if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+            attackSystem.handleMouseClick(event.button.x,event.button.y,camera,enemies,sendQueue);
+        }
     }
 }
 
@@ -99,6 +113,7 @@ void Game::update() {
 
     manager.refresh();
     manager.update();
+    attackSystem.update();
 
     Vector2D playerPos = player->getComponent<TransformComponent>().position;
     camera.x = static_cast<int>(playerPos.x) - 450;
@@ -112,19 +127,45 @@ void Game::update() {
 
 
 void Game::render() {
+    // Limpia la pantalla antes de dibujar el nuevo frame.
     SDL_RenderClear(renderer);
 
+    // Limita el dibujado al área del mapa, para que no invada el HUD.
     SDL_Rect mapArea = {0, 33, 900, 687};
     SDL_RenderSetClipRect(renderer, &mapArea);
-    for (auto& t : manager.getGroup(groupMap))     t->draw();
-    for (auto& p : manager.getGroup(groupPlayers)) p->draw();
+
+    // Dibuja el mapa.
+    for (auto& t : manager.getGroup(groupMap)) {
+        t->draw();
+    }
+
+    // Dibuja jugadores.
+    for (auto& p : manager.getGroup(groupPlayers)) {
+        p->draw();
+    }
+
+    // Dibuja enemigos.
+    for (auto& p : manager.getGroup(groupEnemies)) {
+        p->draw();
+    }
+
+    // Dibuja proyectiles, si existen.
+    for (auto& p : manager.getGroup(groupProjectiles)) {
+        p->draw();
+    }
+    // Renderiza efectos de ataque.
+    attackSystem.render(renderer, *assets, camera);
+
+    // Importante: sacar el clip antes de dibujar el HUD.
     SDL_RenderSetClipRect(renderer, nullptr);
+
+    // Dibuja HUD por encima del juego.
     renderHUD();
 
+    // Dibuja label/textos.
     label->draw();
-    // Labels HUD
 
-
+    // Presenta el frame final en pantalla.
     SDL_RenderPresent(renderer);
 }
 
@@ -330,7 +371,7 @@ void Game::renderHUD() {
     drawBar(texMana, 910, 528, 350, 20, manaActual, manaMax, fontRegular);
 }
 void Game::loadAssets() {
-
+    assets->LoadManifest("assets/manifest.json");
     // HUD - fondos
     assets->AddTexture("hud_top",      "assets/Recursos/BabelUI/static/media/main_top..png");
     assets->AddTexture("hud_chat",     "assets/Recursos/BabelUI/static/media/main_chat..png");
@@ -345,20 +386,7 @@ void Game::loadAssets() {
     assets->AddFont("ao_bold",    "assets/Recursos/BabelUI/static/media/Alegreya-Sans-AO-Bold..ttf",    18);
     assets->AddFont("ao_regular", "assets/Recursos/BabelUI/static/media/Alegreya-Sans-AO-Regular..ttf", 14);
     assets->AddFont("cardo",      "assets/Recursos/BabelUI/static/media/Cardo-Regular..ttf",            14);
-    // Mapa
 
-
-    // Cuerpo/base del jugador.
-    assets->AddTexture("player", "assets/sprites/1032.png");
-
-    // Cabeza/rostro del jugador.
-    // Cambiá el path por el nombre real de tu archivo.
-    assets->AddTexture("heads_elf", "assets/sprites/heads_elf.png");
-
-    // Enemigos — por ahora todos usan el mismo sprite
-    assets->AddTexture("skeleton", "assets/sprites/llama.png");
-    assets->AddTexture("goblin",   "assets/sprites/llama.png");
-    assets->AddTexture("zombie",   "assets/sprites/llama.png");
 
     // HUD
     assets->AddTexture("barra_vida", "assets/Recursos/interface/es_barradevida.bmp");
@@ -372,4 +400,8 @@ void Game::loadAssets() {
     assets->AddTexture("tile_grass", "assets/sprites/MapAssets/tile_grass.png");
     assets->AddTexture("tile_water", "assets/sprites/MapAssets/tile_water.png");
     assets->AddTexture("tile_floor", "assets/sprites/MapAssets/tile_floor.png");
+
+
+
 }
+

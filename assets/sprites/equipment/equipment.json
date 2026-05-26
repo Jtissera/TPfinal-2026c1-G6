@@ -1,0 +1,8 @@
+{
+  "textures": [
+    {
+      "id": "player",
+      "path": "assets/sprites/equipment/1031.png"
+    }
+  ]
+}

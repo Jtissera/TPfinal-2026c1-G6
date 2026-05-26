@@ -34,6 +34,14 @@ public:
     void AddFont(std::string id, std::string path, int fontSize);
     TTF_Font* GetFont(std::string id);
 
+    // Carga el manifest principal.
+    // Ese manifest contiene la lista de archivos JSON secundarios.
+    void LoadManifest(const std::string& manifestPath);
+
+    // Carga texturas desde un JSON específico.
+    // Ejemplo: players.json, enemies.json, effects.json.
+    void LoadTexturesFromJson(const std::string& jsonPath);
+
 
 private:
 
