@@ -10,13 +10,14 @@
 #include "clientMessage.h"
 #include "gameLoop.h"
 #include "monitorQueues.h"
+#include "playerRepository.h"
 
 class GameRoom
 {
 public:
     GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers);
 
-    void addClient(uint32_t clientId, Queue<std::shared_ptr<const Message>> &clientQueue);
+    void addClient(uint32_t clientId, Queue<std::shared_ptr<const Message>> &clientQueue, Player player);
     void removeClient(uint32_t clientId);
 
     uint32_t getId() const;

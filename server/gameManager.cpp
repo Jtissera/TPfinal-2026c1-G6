@@ -20,7 +20,8 @@ uint32_t GameManager::createGame(const std::string &gameName, uint8_t maxPlayers
 
 bool GameManager::joinGame(uint32_t gameId,
                            uint32_t clientId,
-                           Queue<std::shared_ptr<const Message>> &clientQueue)
+                           Queue<std::shared_ptr<const Message>> &clientQueue,
+                           Player player)
 {
     std::unique_lock<std::mutex> lock(mutex);
 
@@ -31,7 +32,7 @@ bool GameManager::joinGame(uint32_t gameId,
     if (it->second->isFull())
         return false;
 
-    it->second->addClient(clientId, clientQueue);
+    it->second->addClient(clientId, clientQueue, std::move(player));
     clientRoom[clientId] = gameId;
 
     std::cout << "[GameManager] client=" << clientId

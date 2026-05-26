@@ -51,6 +51,9 @@ public:
         x = nx; y = ny; 
     }
 
+
+    uint32_t getId() const { return clientId; }
+    
     uint32_t getClientId() const { return clientId; } // logica en cpp, hay que pasarlo
 
     Player(const Player&)            = delete;

@@ -65,7 +65,7 @@ clan_bonus_per_member = 0.05 # 5% de bonus de ataque/defensa por miembro cercano
 
 
 [items]
-stats de cada item definidos en el enunciado
+#stats de cada item definidos en el enunciado
  
 [items.espada]
 slot = "WEAPON"

@@ -10,10 +10,10 @@ GameRoom::GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers)
       gameLoop(gameQueue, monitor, world)
        {}
 
-void GameRoom::addClient(uint32_t clientId, Queue<std::shared_ptr<const Message>> &clientQueue)
+void GameRoom::addClient(uint32_t clientId, Queue<std::shared_ptr<const Message>> &clientQueue, Player player)
 {
     monitor.addQueue(clientId, clientQueue);
-    world.addPlayer(clientId, 6 * 96, 7 * 96); 
+    world.addPlayer(std::move(player)); 
 
 }
 
