@@ -11,7 +11,9 @@ void ProjectileComponent::init() {
     transform->velocity = velocity;
 }
 
-void ProjectileComponent::update() {
+void ProjectileComponent::update(UpdateContext& context){
+    transform->position.x += transform->velocity.x * speed;
+    transform->position.y += transform->velocity.y * speed;
     distance += speed;
 
     if (distance > range) {
@@ -21,10 +23,10 @@ void ProjectileComponent::update() {
     }
 
     bool outOfBounds =
-        transform->position.x > Game::camera.x + Game::camera.w ||
-        transform->position.x < Game::camera.x ||
-        transform->position.y > Game::camera.y + Game::camera.h ||
-        transform->position.y < Game::camera.y;
+        transform->position.x > context.camera.x + context.camera.w ||
+        transform->position.x < context.camera.x ||
+        transform->position.y > context.camera.y + context.camera.h ||
+        transform->position.y < context.camera.y;
 
     if (outOfBounds) {
         std::cout << "Out of bounds" << std::endl;

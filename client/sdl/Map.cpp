@@ -1,4 +1,6 @@
 #include "Map.h"
+
+#include "GroupLabels.h"
 #include "ECS/Components.h"
 #include "../Game.h"
 #include "../../editor/map/mapSerializer.h"
@@ -35,5 +37,5 @@ void Map::LoadMap(const std::string& path) {
 void Map::AddTile(const char* texId, int xpos, int ypos) {
     auto& tile = manager.addEntity();
     tile.addComponent<TileComponent>(0, 0, xpos, ypos, tileSize, mapScale, texId);
-    tile.addGroup(Game::groupMap);
+    tile.addGroup(groupMap);
 }

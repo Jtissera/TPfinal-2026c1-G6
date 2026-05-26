@@ -10,33 +10,41 @@
 #include "SpriteSheetConfig.h"
 #include "TransformComponent.h"
 
+class AssetManager;
+class TextureManager;
+
 class SpriteComponent : public Component {
 public:
-    int animationIndex = 0;
+
     SDL_RendererFlip spriteFlip = SDL_FLIP_NONE;
-    std::map<std::string, Animation> animations;
 
-    SpriteComponent() = default;
-    explicit SpriteComponent(const char* path);
-    SpriteComponent(const std::string& id, bool isAnimated, std::map<std::string, Animation> anims);
-    SpriteComponent(const std::string& id, bool isAnimated);
 
-    SpriteComponent(const std::string &id, bool isAnimated, std::map<std::string, Animation> anims,
-                    SpriteSheetConfig config);
+    SpriteComponent(
+        AssetManager& assets,
+        const std::string& id,
+        bool isAnimated,
+        std::map<std::string, Animation> anims,
+        SpriteSheetConfig config
+    );
 
     ~SpriteComponent() = default;
 
     void setText(const std::string& id);
     void setHeadTexture(const std::string& textureId, int selectedHeadIndex);
+
     void Play(const char* animName);
 
-
     void init() override;
-    void update() override;
-    void draw() override;
+    void update(UpdateContext& context) override;
+    void draw(RenderContext& context) override;
 
 private:
+
+
+    AssetManager& assets;
     TransformComponent* transform = nullptr;
+    std::map<std::string, Animation> animations;
+    int animationIndex = 0;
 
     SDL_Texture* bodyTexture = nullptr;
     SDL_Texture* headTexture = nullptr;
@@ -53,16 +61,16 @@ private:
     int scale = 1;
 
     bool hasHead = false;
-    int headIndex = 0;          // Qué cabeza elegimos.
-    int headFrameWidth = 16;    // Tamaño del recorte.
+
+    int headIndex = 0;
+    int headFrameWidth = 16;
     int headFrameHeight = 16;
-    int headStartX = 7;         // Donde empieza la primera cabeza.
-    int headStartY = 14;        // Donde empieza la primera fila de cabezas.
-    int headStepX = 27;         // Distancia entre una cabeza y otra.
-    int headStepY = 64;         // Distancia entre una dirección y otra.
+    int headStartX = 7;
+    int headStartY = 14;
+    int headStepX = 27;
+    int headStepY = 64;
+
     std::string currentAnim = "";
 };
 
-
-
-#endif //PRUEBA_SDL_SPRITECOMPONENT_H
+#endif

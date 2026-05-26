@@ -8,6 +8,9 @@
 #include <bitset>
 #include  <array>
 
+#include "client/sdl/RenderContext.h"
+#include "client/sdl/UpdateContext.h"
+
 
 class Component;
 class Entity;
@@ -38,11 +41,11 @@ using  ComponentArray = std::array<Component*,maxComponents>;
 class Component {
 
 public:
-    Entity* entity;
+    Entity* entity = nullptr;
     virtual void init(){};
-    virtual void update(){};
-    virtual void draw(){};
-    virtual ~Component(){}
+    virtual void update(UpdateContext&) {}
+    virtual void draw(RenderContext&) {}
+    virtual ~Component() = default;
 };
 
 
@@ -58,14 +61,18 @@ private:
     GroupBitSet groupBitSet;
 
 public:
-    Entity(Manager& mManager): manager(mManager){}
+    explicit Entity(Manager& mManager): manager(mManager){}
 
-    void update() {
-        for (auto& c : components) c->update();
-
+    void update(UpdateContext& context) {
+        for (auto& c : components) {
+            c->update(context);
+        }
     }
-    void draw() {
-        for (auto& c : components) c->draw();
+
+    void draw(RenderContext& context) {
+        for (auto& c : components) {
+            c->draw(context);
+        }
     }
 
     bool isActive() const {return active;}
@@ -110,12 +117,16 @@ private:
     std::vector<std::unique_ptr<Entity>> entities;
     std::array<std::vector<Entity*>,maxGroups> groupedEntities;
 public:
-    void update() {
-        for (auto& e : entities) e->update();
-
+    void update(UpdateContext& context) {
+        for (auto& e : entities) {
+            e->update(context);
+        }
     }
-    void draw() {
-        for (auto& e :entities ) e->draw();
+
+    void draw(RenderContext& context) {
+        for (auto& e : entities) {
+            e->draw(context);
+        }
     }
 
     void refresh() {

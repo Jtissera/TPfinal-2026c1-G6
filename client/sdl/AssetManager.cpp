@@ -1,6 +1,6 @@
 
 #include "AssetManager.h"
-
+#include "GroupLabels.h"
 #include "../Game.h"
 #include "ECS/Components.h"
 #include <fstream>
@@ -8,8 +8,14 @@
 #include <nlohmann/json.hpp>
 
 
-AssetManager::AssetManager(Manager* man, Queue<std::shared_ptr<const Message>>& sendQueue)
-    : manager(man), sendQueue(sendQueue) {}
+AssetManager::AssetManager(
+    Manager* manager,
+    Queue<std::shared_ptr<const Message>>& sendQueue,
+    TextureManager& textureManager
+)
+    : manager(manager),
+      sendQueue(sendQueue),
+      textureManager(textureManager) {}
 
 AssetManager::~AssetManager()
 {}
@@ -17,21 +23,51 @@ AssetManager::~AssetManager()
 void AssetManager::CreateProjectile(Vector2D pos, Vector2D vel, int range, int speed, std::string id)
 {
     auto& projectile(manager->addEntity());
+
     projectile.addComponent<TransformComponent>(pos.x, pos.y, 32, 32, 1);
-    projectile.addComponent<SpriteComponent>(id, false);
+
+    std::map<std::string, Animation> projectileAnims;
+
+    SpriteSheetConfig projectileConfig{
+        32, // frameWidth
+        32, // frameHeight
+        1   // scale
+    };
+    projectile.addComponent<SpriteComponent>(
+        *this,
+        id,
+        false,
+        projectileAnims,
+        projectileConfig
+    );
     projectile.addComponent<ProjectileComponent>(range, speed, vel);
     projectile.addComponent<ColliderComponent>("projectile");
-    projectile.addGroup(Game::groupProjectiles);
+    projectile.addGroup(groupProjectiles);
 }
-
 Entity* AssetManager::CreateNpc(const NPCData& data) {
     auto& npc = manager->addEntity();
-    npc.addComponent<TransformComponent>(data.x,data.y,48,48,2);
-    npc.addComponent<SpriteComponent>(textureForNPC(data.type),true);
-    npc.addComponent<ColliderComponent>("npc");
-    npc.addGroup(Game::groupNPC);
-    return &npc;
 
+    npc.addComponent<TransformComponent>(data.x, data.y, 48, 48, 2);
+
+    std::map<std::string, Animation> npcAnims;
+    npcAnims.emplace("IdleDown", Animation(0, 1, 200));
+
+    SpriteSheetConfig npcConfig{
+        32, // frameWidth
+        64, // frameHeight
+        2   // scale
+    };
+    npc.addComponent<SpriteComponent>(
+        *this,
+        textureForNPC(data.type),
+        true,
+        npcAnims,
+        npcConfig
+    );
+    npc.addComponent<ColliderComponent>("npc");
+    npc.addGroup(groupNPC);
+
+    return &npc;
 }
 
 Entity* AssetManager::CreateEnemy(const NPCData& data) {
@@ -48,9 +84,9 @@ Entity* AssetManager::CreateEnemy(const NPCData& data) {
 
     auto& enemy = manager->addEntity();
     enemy.addComponent<TransformComponent>(data.x,data.y);
-    enemy.addComponent<SpriteComponent>(textureForNPC(data.type),true,enemyAnims,skeletonConfig);
+    enemy.addComponent<SpriteComponent>(*this,textureForNPC(data.type),true,enemyAnims,skeletonConfig);
     enemy.addComponent<ColliderComponent>("enemy");
-    enemy.addGroup(Game::groupEnemies);
+    enemy.addGroup(groupEnemies);
     return &enemy;
 }
 
@@ -78,11 +114,11 @@ Entity* AssetManager::CreatePlayer(const PlayerDto& data) {
 
     auto& player = manager->addEntity();
     player.addComponent<TransformComponent>(data.xpos, data.ypos);
-    player.addComponent<SpriteComponent>("player", true, playerAnims, warriorConfig);
+    player.addComponent<SpriteComponent>(*this,"player", true, playerAnims, warriorConfig);
     player.getComponent<SpriteComponent>().setHeadTexture("heads_elf", 2);
     player.addComponent<KeyboardController>(sendQueue);
     player.addComponent<ColliderComponent>("player");
-    player.addGroup(Game::groupPlayers);
+    player.addGroup(groupPlayers);
     return &player;
 }
 
@@ -92,16 +128,17 @@ void AssetManager::AddTexture(std::string id, const char* path) {
                   << id << std::endl;
         return;
     }
-    SDL_Texture* texture = TextureManager::loadTexture(path);
+
+    SDL_Texture* texture = textureManager.loadTexture(path);
+
     if (texture == nullptr) {
         std::cerr << "No se pudo cargar textura id="
                   << id << " path=" << path << std::endl;
         return;
     }
-
-    // Guarda la textura en el diccionario.
     textures.emplace(id, texture);
 }
+
 SDL_Texture* AssetManager::GetTexture(std::string id)
 {
     if (textures.find(id) == textures.end()) {

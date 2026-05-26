@@ -13,11 +13,18 @@
 class Game {
 public:
     Game();
-    ~Game();
+    ~Game() = default;
 
-    void init(const char* title, int width, int height, bool fullscreen,Queue<std::shared_ptr<const Message>>& sendQueue,
-              Queue<std::shared_ptr<const Message>>& receiveQueue,
-              const PlayerDto& playerDto);
+    void init(
+        const char* title,
+        int width,
+        int height,
+        bool fullscreen,
+        Queue<std::shared_ptr<const Message>>& sendQueue,
+        Queue<std::shared_ptr<const Message>>& receiveQueue,
+        const PlayerDto& playerDto
+    );
+
     void handleEvents();
     void update();
     void render();
@@ -25,31 +32,24 @@ public:
     bool running() const;
     void renderHUD();
 
-    // Estáticos — accedidos por los componentes
-    static bool         isRunning;
-    static SDL_Renderer* renderer;
-    static SDL_Event     event;
-    static SDL_Rect      camera;
-    static AssetManager* assets;
-
-    enum groupLabels : std::size_t {
-        groupMap,
-        groupPlayers,
-        groupColliders,
-        groupProjectiles,
-        groupNPC,
-        groupEnemies,
-    };
-
 private:
+    bool isRunning = false;
+
     SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+    SDL_Event event{};
     Manager manager;
-    Map* map = nullptr;
-    Entity* player = nullptr;
-    Entity* label = nullptr;
+
+    std::unique_ptr<TextureManager> textureManager;
+    std::unique_ptr<AssetManager> assets;
 
     Queue<std::shared_ptr<const Message>>* sendQueue = nullptr;
     Queue<std::shared_ptr<const Message>>* receiveQueue = nullptr;
+
+    Map* map = nullptr;
+    Entity* player = nullptr;
+    Entity* label = nullptr;
+    SDL_Rect camera{0, 0, 0, 0};
 
     PlayerDto playerDto;
 
