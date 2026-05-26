@@ -3,8 +3,8 @@
 
 
 // Datos estaticos
-const std::vector<std::string> CreateCharScreen::RAZAS  = {"Humano", "Elfo", "Enano", "Gnomo"};
-const std::vector<std::string> CreateCharScreen::CLASES = {"Mago", "Paladin", "Clerigo", "Guerrero"};
+const std::vector<std::string> CreateCharScreen::RAZAS  = {"human", "elf", "dwarf", "gnome"};
+const std::vector<std::string> CreateCharScreen::CLASES = {"mage", "paladin", "cleric", "warrior"};
 
 // Constructor/Destructor
 CreateCharScreen::CreateCharScreen(SDL_Renderer* renderer, int windowW, int windowH,
@@ -175,10 +175,8 @@ void CreateCharScreen::cycleFocus(int delta) {
 void CreateCharScreen::cycleOption(int delta) {
     if (focus == Focus::RAZA) {
         razaIdx = (razaIdx + delta + static_cast<int>(RAZAS.size())) % static_cast<int>(RAZAS.size());
-        selectedRaza = static_cast<Raza>(razaIdx);
     } else if (focus == Focus::CLASE) {
         claseIdx = (claseIdx + delta + static_cast<int>(CLASES.size())) % static_cast<int>(CLASES.size());
-        selectedClase = static_cast<Clase>(claseIdx);
     }
 }
 
@@ -188,8 +186,7 @@ ScreenResult CreateCharScreen::confirm() {
         focus = Focus::NAME;
         return ScreenResult::QUIT;
     }
-    selectedRaza  = static_cast<Raza>(razaIdx);
-    selectedClase = static_cast<Clase>(claseIdx);
+
     return ScreenResult::GO_LOBBY;
 }
 

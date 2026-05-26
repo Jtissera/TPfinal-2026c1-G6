@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-struct Player {
+struct player {
     uint32_t id;
     int x, y;
 

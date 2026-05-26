@@ -61,8 +61,8 @@ int Client::run()
         bool isCreate = (menuResult == ScreenResult::GO_CREATE_CHAR);
 
         std::string username;
-        Raza  raza  = Raza::HUMANO;
-        Clase clase = Clase::MAGO;
+        std::string  raza;
+        std::string clase;
 
         {
             flushSDLEvents();
