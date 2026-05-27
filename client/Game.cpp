@@ -11,6 +11,7 @@
 #include "common/network/messages/client/combat/attackMessage.h"
 #include "common/network/messages/server/player/EntityMoveMessage.h"
 #include "common/network/protocol/serverOpCode.h"
+#include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"
 
 
@@ -24,6 +25,7 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     this->sendQueue    = &sendQ;
     this->receiveQueue = &receiveQ;
     this->playerDto    = pDto;
+    this->playerState = toPlayerViewState(this->playerDto );
 
     int flags = fullscreen ? SDL_WINDOW_FULLSCREEN : 0;
 
@@ -56,11 +58,8 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     isRunning = true;
 
     this->playerDto = pDto;
-    std::cout << "HP: " << playerDto.hp << "/" << playerDto.hpMax << std::endl;
-    std::cout << "Mana: " << playerDto.mana << "/" << playerDto.manaMax << std::endl;
-    std::cout << "Exp: " << playerDto.exp << "/" << playerDto.expMax << std::endl;
-
     loadAssets();
+    itemCatalog.loadFromJson("assets/items/items.json");
     player = assets->CreatePlayer(playerDto);
 
     map = new Map(manager,*assets, "terrain", 3, 32);
@@ -215,7 +214,6 @@ bool Game::running() const { return isRunning; }
 
 
 void Game::renderHUD() {
-
     //1. Fondo/marco     ← primero (abajo)
     // 2. Barras          ← encima del fondo
     // 3. Slots/items     ← encima de las barras
@@ -249,8 +247,8 @@ void Game::renderHUD() {
     SDL_Rect rLogo   = {5,   0,   177,  33};
     SDL_Rect rChat   = {0,   33,  900,  100};
     SDL_Rect rPjInfo = {900, 33,  380,  100};
-    SDL_Rect rInv    = {900, 133, 380,  300};
-    SDL_Rect rStats  = {900, 433, 380,  287};
+    SDL_Rect rInv    = {900, 133, 380, 442};
+    SDL_Rect rStats  = {900, 575, 380, 145};
 
     SDL_RenderCopy(renderer, texTop,    nullptr, &rTop);
     SDL_RenderCopy(renderer, texLogo,   nullptr, &rLogo);
@@ -269,8 +267,8 @@ void Game::renderHUD() {
     SDL_RenderDrawLine(renderer, 901, 33,  901,  720);
     SDL_RenderDrawLine(renderer, 900, 133, 1280, 133);
     SDL_RenderDrawLine(renderer, 900, 134, 1280, 134);
-    SDL_RenderDrawLine(renderer, 900, 433, 1280, 433);
-    SDL_RenderDrawLine(renderer, 900, 434, 1280, 434);
+    SDL_RenderDrawLine(renderer, 900, 575, 1280, 575);
+    SDL_RenderDrawLine(renderer, 900, 576, 1280, 576);
 
     // === CAJA DE NIVEL ===
     SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
@@ -320,41 +318,65 @@ void Game::renderHUD() {
     drawTextAt(playerDto.nombre, fontBold, 968, 45, yellow);
 
     // Clase
-    drawTextAt("Guerrero", fontRegular, 968, 75, white);
+    drawTextAt(playerDto.clase, fontRegular, 968, 75, white);
 
     // === EQUIPAMIENTO (4 slots con frame) ===
-    drawTextCentered("Equipamiento", fontRegular, 900, 140, 380, 20, white);
+    drawTextCentered("Equipamiento", fontRegular, 900, 142, 380, 20, white);
 
     SDL_Texture* texFrame = assets->GetTexture("hud_frame");
-    int eqSlotSize = 70;  // tamaño en pantalla
-    int eqY = 165;
-    int eqStartX = 910;
+
+    const int eqSlotSize = 58;
+    const int eqGap = 12;
+    const int eqY = 168;
+    const int eqStartX = 956;
+
     std::string eqLabels[] = {"Arma", "Casco", "Armadura", "Escudo"};
 
     for (int i = 0; i < 4; i++) {
-        SDL_Rect slot = {eqStartX + i * (eqSlotSize + 5), eqY, eqSlotSize, eqSlotSize};
+        SDL_Rect slot = {
+            eqStartX + i * (eqSlotSize + eqGap),
+            eqY,
+            eqSlotSize,
+            eqSlotSize
+        };
+
         SDL_RenderCopy(renderer, texFrame, nullptr, &slot);
-        drawTextCentered(eqLabels[i], fontRegular,
-                         slot.x, slot.y + eqSlotSize + 2,
-                         eqSlotSize, 14, white);
+
+        drawTextCentered(
+            eqLabels[i],
+            fontRegular,
+            slot.x - 8,
+            slot.y + eqSlotSize + 4,
+            eqSlotSize + 16,
+            14,
+            white
+        );
     }
+    // === INVENTARIO (grilla 5x4) ===
+    const int inventoryTitleY = 255;
+    drawTextCentered("Inventario", fontRegular, 900, inventoryTitleY, 380, 20, white);
 
-    // === INVENTARIO (grilla 4x3) ===
-    drawTextCentered("Inventario", fontRegular, 900, 245, 380, 20, white);
+    const int invSlotSize = 44;
+    const int invGapX = 8;
+    const int invGapY = 7;
 
-    int invSlotSize = 50;
-    int invStartX   = 915;
-    int invStartY   = 268;
+    // 5 columnas de 44 + 4 gaps de 8 = 252.
+    // Centro: 900 + (380 - 252) / 2 = 964.
+    const int invStartX = 964;
+    const int invStartY = 280;
 
-    for (int fila = 0; fila < 3; fila++) {
-        for (int col = 0; col < 6; col++) {
+    for (int fila = 0; fila < 4; fila++) {
+        for (int col = 0; col < 5; col++) {
             SDL_Rect slot = {
-                invStartX + col * (invSlotSize + 8),
-                invStartY + fila * (invSlotSize + 5),
-                invSlotSize, invSlotSize
+                invStartX + col * (invSlotSize + invGapX),
+                invStartY + fila * (invSlotSize + invGapY),
+                invSlotSize,
+                invSlotSize
             };
+
             SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
             SDL_RenderFillRect(renderer, &slot);
+
             SDL_SetRenderDrawColor(renderer, 100, 80, 40, 255);
             SDL_RenderDrawRect(renderer, &slot);
         }
@@ -396,13 +418,17 @@ void Game::renderHUD() {
 
 
     // Stats - orden: Oro, Vida, Mana
-    drawTextAt("Oro: " + std::to_string(playerDto.oro), fontRegular, 910, 445, yellow);
+    const int statsX = 950;
+    const int statsBarW = 260;
+    const int statsBarH = 18;
 
-    drawTextCentered("Vida", fontRegular, 910, 460, 350, 20, white);
-    drawBar(texVida, 910, 480, 350, 20, hpActual, hpMax, fontRegular);
+    drawTextAt("Oro: " + std::to_string(playerDto.oro), fontRegular, 915, 585, yellow);
 
-    drawTextCentered("Mana", fontRegular, 910, 510, 350, 20, white);
-    drawBar(texMana, 910, 528, 350, 20, manaActual, manaMax, fontRegular);
+    drawTextCentered("Vida", fontRegular, statsX, 610, statsBarW, 18, white);
+    drawBar(texVida, statsX, 630, statsBarW, statsBarH, hpActual, hpMax, fontRegular);
+
+    drawTextCentered("Mana", fontRegular, statsX, 665, statsBarW, 18, white);
+    drawBar(texMana, statsX, 685, statsBarW, statsBarH, manaActual, manaMax, fontRegular);
 }
 void Game::loadAssets() {
     assets->LoadManifest("assets/manifest.json");

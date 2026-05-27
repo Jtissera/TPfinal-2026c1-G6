@@ -9,7 +9,11 @@
 #include "sdl/ECS/ECS.h"
 #include "sdl/AssetManager.h"
 #include <vector>
-
+#include "sdl/state/PlayerViewState.h"
+#include "sdl/state/InventoryViewState.h"
+#include "sdl/state/EquipmentViewState.h"
+#include "sdl/state/PlayerViewStateMapper.h"
+#include "sdl/items/ItemCatalog.h"
 #include "sdl/Map.h"
 #include "common/queue.h"
 #include "sdl/AttackSystem.h"
@@ -59,6 +63,10 @@ private:
     std::map<uint32_t, Entity*> enemies;
 
     AttackSystem attackSystem;
+    PlayerViewState playerState;
+    InventoryViewState inventoryState;
+    EquipmentViewState equipmentState;
+    ItemCatalog itemCatalog;
 
     void loadAssets();
 
