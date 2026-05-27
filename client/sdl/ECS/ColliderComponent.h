@@ -11,22 +11,17 @@ public:
     SDL_Rect collider{};
     std::string tag;
 
-    // Para entidades con transform (jugador, enemigos)
     explicit ColliderComponent(const std::string& t);
-
-    // Para colisores de terreno (posición fija)
     ColliderComponent(const std::string& t, int xpos, int ypos, int size);
 
     void init() override;
-    void update() override;
-    void draw() override;
+    void update(UpdateContext& context) override;
+    void draw(RenderContext& context) override;
 
 private:
-    SDL_Texture* tex = nullptr;
-    SDL_Rect srcR{};
     SDL_Rect destR{};
     TransformComponent* transform = nullptr;
 };
 
+#endif // PRUEBA_SDL_COLIDERCOMPONENT_H
 
-#endif //PRUEBA_SDL_COLIDERCOMPONENT_H

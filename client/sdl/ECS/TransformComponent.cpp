@@ -28,9 +28,13 @@ void TransformComponent::setPos(float x, float y) {
     position.y = y;
 }
 
-void TransformComponent::update() {
-    //position.x += velocity.x * speed;
-    //position.y += velocity.y * speed;
+void TransformComponent::update(UpdateContext& context) {
+    // Transform no necesita el contexto por ahora.
+    (void)context;
+
+    // Actualiza la posición en base a la velocidad y la velocidad de movimiento.
+    position.x += velocity.x * speed;
+    position.y += velocity.y * speed;
 }
 
 void TransformComponent::init() {

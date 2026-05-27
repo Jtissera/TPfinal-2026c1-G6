@@ -3,27 +3,18 @@
 #include "sdl/Map.h"
 #include "sdl/TextureManager.h"
 #include "sdl/ECS/Components.h"
-#include "sdl/ECS/UILabel.h"
 #include <sstream>
 #include <iostream>
+#include "sdl/UpdateContext.h"
+#include "sdl/RenderContext.h"
 
 #include "common/network/messages/client/combat/attackMessage.h"
 #include "common/network/messages/server/player/EntityMoveMessage.h"
 #include "common/network/protocol/serverOpCode.h"
+#include "sdl/GroupLabels.h"
 
-// Definicion de estaticos, hay que fletarlo
-bool         Game::isRunning = false;
-SDL_Renderer* Game::renderer = nullptr;
-SDL_Event    Game::event;
-SDL_Rect     Game::camera{0, 0, 900, 720};
-AssetManager* Game::assets  = nullptr;
 
 Game::Game() {
-}
-
-Game::~Game() {
-    delete assets;
-    delete map;
 }
 
 void Game::init(const char* title, int width, int height, bool fullscreen,
@@ -33,7 +24,6 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     this->sendQueue    = &sendQ;
     this->receiveQueue = &receiveQ;
     this->playerDto    = pDto;
-    this->assets       = new AssetManager(&manager, *sendQueue);
 
     int flags = fullscreen ? SDL_WINDOW_FULLSCREEN : 0;
 
@@ -49,7 +39,19 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     window   = SDL_CreateWindow(title,
                                 SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                 width, height, flags);
+    if (window == nullptr) {
+        std::cerr << "Error SDL_CreateWindow: " << SDL_GetError() << std::endl;
+        return;
+    }
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+    if (renderer == nullptr) {
+        std::cerr << "Error SDL_CreateRenderer: " << SDL_GetError() << std::endl;
+        return;
+    }
+
+    textureManager = std::make_unique<TextureManager>(renderer);
+    assets = std::make_unique<AssetManager>(&manager,*sendQueue,*textureManager);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     isRunning = true;
 
@@ -59,16 +61,10 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     std::cout << "Exp: " << playerDto.exp << "/" << playerDto.expMax << std::endl;
 
     loadAssets();
-   // loadText();
-
     player = assets->CreatePlayer(playerDto);
 
-    map = new Map(manager, "terrain", 3, 32);
+    map = new Map(manager,*assets, "terrain", 3, 32);
     map->LoadMap("assets/sprites/MapAssets/mapa.argmap");
-
-    label = &manager.addEntity();
-    SDL_Color white = {255, 255, 255, 255};
-    label->addComponent<UILabel>(10, 10, "Argentum Online", "arial", white);
 
     // En Game.cpp, al final de init(), después de crear el player
     NPCData fakeEnemy;
@@ -102,17 +98,25 @@ void Game::update() {
     while (receiveQueue->try_pop(msg)) {
         if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE)) {
             const auto& moveMsg = static_cast<const EntityMoveMessage&>(*msg);
+
             player->getComponent<TransformComponent>().position.x =
                 static_cast<float>(moveMsg.getX());
+
             player->getComponent<TransformComponent>().position.y =
                 static_cast<float>(moveMsg.getY());
+
             std::cout << "[client] pos recibida del server: " 
                       << moveMsg.getX() << ", " << moveMsg.getY() << std::endl;
         }
     }
 
+    UpdateContext updateContext{
+        SDL_GetKeyboardState(nullptr),
+        sendQueue,
+        camera
+    };
     manager.refresh();
-    manager.update();
+    manager.update(updateContext);
     attackSystem.update();
 
     Vector2D playerPos = player->getComponent<TransformComponent>().position;
@@ -134,25 +138,32 @@ void Game::render() {
     SDL_Rect mapArea = {0, 33, 900, 687};
     SDL_RenderSetClipRect(renderer, &mapArea);
 
+    RenderContext renderContext{
+        renderer,
+        camera,
+        mapArea,
+        *textureManager,
+        133
+    };
     // Dibuja el mapa.
     for (auto& t : manager.getGroup(groupMap)) {
-        t->draw();
+        t->draw(renderContext);
     }
 
     // Dibuja jugadores.
     for (auto& p : manager.getGroup(groupPlayers)) {
-        p->draw();
+        p->draw(renderContext);
     }
 
     // Dibuja enemigos.
     for (auto& p : manager.getGroup(groupEnemies)) {
-        p->draw();
+        p->draw(renderContext);
     }
 
-    // Dibuja proyectiles, si existen.
-    for (auto& p : manager.getGroup(groupProjectiles)) {
-        p->draw();
-    }
+    // // Dibuja proyectiles, si existen.
+    // for (auto& p : manager.getGroup(groupProjectiles)) {
+    //     p->draw(renderContext);
+    // }
     // Renderiza efectos de ataque.
     attackSystem.render(renderer, *assets, camera);
 
@@ -162,18 +173,32 @@ void Game::render() {
     // Dibuja HUD por encima del juego.
     renderHUD();
 
-    // Dibuja label/textos.
-    label->draw();
-
     // Presenta el frame final en pantalla.
     SDL_RenderPresent(renderer);
 }
 
 void Game::clean() {
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
+    assets.reset();
+    textureManager.reset();
+
+    if (map != nullptr) {
+        delete map;
+        map = nullptr;
+    }
+
+    if (renderer != nullptr) {
+        SDL_DestroyRenderer(renderer);
+        renderer = nullptr;
+    }
+
+    if (window != nullptr) {
+        SDL_DestroyWindow(window);
+        window = nullptr;
+    }
+
     TTF_Quit();
     SDL_Quit();
+
     std::cout << "Game cleaned." << std::endl;
 }
 

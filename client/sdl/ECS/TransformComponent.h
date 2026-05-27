@@ -22,7 +22,7 @@ public:
     TransformComponent(float x, float y, int h, int w, int sc);
 
     void setPos(float x, float y);
-    void update() override;
+    void update(UpdateContext& context) override;
     void init() override;
 };
 

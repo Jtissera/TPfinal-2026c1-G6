@@ -1,0 +1,16 @@
+
+#ifndef TALLER_TP_GROUPLABELS_H
+#define TALLER_TP_GROUPLABELS_H
+#pragma once
+
+#include <cstddef>
+
+enum GroupLabels : std::size_t {
+    groupMap,
+    groupPlayers,
+    groupColliders,
+    groupProjectiles,
+    groupNPC,
+    groupEnemies,
+};
+#endif //TALLER_TP_GROUPLABELS_H

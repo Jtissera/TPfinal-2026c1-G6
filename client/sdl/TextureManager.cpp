@@ -3,7 +3,7 @@
 #include "../Game.h"
 #include <iostream>
 
-std::map<std::string, SDL_Texture*> TextureManager::textureCache;
+TextureManager::TextureManager(SDL_Renderer *renderer) : renderer(renderer){}
 
 SDL_Texture* TextureManager::loadTexture(const char* path) {
     std::string key(path);
@@ -19,21 +19,28 @@ SDL_Texture* TextureManager::loadTexture(const char* path) {
         return nullptr;
     }
 
-    SDL_Texture* tex = SDL_CreateTextureFromSurface(Game::renderer, surface);
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
 
-    if (!tex) {
-        std::cout << "ERROR CreateTexture: " << SDL_GetError() << std::endl;
+    if (tex == nullptr) {
+        std::cerr << "ERROR SDL_CreateTextureFromSurface: "
+                  << SDL_GetError() << std::endl;
         return nullptr;
     }
 
-    textureCache[key] = tex;
+    textureCache.emplace(key,tex);
     std::cout << "Textura cargada: " << path << std::endl;
     return tex;
 }
 
-void TextureManager::Draw(SDL_Texture* tex, SDL_Rect src, SDL_Rect dest, SDL_RendererFlip flip) {
-    SDL_RenderCopyEx(Game::renderer, tex, &src, &dest, 0.0, nullptr, flip);
+void TextureManager::Draw(SDL_Texture* tex,const SDL_Rect& src,const SDL_Rect& dest, SDL_RendererFlip flip) {
+    SDL_RenderCopyEx(renderer, tex, &src, &dest, 0.0, nullptr, flip);
+}
+
+TextureManager::~TextureManager() {
+    for (auto& [_, texture] : textureCache) {
+        SDL_DestroyTexture(texture);
+    }
 }
 
 

@@ -11,10 +11,10 @@ void KeyboardController::init() {
     sprite    = &entity->getComponent<SpriteComponent>();
 }
 
-void KeyboardController::update() {
+void KeyboardController::update(UpdateContext& context) {
     // Lee el estado actual del teclado.
     // Esto permite saber si una tecla está mantenida presionada.
-    const Uint8* keys = SDL_GetKeyboardState(nullptr);
+    const Uint8* keys = context.keyboardState;
 
     // Actualiza los flags de movimiento según WASD.
     movingUp    = keys[SDL_SCANCODE_W];
@@ -29,52 +29,42 @@ void KeyboardController::update() {
         lastDirection = FacingDirection::Up;
 
         // Envía el movimiento al servidor.
-        sendQueue.push(std::make_shared<MoveMessage>(Direction::UP));
+        context.sendQueue->push(std::make_shared<MoveMessage>(Direction::UP));
 
         // Reproduce la animación de caminar hacia arriba.
         sprite->Play("WalkUp");
 
-        // No usamos flip porque el spritesheet ya tiene fila para cada dirección.
-        sprite->spriteFlip = SDL_FLIP_NONE;
 
     } else if (movingDown) {
         // Guarda dirección visual.
         lastDirection = FacingDirection::Down;
 
         // Envía movimiento al servidor.
-        sendQueue.push(std::make_shared<MoveMessage>(Direction::DOWN));
+        context.sendQueue->push(std::make_shared<MoveMessage>(Direction::DOWN));
 
         // Reproduce caminar hacia abajo.
         sprite->Play("WalkDown");
-
-        // Sin flip.
-        sprite->spriteFlip = SDL_FLIP_NONE;
 
     } else if (movingLeft) {
         // Guarda dirección visual.
         lastDirection = FacingDirection::Left;
 
         // Envía movimiento al servidor.
-        sendQueue.push(std::make_shared<MoveMessage>(Direction::LEFT));
+        context.sendQueue->push(std::make_shared<MoveMessage>(Direction::LEFT));
 
         // Reproduce caminar hacia izquierda.
         sprite->Play("WalkLeft");
 
-        // Sin flip: ya existe WalkLeft en el spritesheet.
-        sprite->spriteFlip = SDL_FLIP_NONE;
 
     } else if (movingRight) {
         // Guarda dirección visual.
         lastDirection = FacingDirection::Right;
 
         // Envía movimiento al servidor.
-        sendQueue.push(std::make_shared<MoveMessage>(Direction::RIGHT));
+        context.sendQueue->push(std::make_shared<MoveMessage>(Direction::RIGHT));
 
         // Reproduce caminar hacia derecha.
         sprite->Play("WalkRight");
-
-        // Sin flip: ya existe WalkRight en el spritesheet.
-        sprite->spriteFlip = SDL_FLIP_NONE;
 
     } else {
         // Si no se mueve, queda mirando hacia la última dirección usada.
@@ -95,8 +85,5 @@ void KeyboardController::update() {
                 sprite->Play("IdleRight");
                 break;
         }
-
-        // Sin flip.
-        sprite->spriteFlip = SDL_FLIP_NONE;
     }
 }

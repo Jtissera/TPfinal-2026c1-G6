@@ -17,7 +17,7 @@ class AssetManager
 
 
 public:
-    AssetManager(Manager* man, Queue<std::shared_ptr<const Message>>& sendQueue);
+    AssetManager(Manager* manager,Queue<std::shared_ptr<const Message>>& sendQueue,TextureManager& textureManager);
     ~AssetManager();
 
     //gameobjects
@@ -48,6 +48,7 @@ private:
 
     Manager* manager;
     Queue<std::shared_ptr<const Message>>& sendQueue;
+    TextureManager& textureManager;
     std::map<std::string, SDL_Texture*> textures;
     std::map<std::string, TTF_Font*> fonts;
     std::string textureForNPC(NpcType type);

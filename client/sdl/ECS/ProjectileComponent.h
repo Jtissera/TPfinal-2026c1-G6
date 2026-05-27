@@ -12,7 +12,7 @@ public:
     ProjectileComponent(int range, int speed, Vector2D vel);
 
     void init() override;
-    void update() override;
+    void update(UpdateContext& context) override;
 
 private:
     TransformComponent* transform = nullptr;
