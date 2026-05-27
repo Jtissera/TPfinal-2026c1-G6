@@ -8,6 +8,7 @@
 #include "raceRepository.h"
 #include "classRepository.h"
 #include "playerState.h"
+#include "../world/Hitbox.h"
 
 class Player {
 public:
@@ -71,6 +72,7 @@ public:
     Player& operator=(Player&&) = default;
 
 
+    const Hitbox& getHitbox() const { return hitbox; }
 
 private:
     int x = 0;
@@ -93,4 +95,5 @@ private:
     PlayerState state = PlayerState::ALIVE;
 
     Inventory inventory;
+    Hitbox hitbox;
 };

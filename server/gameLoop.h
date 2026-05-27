@@ -1,5 +1,10 @@
 #pragma once
 
+#include "../common/network/messages/server/player/EntityMoveMessage.h"
+#include "../common/network/messages/client/movement/moveMessage.h"
+#include "../common/network/protocol/clientOpCode.h"
+#include "statManager.h"
+
 #include <iostream>
 #include <memory>
 
@@ -22,4 +27,7 @@ private:
     Queue<ClientMessage>& gameQueue;
     Monitor& monitor;
     GameWorld& world;
+    StatManager statManager; //dsp veo esto
+    void processMessage(const ClientMessage& incoming);
+    void worldUpdate();
 };

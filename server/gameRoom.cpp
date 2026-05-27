@@ -37,8 +37,8 @@ uint8_t GameRoom::getMaxPlayers() const { return maxPlayers; }
 
 bool GameRoom::isFull() const { return monitor.size() >= maxPlayers; }
 
-void GameRoom::start() { gameLoop.start();tickLoop.start();  }
+void GameRoom::start() { gameLoop.start();  }
 
-void GameRoom::stop()  { gameLoop.stop(); tickLoop.stop();   }
+void GameRoom::stop()  { gameLoop.stop();  }
 
-void GameRoom::join()  { gameLoop.join();tickLoop.join();   }
+void GameRoom::join()  { gameLoop.join();}

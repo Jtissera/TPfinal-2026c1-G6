@@ -15,6 +15,7 @@ Player::Player(uint32_t clientId,
     , maxMana(maxMana)
     , hp(maxHp)
     , mana(maxMana)
+    , hitbox{32, 32, 64, 96} 
 {}
 
 bool Player::isAlive()      const { return state == PlayerState::ALIVE; }
