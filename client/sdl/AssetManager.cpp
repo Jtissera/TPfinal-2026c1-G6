@@ -105,16 +105,16 @@ Entity* AssetManager::CreatePlayer(const PlayerDto& data) {
     playerAnims.emplace("WalkRight", Animation(3, 5, 100));
     playerAnims.emplace("WalkLeft",  Animation(2, 5, 100));
 
-    SpriteSheetConfig warriorConfig {
-        27, // frameWidth: ancho del frame en el spritesheet.
-        47, // frameHeight: alto del frame en el spritesheet.
-        2   // scale: tamaño visual en pantalla.
+    SpriteSheetConfig armorConfig {
+        27,
+        47,
+        2
     };
 
 
     auto& player = manager->addEntity();
     player.addComponent<TransformComponent>(data.xpos, data.ypos);
-    player.addComponent<SpriteComponent>(*this,"player", true, playerAnims, warriorConfig);
+    player.addComponent<SpriteComponent>(*this,"player", true, playerAnims, armorConfig);
     player.getComponent<SpriteComponent>().setHeadTexture("heads_elf", 2);
     player.addComponent<KeyboardController>(sendQueue);
     player.addComponent<ColliderComponent>("player");
@@ -139,14 +139,14 @@ void AssetManager::AddTexture(std::string id, const char* path) {
     textures.emplace(id, texture);
 }
 
-SDL_Texture* AssetManager::GetTexture(std::string id)
-{
-    if (textures.find(id) == textures.end()) {
-        std::cerr << "No existe textura con id: " << id << std::endl;
+SDL_Texture* AssetManager::GetTexture(const std::string& id) {
+    auto it = textures.find(id);
+
+    if (it == textures.end()) {
         return nullptr;
     }
 
-    return textures[id];
+    return it->second;
 }
 
 void AssetManager::AddFont(std::string id, std::string path, int fontSize){
@@ -172,31 +172,35 @@ std::string AssetManager::textureForNPC(NpcType type) {
 }
 
 void AssetManager::LoadManifest(const std::string &manifestPath) {
-    std::ifstream file (manifestPath);
+    std::ifstream file(manifestPath);
+
     if (!file.is_open()) {
         std::cerr << "No se pudo abrir el manifest de assets: "
                   << manifestPath << std::endl;
         return;
     }
+
     nlohmann::json data;
     file >> data;
-    if (!data.contains("assetFiles")) {
-        std::cerr << "El manifest no contiene la clave 'assetFiles'."
+
+    if (!data.contains("textureFiles")) {
+        std::cerr << "El manifest no contiene la clave 'textureFiles'."
                   << std::endl;
         return;
     }
-    for (const auto& assetFile : data["assetFiles"]) {
-        std::string path = assetFile.get<std::string>();
 
-        // Carga las texturas declaradas en ese archivo.
+    for (const auto& textureFile : data["textureFiles"]) {
+        std::string path = textureFile.get<std::string>();
+
+        std::cout << "[MANIFEST] cargando: " << path << std::endl;
+
         LoadTexturesFromJson(path);
+
+        std::cout << "[MANIFEST] terminado: " << path << std::endl;
     }
-
-
 }
 
 void AssetManager::LoadTexturesFromJson(const std::string& jsonPath) {
-    // Abre el JSON de una categoría.
     std::ifstream file(jsonPath);
 
     if (!file.is_open()) {
@@ -208,21 +212,24 @@ void AssetManager::LoadTexturesFromJson(const std::string& jsonPath) {
     nlohmann::json data;
     file >> data;
 
-    if (!data.contains("textures")) {
-        std::cout << "El archivo no contiene texturas: "
+    if (!data.contains("textures") || !data["textures"].is_array()) {
+        std::cerr << "El archivo no contiene array 'textures': "
                   << jsonPath << std::endl;
         return;
     }
 
-    // Recorre cada textura.
     for (const auto& texture : data["textures"]) {
-        // Lee el id lógico.
-        std::string id = texture.at("id").get<std::string>();
+        if (!texture.contains("id") || !texture.contains("path")) {
+            std::cerr << "Textura inválida en "
+                      << jsonPath
+                      << ": falta id o path"
+                      << std::endl;
+            continue;
+        }
 
-        // Lee la ruta física del archivo.
+        std::string id = texture.at("id").get<std::string>();
         std::string path = texture.at("path").get<std::string>();
 
-        // Usa el método existente del AssetManager.
         AddTexture(id, path.c_str());
 
         std::cout << "Textura cargada: "

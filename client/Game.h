@@ -69,6 +69,7 @@ private:
     ItemCatalog itemCatalog;
 
     void loadAssets();
+    void loadInitialInventoryFromCatalog();
 
 };
 

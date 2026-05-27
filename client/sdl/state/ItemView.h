@@ -69,6 +69,11 @@ struct ItemView {
     // Sonido asociado al uso del ítem.
     // Ejemplo: sword_hit, magic_cast, drink_potion.
     std::string soundId;
+    // Recorte dentro de la spritesheet para dibujar el ícono del inventario.
+    int iconSrcX = 0;
+    int iconSrcY = 0;
+    int iconSrcW = 32;
+    int iconSrcH = 32;
 
 };
 #endif //TALLER_TP_ITEMVIEW_H

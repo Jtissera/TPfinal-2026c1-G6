@@ -2,10 +2,7 @@
   "textureFiles": [
     "assets/sprites/players/players.json",
     "assets/sprites/enemies/enemies.json",
-    "assets/sprites/equipment/equipment.json",
-    "assets/sprites/ui/ui.json",
-    "assets/sprites/effects/effects.json",
-    "assets/sprites/map/map.json"
+    "assets/sprites/equipment/equipment.json"
   ],
   "fontFiles": [
     "assets/fonts/fonts.json"

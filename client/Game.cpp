@@ -58,12 +58,33 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     isRunning = true;
 
     this->playerDto = pDto;
+    std::cout << "[INIT] antes loadAssets" << std::endl;
     loadAssets();
-    itemCatalog.loadFromJson("assets/items/items.json");
-    player = assets->CreatePlayer(playerDto);
+    std::cout << "[INIT] antes itemCatalog" << std::endl;
+    try {
+        itemCatalog.loadFromJson("assets/items/items.json");
+        std::cout << "[INIT] itemCatalog cargado" << std::endl;
 
-    map = new Map(manager,*assets, "terrain", 3, 32);
+        loadInitialInventoryFromCatalog();
+        std::cout << "[INIT] inventario inicial cargado" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error cargando catálogo de ítems: " << e.what() << std::endl;
+        isRunning = false;
+        return;
+    }
+
+    std::cout << "[INIT] antes CreatePlayer" << std::endl;
+    player = assets->CreatePlayer(playerDto);
+    std::cout << "[INIT] antes Map" << std::endl;
+
+
+    std::cout << "[INIT] antes Map" << std::endl;
+    map = new Map(manager, *assets, "terrain", 3, 32);
     map->LoadMap("assets/sprites/MapAssets/mapa.argmap");
+
+    std::cout << "Tiles cargados como entidades: "
+          << manager.getGroup(groupMap).size()
+          << std::endl;
 
     // En Game.cpp, al final de init(), después de crear el player
     NPCData fakeEnemy;
@@ -72,9 +93,11 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     fakeEnemy.x    = 600;         // posición en píxeles de mundo
     fakeEnemy.y    = 400;
 
+    std::cout << "[INIT] antes Enemy" << std::endl;
     Entity* e = assets->CreateEnemy(fakeEnemy);
-    enemies[fakeEnemy.npcID] = e;    // guardás el puntero en el mapa
-
+    enemies[fakeEnemy.npcID] = e;
+    std::cout << "[INIT] fin Game::init" << std::endl;
+    std::cout << "[INIT] fin Game::init" << std::endl;
 }
 
 void Game::handleEvents() {
@@ -107,15 +130,16 @@ void Game::update() {
             std::cout << "[client] pos recibida del server: " 
                       << moveMsg.getX() << ", " << moveMsg.getY() << std::endl;
         } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_STATS)) {
-    const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
-    playerDto.hp     = stats.getHp();
-    playerDto.hpMax  = stats.getMaxHp();
-    playerDto.mana   = stats.getMana();
-    playerDto.manaMax= stats.getMaxMana();
-    playerDto.exp    = stats.getExp();
-    playerDto.level  = stats.getLevel();
-    playerDto.oro    = stats.getGold();
-}
+            const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
+            playerState.hp = stats.getHp();
+            playerState.maxHp = stats.getMaxHp();
+            playerState.mana = stats.getMana();
+            playerState.maxMana = stats.getMaxMana();
+            playerState.exp = stats.getExp();
+            playerState.expToNextLevel = stats.getExpLimit();
+            playerState.level = stats.getLevel();
+            playerState.gold = stats.getGold();
+        }
     }
 
     UpdateContext updateContext{
@@ -168,11 +192,6 @@ void Game::render() {
         p->draw(renderContext);
     }
 
-    // // Dibuja proyectiles, si existen.
-    // for (auto& p : manager.getGroup(groupProjectiles)) {
-    //     p->draw(renderContext);
-    // }
-    // Renderiza efectos de ataque.
     attackSystem.render(renderer, *assets, camera);
 
     // Importante: sacar el clip antes de dibujar el HUD.
@@ -311,14 +330,14 @@ void Game::renderHUD() {
     SDL_Color yellow = {255, 215, 0,   255};
 
     // Nivel centrado en la caja
-    drawTextCentered(std::to_string(playerDto.level),
+    drawTextCentered(std::to_string(playerState.level),
                      fontBold, 908, 38, 50, 50, yellow);
 
     // Nombre grande
-    drawTextAt(playerDto.nombre, fontBold, 968, 45, yellow);
+    drawTextAt(playerState.name, fontBold, 968, 45, yellow);
 
     // Clase
-    drawTextAt(playerDto.clase, fontRegular, 968, 75, white);
+    drawTextAt(playerState.playerClass, fontRegular, 968, 75, white);
 
     // === EQUIPAMIENTO (4 slots con frame) ===
     drawTextCentered("Equipamiento", fontRegular, 900, 142, 380, 20, white);
@@ -360,13 +379,17 @@ void Game::renderHUD() {
     const int invGapX = 8;
     const int invGapY = 7;
 
-    // 5 columnas de 44 + 4 gaps de 8 = 252.
-    // Centro: 900 + (380 - 252) / 2 = 964.
     const int invStartX = 964;
     const int invStartY = 280;
+    const int invCols = 5;
+    const int invRows = 4;
 
-    for (int fila = 0; fila < 4; fila++) {
-        for (int col = 0; col < 5; col++) {
+    for (int fila = 0; fila < invRows; fila++) {
+        for (int col = 0; col < invCols; col++) {
+            // Calcula qué slot lógico representa esta posición visual.
+            const int index = fila * invCols + col;
+
+            // Rectángulo visual del slot.
             SDL_Rect slot = {
                 invStartX + col * (invSlotSize + invGapX),
                 invStartY + fila * (invSlotSize + invGapY),
@@ -374,18 +397,58 @@ void Game::renderHUD() {
                 invSlotSize
             };
 
+            // Fondo del slot.
             SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
             SDL_RenderFillRect(renderer, &slot);
 
+            // Borde del slot.
             SDL_SetRenderDrawColor(renderer, 100, 80, 40, 255);
             SDL_RenderDrawRect(renderer, &slot);
+
+            // Si el slot existe y contiene un ítem, lo dibujamos.
+            if (index < static_cast<int>(inventoryState.slots.size()) && inventoryState.slots[index].has_value()) {
+                const ItemView& item = inventoryState.slots[index].value();
+                // La textura viene del textureId definido en items.json.
+                SDL_Texture* itemTexture = assets->GetTexture(item.textureId);
+
+                if (itemTexture != nullptr) {
+                    SDL_Rect itemDest = {
+                        slot.x + 5,
+                        slot.y + 5,
+                        slot.w - 10,
+                        slot.h - 10
+                    };
+                    SDL_Rect itemSrc = {
+                        item.iconSrcX,
+                        item.iconSrcY,
+                        item.iconSrcW,
+                        item.iconSrcH
+                    };
+                    SDL_RenderCopy(renderer, itemTexture, &itemSrc, &itemDest);
+                }
+                // Si hay cantidad mayor a 1, mostramos el número.
+                if (item.quantity > 1) {
+                    drawTextAt(
+                        std::to_string(item.quantity),
+                        fontRegular,
+                        slot.x + slot.w - 14,
+                        slot.y + slot.h - 16,
+                        white
+                    );
+                }
+            }
         }
     }
 
     // === BARRAS CON TEXTO CENTRADO ===
-    int hpActual   = playerDto.hp,   hpMax   = playerDto.hpMax;
-    int manaActual = playerDto.mana, manaMax = playerDto.manaMax;
-    int expActual  = playerDto.exp,  expMax  = playerDto.expMax;
+    int hpActual   = playerState.hp;
+    int hpMax      = playerState.maxHp;
+
+    int manaActual = playerState.mana;
+    int manaMax    = playerState.maxMana;
+
+    int expActual  = playerState.exp;
+    int expMax     = playerState.expToNextLevel;
 
     // Función para dibujar barra con texto encima
     auto drawBar = [&](SDL_Texture* tex, int x, int y, int w, int h,
@@ -422,7 +485,7 @@ void Game::renderHUD() {
     const int statsBarW = 260;
     const int statsBarH = 18;
 
-    drawTextAt("Oro: " + std::to_string(playerDto.oro), fontRegular, 915, 585, yellow);
+    drawTextAt("Oro: " + std::to_string(playerState.gold), fontRegular, 915, 585, yellow);
 
     drawTextCentered("Vida", fontRegular, statsX, 610, statsBarW, 18, white);
     drawBar(texVida, statsX, 630, statsBarW, statsBarH, hpActual, hpMax, fontRegular);
@@ -462,6 +525,14 @@ void Game::loadAssets() {
     assets->AddTexture("tile_floor", "assets/sprites/MapAssets/tile_floor.png");
 
 
-
 }
 
+void Game::loadInitialInventoryFromCatalog() {
+    inventoryState.slots[0] = itemCatalog.requireById(1); // Espada
+    inventoryState.slots[1] = itemCatalog.requireById(2); // Vara/Báculo
+    inventoryState.slots[2] = itemCatalog.requireById(3); // Armadura
+    inventoryState.slots[3] = itemCatalog.requireById(4); // Casco/Capucha
+    inventoryState.slots[4] = itemCatalog.requireById(5); // Escudo
+    inventoryState.slots[5] = itemCatalog.requireById(6); // Poción vida
+    inventoryState.slots[6] = itemCatalog.requireById(7); // Poción maná
+}

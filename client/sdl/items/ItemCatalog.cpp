@@ -47,6 +47,10 @@ void ItemCatalog::loadFromJson(const std::string& path) {
         item.ranged = itemJson.value("ranged", false);
 
         item.soundId = itemJson.value("soundId", "");
+        item.iconSrcX = itemJson.value("iconSrcX", 0);
+        item.iconSrcY = itemJson.value("iconSrcY", 1);
+        item.iconSrcW = itemJson.value("iconSrcW", 32);
+        item.iconSrcH = itemJson.value("iconSrcH", 32);
 
         if (item.itemId <= 0) {
             throw std::runtime_error("ItemCatalog: item con id invalido en " + path);

@@ -1,8 +1,52 @@
 {
   "textures": [
     {
-      "id": "player",
-      "path": "assets/sprites/equipment/1031.png"
+      "id": "item_sword",
+      "path": "assets/sprites/equipment/espada.png"
+    },
+    {
+      "id": "weapon_sword",
+      "path": "assets/sprites/equipment/espada.png"
+    },
+    {
+      "id": "item_ash_staff",
+      "path": "assets/sprites/equipment/Baculo_engarzado.png"
+    },
+    {
+      "id": "weapon_ash_staff",
+      "path": "assets/sprites/equipment/Baculo_engarzado.png"
+    },
+    {
+      "id": "item_leather_armor",
+      "path": "assets/sprites/equipment/armadura_de_cuero.png"
+    },
+    {
+      "id": "armor_leather",
+      "path": "assets/sprites/equipment/armadura_de_cuero.png"
+    },
+    {
+      "id": "item_turtle_shield",
+      "path": "assets/sprites/equipment/Escudo_de_tortuga.png"
+    },
+    {
+      "id": "shield_turtle",
+      "path": "assets/sprites/equipment/Escudo_de_tortuga.png"
+    },
+    {
+      "id": "item_health_potion",
+      "path": "assets/sprites/equipment/pociones.png"
+    },
+    {
+      "id": "item_mana_potion",
+      "path": "assets/sprites/equipment/pociones.png"
+    },
+    {
+      "id": "item_hood",
+      "path": "assets/sprites/equipment/tunica_azul.png"
+    },
+    {
+      "id": "helmet_hood",
+      "path": "assets/sprites/equipment/tunica_azul.png"
     }
   ]
 }

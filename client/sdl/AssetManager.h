@@ -29,7 +29,7 @@ public:
 
     //texture management
     void AddTexture(std::string id, const char* path);
-    SDL_Texture* GetTexture(std::string id);
+    SDL_Texture* GetTexture(const std::string& id);
 
     void AddFont(std::string id, std::string path, int fontSize);
     TTF_Font* GetFont(std::string id);
