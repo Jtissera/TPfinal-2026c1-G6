@@ -51,8 +51,8 @@ void ColliderComponent::draw(RenderContext& context) {
     destR.h = collider.h;
 
     // Debug visual del collider.
-    SDL_SetRenderDrawColor(context.renderer, 255, 255, 0, 255);
-    SDL_RenderDrawRect(context.renderer, &destR);
+    //SDL_SetRenderDrawColor(context.renderer, 255, 255, 0, 255);
+    //SDL_RenderDrawRect(context.renderer, &destR);
 
     // Restauramos color base.
     SDL_SetRenderDrawColor(context.renderer, 0, 0, 0, 255);

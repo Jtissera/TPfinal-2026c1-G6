@@ -8,9 +8,10 @@
 class TextureManager;
 
 struct RenderContext {
-    SDL_Renderer* renderer;          // Renderer usado para dibujar cosas directas de SDL.
-    SDL_Rect camera;                 // Cámara actual.
-    TextureManager& textureManager;  // Usado para dibujar texturas.
-    int mapOffsetY = 133;            // Offset vertical del área jugable por el HUD.
+    SDL_Renderer* renderer;
+    SDL_Rect camera;
+    SDL_Rect viewport;
+    TextureManager& textureManager;
+    int mapOffsetY = 133;
 };
 #endif //TALLER_TP_RENDERCONTEXT_H

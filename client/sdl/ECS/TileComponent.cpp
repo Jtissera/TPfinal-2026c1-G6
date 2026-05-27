@@ -21,6 +21,22 @@ void TileComponent::update(UpdateContext& context) {
     destRect.y = static_cast<int>(position.y - context.camera.y);
 }
 
+
 void TileComponent::draw(RenderContext& context) {
+    const int visibleLeft = context.viewport.x;
+    const int visibleRight = context.viewport.x + context.viewport.w;
+    const int visibleTop = context.viewport.y;
+    const int visibleBottom = context.viewport.y + context.viewport.h;
+
+    const bool outsideScreen =
+        destRect.x + destRect.w < visibleLeft ||
+        destRect.x > visibleRight ||
+        destRect.y + destRect.h < visibleTop ||
+        destRect.y > visibleBottom;
+
+    if (outsideScreen) {
+        return;
+    }
+
     context.textureManager.Draw(texture, srcRect, destRect, SDL_FLIP_NONE);
 }

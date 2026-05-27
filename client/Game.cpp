@@ -63,7 +63,7 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     loadAssets();
     player = assets->CreatePlayer(playerDto);
 
-    map = new Map(manager, "terrain", 3, 32);
+    map = new Map(manager,*assets, "terrain", 3, 32);
     map->LoadMap("assets/sprites/MapAssets/mapa.argmap");
 
     // En Game.cpp, al final de init(), después de crear el player
@@ -141,10 +141,10 @@ void Game::render() {
     RenderContext renderContext{
         renderer,
         camera,
+        mapArea,
         *textureManager,
         133
     };
-
     // Dibuja el mapa.
     for (auto& t : manager.getGroup(groupMap)) {
         t->draw(renderContext);
@@ -160,10 +160,10 @@ void Game::render() {
         p->draw(renderContext);
     }
 
-    // Dibuja proyectiles, si existen.
-    for (auto& p : manager.getGroup(groupProjectiles)) {
-        p->draw(renderContext);
-    }
+    // // Dibuja proyectiles, si existen.
+    // for (auto& p : manager.getGroup(groupProjectiles)) {
+    //     p->draw(renderContext);
+    // }
     // Renderiza efectos de ataque.
     attackSystem.render(renderer, *assets, camera);
 
