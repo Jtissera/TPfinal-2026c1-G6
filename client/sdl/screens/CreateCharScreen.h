@@ -19,8 +19,8 @@ public:
     ScreenResult run() override;
 
     const std::string& getUsername() const { return username; }
-    Raza  getRaza()  const { return selectedRaza; }
-    Clase getClase() const { return selectedClase; }
+    const std::string& getRaza()  const { return RAZAS[razaIdx]; }
+    const std::string& getClase() const { return CLASES[claseIdx]; }  
 
     void setError(const std::string& msg);
 
@@ -57,9 +57,6 @@ private:
     std::string username;
     int razaIdx  = 0;
     int claseIdx = 0;
-
-    Raza  selectedRaza  = Raza::HUMANO;
-    Clase selectedClase = Clase::MAGO;
 
     std::string errorMsg;
 

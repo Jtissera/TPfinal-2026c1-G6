@@ -7,27 +7,29 @@ GameRoom::GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers)
       monitor(),
       gameQueue(),
       world("assets/sprites/MapAssets/mapa.argmap"),
-      gameLoop(gameQueue, monitor, world)
-       {}
+      gameLoop(gameQueue, monitor, world),
+      tickLoop(world, monitor)
+{}
 
-void GameRoom::addClient(uint32_t clientId, Queue<std::shared_ptr<const Message>> &clientQueue)
-{
+void GameRoom::addClient(uint32_t clientId,
+                         Queue<std::shared_ptr<const Message>>& clientQueue) {
     monitor.addQueue(clientId, clientQueue);
-    world.addPlayer(clientId, 6 * 96, 7 * 96); 
-
 }
 
-void GameRoom::removeClient(uint32_t clientId)
-{
+void GameRoom::addPlayer(Player player) {
+    world.addPlayer(std::move(player));
+}
+
+void GameRoom::removeClient(uint32_t clientId) {
     monitor.removeQueue(clientId);
     world.removePlayer(clientId);
 }
 
-Queue<ClientMessage> &GameRoom::getGameQueue() { return gameQueue; }
+Queue<ClientMessage>& GameRoom::getGameQueue() { return gameQueue; }
 
 uint32_t GameRoom::getId() const { return gameId; }
 
-const std::string &GameRoom::getName() const { return gameName; }
+const std::string& GameRoom::getName() const { return gameName; }
 
 uint8_t GameRoom::getPlayerCount() const { return monitor.size(); }
 
@@ -35,8 +37,8 @@ uint8_t GameRoom::getMaxPlayers() const { return maxPlayers; }
 
 bool GameRoom::isFull() const { return monitor.size() >= maxPlayers; }
 
-void GameRoom::start() { gameLoop.start(); }
+void GameRoom::start() { gameLoop.start();tickLoop.start();  }
 
-void GameRoom::stop() { gameLoop.stop(); }
+void GameRoom::stop()  { gameLoop.stop(); tickLoop.stop();   }
 
-void GameRoom::join() { gameLoop.join(); }
+void GameRoom::join()  { gameLoop.join();tickLoop.join();   }

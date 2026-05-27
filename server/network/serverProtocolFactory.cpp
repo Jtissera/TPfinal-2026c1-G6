@@ -1,6 +1,5 @@
 #include "serverProtocolFactory.h"
 
-#include "deserializers/GameClientDeserializersModule.h"
 
 ServerProtocolFactory::ServerProtocolFactory() : registry(buildRegistry()) {}
 
@@ -21,6 +20,9 @@ std::shared_ptr<const Registry> ServerProtocolFactory::buildRegistry()
 
     GameClientDeserializersModule game;   // ← nuevo
     game.registerDeserializers(*registry);
+
+    CharClientDeserializersModule character; 
+    character.registerDeserializers(*registry);
 
     // ACA LOS VAMOS AGREGANDO CUANDO VAMOS REALIZANDO LAS FUNCIONALIDADES
 

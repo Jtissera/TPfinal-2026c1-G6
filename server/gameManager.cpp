@@ -2,8 +2,7 @@
 
 GameManager::GameManager() {}
 
-uint32_t GameManager::createGame(const std::string &gameName, uint8_t maxPlayers)
-{
+uint32_t GameManager::createGame(const std::string& gameName, uint8_t maxPlayers) {
     std::unique_lock<std::mutex> lock(mutex);
 
     uint32_t id = nextGameId++;
@@ -20,16 +19,12 @@ uint32_t GameManager::createGame(const std::string &gameName, uint8_t maxPlayers
 
 bool GameManager::joinGame(uint32_t gameId,
                            uint32_t clientId,
-                           Queue<std::shared_ptr<const Message>> &clientQueue)
-{
+                           Queue<std::shared_ptr<const Message>>& clientQueue) {
     std::unique_lock<std::mutex> lock(mutex);
 
     auto it = rooms.find(gameId);
-    if (it == rooms.end())
-        return false;
-
-    if (it->second->isFull())
-        return false;
+    if (it == rooms.end()) return false;
+    if (it->second->isFull()) return false;
 
     it->second->addClient(clientId, clientQueue);
     clientRoom[clientId] = gameId;
@@ -39,13 +34,20 @@ bool GameManager::joinGame(uint32_t gameId,
 
     return true;
 }
-void GameManager::removeClient(uint32_t clientId)
-{
+
+void GameManager::addPlayerToGame(uint32_t gameId, Player player) {
+    std::unique_lock<std::mutex> lock(mutex);
+
+    auto it = rooms.find(gameId);
+    if (it != rooms.end())
+        it->second->addPlayer(std::move(player));
+}
+
+void GameManager::removeClient(uint32_t clientId) {
     std::unique_lock<std::mutex> lock(mutex);
 
     auto it = clientRoom.find(clientId);
-    if (it == clientRoom.end())
-        return;
+    if (it == clientRoom.end()) return;
 
     uint32_t gameId = it->second;
     clientRoom.erase(it);
@@ -55,32 +57,28 @@ void GameManager::removeClient(uint32_t clientId)
         roomIt->second->removeClient(clientId);
 }
 
-std::vector<GameInfo> GameManager::listGames() const
-{
+std::vector<GameInfo> GameManager::listGames() const {
     std::unique_lock<std::mutex> lock(mutex);
 
     std::vector<GameInfo> result;
     result.reserve(rooms.size());
 
-    for (const auto &pair : rooms)
-    {
+    for (const auto& pair : rooms) {
         GameInfo info;
-        info.gameId = pair.second->getId();
-        info.gameName = pair.second->getName();
+        info.gameId      = pair.second->getId();
+        info.gameName    = pair.second->getName();
         info.playerCount = pair.second->getPlayerCount();
-        info.maxPlayers = pair.second->getMaxPlayers();
+        info.maxPlayers  = pair.second->getMaxPlayers();
         result.push_back(std::move(info));
     }
 
     return result;
 }
 
-void GameManager::stopAll()
-{
+void GameManager::stopAll() {
     std::unique_lock<std::mutex> lock(mutex);
 
-    for (auto &pair : rooms)
-    {
+    for (auto& pair : rooms) {
         pair.second->stop();
         pair.second->join();
     }
@@ -88,8 +86,7 @@ void GameManager::stopAll()
     clientRoom.clear();
 }
 
-Queue<ClientMessage> &GameManager::getGameQueue(uint32_t gameId)
-{
+Queue<ClientMessage>& GameManager::getGameQueue(uint32_t gameId) {
     std::unique_lock<std::mutex> lock(mutex);
     return rooms.at(gameId)->getGameQueue();
 }

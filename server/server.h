@@ -6,22 +6,33 @@
 #include "monitorQueues.h"
 #include "gameManager.h"
 #include "lobbyHandler.h"
+#include "playerRepository.h"
+#include "game/playerFactory.h"
 #include "acceptor.h"
 #include "receiverRegistry.h"
+#include "game/classRepository.h"
+#include "game/raceRepository.h"
+#include <toml++/toml.h>
 
-class Server
-{
+class Server {
 public:
-    explicit Server(const char *servname);
+    explicit Server(const char* servname);
     int run();
 
 private:
-    Monitor lobbyMonitor;
+    ClassRepository  classRepo;
+    RaceRepository   raceRepo;
+    PlayerFactory    playerFactory;
+    PlayerRepository playerRepo;
+
+    Monitor              lobbyMonitor;
     Queue<ClientMessage> lobbyQueue;
-    ClientRegistry clientRegistry;
+
+    ClientRegistry   clientRegistry;
     ReceiverRegistry receiverRegistry;
-    GameManager gameManager;
-    LobbyHandler lobbyHandler;
-    Socket socket;
+    GameManager      gameManager;
+    LobbyHandler     lobbyHandler;
+
+    Socket   socket;
     Acceptor acceptor;
 };

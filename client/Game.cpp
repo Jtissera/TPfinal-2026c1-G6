@@ -107,7 +107,16 @@ void Game::update() {
 
             std::cout << "[client] pos recibida del server: " 
                       << moveMsg.getX() << ", " << moveMsg.getY() << std::endl;
-        }
+        } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_STATS)) {
+    const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
+    playerDto.hp     = stats.getHp();
+    playerDto.hpMax  = stats.getMaxHp();
+    playerDto.mana   = stats.getMana();
+    playerDto.manaMax= stats.getMaxMana();
+    playerDto.exp    = stats.getExp();
+    playerDto.level  = stats.getLevel();
+    playerDto.oro    = stats.getGold();
+}
     }
 
     UpdateContext updateContext{

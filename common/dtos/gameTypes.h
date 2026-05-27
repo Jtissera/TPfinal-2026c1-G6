@@ -23,8 +23,8 @@ enum class Clase : uint8_t {
 struct PlayerDto {
     std::string nombre;
     uint8_t playerID;
-    Raza raza;
-    Clase clase;
+    std::string  raza;
+    std::string  clase;
     uint8_t level;
     int hp;
     int mana;
