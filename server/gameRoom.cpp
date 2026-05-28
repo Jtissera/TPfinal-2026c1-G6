@@ -7,8 +7,7 @@ GameRoom::GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers)
       monitor(),
       gameQueue(),
       world("assets/sprites/MapAssets/mapa.argmap"),
-      gameLoop(gameQueue, monitor, world),
-      tickLoop(world, monitor)
+      gameLoop(gameQueue, monitor, world)
 {}
 
 void GameRoom::addClient(uint32_t clientId,

@@ -11,8 +11,14 @@
 
 class GameWorld {
 public:
+
+    struct DeathResult {
+        uint32_t excessGold;
+        std::vector<Item> droppedItems;
+    };
+    
     explicit GameWorld(const std::string& mapPath);
-    explicit GameWorld(MapData mapData);
+    explicit GameWorld(MapData mapData);//TESTEO
 
     void addPlayer(Player player);
     void removePlayer(uint32_t id);
@@ -22,7 +28,13 @@ public:
     int getY(uint32_t id) const;
 
     std::vector<uint32_t> tick(float deltaSeconds);
-    const Player& getPlayer(uint32_t id) const;
+    Player& getPlayer(uint32_t id);
+
+    void addItemOnGround(Item item, int x, int y);
+    std::optional<Item> pickItemAt(int x, int y);
+
+    DeathResult handlePlayerDeath(uint32_t targetId, uint32_t attackerId);
+    std::optional<uint32_t> pickGoldAt(int x, int y);
 
 private:
     static constexpr int SPEED = 10;
@@ -31,4 +43,19 @@ private:
     CollisionSystem collision;
     std::unordered_map<uint32_t, Player> players;
     GameFormulas    formulas;
+
+    struct GroundItem {
+        Item item;
+        int x, y;
+    };
+
+
+    struct GroundGold {
+    uint32_t amount;
+    int x, y;
+};
+
+    std::vector<GroundItem> groundItems;
+    std::vector<GroundGold> groundGold;
+
 };

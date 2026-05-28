@@ -9,6 +9,7 @@
 #include "classRepository.h"
 #include "playerState.h"
 #include "../world/Hitbox.h"
+#include "gameFormulas.h"
 
 class Player {
 public:
@@ -23,6 +24,8 @@ public:
     bool isGhost() const;
     bool isMeditating() const;
 
+    bool checkAndClearLevelUp();
+
     void takeDamage(int16_t dmg);
     void heal(int16_t amount);
     void restoreMana(int16_t amount);
@@ -33,7 +36,7 @@ public:
     void startMeditating();
     void stopMeditating();
 
-    void die();
+    uint32_t die();
     void resurrect(int spawnX, int spawnY);
 
     void tick(float hpGained, float manaGained);
@@ -52,6 +55,9 @@ public:
         x = nx; y = ny; 
     }
 
+    void addGold(uint32_t amount) { 
+    gold += amount; 
+}
     
     uint32_t getClientId() const { return clientId; } // logica en cpp, hay que pasarlo
     const RaceStats&  getRace() const { return race; }
@@ -64,6 +70,8 @@ public:
     uint32_t getExp()     const { return experience;  }
     uint32_t getGold()    const { return gold;        }
     uint32_t getId()      const { return clientId;    }
+    Inventory& getInventory(){return inventory;}
+;
 
     Player(const Player&)            = delete;
     Player& operator=(const Player&) = delete;
@@ -73,6 +81,7 @@ public:
 
 
     const Hitbox& getHitbox() const { return hitbox; }
+    std::vector<Item> purgeInventoryOnDeath();
 
 private:
     int x = 0;
@@ -96,4 +105,10 @@ private:
 
     Inventory inventory;
     Hitbox hitbox;
+
+    bool didLevelUp = false;
+
+    int limit = 100; //a TOML
+
+    GameFormulas formulas;
 };

@@ -1,6 +1,8 @@
 #include "gameLoop.h"
 
 
+
+
 GameLoop::GameLoop(Queue<ClientMessage>& q, Monitor& m, GameWorld& w)
     : gameQueue(q), monitor(m), world(w) {}
 
@@ -31,17 +33,7 @@ void GameLoop::run() {
 }
 
 void GameLoop::processMessage(const ClientMessage& incoming) {
-    uint8_t opcode = incoming.message->opCode();
-    uint32_t id = incoming.clientId;
-
-    if (opcode == static_cast<uint8_t>(ClientOpCode::MSG_MOVE)) {
-        const auto& move = static_cast<const MoveMessage&>(*incoming.message);
-        if (world.movePlayer(id, move.getDirection())) {
-            auto response = std::make_shared<const EntityMoveMessage>(
-                (uint8_t)id, world.getX(id), world.getY(id));
-            monitor.sendTo(id, response);
-        }
-    }
+    dispatcher.dispatch(incoming, world, monitor);  
 }
 
 void GameLoop::worldUpdate() {

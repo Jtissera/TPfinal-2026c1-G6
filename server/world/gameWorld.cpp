@@ -26,6 +26,8 @@ bool GameWorld::movePlayer(uint32_t id, Direction dir) {
     if (it == players.end()) return false;
 
     Player& p = it->second;
+
+    
     int nx = p.getX();
     int ny = p.getY();
 
@@ -65,9 +67,59 @@ std::vector<uint32_t> GameWorld::tick(float deltaSeconds) {
 int GameWorld::getX(uint32_t id) const { return players.at(id).getX(); }
 int GameWorld::getY(uint32_t id) const { return players.at(id).getY(); }
 
-const Player& GameWorld::getPlayer(uint32_t id) const {
+Player& GameWorld::getPlayer(uint32_t id) {
     auto it = players.find(id);
     if (it == players.end())
         throw std::runtime_error("Player not found");
     return it->second;
+}
+
+void GameWorld::addItemOnGround(Item item, int x, int y) {
+    groundItems.push_back({std::move(item), x, y});
+}
+
+std::optional<Item> GameWorld::pickItemAt(int x, int y) {
+    static constexpr int PICK_RADIUS = 96; //un tile, hay que moverlo a TOML
+    for (auto it = groundItems.begin(); it != groundItems.end(); ++it) {
+        if (std::abs(it->x - x) <= PICK_RADIUS &&
+            std::abs(it->y - y) <= PICK_RADIUS) {
+            Item found = std::move(it->item);
+            groundItems.erase(it);
+            return found;
+        }
+    }
+    return std::nullopt;
+}
+
+//es igual, hay que ver que hacer
+std::optional<uint32_t> GameWorld::pickGoldAt(int x, int y) {
+    static constexpr int PICK_RADIUS = 96;
+    for (auto it = groundGold.begin(); it != groundGold.end(); ++it) {
+        if (std::abs(it->x - x) <= PICK_RADIUS &&
+            std::abs(it->y - y) <= PICK_RADIUS) {
+            uint32_t amount = it->amount;
+            groundGold.erase(it);
+            return amount;
+        }
+    }
+    return std::nullopt;
+}
+
+GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId, uint32_t attackerId) {
+    Player& target   = getPlayer(targetId);
+    Player& attacker = getPlayer(attackerId);
+
+    uint32_t killExp = formulas.calcExpOnKill(target.getMaxHp(), attacker.getLevel(), target.getLevel());
+    attacker.addExperience(killExp);
+
+    uint32_t excessGold = target.die();
+    std::vector<Item> items = target.purgeInventoryOnDeath();
+
+    if (excessGold > 0)
+        groundGold.push_back({excessGold, target.getX(), target.getY()});
+
+    for (auto& item : items)
+        addItemOnGround(std::move(item), target.getX(), target.getY());
+
+    return {excessGold, std::move(items)};
 }

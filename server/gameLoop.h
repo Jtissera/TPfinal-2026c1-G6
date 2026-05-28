@@ -13,6 +13,8 @@
 #include "monitorQueues.h"
 #include "../common/queue.h"
 #include "../common/thread.h"
+#include "ActionDispatcher.h"
+
 
 class GameLoop : public Thread {
 public:
@@ -26,6 +28,7 @@ public:
 private:
     Queue<ClientMessage>& gameQueue;
     Monitor& monitor;
+    ActionDispatcher dispatcher;
     GameWorld& world;
     StatManager statManager; //dsp veo esto
     void processMessage(const ClientMessage& incoming);

@@ -9,7 +9,6 @@
 #include "gameLoop.h"
 #include "monitorQueues.h"
 #include "game/Player.h"
-#include "tickLoop.h"
 
 class GameRoom {
 public:
@@ -43,5 +42,5 @@ private:
     Queue<ClientMessage> gameQueue;
     GameLoop gameLoop;
     GameWorld world;
-    TickLoop tickLoop;
+
 };
