@@ -12,5 +12,8 @@
   ],
   "itemFiles": [
     "assets/items/items.json"
+  ],
+  "bodyFiles": [
+    "assets/sprites/players/bodies.json"
   ]
 }

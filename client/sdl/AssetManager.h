@@ -52,10 +52,13 @@ private:
     TextureManager& textureManager;
     std::map<std::string, SDL_Texture*> textures;
     std::map<std::string, TTF_Font*> fonts;
+    std::map<std::string, SpriteSheetConfig> bodyConfigs;
+
     std::string textureForNPC(NpcType type);
     std::string bodyTextureForRace(const std::string& race) const;
     std::string headTextureForRace(const std::string& race) const;
     SpriteSheetConfig bodyConfigForRace(const std::string& race) const;
+    void LoadBodiesFromJson(const std::string& path);
 
 };
 

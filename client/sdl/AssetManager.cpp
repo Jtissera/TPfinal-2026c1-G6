@@ -130,6 +130,8 @@ Entity* AssetManager::CreatePlayer(const PlayerDto& data) {
               << " head texture ptr="
               << GetTexture(headTextureId)
               << std::endl;
+
+    std::cout << "[DEBUG] raza raw='" << data.raza << "'" << std::endl;
     return &player;
 }
 
@@ -194,20 +196,42 @@ void AssetManager::LoadManifest(const std::string &manifestPath) {
     nlohmann::json data;
     file >> data;
 
-    if (!data.contains("textureFiles")) {
+    if (!data.contains("textureFiles") || !data["textureFiles"].is_array()) {
         std::cerr << "El manifest no contiene la clave 'textureFiles'."
                   << std::endl;
         return;
     }
 
+    // 1. Cargar texturas.
     for (const auto& textureFile : data["textureFiles"]) {
         std::string path = textureFile.get<std::string>();
 
-        std::cout << "[MANIFEST] cargando: " << path << std::endl;
+        std::cout << "[MANIFEST] cargando texturas: "
+                  << path
+                  << std::endl;
 
         LoadTexturesFromJson(path);
 
-        std::cout << "[MANIFEST] terminado: " << path << std::endl;
+        std::cout << "[MANIFEST] texturas cargadas: "
+                  << path
+                  << std::endl;
+    }
+
+    // 2. Cargar metadata de cuerpos.
+    if (data.contains("bodyFiles") && data["bodyFiles"].is_array()) {
+        for (const auto& bodyFile : data["bodyFiles"]) {
+            std::string path = bodyFile.get<std::string>();
+
+            std::cout << "[MANIFEST] cargando bodies: "
+                      << path
+                      << std::endl;
+
+            LoadBodiesFromJson(path);
+
+            std::cout << "[MANIFEST] bodies cargado: "
+                      << path
+                      << std::endl;
+        }
     }
 }
 
@@ -247,22 +271,29 @@ void AssetManager::LoadTexturesFromJson(const std::string& jsonPath) {
                   << id << " -> " << path << std::endl;
     }
 }
-
-std::string AssetManager::bodyTextureForRace(const std::string& race) const {
-    if (race == "human") {
-        return "body_human";
+void AssetManager::LoadBodiesFromJson(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "No se pudo abrir bodies.json: " << path << std::endl;
+        return;
     }
+    nlohmann::json data;
+    file >> data;
 
-    if (race == "elf") {
-        return "body_elf";
+    for (const auto& body : data["bodies"]) {
+        std::string race = body["race"];
+        SpriteSheetConfig config{
+            body["frameWidth"],
+            body["frameHeight"],
+            body["scale"],
+            body["srcX"],
+            body["srcY"]
+        };
+        bodyConfigs[race] = config;
     }
-
-    if (race == "orc") {
-        return "body_orc";
-    }
-
-    return "body_human";
 }
+
+
 
 std::string AssetManager::headTextureForRace(const std::string& race) const {
     if (race == "human") {
@@ -273,29 +304,24 @@ std::string AssetManager::headTextureForRace(const std::string& race) const {
         return "heads_elf";
     }
 
-    if (race == "orc") {
-        return "heads_orc_man";
+    if (race == "dwarf") {
+        return "heads_dwarf";
+    }
+
+    if (race == "gnome") {
+        return "heads_elf";
     }
 
     return "heads_human_man";
 }
 
-
 SpriteSheetConfig AssetManager::bodyConfigForRace(const std::string& race) const {
-    if (race == "human") {
-        return SpriteSheetConfig{27, 47, 2, 0, 0};
-    }
-
-    if (race == "elf") {
-        return SpriteSheetConfig{27, 47, 2, 220, 0};
-    }
-
-    if (race == "dwarf") {
-        return SpriteSheetConfig{27, 47, 2, 440, 0};
-    }
-    if (race == "gnome") {
-        return SpriteSheetConfig{27, 47, 2, 0, 0};
-    }
-
+    auto it = bodyConfigs.find(race);
+    if (it != bodyConfigs.end()) return it->second;
     return SpriteSheetConfig{27, 47, 2, 0, 0};
+}
+
+
+std::string AssetManager::bodyTextureForRace([[maybe_unused]] const std::string& race) const {
+    return "body_sheet";
 }

@@ -140,6 +140,7 @@ int Client::run()
                     playerDto.manaMax = 100;
                     playerDto.level   = 15;
                     playerDto.oro     = 2000;
+                    playerDto.headId = 0;
 
                     GameClient gameClient(socket, 1, playerDto);
                     gameClient.run();

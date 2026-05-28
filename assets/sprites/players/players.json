@@ -13,8 +13,8 @@
       "path": "assets/sprites/players/heads_elf.png"
     },
     {
-      "id": "heads_orc_man",
-      "path": "assets/sprites/players/heads_orc_man.png"
+      "id": "heads_dwarf",
+      "path": "assets/sprites/players/heads_dwarf.png"
     }
   ]
 }
