@@ -70,6 +70,16 @@ private:
 
     void loadAssets();
     void loadInitialInventoryFromCatalog();
+    int getInventorySlotIndexAt(int mouseX, int mouseY) const;
+    void handleInventorySlotClick(int slotIndex);
+    void equipItemFromInventory(int slotIndex);
+
+    int getEquipmentSlotIndexAt(int mouseX, int mouseY) const;
+    void handleEquipmentSlotClick(int equipmentSlotIndex);
+    bool addItemToFirstFreeInventorySlot(const ItemView& item);
+    void consumePotion(int slotIndex);
+    bool isWarriorClass() const;
+
 
 };
 

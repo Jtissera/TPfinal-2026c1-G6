@@ -79,8 +79,8 @@
       "manaAmount": 0,
       "ranged": false,
       "soundId": "",
-      "iconSrcX": 0,
-      "iconSrcY": 224,
+      "iconSrcX": 186,
+      "iconSrcY": 512,
       "iconSrcW": 32,
       "iconSrcH": 32
     },
@@ -147,6 +147,7 @@
       "iconSrcW": 32,
       "iconSrcH": 32
     }
+
   ]
 }
 

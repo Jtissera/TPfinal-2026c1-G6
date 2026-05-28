@@ -42,11 +42,11 @@
     },
     {
       "id": "item_hood",
-      "path": "assets/sprites/equipment/tunica_azul.png"
+      "path": "assets/sprites/equipment/helmets.png"
     },
     {
       "id": "helmet_hood",
-      "path": "assets/sprites/equipment/tunica_azul.png"
+      "path": "assets/sprites/equipment/helmets.png"
     }
   ]
 }

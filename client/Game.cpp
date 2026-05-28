@@ -56,8 +56,6 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     assets = std::make_unique<AssetManager>(&manager,*sendQueue,*textureManager);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     isRunning = true;
-
-    this->playerDto = pDto;
     std::cout << "[INIT] antes loadAssets" << std::endl;
     loadAssets();
     std::cout << "[INIT] antes itemCatalog" << std::endl;
@@ -104,15 +102,33 @@ void Game::handleEvents() {
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT){
             isRunning = false;
-        } 
+        }
 
         if (event.type == SDL_KEYDOWN && event.key.repeat != 0){
             event.type = SDL_USEREVENT;
         }
         if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
-            attackSystem.handleMouseClick(event.button.x,event.button.y,camera,enemies,sendQueue);
+            const int mouseX = event.button.x;
+            const int mouseY = event.button.y;
+
+            const int equipmentSlot = getEquipmentSlotIndexAt(mouseX, mouseY);
+
+            if (equipmentSlot != -1) {
+                handleEquipmentSlotClick(equipmentSlot);
+                return;
+            }
+
+            const int inventorySlot = getInventorySlotIndexAt(mouseX, mouseY);
+
+            if (inventorySlot != -1) {
+                handleInventorySlotClick(inventorySlot);
+                return;
+            }
+
+            attackSystem.handleMouseClick(mouseX, mouseY, camera, enemies, sendQueue);
         }
     }
+
 }
 
 void Game::update() {
@@ -360,6 +376,39 @@ void Game::renderHUD() {
         };
 
         SDL_RenderCopy(renderer, texFrame, nullptr, &slot);
+        const ItemView* equippedItem = nullptr;
+
+        if (i == 0 && equipmentState.weapon.has_value()) {
+            equippedItem = &equipmentState.weapon.value();
+        } else if (i == 1 && equipmentState.helmet.has_value()) {
+            equippedItem = &equipmentState.helmet.value();
+        } else if (i == 2 && equipmentState.armor.has_value()) {
+            equippedItem = &equipmentState.armor.value();
+        } else if (i == 3 && equipmentState.shield.has_value()) {
+            equippedItem = &equipmentState.shield.value();
+        }
+
+        if (equippedItem != nullptr) {
+            SDL_Texture* itemTexture = assets->GetTexture(equippedItem->textureId);
+
+            if (itemTexture != nullptr) {
+                SDL_Rect itemSrc = {
+                    equippedItem->iconSrcX,
+                    equippedItem->iconSrcY,
+                    equippedItem->iconSrcW,
+                    equippedItem->iconSrcH
+                };
+
+                SDL_Rect itemDest = {
+                    slot.x + 7,
+                    slot.y + 7,
+                    slot.w - 14,
+                    slot.h - 14
+                };
+
+                SDL_RenderCopy(renderer, itemTexture, &itemSrc, &itemDest);
+            }
+        }
 
         drawTextCentered(
             eqLabels[i],
@@ -535,4 +584,273 @@ void Game::loadInitialInventoryFromCatalog() {
     inventoryState.slots[4] = itemCatalog.requireById(5); // Escudo
     inventoryState.slots[5] = itemCatalog.requireById(6); // Poción vida
     inventoryState.slots[6] = itemCatalog.requireById(7); // Poción maná
+}
+
+int Game::getInventorySlotIndexAt(int mouseX, int mouseY) const {
+    //deben ir los mismos valores que el inventario del renderhud.
+    const int invSlotSize = 44;
+    const int invGapX = 8;
+    const int invGapY = 7;
+    const int invStartX = 964;
+    const int invStartY = 280;
+    const int invCols = 5;
+    const int invRows = 4;
+
+    for (int fila = 0; fila < invRows; fila++) {
+        for (int col = 0; col < invCols; col++) {
+            SDL_Rect slot = {
+                invStartX + col * (invSlotSize + invGapX),
+                invStartY + fila * (invSlotSize + invGapY),
+                invSlotSize,
+                invSlotSize
+            };
+
+            const bool inside =
+                mouseX >= slot.x &&
+                mouseX < slot.x + slot.w &&
+                mouseY >= slot.y &&
+                mouseY < slot.y + slot.h;
+
+            if (inside) {
+                return fila * invCols + col;
+            }
+        }
+    }
+
+    return -1;
+}
+void Game::handleInventorySlotClick(int slotIndex) {
+    // Valida que el índice sea válido.
+    if (slotIndex < 0 ||
+        slotIndex >= static_cast<int>(inventoryState.slots.size())) {
+        return;
+        }
+
+    // Si el slot está vacío, no hacemos nada.
+    if (!inventoryState.slots[slotIndex].has_value()) {
+        std::cout << "[INVENTORY] slot vacío: "
+                  << slotIndex
+                  << std::endl;
+        return;
+    }
+
+    // Obtenemos el ítem del slot clickeado.
+    const ItemView& item = inventoryState.slots[slotIndex].value();
+
+    std::cout << "[INVENTORY] click slot "
+              << slotIndex
+              << " item="
+              << item.itemName
+              << std::endl;
+
+    // Si es poción, todavía no la consumimos en este paso.
+    if (item.type == ClientItemType::HealthPotion ||
+        item.type == ClientItemType::ManaPotion) {
+        std::cout << "[INVENTORY] poción seleccionada, consumo pendiente"
+                  << std::endl;
+        consumePotion(slotIndex);
+        return;
+        }
+
+    // Si no es poción, intentamos equiparlo.
+    equipItemFromInventory(slotIndex);
+}
+
+void Game::equipItemFromInventory(int slotIndex) {
+    std::cout << "[DEBUG] entro a equipItemFromInventory slot="
+          << slotIndex
+          << std::endl;
+
+    if (slotIndex < 0 ||
+        slotIndex >= static_cast<int>(inventoryState.slots.size())) {
+        return;
+        }
+
+    if (!inventoryState.slots[slotIndex].has_value()) {
+        return;
+    }
+
+    ItemView itemToEquip = inventoryState.slots[slotIndex].value();
+
+    std::optional<ItemView>* targetSlot = nullptr;
+
+    if (itemToEquip.type == ClientItemType::MeleeWeapon ||
+        itemToEquip.type == ClientItemType::RangedWeapon ||
+        itemToEquip.type == ClientItemType::MagicWeapon) {
+
+        std::cout << "playerstate" << playerState.playerClass<<",dto"<< playerDto.clase << std::endl;
+        if (itemToEquip.type == ClientItemType::MagicWeapon &&
+            isWarriorClass()) {
+            std::cout << "[EQUIPMENT] Guerrero no puede equipar arma mágica"
+                      << std::endl;
+            return;
+            }
+
+        targetSlot = &equipmentState.weapon;
+        } else if (itemToEquip.type == ClientItemType::Armor) {
+            targetSlot = &equipmentState.armor;
+        } else if (itemToEquip.type == ClientItemType::Helmet) {
+            targetSlot = &equipmentState.helmet;
+        } else if (itemToEquip.type == ClientItemType::Shield) {
+            targetSlot = &equipmentState.shield;
+        } else {
+            std::cout << "[EQUIPMENT] ítem no equipable: "
+                      << itemToEquip.itemName
+                      << std::endl;
+            return;
+        }
+    // Si  había algo equipado, vuelve al slot del inventario.
+    if (targetSlot->has_value()) {
+        inventoryState.slots[slotIndex] = targetSlot->value();
+    } else {
+        inventoryState.slots[slotIndex] = std::nullopt;
+    }
+
+    *targetSlot = itemToEquip;
+
+    std::cout << "[EQUIPMENT] equipado: "
+              << itemToEquip.itemName
+              << std::endl;
+}
+int Game::getEquipmentSlotIndexAt(int mouseX, int mouseY) const {
+    const int eqSlotSize = 58;
+    const int eqGap = 12;
+    const int eqY = 168;
+    const int eqStartX = 956;
+
+    for (int i = 0; i < 4; i++) {
+        SDL_Rect slot = {
+            eqStartX + i * (eqSlotSize + eqGap),
+            eqY,
+            eqSlotSize,
+            eqSlotSize
+        };
+
+        const bool inside =
+            mouseX >= slot.x &&
+            mouseX < slot.x + slot.w &&
+            mouseY >= slot.y &&
+            mouseY < slot.y + slot.h;
+
+        if (inside) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+bool Game::addItemToFirstFreeInventorySlot(const ItemView& item) {
+    for (auto& slot : inventoryState.slots) {
+        if (!slot.has_value()) {
+            slot = item;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
+    std::optional<ItemView>* selectedSlot = nullptr;
+
+    if (equipmentSlotIndex == 0) {
+        selectedSlot = &equipmentState.weapon;
+    } else if (equipmentSlotIndex == 1) {
+        selectedSlot = &equipmentState.helmet;
+    } else if (equipmentSlotIndex == 2) {
+        selectedSlot = &equipmentState.armor;
+    } else if (equipmentSlotIndex == 3) {
+        selectedSlot = &equipmentState.shield;
+    } else {
+        return;
+    }
+
+    if (!selectedSlot->has_value()) {
+        std::cout << "[EQUIPMENT] slot vacío" << std::endl;
+        return;
+    }
+
+    ItemView itemToUnequip = selectedSlot->value();
+
+    if (!addItemToFirstFreeInventorySlot(itemToUnequip)) {
+        std::cout << "[EQUIPMENT] no se puede desequipar: inventario lleno"
+                  << std::endl;
+        return;
+    }
+
+    selectedSlot->reset();
+
+    std::cout << "[EQUIPMENT] desequipado: "
+              << itemToUnequip.itemName
+              << std::endl;
+}
+void Game::consumePotion(int slotIndex) {
+    // Validamos que el índice sea válido.
+    if (slotIndex < 0 ||
+        slotIndex >= static_cast<int>(inventoryState.slots.size())) {
+        return;
+        }
+
+    // Si el slot está vacío, no hay nada para consumir.
+    if (!inventoryState.slots[slotIndex].has_value()) {
+        return;
+    }
+
+    // Tomamos una copia modificable del ítem.
+    ItemView item = inventoryState.slots[slotIndex].value();
+
+    if (item.type == ClientItemType::HealthPotion) {
+        // Calculamos nueva vida sin superar el máximo.
+        playerState.hp += item.healAmount;
+
+        if (playerState.hp > playerState.maxHp) {
+            playerState.hp = playerState.maxHp;
+        }
+
+        std::cout << "[POTION] consumida vida: "
+                  << item.itemName
+                  << " hp="
+                  << playerState.hp
+                  << "/"
+                  << playerState.maxHp
+                  << std::endl;
+
+    } else if (item.type == ClientItemType::ManaPotion) {
+        // Calculamos nuevo maná sin superar el máximo.
+        playerState.mana += item.manaAmount;
+
+        if (playerState.mana > playerState.maxMana) {
+            playerState.mana = playerState.maxMana;
+        }
+
+        std::cout << "[POTION] consumida maná: "
+                  << item.itemName
+                  << " mana="
+                  << playerState.mana
+                  << "/"
+                  << playerState.maxMana
+                  << std::endl;
+
+    } else {
+        // Si no era poción, no hacemos nada.
+        return;
+    }
+
+    // Reducimos la cantidad.
+    item.quantity--;
+
+    // Si se terminó, vaciamos el slot.
+    if (item.quantity <= 0) {
+        inventoryState.slots[slotIndex] = std::nullopt;
+    } else {
+        inventoryState.slots[slotIndex] = item;
+    }
+}
+
+bool Game::isWarriorClass() const {
+    return playerState.playerClass == "Guerrero" ||
+           playerState.playerClass == "guerrero" ||
+           playerState.playerClass == "Warrior" ||
+           playerState.playerClass == "warrior";
 }
