@@ -14,13 +14,19 @@
 TEST(GameManagerTest, CreateGameReturnsIncrementalIds)
 {
     GameManager gm;
+    
     uint32_t id1 = gm.createGame("sala1", 4);
     uint32_t id2 = gm.createGame("sala2", 4);
+    
+    std::cout << "--> Llegué a los EXPECT" << std::endl;
     EXPECT_NE(id1, id2);
     EXPECT_LT(id1, id2);
+    
+    std::cout << "--> Pasé los EXPECT, entrando a stopAll" << std::endl;
     gm.stopAll();
+    
+    std::cout << "--> Salí de stopAll" << std::endl;
 }
-
 TEST(GameManagerTest, ListGamesReflectsCreatedRooms)
 {
     GameManager gm;

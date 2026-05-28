@@ -6,5 +6,8 @@ target_sources(taller_tests
     ../editor/map/mapData.cpp
     ../editor/map/mapSerializer.cpp
     lobby_test.cpp
+    collision_test.cpp
+    inventory_test.cpp
+    combatSystem_test.cpp
 
 )

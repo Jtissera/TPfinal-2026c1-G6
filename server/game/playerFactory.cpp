@@ -26,7 +26,7 @@ Player PlayerFactory::create(uint32_t clientId,
 }
 
 int16_t PlayerFactory::computeMaxHp(const RaceStats& r, const ClassStats& c) {
-    // Ejemplo de fórmula: ajustar según diseño del juego
+    
     return static_cast<int16_t>(100.0f * r.health * c.health);
 }
 

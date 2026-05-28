@@ -15,6 +15,7 @@ Player::Player(uint32_t clientId,
     , maxMana(maxMana)
     , hp(maxHp)
     , mana(maxMana)
+    , hitbox{32, 32, 64, 96} 
 {}
 
 bool Player::isAlive()      const { return state == PlayerState::ALIVE; }
@@ -25,8 +26,6 @@ void Player::takeDamage(int16_t dmg) {
     if (!isAlive()) return;
 
     hp = std::max<int16_t>(0, hp - dmg);
-
-    if (hp == 0) die();
 }
 
 void Player::heal(int16_t amount) {
@@ -49,7 +48,31 @@ bool Player::spendMana(int16_t cost) {
 
 void Player::addExperience(uint32_t exp) {
 
-    experience += exp;
+experience += exp;
+
+    uint32_t currentLimit = formulas.calcExpLimit(level);
+
+    while (experience >= currentLimit) {
+        experience -= currentLimit;
+        
+        int16_t newMaxHp   = formulas.calcMaxHp(race, cls, level + 1);
+        int16_t newMaxMana = formulas.calcMaxMana(race, cls, level + 1);
+        
+        levelUp(newMaxHp, newMaxMana);
+        didLevelUp = true;  
+        
+
+        currentLimit = formulas.calcExpLimit(level);
+    }
+
+    this->limit = currentLimit;
+
+}
+
+bool Player::checkAndClearLevelUp() {
+    bool wasLevelUp = didLevelUp; 
+    didLevelUp = false;           
+    return wasLevelUp;            
 }
 
 void Player::levelUp(int16_t newMaxHp, int16_t newMaxMana) {
@@ -72,6 +95,22 @@ void Player::stopMeditating() {
 void Player::die() {
     state = PlayerState::DEAD;
     hp    = 0;
+
+    uint32_t expLoss = formulas.calcExpLimit(level) / 10;
+    experience = (experience > expLoss) ? experience - expLoss : 0;
+    uint32_t safeGold = formulas.calcMaxGold(level);
+
+    if (gold > safeGold) {
+        uint32_t excess = gold - safeGold;
+        this->gold = safeGold; 
+        return excess;
+    }
+
+    return 0;
+}
+
+std::vector<std::unique_ptr<Item>> Player::purgeInventoryOnDeath() {
+    return inventory.removeAllItems();
 }
 
 void Player::resurrect(int spawnX, int spawnY) {

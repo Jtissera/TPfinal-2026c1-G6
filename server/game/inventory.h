@@ -23,6 +23,12 @@ public:
   const Item *getEquipped(EquipSlot slot) const;
   const std::vector<Item> &getItems() const;
 
+  std::array<uint32_t, static_cast<std::size_t>(EquipSlot::COUNT)>& getEquippedArray(){
+    return equipped;
+  }
+
+  std::vector<Item> removeAllItems();
+
 private:
   std::vector<Item> items;
   std::array<uint32_t, static_cast<std::size_t>(EquipSlot::COUNT)> equipped{};

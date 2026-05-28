@@ -1,5 +1,10 @@
 #pragma once
 
+#include "../common/network/messages/server/player/EntityMoveMessage.h"
+#include "../common/network/messages/client/movement/moveMessage.h"
+#include "../common/network/protocol/clientOpCode.h"
+#include "statManager.h"
+
 #include <iostream>
 #include <memory>
 
@@ -8,6 +13,8 @@
 #include "monitorQueues.h"
 #include "../common/queue.h"
 #include "../common/thread.h"
+#include "ActionDispatcher.h"
+
 
 class GameLoop : public Thread {
 public:
@@ -21,5 +28,9 @@ public:
 private:
     Queue<ClientMessage>& gameQueue;
     Monitor& monitor;
+    ActionDispatcher dispatcher;
     GameWorld& world;
+    StatManager statManager; //dsp veo esto
+    void processMessage(const ClientMessage& incoming);
+    void worldUpdate();
 };
