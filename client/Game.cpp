@@ -63,7 +63,7 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
         itemCatalog.loadFromJson("assets/items/items.json");
         std::cout << "[INIT] itemCatalog cargado" << std::endl;
 
-        loadInitialInventoryFromCatalog();
+        loadInitialInventoryForCurrentClass();
         std::cout << "[INIT] inventario inicial cargado" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error cargando catálogo de ítems: " << e.what() << std::endl;
@@ -353,7 +353,7 @@ void Game::renderHUD() {
     drawTextAt(playerState.name, fontBold, 968, 45, yellow);
 
     // Clase
-    drawTextAt(playerState.playerClass, fontRegular, 968, 75, white);
+    drawTextAt(playerClassToString(playerState.playerClass), fontRegular, 968, 75, white);
 
     // === EQUIPAMIENTO (4 slots con frame) ===
     drawTextCentered("Equipamiento", fontRegular, 900, 142, 380, 20, white);
@@ -576,14 +576,50 @@ void Game::loadAssets() {
 
 }
 
-void Game::loadInitialInventoryFromCatalog() {
-    inventoryState.slots[0] = itemCatalog.requireById(1); // Espada
-    inventoryState.slots[1] = itemCatalog.requireById(2); // Vara/Báculo
-    inventoryState.slots[2] = itemCatalog.requireById(3); // Armadura
-    inventoryState.slots[3] = itemCatalog.requireById(4); // Casco/Capucha
-    inventoryState.slots[4] = itemCatalog.requireById(5); // Escudo
-    inventoryState.slots[5] = itemCatalog.requireById(6); // Poción vida
-    inventoryState.slots[6] = itemCatalog.requireById(7); // Poción maná
+void Game::loadInitialInventoryForCurrentClass() {
+    for (auto& slot : inventoryState.slots) {
+        slot = std::nullopt;
+    }
+
+    switch (playerState.playerClass) {
+
+        case PlayerClass::Cleric:
+            inventoryState.slots[0] = itemCatalog.requireById(2); // Báculo temporal
+            inventoryState.slots[1] = itemCatalog.requireById(4); // Capucha
+            inventoryState.slots[2] = itemCatalog.requireById(6); // Poción vida
+            inventoryState.slots[3] = itemCatalog.requireById(7); // Poción maná
+
+            break;
+        case PlayerClass::Mage:
+            inventoryState.slots[0] = itemCatalog.requireById(2); // Báculo
+            inventoryState.slots[1] = itemCatalog.requireById(4); // Capucha
+            inventoryState.slots[2] = itemCatalog.requireById(7); // Poción maná
+            inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
+            break;
+        case PlayerClass::Paladin:
+            inventoryState.slots[0] = itemCatalog.requireById(1); // Espada
+            inventoryState.slots[1] = itemCatalog.requireById(3); // Armadura
+            inventoryState.slots[2] = itemCatalog.requireById(5); // Escudo
+            inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
+
+            break;
+        case PlayerClass::Warrior:
+            inventoryState.slots[0] = itemCatalog.requireById(1); // Espada
+            inventoryState.slots[1] = itemCatalog.requireById(3); // Armadura de cuero
+            inventoryState.slots[2] = itemCatalog.requireById(5); // Escudo
+            inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
+
+            break;
+        default:
+            inventoryState.slots[0] = itemCatalog.requireById(1);
+            inventoryState.slots[1] = itemCatalog.requireById(6);
+            break;
+
+    }
+
+
+
+
 }
 
 int Game::getInventorySlotIndexAt(int mouseX, int mouseY) const {
@@ -678,9 +714,8 @@ void Game::equipItemFromInventory(int slotIndex) {
         itemToEquip.type == ClientItemType::RangedWeapon ||
         itemToEquip.type == ClientItemType::MagicWeapon) {
 
-        std::cout << "playerstate" << playerState.playerClass<<",dto"<< playerDto.clase << std::endl;
         if (itemToEquip.type == ClientItemType::MagicWeapon &&
-            isWarriorClass()) {
+            playerState.playerClass == PlayerClass::Warrior) {
             std::cout << "[EQUIPMENT] Guerrero no puede equipar arma mágica"
                       << std::endl;
             return;
@@ -848,9 +883,3 @@ void Game::consumePotion(int slotIndex) {
     }
 }
 
-bool Game::isWarriorClass() const {
-    return playerState.playerClass == "Guerrero" ||
-           playerState.playerClass == "guerrero" ||
-           playerState.playerClass == "Warrior" ||
-           playerState.playerClass == "warrior";
-}

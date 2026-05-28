@@ -8,13 +8,33 @@
 #include "PlayerViewState.h"
 #include "common/dtos/gameTypes.h"
 
+inline PlayerClass parsePlayerClass(const std::string& value) {
+    if (value == "warrior") {
+        return PlayerClass::Warrior;
+    }
+
+    if (value == "mage") {
+        return PlayerClass::Mage;
+    }
+
+    if (value == "paladin") {
+        return PlayerClass::Paladin;
+    }
+
+    if (value == "cleric") {
+        return PlayerClass::Cleric;
+    }
+
+    return PlayerClass::Unknown;
+}
+
 // Convierte el DTO recibido por protocolo en el estado visual que usa SDL.
 inline PlayerViewState toPlayerViewState(const PlayerDto& dto) {
     PlayerViewState state;
 
     state.name = dto.nombre;
     state.race = dto.raza;
-    state.playerClass = dto.clase;
+    state.playerClass = parsePlayerClass(dto.clase);
 
     state.level = dto.level;
 
@@ -33,4 +53,6 @@ inline PlayerViewState toPlayerViewState(const PlayerDto& dto) {
 
     return state;
 }
+
+
 #endif //TALLER_TP_PLAYERVIEWSTATEMAPPER_H

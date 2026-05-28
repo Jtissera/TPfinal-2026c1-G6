@@ -69,7 +69,7 @@ private:
     ItemCatalog itemCatalog;
 
     void loadAssets();
-    void loadInitialInventoryFromCatalog();
+    void loadInitialInventoryForCurrentClass();
     int getInventorySlotIndexAt(int mouseX, int mouseY) const;
     void handleInventorySlotClick(int slotIndex);
     void equipItemFromInventory(int slotIndex);
@@ -78,9 +78,7 @@ private:
     void handleEquipmentSlotClick(int equipmentSlotIndex);
     bool addItemToFirstFreeInventorySlot(const ItemView& item);
     void consumePotion(int slotIndex);
-    bool isWarriorClass() const;
-
-
+    
 };
 
 #endif //PRUEBA_SDL_GAME_H

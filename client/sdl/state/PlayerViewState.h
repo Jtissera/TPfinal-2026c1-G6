@@ -9,11 +9,34 @@
 // Sirve para que el HUD y otros sistemas SDL lean siempre de una fuente común.
 // Cuando el servidor mande actualizaciones de vida, maná, oro o experiencia,
 // esas actualizaciones deberían modificar este estado.
+enum class PlayerClass {
+     Warrior,
+     Mage,
+     Paladin,
+     Cleric,
+     Unknown
+ };
+
+inline std::string playerClassToString(PlayerClass playerClass) {
+    switch (playerClass) {
+        case PlayerClass::Warrior:
+            return "warrior";
+        case PlayerClass::Mage:
+            return "mage";
+        case PlayerClass::Paladin:
+            return "paladin";
+        case PlayerClass::Cleric:
+            return "cleric";
+        case PlayerClass::Unknown:
+        default:
+            return "unknown";
+    }
+}
 
 struct PlayerViewState {
      std::string name;
      std::string race;
-     std::string playerClass;
+     PlayerClass playerClass;
      //level
      int level = 1;
      int exp = 0;
@@ -33,5 +56,7 @@ struct PlayerViewState {
      bool isDead = false;
 
 
+
 };
+
 #endif //TALLER_TP_PLAYERVIEWSTATE_H
