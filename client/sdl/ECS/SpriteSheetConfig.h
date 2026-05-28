@@ -8,9 +8,12 @@
 // Configuración básica de un spritesheet.
 // Sirve para decirle al SpriteComponent cuánto mide cada frame real.
 struct SpriteSheetConfig {
-    int frameWidth;   // Ancho real de cada frame dentro del spritesheet.
-    int frameHeight;  // Alto real de cada frame dentro del spritesheet.
-    int scale;        // Escala visual al dibujar en pantalla.
+    int frameWidth;
+    int frameHeight;
+    int scale;
+
+    int startX = 0;
+    int startY = 0;
 };
 
 

@@ -59,6 +59,8 @@ private:
     int frameWidth = 0;
     int frameHeight = 0;
     int scale = 1;
+    int startX = 0;
+    int startY = 0;
 
     bool hasHead = false;
 
@@ -71,6 +73,7 @@ private:
     int headStepY = 64;
 
     std::string currentAnim = "";
+    SpriteSheetConfig bodyConfigForRace(const std::string& race) const;
 };
 
 #endif

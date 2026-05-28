@@ -105,20 +105,31 @@ Entity* AssetManager::CreatePlayer(const PlayerDto& data) {
     playerAnims.emplace("WalkRight", Animation(3, 5, 100));
     playerAnims.emplace("WalkLeft",  Animation(2, 5, 100));
 
-    SpriteSheetConfig armorConfig {
-        27,
-        47,
-        2
-    };
+    SpriteSheetConfig bodyConfig = bodyConfigForRace(data.raza);
 
+    std::string bodyTextureId = bodyTextureForRace(data.raza);
+    std::string headTextureId = headTextureForRace(data.raza);
 
     auto& player = manager->addEntity();
     player.addComponent<TransformComponent>(data.xpos, data.ypos);
-    player.addComponent<SpriteComponent>(*this,"player", true, playerAnims, armorConfig);
-    player.getComponent<SpriteComponent>().setHeadTexture("heads_elf", 2);
+    player.addComponent<SpriteComponent>(*this, bodyTextureId, true, playerAnims, bodyConfig);
+    player.getComponent<SpriteComponent>().setHeadTexture(headTextureId, data.headId);
     player.addComponent<KeyboardController>(sendQueue);
     player.addComponent<ColliderComponent>("player");
     player.addGroup(groupPlayers);
+    
+
+    std::cout << "[PLAYER] race=" << data.raza
+          << " bodyTextureId=" << bodyTextureId
+          << " headTextureId=" << headTextureId
+          << " headId=" << data.headId
+          << std::endl;
+
+    std::cout << "[PLAYER] body texture ptr="
+              << GetTexture(bodyTextureId)
+              << " head texture ptr="
+              << GetTexture(headTextureId)
+              << std::endl;
     return &player;
 }
 
@@ -235,4 +246,56 @@ void AssetManager::LoadTexturesFromJson(const std::string& jsonPath) {
         std::cout << "Textura cargada: "
                   << id << " -> " << path << std::endl;
     }
+}
+
+std::string AssetManager::bodyTextureForRace(const std::string& race) const {
+    if (race == "human") {
+        return "body_human";
+    }
+
+    if (race == "elf") {
+        return "body_elf";
+    }
+
+    if (race == "orc") {
+        return "body_orc";
+    }
+
+    return "body_human";
+}
+
+std::string AssetManager::headTextureForRace(const std::string& race) const {
+    if (race == "human") {
+        return "heads_human_man";
+    }
+
+    if (race == "elf") {
+        return "heads_elf";
+    }
+
+    if (race == "orc") {
+        return "heads_orc_man";
+    }
+
+    return "heads_human_man";
+}
+
+
+SpriteSheetConfig AssetManager::bodyConfigForRace(const std::string& race) const {
+    if (race == "human") {
+        return SpriteSheetConfig{27, 47, 2, 0, 0};
+    }
+
+    if (race == "elf") {
+        return SpriteSheetConfig{27, 47, 2, 220, 0};
+    }
+
+    if (race == "dwarf") {
+        return SpriteSheetConfig{27, 47, 2, 440, 0};
+    }
+    if (race == "gnome") {
+        return SpriteSheetConfig{27, 47, 2, 0, 0};
+    }
+
+    return SpriteSheetConfig{27, 47, 2, 0, 0};
 }

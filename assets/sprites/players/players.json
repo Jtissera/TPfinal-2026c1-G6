@@ -1,8 +1,20 @@
 {
   "textures": [
     {
+      "id": "body_sheet",
+      "path": "assets/sprites/players/1000.PNG"
+    },
+    {
+      "id": "heads_human_man",
+      "path": "assets/sprites/players/heads_human_man.png"
+    },
+    {
       "id": "heads_elf",
-      "path": "assets/sprites/players/heads_elf_male.png"
+      "path": "assets/sprites/players/heads_elf.png"
+    },
+    {
+      "id": "heads_orc_man",
+      "path": "assets/sprites/players/heads_orc_man.png"
     }
   ]
 }

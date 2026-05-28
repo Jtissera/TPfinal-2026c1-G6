@@ -17,9 +17,18 @@ SpriteComponent::SpriteComponent(
       animated(isAnimated),
       frameWidth(config.frameWidth),
       frameHeight(config.frameHeight),
-      scale(config.scale) {
+      scale(config.scale),
+      startX(config.startX),
+      startY(config.startY) {
 
-    Play("Idle");
+    if (animations.count("IdleDown") > 0) {
+        Play("IdleDown");
+    } else if (animations.count("Idle") > 0) {
+        Play("Idle");
+    } else if (!animations.empty()) {
+        Play(animations.begin()->first.c_str());
+    }
+
     setText(id);
 }
 
@@ -53,21 +62,21 @@ void SpriteComponent::Play(const char* animName) {
 void SpriteComponent::init() {
     transform = &entity->getComponent<TransformComponent>();
 
-    srcRect.x = 0;
-    srcRect.y = 0;
+    srcRect.x = startX;
+    srcRect.y = startY + animationIndex * frameHeight;
     srcRect.w = frameWidth;
     srcRect.h = frameHeight;
 }
 
 void SpriteComponent::update(UpdateContext& context) {
     if (animated && frames > 0) {
-        srcRect.x = frameWidth * static_cast<int>((SDL_GetTicks() / speed) % frames);
+        int currentFrame = static_cast<int>((SDL_GetTicks() / speed) % frames);
+        srcRect.x = startX + currentFrame * frameWidth;
     } else {
-        srcRect.x = 0;
+        srcRect.x = startX;
     }
 
-    srcRect.y = animationIndex * frameHeight;
-
+    srcRect.y = startY + animationIndex * frameHeight;
     // Coordenadas de mundo -> pantalla.
     destRect.x = static_cast<int>(transform->position.x) - context.camera.x;
     destRect.y = static_cast<int>(transform->position.y) - context.camera.y + 133;
@@ -78,6 +87,7 @@ void SpriteComponent::update(UpdateContext& context) {
 }
 
 void SpriteComponent::draw(RenderContext& context) {
+
     if (bodyTexture == nullptr) {
         return;
     }
@@ -126,3 +136,4 @@ void SpriteComponent::draw(RenderContext& context) {
         context.textureManager.Draw(headTexture, headSrc, headDst, spriteFlip);
     }
 }
+

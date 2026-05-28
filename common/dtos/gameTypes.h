@@ -25,6 +25,7 @@ struct PlayerDto {
     uint8_t playerID;
     std::string  raza;
     std::string  clase;
+    int headId;
     uint8_t level;
     int hp;
     int mana;

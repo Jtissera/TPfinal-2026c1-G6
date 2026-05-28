@@ -11,6 +11,7 @@
 #include "../../common/dtos/gameTypes.h"
 #include "common/queue.h"
 #include "common/network/messages/message.h"
+#include "ECS/SpriteSheetConfig.h"
 
 class AssetManager
 {
@@ -52,6 +53,9 @@ private:
     std::map<std::string, SDL_Texture*> textures;
     std::map<std::string, TTF_Font*> fonts;
     std::string textureForNPC(NpcType type);
+    std::string bodyTextureForRace(const std::string& race) const;
+    std::string headTextureForRace(const std::string& race) const;
+    SpriteSheetConfig bodyConfigForRace(const std::string& race) const;
 
 };
 

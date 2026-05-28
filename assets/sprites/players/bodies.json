@@ -1,0 +1,31 @@
+{
+  "bodies": [
+    {
+      "race": "human",
+      "textureId": "body_sheet",
+      "srcX": 0,
+      "srcY": 0,
+      "frameWidth": 27,
+      "frameHeight": 47,
+      "scale": 2
+    },
+    {
+      "race": "elf",
+      "textureId": "body_sheet",
+      "srcX": 220,
+      "srcY": 0,
+      "frameWidth": 27,
+      "frameHeight": 47,
+      "scale": 2
+    },
+    {
+      "race": "dwarf",
+      "textureId": "body_sheet",
+      "srcX": 440,
+      "srcY": 0,
+      "frameWidth": 27,
+      "frameHeight": 47,
+      "scale": 2
+    }
+  ]
+}
