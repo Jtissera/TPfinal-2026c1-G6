@@ -80,6 +80,8 @@ private:
     void consumePotion(int slotIndex);
     std::string visualTextureForCurrentRace(const ItemView& item) const;
     void renderEquippedArmor();
+    void renderEquippedWeapon();
+    void renderEquippedShield();
     void refreshPlayerBodySprite();
     SpriteSheetConfig armorSpriteConfigForCurrentRace() const;
     SDL_Point visualOffsetForCurrentRace(const ItemView& item) const;

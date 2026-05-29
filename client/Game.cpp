@@ -1,4 +1,3 @@
-
 #include "Game.h"
 #include "sdl/Map.h"
 #include "sdl/TextureManager.h"
@@ -202,6 +201,12 @@ void Game::render() {
     for (auto& p : manager.getGroup(groupPlayers)) {
         p->draw(renderContext);
     }
+
+    // Dibuja equipamiento visual encima del personaje (capas sobre el sprite).
+    // El casco lo maneja SpriteComponent internamente (Mauricio).
+    // Arma y escudo se dibujan aquí como capas adicionales.
+    renderEquippedWeapon();
+    renderEquippedShield();
 
     // Dibuja enemigos.
     for (auto& p : manager.getGroup(groupEnemies)) {
@@ -1072,4 +1077,82 @@ void Game::refreshPlayerEquipmentVisuals() {
         // Si no hay casco equipado, limpiamos el visual.
         sprite.clearHelmet();
     }
+    // Arma y escudo: no necesitan limpiar nada en el sprite porque se
+    // renderizan en render() chequeando equipmentState directamente.
+    // Con que el slot esté vacío alcanza para que no se dibujen.
+}
+
+void Game::renderEquippedWeapon() {
+    if (!equipmentState.weapon.has_value()) {
+        return;
+    }
+
+    const ItemView& weapon = equipmentState.weapon.value();
+
+    const std::string& textureId = weapon.visualTextureId;
+    if (textureId.empty()) {
+        return;
+    }
+
+    SDL_Texture* weaponTexture = assets->GetTexture(textureId);
+    if (weaponTexture == nullptr) {
+        std::cout << "[EQUIPMENT RENDER] No existe textura de arma: "
+                  << textureId << std::endl;
+        return;
+    }
+
+    auto& sprite = player->getComponent<SpriteComponent>();
+    const SDL_Rect& playerSrc  = sprite.getSrcRect();
+    const SDL_Rect& playerDest = sprite.getDestRect();
+
+    // Misma región de frame que el cuerpo (misma dirección/animación).
+    SDL_Rect weaponSrc = {
+        playerSrc.x - sprite.getStartX(),
+        playerSrc.y - sprite.getStartY(),
+        playerSrc.w,
+        playerSrc.h
+    };
+
+    SDL_Rect weaponDest = playerDest;
+    weaponDest.x += weapon.visualOffsetX;
+    weaponDest.y += weapon.visualOffsetY;
+
+    SDL_RenderCopy(renderer, weaponTexture, &weaponSrc, &weaponDest);
+}
+
+void Game::renderEquippedShield() {
+    if (!equipmentState.shield.has_value()) {
+        return;
+    }
+
+    const ItemView& shield = equipmentState.shield.value();
+
+    const std::string& textureId = shield.visualTextureId;
+    if (textureId.empty()) {
+        return;
+    }
+
+    SDL_Texture* shieldTexture = assets->GetTexture(textureId);
+    if (shieldTexture == nullptr) {
+        std::cout << "[EQUIPMENT RENDER] No existe textura de escudo: "
+                  << textureId << std::endl;
+        return;
+    }
+
+    auto& sprite = player->getComponent<SpriteComponent>();
+    const SDL_Rect& playerSrc  = sprite.getSrcRect();
+    const SDL_Rect& playerDest = sprite.getDestRect();
+
+    SDL_Rect shieldSrc = {
+        playerSrc.x - sprite.getStartX(),
+        playerSrc.y - sprite.getStartY(),
+        playerSrc.w,
+        playerSrc.h
+    };
+
+    SDL_Rect shieldDest = playerDest;
+    shieldDest.x += shield.visualOffsetX;
+    shieldDest.y += shield.visualOffsetY;
+
+    SDL_RenderCopy(renderer, shieldTexture, &shieldSrc, &shieldDest);
 }
