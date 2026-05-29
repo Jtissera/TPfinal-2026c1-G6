@@ -44,6 +44,23 @@ public:
 
     void setSpriteTextureAndConfig(const std::string& newTextureId,const SpriteSheetConfig& newConfig);
     void setRenderOffset(int offsetX, int offsetY);
+    // Equipa visualmente un casco/capucha.
+    void setHelmetTexture(const std::string& textureId,
+    int offsetX,
+    int offsetY,
+    int srcW,
+    int srcH,
+    int downSrcX,
+    int downSrcY,
+    int leftSrcX,
+    int leftSrcY,
+    int rightSrcX,
+    int rightSrcY,
+    int upSrcX,
+    int upSrcY
+);
+    // Quita visualmente el casco/capucha.
+    void clearHelmet();
 
 private:
 
@@ -81,8 +98,33 @@ private:
     int renderOffsetX = 0;
     int renderOffsetY = 0;
 
+    // Textura del casco/capucha equipada.
+    // Se dibuja encima de la cabeza.
+    SDL_Texture* helmetTexture = nullptr;
+
+    // Indica si hay casco visual equipado.
+    bool hasHelmet = false;
+
+    // Offset visual del casco respecto de la cabeza.
+    int helmetOffsetX = 0;
+    int helmetOffsetY = 0;
+    int helmetSrcX = 0;
+    int helmetSrcY = 0;
+    int helmetSrcW = 32;
+    int helmetSrcH = 32;
+    int helmetDownSrcX = 0;
+    int helmetDownSrcY = 0;
+    int helmetLeftSrcX = 0;
+    int helmetLeftSrcY = 0;
+    int helmetRightSrcX = 0;
+    int helmetRightSrcY = 0;
+    int helmetUpSrcX = 0;
+    int helmetUpSrcY = 0;
+
     std::string currentAnim = "";
-    
+
+
+
 };
 
 #endif

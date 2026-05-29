@@ -601,6 +601,8 @@ void Game::loadInitialInventoryForCurrentClass() {
             inventoryState.slots[1] = itemCatalog.requireById(3); // Armadura
             inventoryState.slots[2] = itemCatalog.requireById(5); // Escudo
             inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
+            inventoryState.slots[4] = itemCatalog.requireById(4);
+            inventoryState.slots[5] = itemCatalog.requireById(7);
 
             break;
         case PlayerClass::Warrior:
@@ -744,13 +746,17 @@ void Game::equipItemFromInventory(int slotIndex) {
     *targetSlot = itemToEquip;
 
     if (itemToEquip.type == ClientItemType::Armor) {
+        // La armadura reemplaza visualmente el cuerpo.
         refreshPlayerBodySprite();
+    } else {
+        // Casco, arma y escudo son capas visuales extra.
+        refreshPlayerEquipmentVisuals();
     }
-
     std::cout << "[EQUIPMENT] equipado: "
               << itemToEquip.itemName
               << std::endl;
 }
+
 int Game::getEquipmentSlotIndexAt(int mouseX, int mouseY) const {
     const int eqSlotSize = 58;
     const int eqGap = 12;
@@ -822,6 +828,8 @@ void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
 
     if (itemToUnequip.type == ClientItemType::Armor) {
         refreshPlayerBodySprite();
+    } else {
+        refreshPlayerEquipmentVisuals();
     }
 
     std::cout << "[EQUIPMENT] desequipado: "
@@ -1034,4 +1042,34 @@ SDL_Point Game::visualOffsetForCurrentRace(const ItemView& item) const {
         item.visualTallOffsetX,
         item.visualTallOffsetY
     };
+}
+
+void Game::refreshPlayerEquipmentVisuals() {
+    // Obtenemos el SpriteComponent del jugador local.
+    auto& sprite = player->getComponent<SpriteComponent>();
+
+    // Casco / capucha.
+    // Si hay casco equipado, usamos su textura visual y sus offsets.
+    if (equipmentState.helmet.has_value()) {
+        const ItemView& helmet = equipmentState.helmet.value();
+
+        sprite.setHelmetTexture(
+            helmet.visualTextureId,
+            helmet.visualOffsetX,
+            helmet.visualOffsetY,
+            helmet.iconSrcW,
+            helmet.iconSrcH,
+            helmet.visualDownSrcX,
+            helmet.visualDownSrcY,
+            helmet.visualLeftSrcX,
+            helmet.visualLeftSrcY,
+            helmet.visualRightSrcX,
+            helmet.visualRightSrcY,
+            helmet.visualUpSrcX,
+            helmet.visualUpSrcY
+        );
+    } else {
+        // Si no hay casco equipado, limpiamos el visual.
+        sprite.clearHelmet();
+    }
 }

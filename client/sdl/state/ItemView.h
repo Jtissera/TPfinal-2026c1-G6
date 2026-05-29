@@ -81,5 +81,21 @@ struct ItemView {
 
     int visualShortOffsetX = 0;
     int visualShortOffsetY = 0;
+    int visualOffsetX = 0;
+    int visualOffsetY = 0;
+
+    // Recortes del sprite equipado según dirección.
+    // No son los mismos que el ícono del inventario.
+    int visualDownSrcX = 0;
+    int visualDownSrcY = 0;
+
+    int visualLeftSrcX = 0;
+    int visualLeftSrcY = 0;
+
+    int visualRightSrcX = 0;
+    int visualRightSrcY = 0;
+
+    int visualUpSrcX = 0;
+    int visualUpSrcY = 0;
 };
 #endif //TALLER_TP_ITEMVIEW_H

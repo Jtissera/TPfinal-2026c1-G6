@@ -19,7 +19,11 @@
       "iconSrcX": 0,
       "iconSrcY": 224,
       "iconSrcW": 32,
-      "iconSrcH": 32
+      "iconSrcH": 32,
+      "visuals": {
+        "offsetX": 18,
+        "offsetY": 18
+      }
     },
     {
       "id": 2,
@@ -90,7 +94,19 @@
       "iconSrcX": 186,
       "iconSrcY": 512,
       "iconSrcW": 32,
-      "iconSrcH": 32
+      "iconSrcH": 32,
+      "visuals": {
+        "offsetX": -16,
+        "offsetY": -20,
+        "downSrcX": 334,
+        "downSrcY": 316,
+        "upSrcX": 334,
+        "upSrcY": 380,
+        "leftSrcX": 334,
+        "leftSrcY": 444,
+        "rightSrcX": 334,
+        "rightSrcY": 508
+      }
     },
     {
       "id": 5,
@@ -111,7 +127,11 @@
       "iconSrcX": 0,
       "iconSrcY": 224,
       "iconSrcW": 32,
-      "iconSrcH": 32
+      "iconSrcH": 32,
+      "visuals": {
+        "offsetX": 4,
+        "offsetY": 20
+      }
     },
     {
       "id": 6,

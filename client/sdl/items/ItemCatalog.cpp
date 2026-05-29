@@ -1,6 +1,7 @@
 
 #include "ItemCatalog.h"
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
 
 #include <nlohmann/json.hpp>
@@ -28,17 +29,40 @@ void ItemCatalog::loadFromJson(const std::string& path) {
 
         item.textureId = itemJson.value("textureId", "");
         item.visualTextureId = itemJson.value("visualTextureId", "");
+        item.textureId = itemJson.value("textureId", "");
+        item.visualTextureId = itemJson.value("visualTextureId", "");
+
         if (itemJson.contains("visuals")) {
             const auto& visuals = itemJson["visuals"];
 
+            // Visuales específicos para armaduras.
+            // Si no existen, caen al visualTextureId genérico.
             item.visualTextureIdTall = visuals.value("tall", item.visualTextureId);
             item.visualTextureIdShort = visuals.value("short", item.visualTextureId);
 
+            // Offsets específicos para armaduras altas.
             item.visualTallOffsetX = visuals.value("tallOffsetX", 0);
             item.visualTallOffsetY = visuals.value("tallOffsetY", 0);
 
+            // Offsets específicos para armaduras bajas.
             item.visualShortOffsetX = visuals.value("shortOffsetX", 0);
             item.visualShortOffsetY = visuals.value("shortOffsetY", 0);
+
+            // Offsets genéricos para casco, arma, escudo, etc.
+            item.visualOffsetX = visuals.value("offsetX", 0);
+            item.visualOffsetY = visuals.value("offsetY", 0);
+
+            item.visualDownSrcX = visuals.value("downSrcX", item.iconSrcX);
+            item.visualDownSrcY = visuals.value("downSrcY", item.iconSrcY);
+
+            item.visualLeftSrcX = visuals.value("leftSrcX", item.iconSrcX);
+            item.visualLeftSrcY = visuals.value("leftSrcY", item.iconSrcY);
+
+            item.visualRightSrcX = visuals.value("rightSrcX", item.iconSrcX);
+            item.visualRightSrcY = visuals.value("rightSrcY", item.iconSrcY);
+
+            item.visualUpSrcX = visuals.value("upSrcX", item.iconSrcX);
+            item.visualUpSrcY = visuals.value("upSrcY", item.iconSrcY);
         }
 
         item.type = parseItemType(itemJson.value("type", "other"));
@@ -73,6 +97,16 @@ void ItemCatalog::loadFromJson(const std::string& path) {
 }
 
 void ItemCatalog::addItem(const ItemView& item) {
+    std::cout << "[ITEM] "
+          << item.itemName
+          << " visual="
+          << item.visualTextureId
+          << " offset=("
+          << item.visualOffsetX
+          << ", "
+          << item.visualOffsetY
+          << ")"
+          << std::endl;
     itemsById[item.itemId] = item;
 }
 

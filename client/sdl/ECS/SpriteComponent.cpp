@@ -1,7 +1,7 @@
 #include "SpriteComponent.h"
 
 #include <utility>
-
+#include <iostream>
 #include "../AssetManager.h"
 #include "../TextureManager.h"
 
@@ -145,6 +145,61 @@ void SpriteComponent::draw(RenderContext& context) {
         }
 
         context.textureManager.Draw(headTexture, headSrc, headDst, spriteFlip);
+        if (hasHelmet && helmetTexture != nullptr) {
+            SDL_Rect helmetSrc{};
+
+            // Base del sprite de la capucha.
+            helmetSrc.x = helmetSrcX;
+            helmetSrc.y = helmetSrcY;
+
+            // Cada sprite mide 32x32.
+            helmetSrc.w = helmetSrcW;
+            helmetSrc.h = helmetSrcH;
+
+            // Elegimos manualmente qué recorte usar según dirección.
+            // animationIndex:
+            // 0 = abajo
+            // 1 = izquierda
+            // 2 = derecha
+            // 3 = arriba
+            if (animationIndex == 0) {
+                // Abajo.
+                helmetSrc.x = helmetDownSrcX;
+                helmetSrc.y = helmetDownSrcY;
+            } else if (animationIndex == 1) {
+                // Izquierda.
+                helmetSrc.x = helmetLeftSrcX;
+                helmetSrc.y = helmetLeftSrcY;
+            } else if (animationIndex == 2) {
+                // Derecha.
+                helmetSrc.x = helmetRightSrcX;
+                helmetSrc.y = helmetRightSrcY;
+            } else if (animationIndex == 3) {
+                // Arriba.
+                helmetSrc.x = helmetUpSrcX;
+                helmetSrc.y = helmetUpSrcY;
+            }
+
+            helmetSrc.w = helmetSrcW;
+            helmetSrc.h = helmetSrcH;
+
+            SDL_Rect helmetDst{};
+
+            helmetDst.w = 50;
+            helmetDst.h = 50;
+
+            helmetDst.x = headDst.x + helmetOffsetX;
+            helmetDst.y = headDst.y + helmetOffsetY;
+
+            SDL_RendererFlip helmetFlip = spriteFlip;
+
+            if (animationIndex == 2) {
+                // Para mirar a la derecha, espejamos el sprite de izquierda.
+                helmetFlip = SDL_FLIP_HORIZONTAL;
+            }
+
+            context.textureManager.Draw(helmetTexture, helmetSrc, helmetDst, helmetFlip);
+        }
     }
 }
 const SDL_Rect& SpriteComponent::getSrcRect() const {
@@ -204,4 +259,61 @@ void SpriteComponent::setSpriteTextureAndConfig(const std::string& newTextureId,
 void SpriteComponent::setRenderOffset(int offsetX, int offsetY) {
     renderOffsetX = offsetX;
     renderOffsetY = offsetY;
+}
+
+void SpriteComponent::setHelmetTexture(
+    const std::string& textureId,
+    int offsetX,
+    int offsetY,
+    int srcW,
+    int srcH,
+    int downSrcX,
+    int downSrcY,
+    int leftSrcX,
+    int leftSrcY,
+    int rightSrcX,
+    int rightSrcY,
+    int upSrcX,
+    int upSrcY
+) {
+    // Pedimos la textura al AssetManager.
+    helmetTexture = assets.GetTexture(textureId);
+
+    // Guardamos offset visual.
+    helmetOffsetX = offsetX;
+    helmetOffsetY = offsetY;
+
+    // Guardamos tamaño del recorte.
+    helmetSrcW = srcW;
+    helmetSrcH = srcH;
+
+    // Guardamos recortes por dirección.
+    helmetDownSrcX = downSrcX;
+    helmetDownSrcY = downSrcY;
+
+    helmetLeftSrcX = leftSrcX;
+    helmetLeftSrcY = leftSrcY;
+
+    helmetRightSrcX = rightSrcX;
+    helmetRightSrcY = rightSrcY;
+
+    helmetUpSrcX = upSrcX;
+    helmetUpSrcY = upSrcY;
+
+    // Solo se dibuja si existe la textura.
+    hasHelmet = helmetTexture != nullptr;
+}
+
+
+void SpriteComponent::clearHelmet() {
+    helmetTexture = nullptr;
+    hasHelmet = false;
+
+    helmetOffsetX = 0;
+    helmetOffsetY = 0;
+
+    helmetSrcX = 0;
+    helmetSrcY = 0;
+    helmetSrcW = 32;
+    helmetSrcH = 32;
 }
