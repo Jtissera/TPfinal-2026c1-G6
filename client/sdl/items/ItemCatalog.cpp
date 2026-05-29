@@ -28,6 +28,18 @@ void ItemCatalog::loadFromJson(const std::string& path) {
 
         item.textureId = itemJson.value("textureId", "");
         item.visualTextureId = itemJson.value("visualTextureId", "");
+        if (itemJson.contains("visuals")) {
+            const auto& visuals = itemJson["visuals"];
+
+            item.visualTextureIdTall = visuals.value("tall", item.visualTextureId);
+            item.visualTextureIdShort = visuals.value("short", item.visualTextureId);
+
+            item.visualTallOffsetX = visuals.value("tallOffsetX", 0);
+            item.visualTallOffsetY = visuals.value("tallOffsetY", 0);
+
+            item.visualShortOffsetX = visuals.value("shortOffsetX", 0);
+            item.visualShortOffsetY = visuals.value("shortOffsetY", 0);
+        }
 
         item.type = parseItemType(itemJson.value("type", "other"));
 

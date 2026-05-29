@@ -44,10 +44,10 @@
     },
     {
       "id": 3,
-      "name": "Armadura de cuero",
+      "name": "Armadura de hierro",
       "type": "armor",
-      "textureId": "item_leather_armor",
-      "visualTextureId": "armor_leather",
+      "textureId": "item_iron_armor",
+      "visualTextureId": "armor_iron_tall",
       "quantity": 1,
       "damageMin": 0,
       "damageMax": 0,
@@ -61,7 +61,15 @@
       "iconSrcX": 0,
       "iconSrcY": 224,
       "iconSrcW": 32,
-      "iconSrcH": 32
+      "iconSrcH": 32,
+      "visuals": {
+        "tall": "armor_iron_tall",
+        "short": "armor_iron_short",
+        "tallOffsetX": 0,
+        "tallOffsetY": 2,
+        "shortOffsetX": 0,
+        "shortOffsetY": -12
+      }
     },
     {
       "id": 4,

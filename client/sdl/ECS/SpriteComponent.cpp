@@ -13,13 +13,15 @@ SpriteComponent::SpriteComponent(
     SpriteSheetConfig config
 )
     : assets(assets),
-      animations(std::move(anims)),
-      animated(isAnimated),
-      frameWidth(config.frameWidth),
-      frameHeight(config.frameHeight),
-      scale(config.scale),
-      startX(config.startX),
-      startY(config.startY) {
+        animations(std::move(anims)),
+        animated(isAnimated),
+        frameWidth(config.frameWidth),
+        frameHeight(config.frameHeight),
+        scale(config.scale),
+         startX(config.startX),
+        startY(config.startY),
+        renderOffsetX(config.renderOffsetX),
+        renderOffsetY(config.renderOffsetY){
 
     if (animations.count("IdleDown") > 0) {
         Play("IdleDown");
@@ -77,6 +79,10 @@ void SpriteComponent::update(UpdateContext& context) {
     }
 
     srcRect.y = startY + animationIndex * frameHeight;
+
+    srcRect.w = frameWidth;
+    srcRect.h = frameHeight;
+
     // Coordenadas de mundo -> pantalla.
     destRect.x = static_cast<int>(transform->position.x) - context.camera.x;
     destRect.y = static_cast<int>(transform->position.y) - context.camera.y + 133;
@@ -92,7 +98,12 @@ void SpriteComponent::draw(RenderContext& context) {
         return;
     }
 
-    context.textureManager.Draw(bodyTexture, srcRect, destRect, spriteFlip);
+    SDL_Rect bodyDest = destRect;
+
+    bodyDest.x += renderOffsetX * scale;
+    bodyDest.y += renderOffsetY * scale;
+
+    context.textureManager.Draw(bodyTexture, srcRect, bodyDest, spriteFlip);
 
     if (hasHead && headTexture != nullptr) {
         SDL_Rect headSrc{};
@@ -136,4 +147,61 @@ void SpriteComponent::draw(RenderContext& context) {
         context.textureManager.Draw(headTexture, headSrc, headDst, spriteFlip);
     }
 }
+const SDL_Rect& SpriteComponent::getSrcRect() const {
+    return srcRect;
+}
 
+const SDL_Rect& SpriteComponent::getDestRect() const {
+    return destRect;
+}
+int SpriteComponent::getStartX() const {
+    return startX;
+}
+
+int SpriteComponent::getStartY() const {
+    return startY;
+}
+
+void SpriteComponent::setSpriteTextureAndConfig(const std::string& newTextureId,const SpriteSheetConfig& newConfig) {
+    // Cambia la textura principal del cuerpo/personaje.
+    setText(newTextureId);
+
+    // Actualiza la metadata del spritesheet.
+    frameWidth = newConfig.frameWidth;
+    frameHeight = newConfig.frameHeight;
+    scale = newConfig.scale;
+
+    // Actualiza desde dónde empieza el bloque del sprite.
+    startX = newConfig.startX;
+    startY = newConfig.startY;
+
+    renderOffsetX = newConfig.renderOffsetX;
+    renderOffsetY = newConfig.renderOffsetY;
+
+    // Asegura que el rectángulo fuente tenga dimensiones válidas.
+    srcRect.w = frameWidth;
+    srcRect.h = frameHeight;
+    std::cout << "[SPRITE CONFIG] texture="
+          << newTextureId
+          << " frame=("
+          << newConfig.frameWidth
+          << "x"
+          << newConfig.frameHeight
+          << ")"
+          << " start=("
+          << newConfig.startX
+          << ","
+          << newConfig.startY
+          << ")"
+          << " offset=("
+          << newConfig.renderOffsetX
+          << ","
+          << newConfig.renderOffsetY
+          << ")"
+          << std::endl;
+}
+
+void SpriteComponent::setRenderOffset(int offsetX, int offsetY) {
+    renderOffsetX = offsetX;
+    renderOffsetY = offsetY;
+}

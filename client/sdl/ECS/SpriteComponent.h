@@ -17,6 +17,8 @@ class SpriteComponent : public Component {
 public:
 
     SDL_RendererFlip spriteFlip = SDL_FLIP_NONE;
+    const SDL_Rect& getSrcRect() const;
+    const SDL_Rect& getDestRect() const;
 
 
     SpriteComponent(
@@ -37,6 +39,11 @@ public:
     void init() override;
     void update(UpdateContext& context) override;
     void draw(RenderContext& context) override;
+    int getStartX() const;
+    int getStartY() const;
+
+    void setSpriteTextureAndConfig(const std::string& newTextureId,const SpriteSheetConfig& newConfig);
+    void setRenderOffset(int offsetX, int offsetY);
 
 private:
 
@@ -71,9 +78,11 @@ private:
     int headStartY = 14;
     int headStepX = 27;
     int headStepY = 64;
+    int renderOffsetX = 0;
+    int renderOffsetY = 0;
 
     std::string currentAnim = "";
-    SpriteSheetConfig bodyConfigForRace(const std::string& race) const;
+    
 };
 
 #endif

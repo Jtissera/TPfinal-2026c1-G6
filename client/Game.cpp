@@ -743,6 +743,10 @@ void Game::equipItemFromInventory(int slotIndex) {
 
     *targetSlot = itemToEquip;
 
+    if (itemToEquip.type == ClientItemType::Armor) {
+        refreshPlayerBodySprite();
+    }
+
     std::cout << "[EQUIPMENT] equipado: "
               << itemToEquip.itemName
               << std::endl;
@@ -816,6 +820,10 @@ void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
 
     selectedSlot->reset();
 
+    if (itemToUnequip.type == ClientItemType::Armor) {
+        refreshPlayerBodySprite();
+    }
+
     std::cout << "[EQUIPMENT] desequipado: "
               << itemToUnequip.itemName
               << std::endl;
@@ -883,3 +891,147 @@ void Game::consumePotion(int slotIndex) {
     }
 }
 
+std::string Game::visualTextureForCurrentRace(const ItemView& item) const {
+    if (playerState.race == "dwarf" || playerState.race == "gnome") {
+        if (!item.visualTextureIdShort.empty()) {
+            return item.visualTextureIdShort;
+        }
+    }
+
+    if (!item.visualTextureIdTall.empty()) {
+        return item.visualTextureIdTall;
+    }
+
+    return item.visualTextureId;
+}
+
+void Game::renderEquippedArmor() {
+    // Si no hay armadura equipada, no dibujamos nada.
+    if (!equipmentState.armor.has_value()) {
+        return;
+    }
+
+    // Tomamos la armadura equipada.
+    const ItemView& armor = equipmentState.armor.value();
+
+    // Elegimos la textura visual correcta según la raza:
+    // human/elf -> tall
+    // dwarf/gnome -> short
+    const std::string visualTextureId = visualTextureForCurrentRace(armor);
+
+    SDL_Texture* armorTexture = assets->GetTexture(visualTextureId);
+
+    if (armorTexture == nullptr) {
+        std::cout << "[EQUIPMENT RENDER] No existe textura: "
+                  << visualTextureId
+                  << std::endl;
+        return;
+    }
+
+    // Obtenemos el SpriteComponent del player para copiar su frame y posición.
+    auto& sprite = player->getComponent<SpriteComponent>();
+
+    const SDL_Rect& playerSrc = sprite.getSrcRect();
+    const SDL_Rect& playerDest = sprite.getDestRect();
+
+    // La armadura debe usar el mismo frame/dirección del cuerpo.
+    SDL_Rect armorSrc = {
+        playerSrc.x - sprite.getStartX(),
+        playerSrc.y - sprite.getStartY(),
+        playerSrc.w,
+        playerSrc.h
+    };
+
+    // Copiamos la posición actual del jugador en pantalla.
+    SDL_Rect armorDest = playerDest;
+
+
+    SDL_Point armorOffset = visualOffsetForCurrentRace(armor);
+    armorDest.x += armorOffset.x * armorSpriteConfigForCurrentRace().scale;
+    armorDest.y += armorOffset.y * armorSpriteConfigForCurrentRace().scale;
+    SDL_RenderCopy(renderer, armorTexture, &armorSrc, &armorDest);
+
+}
+
+SpriteSheetConfig Game::armorSpriteConfigForCurrentRace() const {
+    // Si no hay armadura equipada, devolvemos una config neutra.
+    // En la práctica casi no debería entrar acá, porque este método
+    // se llama cuando ya hay armadura.
+    if (!equipmentState.armor.has_value()) {
+        return SpriteSheetConfig{
+            27,  // ancho de cada frame
+            47,  // alto de cada frame
+            2,   // escala visual
+            0,   // startX dentro del spritesheet de armadura
+            0,   // startY dentro del spritesheet de armadura
+            0,   // offset X
+            0    // offset Y
+        };
+    }
+
+    // Tomamos la armadura actualmente equipada.
+    const ItemView& armor = equipmentState.armor.value();
+
+    // Las razas bajas necesitan usar los offsets short.
+    const bool isShortRace =
+        playerState.race == "dwarf" || playerState.race == "gnome";
+
+    // Devolvemos la config de la armadura, incluyendo offsets visuales.
+    return SpriteSheetConfig{
+        27,  // ancho de cada frame
+        47,  // alto de cada frame
+        2,   // escala visual
+        0,   // startX: el spritesheet de armadura arranca en 0
+        0,   // startY: el spritesheet de armadura arranca en 0
+
+        // Si es dwarf/gnome, usa shortOffsetX.
+        // Si no, usa tallOffsetX.
+        isShortRace ? armor.visualShortOffsetX : armor.visualTallOffsetX,
+
+        // Si es dwarf/gnome, usa shortOffsetY.
+        // Si no, usa tallOffsetY.
+        isShortRace ? armor.visualShortOffsetY : armor.visualTallOffsetY
+    };
+}
+
+void Game::refreshPlayerBodySprite() {
+    // Obtenemos el SpriteComponent del jugador local.
+    auto& sprite = player->getComponent<SpriteComponent>();
+
+    // Si hay armadura equipada, reemplazamos el cuerpo desnudo
+    // por la textura visual de la armadura.
+    if (equipmentState.armor.has_value()) {
+        const ItemView& armor = equipmentState.armor.value();
+
+        // Elige armor_iron_tall para human/elf
+        // y armor_iron_short para dwarf/gnome.
+        const std::string armorTextureId = visualTextureForCurrentRace(armor);
+
+        sprite.setSpriteTextureAndConfig(
+            armorTextureId,
+            armorSpriteConfigForCurrentRace()
+        );
+
+        return;
+    }
+
+    sprite.setSpriteTextureAndConfig(
+        "body_sheet",
+        assets->bodyConfigForRace(playerState.race)
+    );
+}
+
+// helpér
+SDL_Point Game::visualOffsetForCurrentRace(const ItemView& item) const {
+    if (playerState.race == "dwarf" || playerState.race == "gnome") {
+        return SDL_Point{
+            item.visualShortOffsetX,
+            item.visualShortOffsetY
+        };
+    }
+
+    return SDL_Point{
+        item.visualTallOffsetX,
+        item.visualTallOffsetY
+    };
+}

@@ -78,7 +78,11 @@ private:
     void handleEquipmentSlotClick(int equipmentSlotIndex);
     bool addItemToFirstFreeInventorySlot(const ItemView& item);
     void consumePotion(int slotIndex);
-    
+    std::string visualTextureForCurrentRace(const ItemView& item) const;
+    void renderEquippedArmor();
+    void refreshPlayerBodySprite();
+    SpriteSheetConfig armorSpriteConfigForCurrentRace() const;
+    SDL_Point visualOffsetForCurrentRace(const ItemView& item) const;
 };
 
 #endif //PRUEBA_SDL_GAME_H

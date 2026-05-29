@@ -2,36 +2,98 @@
   "textures": [
     {
       "id": "item_sword",
-      "path": "assets/sprites/equipment/espada.png"
+      "path": "assets/sprites/equipment/weapon/espada.png"
     },
     {
       "id": "weapon_sword",
-      "path": "assets/sprites/equipment/espada.png"
+      "path": "assets/sprites/equipment/weapon/espada.png"
     },
     {
       "id": "item_ash_staff",
-      "path": "assets/sprites/equipment/Baculo_engarzado.png"
+      "path": "assets/sprites/equipment/weapon/Baculo_engarzado.png"
     },
     {
       "id": "weapon_ash_staff",
-      "path": "assets/sprites/equipment/Baculo_engarzado.png"
+      "path": "assets/sprites/equipment/weapon/Baculo_engarzado.png"
     },
     {
-      "id": "item_leather_armor",
-      "path": "assets/sprites/equipment/armadura_de_cuero.png"
+      "id": "weapon_staff",
+      "path": "assets/sprites/equipment/weapon/baculo.png"
     },
     {
-      "id": "armor_leather",
-      "path": "assets/sprites/equipment/armadura_de_cuero.png"
+      "id": "weapon_axe",
+      "path": "assets/sprites/equipment/weapon/hacha.png"
     },
+    {
+      "id": "weapon_hammer",
+      "path": "assets/sprites/equipment/weapon/martillo.png"
+    },
+    {
+      "id": "weapon_simple_bow",
+      "path": "assets/sprites/equipment/weapon/arco_simple.png"
+    },
+    {
+      "id": "weapon_composite_bow",
+      "path": "assets/sprites/equipment/weapon/arco_compuesto.png"
+    },
+
+    {
+      "id": "item_iron_armor",
+      "path": "assets/sprites/equipment/armor/armadura_hierro_grande.png"
+    },
+    {
+      "id": "armor_iron_tall",
+      "path": "assets/sprites/equipment/armor/armadura_hierro_grande.png"
+    },
+    {
+      "id": "armor_iron_short",
+      "path": "assets/sprites/equipment/armor/armadura_hierro_peq.png"
+    },
+
+    {
+      "id": "cleric_armor_tall",
+      "path": "assets/sprites/equipment/armor/cleric_grande.png"
+    },
+    {
+      "id": "cleric_armor_short",
+      "path": "assets/sprites/equipment/armor/clerigopeq.png"
+    },
+
+    {
+      "id": "tunic_blue_tall",
+      "path": "assets/sprites/equipment/armor/tunica_azul_grande.png"
+    },
+    {
+      "id": "tunic_blue_short",
+      "path": "assets/sprites/equipment/armor/tunica_azul_peq.png"
+    },
+
+    {
+      "id": "item_hood",
+      "path": "assets/sprites/equipment/armor/helmets.png"
+    },
+    {
+      "id": "helmet_hood",
+      "path": "assets/sprites/equipment/armor/helmets.png"
+    },
+
     {
       "id": "item_turtle_shield",
-      "path": "assets/sprites/equipment/Escudo_de_tortuga.png"
+      "path": "assets/sprites/equipment/weapon/Escudo_de_tortuga.png"
     },
     {
       "id": "shield_turtle",
-      "path": "assets/sprites/equipment/Escudo_de_tortuga.png"
+      "path": "assets/sprites/equipment/weapon/Escudo_de_tortuga.png"
     },
+    {
+      "id": "item_iron_shield",
+      "path": "assets/sprites/equipment/weapon/Escudo_de_hierro.png"
+    },
+    {
+      "id": "shield_iron",
+      "path": "assets/sprites/equipment/weapon/Escudo_de_hierro.png"
+    },
+
     {
       "id": "item_health_potion",
       "path": "assets/sprites/equipment/pociones.png"
@@ -39,14 +101,6 @@
     {
       "id": "item_mana_potion",
       "path": "assets/sprites/equipment/pociones.png"
-    },
-    {
-      "id": "item_hood",
-      "path": "assets/sprites/equipment/helmets.png"
-    },
-    {
-      "id": "helmet_hood",
-      "path": "assets/sprites/equipment/helmets.png"
     }
   ]
 }

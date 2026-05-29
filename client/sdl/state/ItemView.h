@@ -74,6 +74,12 @@ struct ItemView {
     int iconSrcY = 0;
     int iconSrcW = 32;
     int iconSrcH = 32;
+    std::string visualTextureIdTall;
+    std::string visualTextureIdShort;
+    int visualTallOffsetX = 0;
+    int visualTallOffsetY = 0;
 
+    int visualShortOffsetX = 0;
+    int visualShortOffsetY = 0;
 };
 #endif //TALLER_TP_ITEMVIEW_H

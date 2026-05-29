@@ -44,6 +44,8 @@ public:
     void LoadTexturesFromJson(const std::string& jsonPath);
 
 
+    SpriteSheetConfig bodyConfigForRace(const std::string& race) const;
+
 
 private:
 
@@ -57,7 +59,6 @@ private:
     std::string textureForNPC(NpcType type);
     std::string bodyTextureForRace(const std::string& race) const;
     std::string headTextureForRace(const std::string& race) const;
-    SpriteSheetConfig bodyConfigForRace(const std::string& race) const;
     void LoadBodiesFromJson(const std::string& path);
 
 };

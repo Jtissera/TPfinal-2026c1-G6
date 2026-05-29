@@ -92,7 +92,7 @@ void Player::stopMeditating() {
     if (isMeditating()) state = PlayerState::ALIVE;
 }
 
-void Player::die() {
+uint32_t Player::die() {
     state = PlayerState::DEAD;
     hp    = 0;
 
@@ -109,7 +109,7 @@ void Player::die() {
     return 0;
 }
 
-std::vector<std::unique_ptr<Item>> Player::purgeInventoryOnDeath() {
+std::vector<Item> Player::purgeInventoryOnDeath() {
     return inventory.removeAllItems();
 }
 

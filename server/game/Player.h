@@ -81,7 +81,7 @@ public:
 
 
     const Hitbox& getHitbox() const { return hitbox; }
-    std::vector<Item> purgeInventoryOnDeath();
+    std::vector<Item>  purgeInventoryOnDeath();
 
 private:
     int x = 0;
