@@ -88,14 +88,23 @@ struct ItemView {
     // No son los mismos que el ícono del inventario.
     int visualDownSrcX = 0;
     int visualDownSrcY = 0;
-
     int visualLeftSrcX = 0;
     int visualLeftSrcY = 0;
-
     int visualRightSrcX = 0;
     int visualRightSrcY = 0;
-
     int visualUpSrcX = 0;
     int visualUpSrcY = 0;
+
+    int visualDownOffsetX = 0;
+    int visualDownOffsetY = 0;
+
+    int visualLeftOffsetX = 0;
+    int visualLeftOffsetY = 0;
+
+    int visualRightOffsetX = 0;
+    int visualRightOffsetY = 0;
+
+    int visualUpOffsetX = 0;
+    int visualUpOffsetY = 0;
 };
 #endif //TALLER_TP_ITEMVIEW_H

@@ -27,31 +27,40 @@ void ItemCatalog::loadFromJson(const std::string& path) {
         item.itemId = itemJson.value("id", 0);
         item.itemName = itemJson.value("name", "");
 
-        item.textureId = itemJson.value("textureId", "");
-        item.visualTextureId = itemJson.value("visualTextureId", "");
-        item.textureId = itemJson.value("textureId", "");
-        item.visualTextureId = itemJson.value("visualTextureId", "");
+    // Textura usada dentro del inventario.
+    item.textureId = itemJson.value("textureId", "");
 
+    // Textura usada cuando el ítem está equipado visualmente.
+    item.visualTextureId = itemJson.value("visualTextureId", "");
+
+    // Primero cargamos el recorte del ícono.
+    // Esto es importante porque los datos visuales pueden usarlo como fallback.
+    item.iconSrcX = itemJson.value("iconSrcX", 0);
+    item.iconSrcY = itemJson.value("iconSrcY", 0);
+    item.iconSrcW = itemJson.value("iconSrcW", 32);
+    item.iconSrcH = itemJson.value("iconSrcH", 32);
+
+        // Ahora cargamos la configuración visual extra.
         if (itemJson.contains("visuals")) {
             const auto& visuals = itemJson["visuals"];
 
-            // Visuales específicos para armaduras.
-            // Si no existen, caen al visualTextureId genérico.
+            // Texturas específicas para armaduras grandes/chicas.
             item.visualTextureIdTall = visuals.value("tall", item.visualTextureId);
             item.visualTextureIdShort = visuals.value("short", item.visualTextureId);
 
-            // Offsets específicos para armaduras altas.
+            // Offsets para armaduras grandes.
             item.visualTallOffsetX = visuals.value("tallOffsetX", 0);
             item.visualTallOffsetY = visuals.value("tallOffsetY", 0);
 
-            // Offsets específicos para armaduras bajas.
+            // Offsets para armaduras chicas.
             item.visualShortOffsetX = visuals.value("shortOffsetX", 0);
             item.visualShortOffsetY = visuals.value("shortOffsetY", 0);
 
-            // Offsets genéricos para casco, arma, escudo, etc.
+            // Offset genérico para casco, arma o escudo.
             item.visualOffsetX = visuals.value("offsetX", 0);
             item.visualOffsetY = visuals.value("offsetY", 0);
 
+            // Recortes visuales por dirección.
             item.visualDownSrcX = visuals.value("downSrcX", item.iconSrcX);
             item.visualDownSrcY = visuals.value("downSrcY", item.iconSrcY);
 
@@ -63,6 +72,20 @@ void ItemCatalog::loadFromJson(const std::string& path) {
 
             item.visualUpSrcX = visuals.value("upSrcX", item.iconSrcX);
             item.visualUpSrcY = visuals.value("upSrcY", item.iconSrcY);
+
+            // Offsets por dirección.
+            // Esto es lo que necesitás para que arma y escudo no cambien de mano.
+            item.visualDownOffsetX = visuals.value("downOffsetX", item.visualOffsetX);
+            item.visualDownOffsetY = visuals.value("downOffsetY", item.visualOffsetY);
+
+            item.visualLeftOffsetX = visuals.value("leftOffsetX", item.visualOffsetX);
+            item.visualLeftOffsetY = visuals.value("leftOffsetY", item.visualOffsetY);
+
+            item.visualRightOffsetX = visuals.value("rightOffsetX", item.visualOffsetX);
+            item.visualRightOffsetY = visuals.value("rightOffsetY", item.visualOffsetY);
+
+            item.visualUpOffsetX = visuals.value("upOffsetX", item.visualOffsetX);
+            item.visualUpOffsetY = visuals.value("upOffsetY", item.visualOffsetY);
         }
 
         item.type = parseItemType(itemJson.value("type", "other"));

@@ -61,6 +61,7 @@ public:
 );
     // Quita visualmente el casco/capucha.
     void clearHelmet();
+    int getAnimationIndex() const { return animationIndex; }
 
 private:
 

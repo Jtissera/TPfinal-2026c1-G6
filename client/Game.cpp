@@ -178,6 +178,7 @@ void Game::update() {
 
 
 void Game::render() {
+
     // Limpia la pantalla antes de dibujar el nuevo frame.
     SDL_RenderClear(renderer);
 
@@ -197,16 +198,32 @@ void Game::render() {
         t->draw(renderContext);
     }
 
-    // Dibuja jugadores.
+
+    // Escudo detrás del personaje cuando mira arriba (animIndex 3)
+    // o derecha (animIndex 2).
+    auto& sprite = player->getComponent<SpriteComponent>();
+    std::cout << "[DBG] animIndex=" << sprite.getAnimationIndex() << std::endl;
+    bool weaponBehind = (sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 2);
+    bool shieldBehind = (sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 3);
+    std::cout << "[DBG] animIndex=" << sprite.getAnimationIndex() << std::endl;
+
+    if (shieldBehind) {
+        renderEquippedShield();
+    }
+    if (weaponBehind) {
+        renderEquippedWeapon();
+    }
+
     for (auto& p : manager.getGroup(groupPlayers)) {
         p->draw(renderContext);
     }
 
-    // Dibuja equipamiento visual encima del personaje (capas sobre el sprite).
-    // El casco lo maneja SpriteComponent internamente (Mauricio).
-    // Arma y escudo se dibujan aquí como capas adicionales.
-    renderEquippedWeapon();
-    renderEquippedShield();
+    if (!shieldBehind) {
+        renderEquippedShield();
+    }
+    if (!weaponBehind) {
+        renderEquippedWeapon();
+    }
 
     // Dibuja enemigos.
     for (auto& p : manager.getGroup(groupEnemies)) {
@@ -1125,7 +1142,11 @@ void Game::renderEquippedWeapon() {
         playerSrc.h * cfg.scale
     };
 
-    SDL_RenderCopy(renderer, weaponTexture, &weaponSrc, &weaponDest);
+    //SDL_RenderCopy(renderer, weaponTexture, &weaponSrc, &weaponDest);
+    // Usamos el mismo flip que el cuerpo del personaje para que
+    // el arma acompañe la orientación y quede siempre en la mano derecha.
+    SDL_RenderCopyEx(renderer, weaponTexture, &weaponSrc, &weaponDest,
+                     0, nullptr, sprite.spriteFlip);
 }
 
 void Game::renderEquippedShield() {
@@ -1168,5 +1189,7 @@ void Game::renderEquippedShield() {
         playerSrc.h * cfg.scale
     };
 
-    SDL_RenderCopy(renderer, shieldTexture, &shieldSrc, &shieldDest);
+    //SDL_RenderCopy(renderer, shieldTexture, &shieldSrc, &shieldDest);
+    SDL_RenderCopyEx(renderer, shieldTexture, &shieldSrc, &shieldDest,
+                     0, nullptr, sprite.spriteFlip);
 }
