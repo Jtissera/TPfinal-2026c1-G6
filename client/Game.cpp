@@ -123,8 +123,12 @@ void Game::handleEvents() {
                 handleInventorySlotClick(inventorySlot);
                 return;
             }
+            const ItemView* equippedWeapon = nullptr;
+            if (equipmentState.weapon.has_value()) {
+                equippedWeapon = &equipmentState.weapon.value();
+            }
 
-            attackSystem.handleMouseClick(mouseX, mouseY, camera, enemies, sendQueue);
+            attackSystem.handleMouseClick(mouseX, mouseY, camera, enemies, sendQueue,player,equippedWeapon);
         }
     }
 
@@ -202,10 +206,8 @@ void Game::render() {
     // Escudo detrás del personaje cuando mira arriba (animIndex 3)
     // o derecha (animIndex 2).
     auto& sprite = player->getComponent<SpriteComponent>();
-    std::cout << "[DBG] animIndex=" << sprite.getAnimationIndex() << std::endl;
     bool weaponBehind = (sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 2);
     bool shieldBehind = (sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 3);
-    std::cout << "[DBG] animIndex=" << sprite.getAnimationIndex() << std::endl;
 
     if (shieldBehind) {
         renderEquippedShield();
@@ -231,14 +233,8 @@ void Game::render() {
     }
 
     attackSystem.render(renderer, *assets, camera);
-
-    // Importante: sacar el clip antes de dibujar el HUD.
     SDL_RenderSetClipRect(renderer, nullptr);
-
-    // Dibuja HUD por encima del juego.
     renderHUD();
-
-    // Presenta el frame final en pantalla.
     SDL_RenderPresent(renderer);
 }
 

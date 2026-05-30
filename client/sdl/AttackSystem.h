@@ -10,6 +10,8 @@
 #include <SDL2/SDL_rect.h>
 #include <unordered_map>
 
+#include "state/ItemView.h"
+
 // Representa un efecto visual de ataque activo.
 // Por ahora solo guarda posición, tiempo de creación y duración.
 struct AttackEffect {
@@ -34,7 +36,9 @@ public:
         int screenY,
         const SDL_Rect& camera,
         std::map<uint32_t, Entity*>& enemies,
-        Queue<std::shared_ptr<const Message>>* sendQueue
+        Queue<std::shared_ptr<const Message>>* sendQueue,
+        Entity* player,
+        const ItemView* equippedWeapon
     );
 
     // Borra efectos vencidos.
@@ -64,6 +68,11 @@ private:
         uint32_t targetId,
         Queue<std::shared_ptr<const Message>>* sendQueue
     );
+
+    int attackRangeForWeapon(const ItemView* weapon) const;
+    int damageForWeapon(const ItemView* weapon) const;
+    bool isTargetInRange(Entity* attacker,Entity& target,int range) const;
+    bool shouldCreateVisualEffect(const ItemView* weapon) const;
 };
 
 #endif //TALLER_TP_ATTACKSYSTEM_H
