@@ -1105,7 +1105,6 @@ void Game::renderEquippedWeapon() {
     const SDL_Rect& playerSrc  = sprite.getSrcRect();
     const SDL_Rect& playerDest = sprite.getDestRect();
 
-    // Misma región de frame que el cuerpo (misma dirección/animación).
     SDL_Rect weaponSrc = {
         playerSrc.x - sprite.getStartX(),
         playerSrc.y - sprite.getStartY(),
@@ -1113,9 +1112,18 @@ void Game::renderEquippedWeapon() {
         playerSrc.h
     };
 
-    SDL_Rect weaponDest = playerDest;
-    weaponDest.x += weapon.visualOffsetX;
-    weaponDest.y += weapon.visualOffsetY;
+    // El destRect debe tener el tamaño del frame escalado — no el del personaje.
+    // playerDest.w/h heredan el tamaño del body (54x94 con scale 2), que es
+    // el mismo que queremos para la espada.
+    const SpriteSheetConfig cfg = armorSpriteConfigForCurrentRace();
+    SDL_Point offset = visualOffsetForCurrentRace(weapon);
+
+    SDL_Rect weaponDest = {
+        playerDest.x + offset.x,
+        playerDest.y + offset.y,
+        playerSrc.w * cfg.scale,
+        playerSrc.h * cfg.scale
+    };
 
     SDL_RenderCopy(renderer, weaponTexture, &weaponSrc, &weaponDest);
 }
@@ -1150,9 +1158,15 @@ void Game::renderEquippedShield() {
         playerSrc.h
     };
 
-    SDL_Rect shieldDest = playerDest;
-    shieldDest.x += shield.visualOffsetX;
-    shieldDest.y += shield.visualOffsetY;
+    const SpriteSheetConfig cfg = armorSpriteConfigForCurrentRace();
+    SDL_Point offset = visualOffsetForCurrentRace(shield);
+
+    SDL_Rect shieldDest = {
+        playerDest.x + offset.x,
+        playerDest.y + offset.y,
+        playerSrc.w * cfg.scale,
+        playerSrc.h * cfg.scale
+    };
 
     SDL_RenderCopy(renderer, shieldTexture, &shieldSrc, &shieldDest);
 }

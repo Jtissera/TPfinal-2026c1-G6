@@ -21,8 +21,12 @@
       "iconSrcW": 32,
       "iconSrcH": 32,
       "visuals": {
-        "offsetX": 18,
-        "offsetY": 18
+        "offsetX": 0,
+        "offsetY": 0,
+        "tallOffsetX": 0,
+        "tallOffsetY": 0,
+        "shortOffsetX": 0,
+        "shortOffsetY": 0
       }
     },
     {
@@ -129,8 +133,12 @@
       "iconSrcW": 32,
       "iconSrcH": 32,
       "visuals": {
-        "offsetX": 4,
-        "offsetY": 20
+        "offsetX": 0,
+        "offsetY": 0,
+        "tallOffsetX": 0,
+        "tallOffsetY": 0,
+        "shortOffsetX": 0,
+        "shortOffsetY": 0
       }
     },
     {
@@ -178,4 +186,3 @@
 
   ]
 }
-
