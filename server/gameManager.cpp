@@ -1,12 +1,14 @@
 #include "gameManager.h"
 
-GameManager::GameManager() {}
+GameManager::GameManager(NpcFactory& npcFactory, ItemRepository& itemRepo)
+    : npcFactory(npcFactory), itemRepo(itemRepo) {
+}
 
 uint32_t GameManager::createGame(const std::string& gameName, uint8_t maxPlayers) {
     std::unique_lock<std::mutex> lock(mutex);
 
     uint32_t id = nextGameId++;
-    auto room = std::make_unique<GameRoom>(id, gameName, maxPlayers);
+    auto room = std::make_unique<GameRoom>(id, gameName, maxPlayers, npcFactory, itemRepo);
     room->start();
     rooms.emplace(id, std::move(room));
 

@@ -2,21 +2,21 @@
 #include "Player.h"
 #include "classRepository.h"
 #include "raceRepository.h"
-#include "../../common/dtos/gameTypes.h"
 #include <string>
 #include <cstdint>
+#include <stdexcept>
 
 class PlayerFactory {
 public:
-
-    PlayerFactory(const ClassRepository& classRepo,const RaceRepository&  raceRepo);
+    PlayerFactory(const ClassRepository& classRepo,
+                  const RaceRepository&  raceRepo);
 
     Player create(uint32_t clientId,
                   const std::string& name,
                   const std::string& raceName,
                   const std::string& className,
-                  int spawnX,
-                  int spawnY) const;
+                  int spawnTileX,
+                  int spawnTileY) const;
 
 private:
     const ClassRepository& classRepo;

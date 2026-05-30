@@ -13,7 +13,7 @@
 
 TEST(GameManagerTest, CreateGameReturnsIncrementalIds)
 {
-    GameManager gm;
+    MockGameManager gm;
     
     uint32_t id1 = gm.createGame("sala1", 4);
     uint32_t id2 = gm.createGame("sala2", 4);

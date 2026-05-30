@@ -68,13 +68,13 @@ void LobbyHandler::handleConnect(uint32_t clientId, const Message& message) {
 void LobbyHandler::handleCreateChar(uint32_t clientId, const Message& message) {
     const auto& msg = static_cast<const CreateCharMessage&>(message);
     try {
-        Player player = playerFactory.create(
-            clientId,
-            msg.getName(),
-            msg.getRaza(),
-            msg.getClase(),
-            6 * 96, 7 * 96
-        );
+        Player player = playerFactory.create(    
+        clientId,
+        msg.getName(),
+        msg.getRaza(),
+        msg.getClase(),
+        6, 7  // tile 6,7 -> cte
+    );
         playerRepo.save(clientId, std::move(player));
         lobbyMonitor.sendTo(clientId, std::make_shared<const CreateOkMessage>());
     } catch (const std::exception& e) {
