@@ -29,10 +29,13 @@ public:
 
   std::vector<Item> removeAllItems();
 
+    Item *findItem(uint32_t itemId);
+    const Item *findItem(uint32_t itemId) const;
+    
 private:
   std::vector<Item> items;
   std::array<uint32_t, static_cast<std::size_t>(EquipSlot::COUNT)> equipped{};
 
-  const Item *findItem(uint32_t itemId) const;
-  Item *findItem(uint32_t itemId);
+
+
 };

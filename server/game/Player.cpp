@@ -15,22 +15,20 @@ Player::Player(uint32_t clientId,
     , maxMana(maxMana)
     , hp(maxHp)
     , mana(maxMana)
-    , hitbox{32, 32, 64, 96} 
 {}
 
-bool Player::isAlive()      const { return state == PlayerState::ALIVE; }
-bool Player::isGhost()      const { return state == PlayerState::DEAD; }
+bool Player::isAlive()      const { return state == PlayerState::ALIVE;      }
+bool Player::isGhost()      const { return state == PlayerState::DEAD;       }
 bool Player::isMeditating() const { return state == PlayerState::MEDITATING; }
 
 void Player::takeDamage(int16_t dmg) {
     if (!isAlive()) return;
-
     hp = std::max<int16_t>(0, hp - dmg);
+    if (hp == 0) state = PlayerState::DEAD;
 }
 
 void Player::heal(int16_t amount) {
     if (!isAlive()) return;
-
     hp = std::min(maxHp, static_cast<int16_t>(hp + amount));
 }
 
@@ -46,33 +44,25 @@ bool Player::spendMana(int16_t cost) {
     return true;
 }
 
-void Player::addExperience(uint32_t exp) {
+void Player::addGold(uint32_t amount) {
+    gold += amount;
+}
 
-experience += exp;
-
-    uint32_t currentLimit = formulas.calcExpLimit(level);
-
-    while (experience >= currentLimit) {
-        experience -= currentLimit;
-        
-        int16_t newMaxHp   = formulas.calcMaxHp(race, cls, level + 1);
-        int16_t newMaxMana = formulas.calcMaxMana(race, cls, level + 1);
-        
+// Las formulas vienen de afuera - Player no sabe calcularlas
+void Player::addExperience(uint32_t exp, uint32_t expLimit,
+                            int16_t newMaxHp, int16_t newMaxMana) {
+    experience += exp;
+    if (experience >= expLimit) {
+        experience -= expLimit;
         levelUp(newMaxHp, newMaxMana);
-        didLevelUp = true;  
-        
-
-        currentLimit = formulas.calcExpLimit(level);
+        didLevelUp = true;
     }
-
-    this->limit = currentLimit;
-
 }
 
 bool Player::checkAndClearLevelUp() {
-    bool wasLevelUp = didLevelUp; 
-    didLevelUp = false;           
-    return wasLevelUp;            
+    bool was   = didLevelUp;
+    didLevelUp = false;
+    return was;
 }
 
 void Player::levelUp(int16_t newMaxHp, int16_t newMaxMana) {
@@ -92,41 +82,73 @@ void Player::stopMeditating() {
     if (isMeditating()) state = PlayerState::ALIVE;
 }
 
-uint32_t Player::die() {
+
+uint32_t Player::die(uint32_t safeGold) {
+    if (!isAlive()) return 0;
     state = PlayerState::DEAD;
     hp    = 0;
 
-    uint32_t expLoss = formulas.calcExpLimit(level) / 10;
-    experience = (experience > expLoss) ? experience - expLoss : 0;
-    uint32_t safeGold = formulas.calcMaxGold(level);
-
     if (gold > safeGold) {
         uint32_t excess = gold - safeGold;
-        this->gold = safeGold; 
+        gold = safeGold;
         return excess;
     }
-
     return 0;
 }
 
-std::vector<Item> Player::purgeInventoryOnDeath() {
-    return inventory.removeAllItems();
-}
-
-void Player::resurrect(int spawnX, int spawnY) {
+void Player::resurrect(int tx, int ty) {
     state = PlayerState::ALIVE;
-    x = spawnX;
-    y = spawnY;
+    tileX = tx;
+    tileY = ty;
     hp    = maxHp / 2;
     mana  = 0;
 }
 
 void Player::tick(float hpGained, float manaGained) {
     if (!isAlive() && !isMeditating()) return;
+    if (isAlive())        heal(static_cast<int16_t>(hpGained));
+    if (cls.canUseMagic)  restoreMana(static_cast<int16_t>(manaGained));
+}
 
-    if (isAlive())
-        heal(static_cast<int16_t>(hpGained));
+std::vector<Item> Player::purgeInventoryOnDeath() {
+    return inventory.removeAllItems();
+}
 
-    if (cls.canUseMagic)
-        restoreMana(static_cast<int16_t>(manaGained));
+int Player::getAttackRange() const {
+    const Item* weapon = inventory.getEquipped(EquipSlot::HAND);
+    if (weapon && weapon->stats.isRanged) return 10; // toml
+    return 1;
+}
+
+uint16_t Player::getWeaponDamageMin() const {
+    const Item* w = inventory.getEquipped(EquipSlot::HAND);
+    return w ? w->stats.damageMin : 0;
+}
+uint16_t Player::getWeaponDamageMax() const {
+    const Item* w = inventory.getEquipped(EquipSlot::HAND);
+    return w ? w->stats.damageMax : 1;
+}
+uint16_t Player::getArmorDefenseMin() const {
+    const Item* a = inventory.getEquipped(EquipSlot::ARMOR);
+    return a ? a->stats.defenseMin : 0;
+}
+uint16_t Player::getArmorDefenseMax() const {
+    const Item* a = inventory.getEquipped(EquipSlot::ARMOR);
+    return a ? a->stats.defenseMax : 0;
+}
+uint16_t Player::getHelmetDefenseMin() const {
+    const Item* h = inventory.getEquipped(EquipSlot::HELMET);
+    return h ? h->stats.defenseMin : 0;
+}
+uint16_t Player::getHelmetDefenseMax() const {
+    const Item* h = inventory.getEquipped(EquipSlot::HELMET);
+    return h ? h->stats.defenseMax : 0;
+}
+uint16_t Player::getShieldDefenseMin() const {
+    const Item* s = inventory.getEquipped(EquipSlot::SHIELD);
+    return s ? s->stats.defenseMin : 0;
+}
+uint16_t Player::getShieldDefenseMax() const {
+    const Item* s = inventory.getEquipped(EquipSlot::SHIELD);
+    return s ? s->stats.defenseMax : 0;
 }

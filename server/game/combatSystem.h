@@ -1,34 +1,34 @@
 #pragma once
-
-#include "../game/Player.h"
-#include "gameFormulas.h"
+#include "Player.h"
+#include <cstdint>
+#include <cmath>
+#include <cstdlib>
+#include <algorithm>
+#include "combatant.h"
 
 class CombatSystem {
 public:
     struct Result {
-        bool valid = false;
-        bool dodged = false;
-        bool killed = false;
-        int16_t damage = 0;
-        int16_t defense = 0;
+        bool     valid    = false;
+        bool     dodged   = false;
+        bool     killed   = false;
+        bool     critical = false;
+        int16_t  damage   = 0;
+        int16_t  defense  = 0;
         uint32_t expGained = 0;
-        uint32_t killExp = 0;
-        bool critical = false;
     };
 
-    Result attack(Player& attacker, Player& target);
+    Result attack(Combatant& attacker, Combatant& target);
+    Result attackPlayer(Player& attacker, Player& target);
+    bool canAttack(const Combatant& attacker, const Combatant& target) const;
+    bool canAttackPlayer(const Player& attacker, const Player& target) const;
 
 private:
-    GameFormulas formulas;
+    bool    rollDodge(const Combatant& target) const;
+    int16_t rollDamage(const Combatant& attacker, bool& outCritical) const;
+    int16_t rollDefense(const Combatant& target) const;
+    int16_t rollWeaponDamage(const Item& weapon, bool& outCritical) const;
+    int16_t rollArmorDefense(uint16_t min, uint16_t max) const;
 
-    bool canAttack(Player& attacker, Player& target);
-    bool rollDodge(Player& target);
-
-    int16_t rollDamage(Player& attacker, bool& outCritical);
-    int16_t rollDefense(Player& target);
-
-    int16_t rollWeaponDamage(const Item& weapon, bool& outCritical);
-    int16_t rollArmorDefense(const Item* item);
-
-    const int MELEE_RANGE = 96;
+    static constexpr int MELEE_RANGE = 1; // en tiles
 };

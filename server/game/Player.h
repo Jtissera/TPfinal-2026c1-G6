@@ -2,113 +2,107 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
-#include "../../common/dtos/gameTypes.h" 
+#include "../../common/dtos/gameTypes.h"
 #include "inventory.h"
 #include "raceRepository.h"
 #include "classRepository.h"
 #include "playerState.h"
-#include "../world/Hitbox.h"
-#include "gameFormulas.h"
+#include "combatant.h"
 
-class Player {
+class Player : public Combatant{
 public:
     Player(uint32_t clientId,
-       std::string name,
-       const RaceStats& race,
-       const ClassStats& cls,
-       int16_t maxHp,
-       int16_t maxMana);
+           std::string name,
+           const RaceStats&  race,
+           const ClassStats& cls,
+           int16_t maxHp,
+           int16_t maxMana);
 
-    bool isAlive() const;
-    bool isGhost() const;
+    bool isAlive()      const override;
+    bool isGhost()      const;
     bool isMeditating() const;
 
-    bool checkAndClearLevelUp();
-
-    void takeDamage(int16_t dmg);
+    void takeDamage(int16_t dmg) override;
     void heal(int16_t amount);
     void restoreMana(int16_t amount);
+    bool spendMana(int16_t cost);
+    void addGold(uint32_t amount);
 
-    void addExperience(uint32_t exp);
+    // Devuelve oro en exceso al morir
+    uint32_t die(uint32_t safeGold);
+    void resurrect(int tileX, int tileY);
+
+    //las fórmulas vienen de afuera
+    void addExperience(uint32_t exp, uint32_t expLimit,
+                       int16_t newMaxHp, int16_t newMaxMana);
+    bool checkAndClearLevelUp();
     void levelUp(int16_t newMaxHp, int16_t newMaxMana);
 
     void startMeditating();
     void stopMeditating();
 
-    uint32_t die();
-    void resurrect(int spawnX, int spawnY);
-
     void tick(float hpGained, float manaGained);
 
-    bool spendMana(int16_t cost);
+    std::vector<Item> purgeInventoryOnDeath();
 
-    int getX() const { 
-        return x; 
-    }
-    
-    int getY() const { 
-        return y; 
-    }
-    
-    void setPos(int nx, int ny) { 
-        x = nx; y = ny; 
-    }
+    int getTileX() const override { return tileX; }
+    int getTileY() const override{ return tileY; }
+    void setTilePos(int tx, int ty) { tileX = tx; tileY = ty; }
 
-    void addGold(uint32_t amount) { 
-    gold += amount; 
-}
-    
-    uint32_t getClientId() const { return clientId; } // logica en cpp, hay que pasarlo
+    uint32_t getId()      const override{ return clientId; }  //mandar esto al cpp
+    uint32_t getClientId()const { return clientId; }
+    uint8_t  getLevel()   const override{ return level;    }
+    int16_t  getHp()      const override{ return hp;       }
+    int16_t  getMaxHp()   const override{ return maxHp;    }
+    int16_t  getMana()    const { return mana;      }
+    int16_t  getMaxMana() const { return maxMana;   }
+    uint32_t getExp()     const { return experience;}
+    uint32_t getGold()    const { return gold;      }
+    uint8_t  getAgility()     const override { return race.agility;      }
+    uint8_t  getStrength()    const override { return race.strength;     }
+    int      getAttackRange() const override;  // en .cpp, depende del arma
+
+    uint16_t getWeaponDamageMin()  const override;
+    uint16_t getWeaponDamageMax()  const override;
+    uint16_t getArmorDefenseMin()  const override;
+    uint16_t getArmorDefenseMax()  const override;
+    uint16_t getHelmetDefenseMin() const override;
+    uint16_t getHelmetDefenseMax() const override;
+    uint16_t getShieldDefenseMin() const override;
+    uint16_t getShieldDefenseMax() const override;
+
     const RaceStats&  getRace() const { return race; }
     const ClassStats& getCls()  const { return cls;  }
-    uint8_t  getLevel()   const { return level;      }
-    int16_t  getHp()      const { return hp;         }
-    int16_t  getMaxHp()   const { return maxHp;      }
-    int16_t  getMana()    const { return mana;        }
-    int16_t  getMaxMana() const { return maxMana;     }
-    uint32_t getExp()     const { return experience;  }
-    uint32_t getGold()    const { return gold;        }
-    uint32_t getId()      const { return clientId;    }
-    Inventory& getInventory(){return inventory;}
-;
+
+    Inventory&       getInventory()       { return inventory; }
+    const Inventory& getInventory() const { return inventory; }
 
     Player(const Player&)            = delete;
     Player& operator=(const Player&) = delete;
-
-    Player(Player&&)            = default;
-    Player& operator=(Player&&) = default;
-
-
-    const Hitbox& getHitbox() const { return hitbox; }
-    std::vector<Item>  purgeInventoryOnDeath();
+    Player(Player&&)                 = default;
+    Player& operator=(Player&&)      = default;
 
 private:
-    int x = 0;
-    int y = 0;
-    
     uint32_t clientId;
     std::string name;
-    const RaceStats& race;
+    const RaceStats&  race;
     const ClassStats& cls;
 
-    uint8_t level = 1;
-    
-    int16_t hp = 0;
-    int16_t maxHp = 0;
-    int16_t mana = 0;
-    int16_t maxMana = 0;
-    int gold = 0;
-    int experience = 0;
+    int tileX = 0;
+    int tileY = 0;
 
-    PlayerState state = PlayerState::ALIVE;
+    uint8_t  level      = 1;
+    int16_t  hp         = 0;
+    int16_t  maxHp      = 0;
+    int16_t  mana       = 0;
+    int16_t  maxMana    = 0;
+    uint32_t gold       = 0;
+    uint32_t experience = 0;
+
+    PlayerState state    = PlayerState::ALIVE;
+    bool        didLevelUp = false;
 
     Inventory inventory;
-    Hitbox hitbox;
-
-    bool didLevelUp = false;
-
-    int limit = 100; //a TOML
-
-    GameFormulas formulas;
 };

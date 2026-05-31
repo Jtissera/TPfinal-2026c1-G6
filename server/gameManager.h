@@ -15,7 +15,7 @@
 
 class GameManager {
 public:
-    GameManager();
+    GameManager(NpcFactory& npcFactory, ItemRepository& itemRepo);
 
     uint32_t createGame(const std::string& gameName, uint8_t maxPlayers);
 
@@ -39,4 +39,7 @@ private:
 
     std::unordered_map<uint32_t, std::unique_ptr<GameRoom>> rooms;
     std::unordered_map<uint32_t, uint32_t> clientRoom;
+
+    NpcFactory& npcFactory;
+    ItemRepository& itemRepo;
 };

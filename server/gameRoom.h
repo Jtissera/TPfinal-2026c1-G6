@@ -12,7 +12,7 @@
 
 class GameRoom {
 public:
-    GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers);
+    GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers, NpcFactory& npcFactory,ItemRepository& itemRepo);
 
     void addClient(uint32_t clientId,
                    Queue<std::shared_ptr<const Message>>& clientQueue);

@@ -3,13 +3,16 @@
 Server::Server(const char* servname)
     : classRepo(toml::parse_file("config/game.toml"))
     , raceRepo(toml::parse_file("config/game.toml"))
+    , npcRepo(toml::parse_file("config/game.toml"))
+    , itemRepo(toml::parse_file("config/game.toml"))
+    , npcFactory(npcRepo)
     , playerFactory(classRepo, raceRepo)
     , playerRepo()
     , lobbyMonitor()
     , lobbyQueue()
     , clientRegistry()
     , receiverRegistry()
-    , gameManager()
+    , gameManager(npcFactory, itemRepo)
     , lobbyHandler(lobbyQueue, lobbyMonitor, gameManager,
                    clientRegistry, receiverRegistry,
                    playerRepo, playerFactory)

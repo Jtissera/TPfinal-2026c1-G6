@@ -1,12 +1,12 @@
 #include "gameRoom.h"
 
-GameRoom::GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers)
+GameRoom::GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers, NpcFactory& npcFactory,ItemRepository& itemRepo)
     : gameId(gameId),
       gameName(std::move(gameName)),
       maxPlayers(maxPlayers),
       monitor(),
       gameQueue(),
-      world("assets/sprites/MapAssets/mapa.argmap"),
+      world("assets/sprites/MapAssets/mapa.argmap",npcFactory, itemRepo),
       gameLoop(gameQueue, monitor, world)
 {}
 
