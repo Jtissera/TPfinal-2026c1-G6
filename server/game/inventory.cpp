@@ -102,3 +102,10 @@ Item *Inventory::findItem(uint32_t itemId) {
 
   return nullptr;
 }
+
+std::vector<Item> Inventory::removeAllItems() {
+    for (auto& slot : equipped) slot = EMPTY_SLOT;
+    std::vector<Item> all = std::move(items);
+    items.clear();
+    return all;
+}

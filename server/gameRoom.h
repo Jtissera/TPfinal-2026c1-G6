@@ -2,30 +2,32 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
-
 
 #include "world/gameWorld.h"
 #include "../common/queue.h"
 #include "clientMessage.h"
 #include "gameLoop.h"
 #include "monitorQueues.h"
+#include "game/Player.h"
 
-class GameRoom
-{
+class GameRoom {
 public:
-    GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers);
+    GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers, NpcFactory& npcFactory,ItemRepository& itemRepo);
 
-    void addClient(uint32_t clientId, Queue<std::shared_ptr<const Message>> &clientQueue);
+    void addClient(uint32_t clientId,
+                   Queue<std::shared_ptr<const Message>>& clientQueue);
+
+    void addPlayer(Player player);
+
     void removeClient(uint32_t clientId);
 
     uint32_t getId() const;
-    const std::string &getName() const;
+    const std::string& getName() const;
     uint8_t getPlayerCount() const;
     uint8_t getMaxPlayers() const;
     bool isFull() const;
 
-    Queue<ClientMessage> &getGameQueue();
+    Queue<ClientMessage>& getGameQueue();
 
     void start();
     void stop();
@@ -40,4 +42,5 @@ private:
     Queue<ClientMessage> gameQueue;
     GameLoop gameLoop;
     GameWorld world;
+
 };

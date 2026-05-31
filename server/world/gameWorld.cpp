@@ -1,15 +1,59 @@
 #include "gameWorld.h"
-#include <iostream>
+//Esta hace cada vez mas, habria que pensar que hacer si sigue creciendo
 
-GameWorld::GameWorld(const std::string& mapPath)
-    : mapData(MapSerializer::load(mapPath)) {}
+GameWorld::GameWorld(const std::string& mapPath,
+                     NpcFactory& npcFactory,
+                     ItemRepository& itemRepo)
+    : mapData(MapSerializer::load(mapPath))
+    , collision(mapData)
+    , npcManager(npcFactory, collision)
+    , itemRepo(itemRepo)
+{
+    spawnMapNpcs();
+}
 
-void GameWorld::addPlayer(uint32_t id, int x, int y) {
-    players[id] = {id, x, y};
+GameWorld::GameWorld(MapData mapData,
+                     NpcFactory& npcFactory,
+                     ItemRepository& itemRepo)
+    : mapData(std::move(mapData))
+    , collision(this->mapData)
+    , npcManager(npcFactory, collision)
+    , itemRepo(itemRepo)
+{
+    spawnMapNpcs();
+}
+
+
+//busca tile para spawnear y sino adyacentes
+
+void GameWorld::addPlayer(Player player) {
+    uint32_t id = player.getId();
+    int tx = player.getTileX();
+    int ty = player.getTileY();
+
+    if (!occupancy.occupy(tx, ty, id)) {
+       
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) continue;
+                if (collision.isWalkable(tx + dx, ty + dy) && occupancy.occupy(tx + dx, ty + dy, id)) {
+                    player.setTilePos(tx + dx, ty + dy);
+                    players.emplace(id, std::move(player));
+                    return;
+                }
+            }
+        }
+        throw std::runtime_error("No free tile near spawn for player");
+    }
+
+    players.emplace(id, std::move(player));
 }
 
 void GameWorld::removePlayer(uint32_t id) {
-    players.erase(id);
+    auto it = players.find(id);
+    if (it == players.end()) return;
+    occupancy.free(it->second.getTileX(), it->second.getTileY());
+    players.erase(it);
 }
 
 bool GameWorld::movePlayer(uint32_t id, Direction dir) {
@@ -17,48 +61,276 @@ bool GameWorld::movePlayer(uint32_t id, Direction dir) {
     if (it == players.end()) return false;
 
     Player& p = it->second;
-    int nx = p.x, ny = p.y;
+    int tx = p.getTileX();
+    int ty = p.getTileY();
 
     switch (dir) {
-        case Direction::UP:    ny -= Player::SPEED; break;
-        case Direction::DOWN:  ny += Player::SPEED; break;
-        case Direction::LEFT:  nx -= Player::SPEED; break;
-        case Direction::RIGHT: nx += Player::SPEED; break;
+        case Direction::UP:    ty -= 1; break;
+        case Direction::DOWN:  ty += 1; break;
+        case Direction::LEFT:  tx -= 1; break;
+        case Direction::RIGHT: tx += 1; break;
         default: return false;
     }
 
+    if (!collision.isWalkable(tx, ty)) return false;
+    if (!occupancy.move(p.getTileX(), p.getTileY(), tx, ty, id)) return false;
 
-    if (nx + Player::HITBOX_OFFSET_X + Player::HITBOX_W > 20 * 96) return false;
-    if (ny + Player::HITBOX_OFFSET_Y + Player::HITBOX_H > 15 * 96) return false;
-
-    if (wouldCollide(nx, ny)) return false;
-
-    p.x = nx;
-    p.y = ny;
+    p.setTilePos(tx, ty);
     return true;
 }
 
-bool GameWorld::wouldCollide(int x, int y) const {
-    static constexpr int TILE_SIZE = 96;
-
-    int hx = x + Player::HITBOX_OFFSET_X;
-    int hy = y + Player::HITBOX_OFFSET_Y;
-    int hw = Player::HITBOX_W - 1;
-    int hh = Player::HITBOX_H - 1;
-
-    auto blocked = [&](int px, int py) -> bool {
-        if (px < 0 || py < 0) return true;
-        int tx = px / TILE_SIZE;
-        int ty = py / TILE_SIZE;
-        if (tx >= mapData.width() || ty >= mapData.height()) return true;
-        return !mapData.at(tx, ty).walkable;
-    };
-
-    return blocked(hx,      hy     ) ||
-           blocked(hx + hw, hy     ) ||
-           blocked(hx,      hy + hh) ||
-           blocked(hx + hw, hy + hh);
+Player& GameWorld::getPlayer(uint32_t id) {
+    auto it = players.find(id);
+    if (it == players.end())
+        throw std::runtime_error("Player not found: " + std::to_string(id));
+    return it->second;
 }
 
-int GameWorld::getX(uint32_t id) const { return players.at(id).x; }
-int GameWorld::getY(uint32_t id) const { return players.at(id).y; }
+const Player& GameWorld::getPlayer(uint32_t id) const {
+    auto it = players.find(id);
+    if (it == players.end())
+        throw std::runtime_error("Player not found: " + std::to_string(id));
+    return it->second;
+}
+
+bool GameWorld::canPlayerAct(uint32_t id) const {
+    auto it = players.find(id);
+    if (it == players.end()) return false;
+    return it->second.isAlive();
+}
+
+int GameWorld::getTileX(uint32_t id)  const { return players.at(id).getTileX(); }
+int GameWorld::getTileY(uint32_t id)  const { return players.at(id).getTileY(); }
+int GameWorld::getPixelX(uint32_t id) const { return players.at(id).getTileX() * TILE_SIZE; }
+int GameWorld::getPixelY(uint32_t id) const { return players.at(id).getTileY() * TILE_SIZE; }
+
+
+void GameWorld::giveExperience(uint32_t playerId, uint32_t exp) {
+    Player& p = getPlayer(playerId);
+
+    uint32_t limit      = formulas.calcExpLimit(p.getLevel());
+    int16_t  newMaxHp   = formulas.calcMaxHp(p.getRace(), p.getCls(), p.getLevel() + 1);
+    int16_t  newMaxMana = formulas.calcMaxMana(p.getRace(), p.getCls(), p.getLevel() + 1);
+
+    p.addExperience(exp, limit, newMaxHp, newMaxMana);
+}
+
+
+GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,
+                                                     uint32_t attackerId) {
+    Player& target = getPlayer(targetId);
+
+    // Exp al atacante si existe (0 = mató un NPC o muerte por otra causa)
+    if (attackerId != 0) {
+        Player& attacker = getPlayer(attackerId);
+        uint32_t killExp = formulas.calcExpOnKill(
+            target.getMaxHp(), attacker.getLevel(), target.getLevel());
+        giveExperience(attackerId, killExp);
+    }
+
+    uint32_t safeGold   = formulas.calcMaxGold(target.getLevel());
+    uint32_t excessGold = target.die(safeGold);
+
+    std::vector<Item> items = target.purgeInventoryOnDeath();
+
+    if (excessGold > 0)
+        addGoldOnGround(excessGold, target.getTileX(), target.getTileY());
+
+    for (auto& item : items)
+        addItemOnGround(std::move(item), target.getTileX(), target.getTileY());
+
+    // Liberar el tile
+    occupancy.free(target.getTileX(), target.getTileY());
+
+    return {excessGold, std::move(items)};
+}
+
+
+
+void GameWorld::addItemOnGround(Item item, int tileX, int tileY) {
+    groundItems.push_back({std::move(item), tileX, tileY});
+}
+
+std::optional<Item> GameWorld::pickItemAt(int tileX, int tileY) {
+    for (auto it = groundItems.begin(); it != groundItems.end(); ++it) {
+        if (it->tileX == tileX && it->tileY == tileY) {
+            Item found = std::move(it->item);
+            groundItems.erase(it);
+            return found;
+        }
+    }
+    return std::nullopt;
+}
+
+void GameWorld::addGoldOnGround(uint32_t amount, int tileX, int tileY) {
+    groundGold.push_back({amount, tileX, tileY});
+}
+
+std::optional<uint32_t> GameWorld::pickGoldAt(int tileX, int tileY) {
+    for (auto it = groundGold.begin(); it != groundGold.end(); ++it) {
+        if (it->tileX == tileX && it->tileY == tileY) {
+            uint32_t amount = it->amount;
+            groundGold.erase(it);
+            return amount;
+        }
+    }
+    return std::nullopt;
+}
+
+//switch feo
+void GameWorld::spawnNpc(const std::string& typeName, int tileX, int tileY) {
+    if (!collision.isWalkable(tileX, tileY)) return;
+    if (occupancy.isOccupied(tileX, tileY)) return;
+    uint32_t npcId = npcManager.spawnNpc(typeName, tileX, tileY);
+    occupancy.occupy(tileX, tileY, npcId); 
+}
+
+void GameWorld::spawnMapNpcs() {
+    for (uint16_t y = 0; y < mapData.height(); y++) {
+        for (uint16_t x = 0; x < mapData.width(); x++) {
+            const Tile& tile = mapData.at(x, y);
+            if (tile.npc == NpcType::NONE) continue;
+
+            std::string typeName;
+            switch (tile.npc) {
+                case NpcType::GOBLIN:   typeName = "goblin";   break;
+                case NpcType::SKELETON: typeName = "skeleton"; break;
+                case NpcType::ZOMBIE:   typeName = "zombie";   break;
+                default: continue;
+            }
+
+                        spawnPoints.push_back({typeName, {x, y}});
+            
+            // Spawn inicial con desplazamiento aleatorio también
+            int attempts = 0;
+            while (attempts < 10) {
+                int dx = (std::rand() % 7) - 3;
+                int dy = (std::rand() % 7) - 3;
+                int tx = x + dx;
+                int ty = y + dy;
+                if (collision.isWalkable(tx, ty) && !occupancy.isOccupied(tx, ty)) {
+                    spawnNpc(typeName, tx, ty);
+                    break;
+                }
+                attempts++;
+            }
+        }
+    }
+}
+
+const std::unordered_map<uint32_t, Npc>& GameWorld::getNpcs() const {
+    return npcManager.getNpcs();
+}
+
+//metodo grande, se puede seperar
+GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds) {
+    WorldTickResult result;
+
+    for (auto& [id, player] : players) {
+        if (!player.isAlive() && !player.isMeditating()) continue;
+
+        float hpGained   = formulas.calcHpRegen(player.getRace(), deltaSeconds);
+        float manaGained = player.isMeditating()
+            ? formulas.calcManaRegenMeditating(
+                player.getCls(), player.getRace(), deltaSeconds)
+            : formulas.calcManaRegen(player.getRace(), deltaSeconds);
+
+        player.tick(hpGained, manaGained);
+        result.playersChanged.push_back(id);
+    }
+
+    auto npcResult = npcManager.tick(players);
+
+    // actualizar occupancy
+    for (auto& intent : npcResult.moveIntents) {
+
+        if (!collision.isWalkable(intent.toX, intent.toY)) continue;
+
+        if (!occupancy.move(intent.fromX, intent.fromY, 
+                            intent.toX,   intent.toY, 
+                            intent.npcId)) continue;
+
+        npcManager.applyMove(intent.npcId, intent.toX, intent.toY);
+
+        result.npcsMoved.push_back(intent.npcId);
+    }
+
+    for (auto& attack : npcResult.attacks) {
+        auto it = players.find(attack.targetPlayerId);
+        if (it == players.end()) continue;
+
+        it->second.takeDamage(attack.damage);
+        result.playerHits.push_back({attack.targetPlayerId, attack.damage});
+
+        if (!it->second.isAlive()) {
+            handlePlayerDeath(attack.targetPlayerId, 0);
+        }
+    }
+
+    for (auto& death : npcResult.deaths) {
+        occupancy.free(death.tileX, death.tileY);
+
+        if (death.goldDrop > 0)
+            addGoldOnGround(death.goldDrop, death.tileX, death.tileY);
+
+        if (!death.itemDrop.empty()) {
+            try {
+                Item item = itemRepo.createItem(death.itemDrop);
+                addItemOnGround(std::move(item), death.tileX, death.tileY);
+            } catch (...) {}
+        }
+
+        result.npcDeaths.push_back(death);
+    }
+
+    spawnTickCounter++;
+    if (spawnTickCounter >= SPAWN_EVERY_N_TICKS) {
+        spawnTickCounter = 0;
+    
+    // Spawnear un lote hasta llegar al límite
+        int toSpawn = std::min(SPAWN_BATCH_SIZE, MAX_NPCS - npcManager.count());
+    
+        for (int i = 0; i < toSpawn && !spawnPoints.empty(); i++) {
+            auto& [type, pos] = spawnPoints[std::rand() % spawnPoints.size()];
+        
+        // Desplazamiento aleatorio para que no campeen
+            int attempts = 0;
+            while (attempts < 10) {
+                int dx = (std::rand() % 7) - 3;  // lo muevo en 3
+                int dy = (std::rand() % 7) - 3;
+                int tx = pos.first  + dx;
+                int ty = pos.second + dy;
+            
+                if (collision.isWalkable(tx, ty) && !occupancy.isOccupied(tx, ty)) {
+                    spawnNpc(type, tx, ty);
+                    break;
+                }
+                attempts++;
+            }
+        }
+    }
+
+    return result;
+}
+
+void GameWorld::resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY) {
+    Player& p = getPlayer(id);
+    occupancy.free(p.getTileX(), p.getTileY());
+
+    // Buscar tile libre cerca del spawn
+    if (occupancy.occupy(spawnTileX, spawnTileY, id)) {
+        p.resurrect(spawnTileX, spawnTileY);
+    } else {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) continue;
+                int tx = spawnTileX + dx;
+                int ty = spawnTileY + dy;
+                if (collision.isWalkable(tx, ty) && occupancy.occupy(tx, ty, id)) {
+                    p.resurrect(tx, ty);
+                    return;
+                }
+            }
+        }
+    }
+}
