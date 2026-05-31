@@ -68,6 +68,13 @@ private:
     EquipmentViewState equipmentState;
     ItemCatalog itemCatalog;
 
+    std::string statusMessage;
+    Uint32 statusMessageTimer = 0;
+    static constexpr Uint32 STATUS_MESSAGE_DURATION_MS = 2500;
+    TTF_Font* statusFont = nullptr;  // se asigna en loadAssets()
+
+    void showStatusMessage(const std::string& msg);
+
     void loadAssets();
     void loadInitialInventoryForCurrentClass();
     int getInventorySlotIndexAt(int mouseX, int mouseY) const;

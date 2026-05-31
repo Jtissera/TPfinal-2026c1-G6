@@ -72,6 +72,8 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
 
     std::cout << "[INIT] antes CreatePlayer" << std::endl;
     player = assets->CreatePlayer(playerDto);
+    
+    refreshPlayerEquipmentVisuals();
     std::cout << "[INIT] antes Map" << std::endl;
 
 
@@ -234,6 +236,37 @@ void Game::render() {
 
     attackSystem.render(renderer, *assets, camera);
     SDL_RenderSetClipRect(renderer, nullptr);
+
+    // Mensaje de estado temporal — se dibuja sobre el mapa, antes del HUD, para que nada lo tape
+    if (!statusMessage.empty()) {
+        const Uint32 elapsed = SDL_GetTicks() - statusMessageTimer;
+        if (elapsed < STATUS_MESSAGE_DURATION_MS) {
+            Uint8 alpha = 255;
+            const Uint32 fadeStart = STATUS_MESSAGE_DURATION_MS - 500;
+            if (elapsed > fadeStart) {
+                alpha = static_cast<Uint8>(
+                    255 * (1.0f - static_cast<float>(elapsed - fadeStart) / 500.0f)
+                );
+            }
+            if (statusFont) {
+                int tw = 0, th = 0;
+                TTF_SizeText(statusFont, statusMessage.c_str(), &tw, &th);
+                SDL_Color red = {255, 50, 50, alpha};
+                SDL_Surface* surf = TTF_RenderText_Blended(statusFont, statusMessage.c_str(), red);
+                if (surf) {
+                    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+                    SDL_SetTextureAlphaMod(tex, alpha);
+                    SDL_Rect dest = {(900 - tw) / 2, 350, tw, th};
+                    SDL_RenderCopy(renderer, tex, nullptr, &dest);
+                    SDL_FreeSurface(surf);
+                    SDL_DestroyTexture(tex);
+                }
+            }
+        } else {
+            statusMessage.clear();
+        }
+    }
+
     renderHUD();
     SDL_RenderPresent(renderer);
 }
@@ -261,6 +294,11 @@ void Game::clean() {
     SDL_Quit();
 
     std::cout << "Game cleaned." << std::endl;
+}
+
+void Game::showStatusMessage(const std::string& msg) {
+    statusMessage      = msg;
+    statusMessageTimer = SDL_GetTicks();
 }
 
 bool Game::running() const { return isRunning; }
@@ -577,6 +615,16 @@ void Game::loadAssets() {
     assets->AddFont("ao_regular", "assets/Recursos/BabelUI/static/media/Alegreya-Sans-AO-Regular..ttf", 14);
     assets->AddFont("cardo",      "assets/Recursos/BabelUI/static/media/Cardo-Regular..ttf",            14);
 
+    statusFont = assets->GetFont("ao_bold");
+    if (!statusFont) {
+        statusFont = TTF_OpenFont(
+            "assets/Recursos/BabelUI/static/media/Alegreya-Sans-AO-Bold..ttf", 24
+        );
+    }
+    if (!statusFont) {
+        statusFont = TTF_OpenFont("assets/sprites/MapAssets/arial.ttf", 24);
+    }
+
 
     // HUD
     assets->AddTexture("barra_vida", "assets/Recursos/interface/es_barradevida.bmp");
@@ -602,39 +650,39 @@ void Game::loadInitialInventoryForCurrentClass() {
     switch (playerState.playerClass) {
 
         case PlayerClass::Cleric:
-            inventoryState.slots[0] = itemCatalog.requireById(2); // Báculo temporal
+            inventoryState.slots[0] = itemCatalog.requireById(2); // Báculo
             inventoryState.slots[1] = itemCatalog.requireById(4); // Capucha
             inventoryState.slots[2] = itemCatalog.requireById(6); // Poción vida
             inventoryState.slots[3] = itemCatalog.requireById(7); // Poción maná
-
             break;
+
         case PlayerClass::Mage:
             inventoryState.slots[0] = itemCatalog.requireById(2); // Báculo
             inventoryState.slots[1] = itemCatalog.requireById(4); // Capucha
             inventoryState.slots[2] = itemCatalog.requireById(7); // Poción maná
             inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
             break;
+
         case PlayerClass::Paladin:
             inventoryState.slots[0] = itemCatalog.requireById(1); // Espada
             inventoryState.slots[1] = itemCatalog.requireById(3); // Armadura
             inventoryState.slots[2] = itemCatalog.requireById(5); // Escudo
             inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
-            inventoryState.slots[4] = itemCatalog.requireById(4);
-            inventoryState.slots[5] = itemCatalog.requireById(7);
-
+            inventoryState.slots[4] = itemCatalog.requireById(4); // Capucha
+            inventoryState.slots[5] = itemCatalog.requireById(7); // Poción maná
             break;
+
         case PlayerClass::Warrior:
             inventoryState.slots[0] = itemCatalog.requireById(1); // Espada
-            inventoryState.slots[1] = itemCatalog.requireById(3); // Armadura de cuero
+            inventoryState.slots[1] = itemCatalog.requireById(3); // Armadura
             inventoryState.slots[2] = itemCatalog.requireById(5); // Escudo
             inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
-
             break;
+
         default:
             inventoryState.slots[0] = itemCatalog.requireById(1);
             inventoryState.slots[1] = itemCatalog.requireById(6);
             break;
-
     }
 
 
@@ -713,10 +761,6 @@ void Game::handleInventorySlotClick(int slotIndex) {
 }
 
 void Game::equipItemFromInventory(int slotIndex) {
-    std::cout << "[DEBUG] entro a equipItemFromInventory slot="
-          << slotIndex
-          << std::endl;
-
     if (slotIndex < 0 ||
         slotIndex >= static_cast<int>(inventoryState.slots.size())) {
         return;
@@ -734,12 +778,22 @@ void Game::equipItemFromInventory(int slotIndex) {
         itemToEquip.type == ClientItemType::RangedWeapon ||
         itemToEquip.type == ClientItemType::MagicWeapon) {
 
-        if (itemToEquip.type == ClientItemType::MagicWeapon &&
-            playerState.playerClass == PlayerClass::Warrior) {
-            std::cout << "[EQUIPMENT] Guerrero no puede equipar arma mágica"
-                      << std::endl;
+        const bool isMagic  = itemToEquip.type == ClientItemType::MagicWeapon;
+        const bool isMelee  = itemToEquip.type == ClientItemType::MeleeWeapon ||
+                              itemToEquip.type == ClientItemType::RangedWeapon;
+        const PlayerClass pc = playerState.playerClass;
+
+        // Warrior y Paladin no pueden usar armas magicas.
+        if (isMagic && (pc == PlayerClass::Warrior || pc == PlayerClass::Paladin)) {
+            showStatusMessage("Tu clase no puede usar armas magicas.");
             return;
-            }
+        }
+
+        // Mage y Cleric no pueden usar armas cuerpo a cuerpo ni a distancia.
+        if (isMelee && (pc == PlayerClass::Mage || pc == PlayerClass::Cleric)) {
+            showStatusMessage("Tu clase no puede usar ese tipo de arma.");
+            return;
+        }
 
         targetSlot = &equipmentState.weapon;
         } else if (itemToEquip.type == ClientItemType::Armor) {
@@ -837,8 +891,7 @@ void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
     ItemView itemToUnequip = selectedSlot->value();
 
     if (!addItemToFirstFreeInventorySlot(itemToUnequip)) {
-        std::cout << "[EQUIPMENT] no se puede desequipar: inventario lleno"
-                  << std::endl;
+        showStatusMessage("Inventario lleno.");
         return;
     }
 
