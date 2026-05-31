@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <cmath>
 
 #include "state/ItemView.h"
 
@@ -47,22 +48,22 @@ public:
     void update();
 
     // Dibuja los efectos activos.
-    void render(
-        SDL_Renderer* renderer,
-        AssetManager& assets,
-        const SDL_Rect& camera
-        );
+    void render(SDL_Renderer* renderer,AssetManager& assets,const SDL_Rect& camera);
+
     // Indica si el enemigo está muerto temporalmente.
     bool isEnemyDead(uint32_t enemyId) const;
 
     // Actualiza respawns de enemigos muertos.
-    void updateRespawns();
+    // Recibe enemies para poder restaurar la posición original del enemigo.
+    void updateRespawns(std::map<uint32_t, Entity*>& enemies);
 
     // Vida actual del enemigo.
     int getEnemyHealth(uint32_t enemyId) const;
 
     // Vida máxima del enemigo.
     int getEnemyMaxHealth(uint32_t enemyId) const;
+
+    void updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player);
 
 private:
     std::vector<AttackEffect> attackEffects;
@@ -82,6 +83,18 @@ private:
     // Tiempo de respawn.
     Uint32 enemyRespawnMs = 5000;
 
+    std::unordered_set<uint32_t> chasingEnemies;
+
+    // Posición original del enemigo para respawn visual.
+    std::unordered_map<uint32_t, Vector2D> enemySpawnPositions;
+
+    // Velocidad local visual de persecución.
+    // Después esto debe venir del TOML/config.
+    float enemyChaseSpeed = 2.0f;
+
+    // Distancia mínima para que no se meta encima del jugador.
+    float enemyStopDistance = 35.0f;
+
     void markEnemyAsDead(uint32_t enemyId);
 
     // Crea el efecto local de ataque sobre el enemigo.
@@ -91,14 +104,14 @@ private:
     bool applyDamage(uint32_t targetId, int damage);
 
     // Más adelante acá se reactiva el envío al servidor.
-    void sendAttackMessage(
-        uint32_t targetId,
-        Queue<std::shared_ptr<const Message>>* sendQueue
-    );
+    void sendAttackMessage(uint32_t targetId,Queue<std::shared_ptr<const Message>>* sendQueu);
 
     int attackRangeForWeapon(const ItemView* weapon) const;
+
     int damageForWeapon(const ItemView* weapon) const;
+
     bool isTargetInRange(Entity* attacker,Entity& target,int range) const;
+
     bool shouldCreateVisualEffect(const ItemView* weapon) const;
 };
 

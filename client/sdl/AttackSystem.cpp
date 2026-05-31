@@ -5,19 +5,11 @@
 #include "AttackSystem.h"
 #include <algorithm>
 #include <iostream>
-
+#include <cmath>
 
 // #include "common/network/messages/client/combat/attackMessage.h"
 
-void AttackSystem::handleMouseClick(
-    int screenX,
-    int screenY,
-    const SDL_Rect& camera,
-    std::map<uint32_t, Entity*>& enemies,
-    Queue<std::shared_ptr<const Message>>* sendQueue,
-    Entity* player,
-    const ItemView* equippedWeapon
-) {
+void AttackSystem::handleMouseClick(int screenX,int screenY,const SDL_Rect& camera,std::map<uint32_t, Entity*>& enemies,Queue<std::shared_ptr<const Message>>* sendQueue,Entity* player,const ItemView* equippedWeapon) {
     // Convertimos coordenadas de pantalla a coordenadas de mundo.
     // El -133 compensa el offset vertical del área del mapa.
     int worldX = screenX + camera.x;
@@ -28,13 +20,21 @@ void AttackSystem::handleMouseClick(
             continue;
         }
 
+        if (isEnemyDead(id)) {
+            continue;
+        }
+
         auto& tf = entity->getComponent<TransformComponent>();
+
+        if (enemySpawnPositions.find(id) == enemySpawnPositions.end()) {
+            enemySpawnPositions[id] = tf.position;
+        }
 
         int enemyX = static_cast<int>(tf.position.x);
         int enemyY = static_cast<int>(tf.position.y);
 
         // Tamaño aproximado del enemigo visible.
-        int enemyW = 64;
+        int enemyW = 128;
         int enemyH = 128;
 
         bool clickedEnemy =
@@ -72,19 +72,24 @@ void AttackSystem::handleMouseClick(
         }
 
         if (isDead) {
-            entity->destroy();
-            enemies.erase(id);
-            enemyHealth.erase(id);
+            markEnemyAsDead(id);
+        }else {
+            // Si recibió daño y sigue vivo, empieza a perseguir al jugador.
+            chasingEnemies.insert(id);
         }
-
         return;
     }
 }
 bool AttackSystem::applyDamage(uint32_t targetId, int damage) {
     // Si el enemigo todavía no tiene vida registrada, le damos vida inicial.
     // Para demo: skeleton con 100 de vida.
+    if (isEnemyDead(targetId)) {
+        return true;
+    }
     if (enemyHealth.find(targetId) == enemyHealth.end()) {
-        enemyHealth[targetId] = 100;
+        //mock de vida del enemigo;
+        enemyHealth[targetId] = 50;
+        enemyMaxHealth[targetId] = 50;
     }
 
     // Aplicamos daño.
@@ -94,6 +99,10 @@ bool AttackSystem::applyDamage(uint32_t targetId, int damage) {
               << " vida restante=" << enemyHealth[targetId]
               << std::endl;
 
+
+    if (enemyHealth[targetId] < 0) {
+        enemyHealth[targetId] = 0;
+    }
     // Devuelve true si murió.
     return enemyHealth[targetId] <= 0;
 }
@@ -276,4 +285,149 @@ bool AttackSystem::shouldCreateVisualEffect(const ItemView* weapon) const {
     // - arco: solo sonido/daño, sin proyectil ni efecto
     // - bastón: efecto visual sobre el enemigo
     return weapon->type == ClientItemType::MagicWeapon;
+}
+void AttackSystem::markEnemyAsDead(uint32_t enemyId) {
+    deadEnemies.insert(enemyId);
+    enemyDeadAt[enemyId] = SDL_GetTicks();
+
+    enemyHealth[enemyId] = 0;
+
+    // Si murió, deja de perseguir.
+    chasingEnemies.erase(enemyId);
+
+    if (enemyMaxHealth.find(enemyId) == enemyMaxHealth.end()) {
+        enemyMaxHealth[enemyId] = 100;
+    }
+
+    std::cout << "[ENEMY] enemigo id="
+              << enemyId
+              << " muerto visualmente. Respawn en "
+              << enemyRespawnMs
+              << " ms."
+              << std::endl;
+}
+
+bool AttackSystem::isEnemyDead(uint32_t enemyId) const {
+    return deadEnemies.find(enemyId) != deadEnemies.end();
+}
+
+void AttackSystem::updateRespawns(std::map<uint32_t, Entity*>& enemies) {
+    Uint32 now = SDL_GetTicks();
+
+    std::vector<uint32_t> toRespawn;
+
+    for (uint32_t enemyId : deadEnemies) {
+        auto it = enemyDeadAt.find(enemyId);
+
+        if (it == enemyDeadAt.end()) {
+            continue;
+        }
+
+        Uint32 deadAt = it->second;
+
+        if (now - deadAt >= enemyRespawnMs) {
+            toRespawn.push_back(enemyId);
+        }
+    }
+
+    for (uint32_t enemyId : toRespawn) {
+        int maxHp = getEnemyMaxHealth(enemyId);
+
+        enemyHealth[enemyId] = maxHp;
+
+        auto enemyIt = enemies.find(enemyId);
+        auto spawnIt = enemySpawnPositions.find(enemyId);
+
+        if (enemyIt != enemies.end() &&
+            enemyIt->second != nullptr &&
+            spawnIt != enemySpawnPositions.end()) {
+
+            auto& transform = enemyIt->second->getComponent<TransformComponent>();
+
+            transform.position.x = spawnIt->second.x;
+            transform.position.y = spawnIt->second.y;
+        }
+
+        deadEnemies.erase(enemyId);
+        enemyDeadAt.erase(enemyId);
+        chasingEnemies.erase(enemyId);
+
+        std::cout << "[ENEMY] enemigo id="
+                  << enemyId
+                  << " reapareció con HP="
+                  << maxHp
+                  << std::endl;
+    }
+}
+
+void AttackSystem::updateEnemyChase(
+    std::map<uint32_t, Entity*>& enemies,
+    Entity* player
+) {
+    if (player == nullptr) {
+        return;
+    }
+
+    auto& playerTransform = player->getComponent<TransformComponent>();
+
+    float playerCenterX = playerTransform.position.x + 16.0f;
+    float playerCenterY = playerTransform.position.y + 32.0f;
+
+    for (uint32_t enemyId : chasingEnemies) {
+        if (isEnemyDead(enemyId)) {
+            continue;
+        }
+
+        auto it = enemies.find(enemyId);
+
+        if (it == enemies.end() || it->second == nullptr) {
+            continue;
+        }
+
+        Entity* enemy = it->second;
+
+        auto& enemyTransform = enemy->getComponent<TransformComponent>();
+
+        float enemyCenterX = enemyTransform.position.x + 16.0f;
+        float enemyCenterY = enemyTransform.position.y + 32.0f;
+
+        float dx = playerCenterX - enemyCenterX;
+        float dy = playerCenterY - enemyCenterY;
+
+        float distance = std::sqrt(dx * dx + dy * dy);
+
+        if (distance <= enemyStopDistance) {
+            continue;
+        }
+
+        if (distance <= 0.01f) {
+            continue;
+        }
+
+        float dirX = dx / distance;
+        float dirY = dy / distance;
+
+        enemyTransform.position.x += dirX * enemyChaseSpeed;
+        enemyTransform.position.y += dirY * enemyChaseSpeed;
+    }
+}
+
+int AttackSystem::getEnemyHealth(uint32_t enemyId) const {
+    auto it = enemyHealth.find(enemyId);
+
+    if (it == enemyHealth.end()) {
+        return 100;
+    }
+
+    return it->second;
+}
+
+int AttackSystem::getEnemyMaxHealth(uint32_t enemyId) const {
+    auto it = enemyMaxHealth.find(enemyId);
+
+    if (it == enemyMaxHealth.end()) {
+        return 100;
+    }
+
+    return it->second;
 }

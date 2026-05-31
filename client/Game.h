@@ -93,6 +93,7 @@ private:
     SpriteSheetConfig armorSpriteConfigForCurrentRace() const;
     SDL_Point visualOffsetForCurrentRace(const ItemView& item) const;
     void refreshPlayerEquipmentVisuals();
+    void renderEnemyHealthBars();
 };
 
 #endif //PRUEBA_SDL_GAME_H

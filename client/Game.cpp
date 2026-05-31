@@ -170,7 +170,10 @@ void Game::update() {
     };
     manager.refresh();
     manager.update(updateContext);
+
     attackSystem.update();
+    attackSystem.updateRespawns(enemies);
+    attackSystem.updateEnemyChase(enemies,player);
 
     Vector2D playerPos = player->getComponent<TransformComponent>().position;
     camera.x = static_cast<int>(playerPos.x) - 450;
@@ -229,10 +232,20 @@ void Game::render() {
         renderEquippedWeapon();
     }
 
-    // Dibuja enemigos.
-    for (auto& p : manager.getGroup(groupEnemies)) {
-        p->draw(renderContext);
+    // Dibuja enemigos vivos.
+    for (const auto& [enemyId, enemy] : enemies) {
+        if (enemy == nullptr) {
+            continue;
+        }
+
+        if (attackSystem.isEnemyDead(enemyId)) {
+            continue;
+        }
+
+        enemy->draw(renderContext);
     }
+
+    renderEnemyHealthBars();
 
     attackSystem.render(renderer, *assets, camera);
     SDL_RenderSetClipRect(renderer, nullptr);
@@ -1241,4 +1254,68 @@ void Game::renderEquippedShield() {
     //SDL_RenderCopy(renderer, shieldTexture, &shieldSrc, &shieldDest);
     SDL_RenderCopyEx(renderer, shieldTexture, &shieldSrc, &shieldDest,
                      0, nullptr, sprite.spriteFlip);
+}
+
+void Game::renderEnemyHealthBars() {
+    for (const auto& [enemyId, enemy] : enemies) {
+        if (enemy == nullptr) {
+            continue;
+        }
+
+        if (attackSystem.isEnemyDead(enemyId)) {
+            continue;
+        }
+
+        auto& transform = enemy->getComponent<TransformComponent>();
+
+        int currentHp = attackSystem.getEnemyHealth(enemyId);
+        int maxHp = attackSystem.getEnemyMaxHealth(enemyId);
+
+        if (maxHp <= 0) {
+            continue;
+        }
+
+        float hpRatio = static_cast<float>(currentHp) / static_cast<float>(maxHp);
+
+        if (hpRatio < 0.0f) {
+            hpRatio = 0.0f;
+        }
+
+        if (hpRatio > 1.0f) {
+            hpRatio = 1.0f;
+        }
+
+        int screenX = static_cast<int>(transform.position.x) - camera.x;
+        int screenY = static_cast<int>(transform.position.y) - camera.y + 133;
+
+        const int barWidth = 50;
+        const int barHeight = 6;
+
+        // Ajuste vertical de la barra.
+        // Más negativo = más arriba. Más positivo = más abajo.
+        const int barOffsetY = -4;
+
+        SDL_Rect backgroundBar{
+            screenX,
+            screenY + barOffsetY,
+            barWidth,
+            barHeight
+        };
+
+        SDL_Rect healthBar{
+            screenX,
+            screenY + barOffsetY,
+            static_cast<int>(barWidth * hpRatio),
+            barHeight
+        };
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderFillRect(renderer, &backgroundBar);
+
+        SDL_SetRenderDrawColor(renderer, 200, 0, 0, 255);
+        SDL_RenderFillRect(renderer, &healthBar);
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawRect(renderer, &backgroundBar);
+    }
 }
