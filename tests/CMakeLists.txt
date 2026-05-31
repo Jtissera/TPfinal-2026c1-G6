@@ -7,7 +7,6 @@ target_sources(taller_tests
     ../editor/map/mapSerializer.cpp
     lobby_test.cpp
     logic_test.cpp
-    inventory_test.cpp
-    
+    integration_test.cpp
 
 )
