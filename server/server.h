@@ -13,6 +13,8 @@
 #include "game/classRepository.h"
 #include "game/raceRepository.h"
 #include <toml++/toml.h>
+#include "npc/npcRepository.h"
+#include "game/itemRepository.h"
 
 class Server {
 public:
@@ -35,4 +37,8 @@ private:
 
     Socket   socket;
     Acceptor acceptor;
+
+    NpcRepository npcRepo;
+    ItemRepository itemRepo;
+    NpcFactory npcFactory;
 };

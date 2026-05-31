@@ -38,8 +38,8 @@ void GameLoop::processMessage(const ClientMessage& incoming) {
 
 void GameLoop::worldUpdate() {
 
-    auto changed = world.tick(0.05f); 
-    for (uint32_t id : changed) {
+    auto result = world.tick(0.05f); 
+    for (uint32_t id : result.playersChanged) {
         statManager.sendPlayerStats(id, world, monitor);
     }
 }

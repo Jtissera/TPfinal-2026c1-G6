@@ -41,7 +41,7 @@ private:
 
     void sendStats    (uint32_t id, Player& p, Monitor& monitor);
     void sendInventory(uint32_t id, Player& p, Monitor& monitor);
-    void sendDeath    (uint32_t id, Player& dead, GameWorld& world, Monitor& monitor);
+    void sendDeath    (uint32_t id, Player& dead, Monitor& monitor);
 
 public:
     ActionDispatcher();

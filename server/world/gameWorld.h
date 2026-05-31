@@ -2,60 +2,113 @@
 
 #include "../game/Player.h"
 #include "../game/gameFormulas.h"
+#include "../npc/npcManager.h"
+#include "../npc/npcFactory.h"
+#include "../game/itemRepository.h"
 #include "../../editor/map/mapData.h"
 #include "../../editor/map/mapSerializer.h"
 #include "../../common/dtos/gameTypes.h"
 #include "CollisionSystem.h"
+#include "OccupancySystem.h"
 #include <unordered_map>
 #include <vector>
+#include <optional>
+#include <stdexcept>
+#include <iostream>
 
 class GameWorld {
 public:
+    explicit GameWorld(const std::string& mapPath,
+                       NpcFactory& npcFactory,
+                       ItemRepository& itemRepo);
 
-    struct DeathResult {
-        uint32_t excessGold;
-        std::vector<Item> droppedItems;
-    };
-    
-    explicit GameWorld(const std::string& mapPath);
-    explicit GameWorld(MapData mapData);//TESTEO
+    explicit GameWorld(MapData mapData,
+                       NpcFactory& npcFactory,
+                       ItemRepository& itemRepo);
+
 
     void addPlayer(Player player);
     void removePlayer(uint32_t id);
     bool movePlayer(uint32_t id, Direction dir);
 
-    int getX(uint32_t id) const;
-    int getY(uint32_t id) const;
+    Player&       getPlayer(uint32_t id);
+    const Player& getPlayer(uint32_t id) const;
 
-    std::vector<uint32_t> tick(float deltaSeconds);
-    Player& getPlayer(uint32_t id);
+    bool canPlayerAct(uint32_t id) const;
 
-    void addItemOnGround(Item item, int x, int y);
-    std::optional<Item> pickItemAt(int x, int y);
+    int getTileX(uint32_t id)  const;
+    int getTileY(uint32_t id)  const;
+    int getPixelX(uint32_t id) const;
+    int getPixelY(uint32_t id) const;
 
+    
+    void giveExperience(uint32_t playerId, uint32_t exp);
+
+
+    struct DeathResult {
+        uint32_t excessGold;
+        std::vector<Item> droppedItems;
+    };
     DeathResult handlePlayerDeath(uint32_t targetId, uint32_t attackerId);
-    std::optional<uint32_t> pickGoldAt(int x, int y);
+
+
+    void addItemOnGround(Item item, int tileX, int tileY);
+    std::optional<Item> pickItemAt(int tileX, int tileY);
+
+    void addGoldOnGround(uint32_t amount, int tileX, int tileY);
+    std::optional<uint32_t> pickGoldAt(int tileX, int tileY);
+
+
+    void spawnNpc(const std::string& typeName, int tileX, int tileY);
+
+    // Tick para actualizar
+    struct WorldTickResult {
+        std::vector<uint32_t> playersChanged;
+        std::vector<uint32_t> npcsMoved;
+        std::vector<NpcDeathResult> npcDeaths;
+        struct PlayerHit {
+            uint32_t playerId;
+            int16_t  damage;
+        };
+        std::vector<PlayerHit> playerHits;
+    };
+    WorldTickResult tick(float deltaSeconds);
+
+    const MapData& getMapData() const { return mapData; }
+    const std::unordered_map<uint32_t, Npc>& getNpcs() const;
+
+    void resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY);
 
 private:
-    static constexpr int SPEED = 10;
+    static constexpr int TILE_SIZE = 96; //toml
 
     MapData         mapData;
     CollisionSystem collision;
-    std::unordered_map<uint32_t, Player> players;
+    OccupancySystem occupancy;
     GameFormulas    formulas;
+    NpcManager      npcManager;
+    ItemRepository& itemRepo;
+
+    std::unordered_map<uint32_t, Player> players;
 
     struct GroundItem {
         Item item;
-        int x, y;
+        int tileX, tileY;
     };
-
-
     struct GroundGold {
-    uint32_t amount;
-    int x, y;
-};
+        uint32_t amount;
+        int tileX, tileY;
+    };
 
     std::vector<GroundItem> groundItems;
     std::vector<GroundGold> groundGold;
 
+    void spawnMapNpcs();
+
+    int spawnTickCounter = 0;
+    static constexpr int SPAWN_EVERY_N_TICKS = 200;
+    static constexpr int MAX_NPCS            = 20;  // a TOML
+    static constexpr int SPAWN_BATCH_SIZE    = 4;   // a TOML
+
+    std::vector<std::pair<std::string, std::pair<int,int>>> spawnPoints;
 };
