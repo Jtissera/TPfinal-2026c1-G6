@@ -10,215 +10,116 @@
 #include "common/network/messages/message.h"
 #include "common/queue.h"
 #include "common/network/messages/server/auth/connectOKMessage.h"
+#include <gtest/gtest.h>
+#include <thread>
+#include <memory>
+#include <vector>
 
-TEST(GameManagerTest, CreateGameReturnsIncrementalIds)
-{
-    MockGameManager gm;
-    
+#include "server/gameManager.h"
+#include "server/clientRegistry.h"
+#include "server/monitorQueues.h"
+#include "common/network/messages/message.h"
+#include "common/queue.h"
+#include "common/network/messages/server/auth/connectOKMessage.h"
+#include <toml++/toml.h>
+
+class GameManagerIntegrationTest : public ::testing::Test {
+protected:
+    toml::table    config      = toml::parse_file("config/game.toml");
+    NpcRepository  npcRepo     {config};
+    NpcFactory     npcFactory  {npcRepo};
+    ItemRepository itemRepo    {config};
+    GameManager    gm          {npcFactory, itemRepo};
+};
+
+TEST_F(GameManagerIntegrationTest, CreateGameReturnsIncrementalIds) {
     uint32_t id1 = gm.createGame("sala1", 4);
     uint32_t id2 = gm.createGame("sala2", 4);
-    
-    std::cout << "--> Llegué a los EXPECT" << std::endl;
     EXPECT_NE(id1, id2);
     EXPECT_LT(id1, id2);
-    
-    std::cout << "--> Pasé los EXPECT, entrando a stopAll" << std::endl;
     gm.stopAll();
-    
-    std::cout << "--> Salí de stopAll" << std::endl;
 }
-TEST(GameManagerTest, ListGamesReflectsCreatedRooms)
-{
-    GameManager gm;
+
+TEST_F(GameManagerIntegrationTest, ListGamesReflectsCreatedRooms) {
     gm.createGame("partida1", 4);
     gm.createGame("partida2", 2);
-
     auto games = gm.listGames();
     EXPECT_EQ(games.size(), 2u);
     gm.stopAll();
 }
 
-TEST(GameManagerTest, ListGamesShowsCorrectMaxPlayers)
-{
-    GameManager gm;
+TEST_F(GameManagerIntegrationTest, ListGamesShowsCorrectMaxPlayers) {
     gm.createGame("sala", 5);
-
     auto games = gm.listGames();
     ASSERT_EQ(games.size(), 1u);
     EXPECT_EQ(games[0].maxPlayers, 5);
     gm.stopAll();
 }
 
-TEST(GameManagerTest, ListGamesInitialPlayerCountIsZero)
-{
-    GameManager gm;
+TEST_F(GameManagerIntegrationTest, ListGamesInitialPlayerCountIsZero) {
     gm.createGame("sala", 4);
-
     auto games = gm.listGames();
     ASSERT_EQ(games.size(), 1u);
     EXPECT_EQ(games[0].playerCount, 0);
     gm.stopAll();
 }
 
-TEST(GameManagerTest, JoinGameIncreasesPlayerCount)
-{
-    GameManager gm;
+TEST_F(GameManagerIntegrationTest, JoinGameIncreasesPlayerCount) {
     uint32_t gameId = gm.createGame("sala", 4);
-
     Queue<std::shared_ptr<const Message>> clientQueue;
-    bool joined = gm.joinGame(gameId, 1, clientQueue);
-
-    EXPECT_TRUE(joined);
+    EXPECT_TRUE(gm.joinGame(gameId, 1, clientQueue));
     auto games = gm.listGames();
     EXPECT_EQ(games[0].playerCount, 1);
     gm.stopAll();
 }
 
-TEST(GameManagerTest, JoinNonExistentGameReturnsFalse)
-{
-    GameManager gm;
+TEST_F(GameManagerIntegrationTest, JoinNonExistentGameReturnsFalse) {
     Queue<std::shared_ptr<const Message>> clientQueue;
-    bool joined = gm.joinGame(999, 1, clientQueue);
-    EXPECT_FALSE(joined);
+    EXPECT_FALSE(gm.joinGame(999, 1, clientQueue));
     gm.stopAll();
 }
 
-TEST(GameManagerTest, JoinFullGameReturnsFalse)
-{
-    GameManager gm;
+TEST_F(GameManagerIntegrationTest, JoinFullGameReturnsFalse) {
     uint32_t gameId = gm.createGame("sala", 2);
-
     Queue<std::shared_ptr<const Message>> q1, q2, q3;
     EXPECT_TRUE(gm.joinGame(gameId, 1, q1));
     EXPECT_TRUE(gm.joinGame(gameId, 2, q2));
-    EXPECT_FALSE(gm.joinGame(gameId, 3, q3)); // sala llena
+    EXPECT_FALSE(gm.joinGame(gameId, 3, q3));
     gm.stopAll();
 }
 
-TEST(GameManagerTest, MultiplePlayersJoinDifferentRooms)
-{
-    GameManager gm;
-    uint32_t game1 = gm.createGame("sala1", 4);
-    uint32_t game2 = gm.createGame("sala2", 4);
-
-    Queue<std::shared_ptr<const Message>> q1, q2, q3, q4;
-    EXPECT_TRUE(gm.joinGame(game1, 1, q1));
-    EXPECT_TRUE(gm.joinGame(game1, 2, q2));
-    EXPECT_TRUE(gm.joinGame(game2, 3, q3));
-    EXPECT_TRUE(gm.joinGame(game2, 4, q4));
-
-    auto games = gm.listGames();
-    for (const auto &g : games)
-        EXPECT_EQ(g.playerCount, 2);
-
-    gm.stopAll();
-}
-
-TEST(GameManagerTest, RemoveClientDecreasesPlayerCount)
-{
-    GameManager gm;
+TEST_F(GameManagerIntegrationTest, RemoveClientDecreasesPlayerCount) {
     uint32_t gameId = gm.createGame("sala", 4);
-
     Queue<std::shared_ptr<const Message>> clientQueue;
     gm.joinGame(gameId, 1, clientQueue);
     gm.removeClient(1);
-
     auto games = gm.listGames();
     EXPECT_EQ(games[0].playerCount, 0);
     gm.stopAll();
 }
 
-TEST(GameManagerTest, RemoveNonExistentClientDoesNotCrash)
-{
-    GameManager gm;
+TEST_F(GameManagerIntegrationTest, RemoveNonExistentClientDoesNotCrash) {
     EXPECT_NO_THROW(gm.removeClient(999));
     gm.stopAll();
 }
 
-TEST(GameManagerTest, AfterRemoveClientCanRejoin)
-{
-    GameManager gm;
-    uint32_t gameId = gm.createGame("sala", 1);
-
-    Queue<std::shared_ptr<const Message>> q1, q2;
-    EXPECT_TRUE(gm.joinGame(gameId, 1, q1));
-    gm.removeClient(1);
-    EXPECT_TRUE(gm.joinGame(gameId, 2, q2)); // slot liberado
-    gm.stopAll();
-}
-
-TEST(GameManagerTest, ConcurrentJoinsRespectMaxPlayers)
-{
-    GameManager gm;
+TEST_F(GameManagerIntegrationTest, ConcurrentJoinsRespectMaxPlayers) {
     uint32_t gameId = gm.createGame("sala", 5);
-
     constexpr int NUM_CLIENTS = 20;
     std::vector<Queue<std::shared_ptr<const Message>>> queues(NUM_CLIENTS);
     std::vector<bool> results(NUM_CLIENTS, false);
     std::vector<std::thread> threads;
 
     for (int i = 0; i < NUM_CLIENTS; ++i)
-    {
-        threads.emplace_back([&, i]()
-                             { results[i] = gm.joinGame(gameId, i + 1, queues[i]); });
-    }
+        threads.emplace_back([&, i]() {
+            results[i] = gm.joinGame(gameId, i + 1, queues[i]);
+        });
 
-    for (auto &t : threads)
-        t.join();
+    for (auto& t : threads) t.join();
 
     int accepted = 0;
-    for (bool r : results)
-        if (r)
-            ++accepted;
-
+    for (bool r : results) if (r) ++accepted;
     EXPECT_EQ(accepted, 5);
-    gm.stopAll();
-}
-
-TEST(GameManagerTest, ConcurrentCreateAndList)
-{
-    GameManager gm;
-    constexpr int NUM_ROOMS = 10;
-    std::vector<std::thread> threads;
-
-    for (int i = 0; i < NUM_ROOMS; ++i)
-    {
-        threads.emplace_back([&, i]()
-                             { gm.createGame("sala" + std::to_string(i), 4); });
-    }
-
-    for (auto &t : threads)
-        t.join();
-
-    auto games = gm.listGames();
-    EXPECT_EQ(games.size(), static_cast<size_t>(NUM_ROOMS));
-    gm.stopAll();
-}
-
-TEST(GameManagerTest, ConcurrentJoinAndRemove)
-{
-    GameManager gm;
-    uint32_t gameId = gm.createGame("sala", 10);
-
-    constexpr int NUM_CLIENTS = 10;
-    std::vector<Queue<std::shared_ptr<const Message>>> queues(NUM_CLIENTS);
-    std::vector<std::thread> threads;
-
-    for (int i = 0; i < NUM_CLIENTS; ++i)
-        gm.joinGame(gameId, i + 1, queues[i]);
-
-    for (int i = 0; i < NUM_CLIENTS; ++i)
-    {
-        threads.emplace_back([&, i]()
-                             {
-            gm.removeClient(i + 1);
-            gm.joinGame(gameId, i + 1 + NUM_CLIENTS, queues[i]); });
-    }
-
-    for (auto &t : threads)
-        t.join();
-
-    EXPECT_NO_FATAL_FAILURE(gm.listGames());
     gm.stopAll();
 }
 

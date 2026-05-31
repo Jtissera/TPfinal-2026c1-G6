@@ -24,6 +24,7 @@ bool Player::isMeditating() const { return state == PlayerState::MEDITATING; }
 void Player::takeDamage(int16_t dmg) {
     if (!isAlive()) return;
     hp = std::max<int16_t>(0, hp - dmg);
+    if (hp == 0) state = PlayerState::DEAD;
 }
 
 void Player::heal(int16_t amount) {
@@ -47,7 +48,7 @@ void Player::addGold(uint32_t amount) {
     gold += amount;
 }
 
-// Las fórmulas vienen de afuera — Player no sabe calcularlas
+// Las formulas vienen de afuera - Player no sabe calcularlas
 void Player::addExperience(uint32_t exp, uint32_t expLimit,
                             int16_t newMaxHp, int16_t newMaxMana) {
     experience += exp;
