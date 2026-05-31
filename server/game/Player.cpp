@@ -82,7 +82,6 @@ void Player::stopMeditating() {
     if (isMeditating()) state = PlayerState::ALIVE;
 }
 
-
 uint32_t Player::die(uint32_t safeGold) {
     if (!isAlive()) return 0;
     state = PlayerState::DEAD;
