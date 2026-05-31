@@ -78,6 +78,11 @@ public:
     const std::unordered_map<uint32_t, Npc>& getNpcs() const;
 
     void resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY);
+    bool hasNpc(uint32_t npcId) const;
+    bool damageNpc(uint32_t npcId, int16_t damage, uint32_t attackerPlayerId);
+    bool hasPlayer(uint32_t playerId) const;
+    Npc& getNpc(uint32_t npcId);
+    const Npc& getNpc(uint32_t npcId) const;
 
 private:
     static constexpr int TILE_SIZE = 96; //toml

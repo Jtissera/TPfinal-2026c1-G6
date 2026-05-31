@@ -334,3 +334,22 @@ void GameWorld::resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY) {
         }
     }
 }
+
+bool GameWorld::hasNpc(uint32_t npcId) const {
+    return npcManager.hasNpc(npcId);
+}
+bool GameWorld::hasPlayer(uint32_t playerId) const {
+    return players.find(playerId) != players.end();
+}
+
+bool GameWorld::damageNpc(uint32_t npcId,int16_t damage,uint32_t attackerPlayerId) {
+    return npcManager.damageNpc(npcId,damage,attackerPlayerId);
+}
+
+Npc& GameWorld::getNpc(uint32_t npcId) {
+    return npcManager.getNpc(npcId);
+}
+
+const Npc& GameWorld::getNpc(uint32_t npcId) const {
+    return npcManager.getNpc(npcId);
+}

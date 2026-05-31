@@ -1,7 +1,7 @@
 {
   "textures": [
     {
-      "id": "ataque1",
+      "id": "effect_attack_magic_01",
       "path": "assets/sprites/effects/effect_attack_magic_01.png"
     },
     {

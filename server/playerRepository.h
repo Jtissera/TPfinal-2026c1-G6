@@ -7,6 +7,7 @@ public:
     void save(uint32_t clientId, Player player);
     Player* get(uint32_t clientId);
     void remove(uint32_t clientId);
+    bool has(uint32_t clientId) const;
 private:
     std::unordered_map<uint32_t, Player> players;
 };

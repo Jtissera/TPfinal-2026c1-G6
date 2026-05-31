@@ -279,3 +279,22 @@ item_drop_chance = 0.01
 gold_drop_min = 2
 gold_drop_max = 12
 zones = ["COMBAT"]
+
+
+[npcs.merchant]
+hostile = false
+hp = 100
+damage_min = 0
+damage_max = 0
+
+[npcs.priest]
+hostile = false
+hp = 100
+damage_min = 0
+damage_max = 0
+
+[npcs.banker]
+hostile = false
+hp = 100
+damage_min = 0
+damage_max = 0

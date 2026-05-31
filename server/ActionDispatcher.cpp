@@ -1,5 +1,6 @@
 #include "ActionDispatcher.h"
 
+
 ActionDispatcher::ActionDispatcher() {
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_MOVE)]       = &ActionDispatcher::handleMove;
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_ATTACK)]     = &ActionDispatcher::handleAttack;
@@ -62,48 +63,136 @@ void ActionDispatcher::handleMove(uint32_t id, const Message& msg,
             world.getPixelY(id)));
     }
 }
-
-void ActionDispatcher::handleAttack(uint32_t id, const Message& msg,
-                                     GameWorld& world, Monitor& monitor) {
+void ActionDispatcher::handleAttack(
+    uint32_t id,
+    const Message& msg,
+    GameWorld& world,
+    Monitor& monitor
+) {
     const auto& attackMsg = static_cast<const AttackMessage&>(msg);
-    uint32_t targetId = attackMsg.getTargetId();
+    const uint32_t targetId = attackMsg.getTargetId();
+
+    if (!world.hasPlayer(id)) {
+        return;
+    }
 
     Player& attacker = world.getPlayer(id);
-    Player& target   = world.getPlayer(targetId);
-
     const Item* weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
-    if (weapon && weapon->effect == ItemEffect::HEAL) {
-        if (effects.apply(*weapon, attacker, &target)) {
-            sendStats(id,       attacker, monitor);
-            sendStats(targetId, target,   monitor);
+
+    // ============================================================
+    // PvP: player contra player
+    // ============================================================
+    if (world.hasPlayer(targetId)) {
+        Player& target = world.getPlayer(targetId);
+
+        if (weapon != nullptr && weapon->effect == ItemEffect::HEAL) {
+            if (effects.apply(*weapon, attacker, &target)) {
+                sendStats(id, attacker, monitor);
+                sendStats(targetId, target, monitor);
+            }
+
+            return;
         }
+
+        auto result = combat.attackPlayer(attacker, target);
+
+        if (!result.valid) {
+            return;
+        }
+
+        if (result.dodged) {
+            sendStats(id, attacker, monitor);
+            sendStats(targetId, target, monitor);
+            return;
+        }
+
+        world.giveExperience(id, result.expGained);
+
+        sendStats(id, attacker, monitor);
+        sendStats(targetId, target, monitor);
+
+        if (attacker.checkAndClearLevelUp()) {
+            monitor.sendTo(
+                id,
+                std::make_shared<const LevelUpMessage>(attacker.getLevel())
+            );
+        }
+
+        if (result.killed) {
+            world.handlePlayerDeath(targetId, id);
+
+            sendDeath(targetId, target, monitor);
+
+            sendStats(id, attacker, monitor);
+
+            if (attacker.checkAndClearLevelUp()) {
+                monitor.sendTo(
+                    id,
+                    std::make_shared<const LevelUpMessage>(attacker.getLevel())
+                );
+            }
+        }
+
         return;
     }
 
-    auto result = combat.attack(attacker, target);
-    if (!result.valid) return;
+    // ============================================================
+    // PvE: player contra NPC
+    // ============================================================
+    if (world.hasNpc(targetId)) {
+        // Hechizos/ítems de curación no se procesan como ataque PvE.
+        if (weapon != nullptr && weapon->effect == ItemEffect::HEAL) {
+            return;
+        }
 
-    if (result.dodged) {
-        sendStats(id,       attacker, monitor);
-        sendStats(targetId, target,   monitor);
+        Npc& npc = world.getNpc(targetId);
+
+        // Si el NPC es pasivo, no es atacable.
+        if (!npc.isHostile()) {
+            return;
+        }
+
+        // Esto valida rango con getAttackRange(),
+        // calcula daño con getWeaponDamageMin/Max(),
+        // aplica esquive/defensa y resta vida.
+        auto result = combat.attack(attacker, npc);
+
+        if (!result.valid) {
+            return;
+        }
+        monitor.broadcast(std::make_shared<const NpcHealthMessage>(targetId,npc.getHp(),npc.getMaxHp())
+);
+
+        if (result.dodged) {
+            sendStats(id, attacker, monitor);
+            return;
+        }
+
+        world.giveExperience(id, result.expGained);
+
+        // Si sigue vivo, el NPC debe perseguir al atacante.
+        if (!result.killed) {
+            npc.setTargetId(id);
+            npc.setState(NpcState::CHASING);
+        }
+
+        sendStats(id, attacker, monitor);
+
+        if (attacker.checkAndClearLevelUp()) {
+            monitor.sendTo(id,std::make_shared<const LevelUpMessage>(attacker.getLevel()));
+        }
+
+        if (result.killed) {
+            sendStats(id, attacker, monitor);
+            if (attacker.checkAndClearLevelUp()) {
+                monitor.sendTo(id,std::make_shared<const LevelUpMessage>(attacker.getLevel()));
+            }
+        }
+
         return;
     }
 
-    world.giveExperience(id, result.expGained);
-
-    sendStats(id,       attacker, monitor);
-    sendStats(targetId, target,   monitor);
-
-    if (attacker.checkAndClearLevelUp())
-        monitor.sendTo(id, std::make_shared<const LevelUpMessage>(attacker.getLevel()));
-
-    if (result.killed) {
-        world.handlePlayerDeath(targetId, id);
-        sendDeath(targetId, target, monitor);
-        sendStats(id, attacker, monitor); // por si subio con exp kill
-        if (attacker.checkAndClearLevelUp())
-            monitor.sendTo(id, std::make_shared<const LevelUpMessage>(attacker.getLevel()));
-    }
+    return;
 }
 
 void ActionDispatcher::handleDropItem(uint32_t id, const Message& msg,

@@ -40,6 +40,8 @@ public:
     const NpcStats& getStats()   const { return stats;                }
     NpcState getState()          const { return state;                }
     uint32_t getTargetId()       const { return targetId;             }
+    bool isHostile() const { return stats.hostile; }
+
 
     void setTilePos(int tx, int ty) { tileX = tx; tileY = ty; }
     void setState(NpcState s)       { state = s;               }

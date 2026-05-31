@@ -12,3 +12,7 @@ uint8_t AttackMessage::opCode() const {
 void AttackMessage::serializeBody(PacketWriter &writer) const {
     writer.writeUint32(targetId);
 }
+
+uint32_t AttackMessage::getTargetId() const {
+    return targetId;
+}

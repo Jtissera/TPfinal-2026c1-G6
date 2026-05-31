@@ -31,6 +31,7 @@ enum class ServerOpCode : uint8_t
     MSG_COMBAT_LOG = 0x61,
     MSG_NPC_LIST = 0x62,
     MSG_BANK_STATE = 0x63,
+    MSG_NPC_HEALTH = 0x64,
 
     MSG_CLAN_UPDATE = 0x70,
     MSG_CLAN_NOTIFICATION = 0x71,

@@ -21,4 +21,6 @@ public:
     float calcHpRegen(const RaceStats& race, float deltaSeconds) const;
     float calcManaRegen(const RaceStats& race, float deltaSeconds) const;
     float calcManaRegenMeditating(const ClassStats& cls, const RaceStats& race, float deltaSeconds) const;
+    int16_t calcAttackDamage(uint8_t strength,int16_t weaponDamageMin,int16_t weaponDamageMax
+) const;
 };

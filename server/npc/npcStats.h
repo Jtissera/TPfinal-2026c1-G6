@@ -16,4 +16,9 @@ struct NpcStats {
     uint32_t attackCooldownMs;
     uint32_t moveCooldownMs;
     std::vector<std::string> zones;
+    // Indica si este NPC es una criatura agresiva.
+    // true  = esqueleto, goblin, zombie, etc.
+    // false = comerciante, sacerdote, banquero, etc.
+    bool hostile = true;
+
 };

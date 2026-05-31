@@ -21,6 +21,7 @@
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
 #include "common/network/messages/server/combat/combatLogMessage.h"
 #include "common/network/messages/server/player/levelUpMessage.h"
+#include "common/network/messages/server/npc/npcHealthMessage.h"
 
 class ActionDispatcher {
 private:

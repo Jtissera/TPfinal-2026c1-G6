@@ -152,9 +152,12 @@ void AttackSystem::render(
     AssetManager& assets,
     const SDL_Rect& camera
 ) {
-    SDL_Texture* texAtk = assets.GetTexture("ataque1");
+    SDL_Texture* texAtk = assets.GetTexture("effect_attack_magic_01");
 
     if (texAtk == nullptr) {
+        std::cout << "[ATTACK EFFECT] No se encontró textura: "
+          << "effect_attack_magic_01"
+          << std::endl;
         return;
     }
 

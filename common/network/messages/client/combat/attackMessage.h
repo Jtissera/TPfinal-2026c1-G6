@@ -12,6 +12,8 @@ public:
     uint8_t opCode() const override;
     void serializeBody(PacketWriter &writer) const override;
 
+    uint32_t getTargetId() const;
+
 private:
     uint32_t targetId;
 

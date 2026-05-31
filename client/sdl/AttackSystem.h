@@ -9,6 +9,8 @@
 #include "AssetManager.h"
 #include <SDL2/SDL_rect.h>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include "state/ItemView.h"
 
@@ -49,13 +51,38 @@ public:
         SDL_Renderer* renderer,
         AssetManager& assets,
         const SDL_Rect& camera
-    );
+        );
+    // Indica si el enemigo está muerto temporalmente.
+    bool isEnemyDead(uint32_t enemyId) const;
+
+    // Actualiza respawns de enemigos muertos.
+    void updateRespawns();
+
+    // Vida actual del enemigo.
+    int getEnemyHealth(uint32_t enemyId) const;
+
+    // Vida máxima del enemigo.
+    int getEnemyMaxHealth(uint32_t enemyId) const;
 
 private:
     std::vector<AttackEffect> attackEffects;
 
     // Vida local de enemigos para demo.
     std::unordered_map<uint32_t, int> enemyHealth;
+
+    // Vida máxima de enemigos.
+    std::unordered_map<uint32_t, int> enemyMaxHealth;
+
+    // Enemigos muertos esperando respawn.
+    std::unordered_set<uint32_t> deadEnemies;
+
+    // Momento en que murió cada enemigo.
+    std::unordered_map<uint32_t, Uint32> enemyDeadAt;
+
+    // Tiempo de respawn.
+    Uint32 enemyRespawnMs = 5000;
+
+    void markEnemyAsDead(uint32_t enemyId);
 
     // Crea el efecto local de ataque sobre el enemigo.
     void createLocalAttackEffect(uint32_t targetId, Entity& target);

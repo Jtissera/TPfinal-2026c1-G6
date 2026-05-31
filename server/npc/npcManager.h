@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include <stdexcept>
 
 class NpcManager {
 public:
@@ -21,6 +22,12 @@ public:
 
     const std::unordered_map<uint32_t, Npc>& getNpcs() const { return npcs; }
     int count() const { return static_cast<int>(npcs.size()); }
+
+    bool hasNpc(uint32_t npcId) const;
+
+    bool damageNpc(uint32_t npcId,int16_t damage,uint32_t attackerPlayerId);
+    Npc& getNpc(uint32_t npcId);
+    const Npc& getNpc(uint32_t npcId) const;
 
 private:
     NpcFactory&            factory;

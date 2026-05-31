@@ -27,7 +27,9 @@ NpcTickResult NpcManager::tick(const std::unordered_map<uint32_t, Player>& playe
 
     for (auto& [id, npc] : npcs) {
         if (!npc.isAlive()) continue;
-
+        if (!npc.isHostile()) {
+            continue;
+        }
         NpcIntent intent = ai.decide(npc, players);
 
         npc.setState(intent.nextState);
@@ -50,7 +52,12 @@ NpcTickResult NpcManager::tick(const std::unordered_map<uint32_t, Player>& playe
 
     for (auto& [id, npc] : npcs) {
         if (!npc.isAlive()) {
-            result.deaths.push_back(buildDeathResult(npc));
+            // Solo las criaturas hostiles generan muerte/drop.
+            // Un NPC pasivo no debería pasar por combate normal.
+            if (npc.isHostile()) {
+                result.deaths.push_back(buildDeathResult(npc));
+            }
+
             toErase.push_back(id);
         }
     }
@@ -87,4 +94,59 @@ NpcDeathResult NpcManager::buildDeathResult(const Npc& npc) const {
  
     return d;
 
+}
+bool NpcManager::damageNpc(
+    uint32_t npcId,
+    int16_t damage,
+    uint32_t attackerPlayerId
+) {
+    auto it = npcs.find(npcId);
+
+    if (it == npcs.end()) {
+        return false;
+    }
+
+    Npc& npc = it->second;
+
+    // Comerciante, sacerdote, banquero, etc. no son atacables.
+    if (!npc.isHostile()) {
+        return false;
+    }
+
+    if (!npc.isAlive()) {
+        return false;
+    }
+
+    npc.takeDamage(damage);
+
+    if (npc.isAlive()) {
+        npc.setTargetId(attackerPlayerId);
+        npc.setState(NpcState::CHASING);
+    }
+
+    return true;
+}
+
+bool NpcManager::hasNpc(uint32_t npcId) const {
+    return npcs.find(npcId) != npcs.end();
+}
+
+Npc& NpcManager::getNpc(uint32_t npcId) {
+    auto it = npcs.find(npcId);
+
+    if (it == npcs.end()) {
+        throw std::runtime_error("NPC not found");
+    }
+
+    return it->second;
+}
+
+const Npc& NpcManager::getNpc(uint32_t npcId) const {
+    auto it = npcs.find(npcId);
+
+    if (it == npcs.end()) {
+        throw std::runtime_error("NPC not found");
+    }
+
+    return it->second;
 }

@@ -13,3 +13,8 @@ Player* PlayerRepository::get(uint32_t clientId) {
 void PlayerRepository::remove(uint32_t clientId) {
     players.erase(clientId);
 }
+
+
+bool PlayerRepository::has(uint32_t clientId) const {
+    return players.find(clientId) != players.end();
+}

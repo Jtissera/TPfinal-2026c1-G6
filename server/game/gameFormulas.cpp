@@ -79,3 +79,28 @@ float GameFormulas::calcManaRegenMeditating(const ClassStats& cls,
 
     return cls.meditation * race.intelligence * deltaSeconds;
 }
+
+int16_t GameFormulas::calcAttackDamage(uint8_t strength,int16_t weaponDamageMin,int16_t weaponDamageMax) const {
+    // Si el arma está mal configurada, garantizamos al menos 1 de daño.
+    if (weaponDamageMax < weaponDamageMin) {
+        weaponDamageMax = weaponDamageMin;
+    }
+
+    // rand(DañoArmaMin, DañoArmaMax)
+    int16_t weaponRoll = weaponDamageMin;
+
+    if (weaponDamageMax > weaponDamageMin) {
+        weaponRoll = static_cast<int16_t>(
+            weaponDamageMin + (std::rand() % (weaponDamageMax - weaponDamageMin + 1))
+        );
+    }
+
+    // Daño = Fuerza * rand(DañoArmaMin, DañoArmaMax)
+    int16_t damage = static_cast<int16_t>(strength * weaponRoll);
+
+    if (damage <= 0) {
+        damage = 1;
+    }
+
+    return damage;
+}
