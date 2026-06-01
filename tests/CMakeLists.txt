@@ -12,4 +12,5 @@ target_sources(taller_tests
     world_test.cpp
     integration_test.cpp
     remove_player_test.cpp
+    dungeon_test.cpp
 )

@@ -15,17 +15,20 @@
 #include <toml++/toml.h>
 #include <vector>
 
-class GameManagerIntegrationTest : public ::testing::Test {
+class GameManagerIntegrationTest : public ::testing::Test
+{
 protected:
   toml::table config = toml::parse_file("config/game.toml");
   NpcRepository npcRepo{config};
   NpcFactory npcFactory{npcRepo};
   ItemRepository itemRepo{config};
   Queue<std::shared_ptr<LeaveEvent>> leaveQueue;
-  GameManager gm{npcFactory, itemRepo, leaveQueue, config};
+  Queue<std::shared_ptr<InstanceTransitionEvent>> transitionQueue;
+  GameManager gm{npcFactory, itemRepo, leaveQueue, transitionQueue, config};
 };
 
-TEST_F(GameManagerIntegrationTest, CreateGameReturnsIncrementalIds) {
+TEST_F(GameManagerIntegrationTest, CreateGameReturnsIncrementalIds)
+{
   uint32_t id1 = gm.createGame("sala1", 4);
   uint32_t id2 = gm.createGame("sala2", 4);
   EXPECT_NE(id1, id2);
@@ -33,7 +36,8 @@ TEST_F(GameManagerIntegrationTest, CreateGameReturnsIncrementalIds) {
   gm.stopAll();
 }
 
-TEST_F(GameManagerIntegrationTest, ListGamesReflectsCreatedRooms) {
+TEST_F(GameManagerIntegrationTest, ListGamesReflectsCreatedRooms)
+{
   gm.createGame("partida1", 4);
   gm.createGame("partida2", 2);
   auto games = gm.listGames();
@@ -41,7 +45,8 @@ TEST_F(GameManagerIntegrationTest, ListGamesReflectsCreatedRooms) {
   gm.stopAll();
 }
 
-TEST_F(GameManagerIntegrationTest, ListGamesShowsCorrectMaxPlayers) {
+TEST_F(GameManagerIntegrationTest, ListGamesShowsCorrectMaxPlayers)
+{
   gm.createGame("sala", 5);
   auto games = gm.listGames();
   ASSERT_EQ(games.size(), 1u);
@@ -49,7 +54,8 @@ TEST_F(GameManagerIntegrationTest, ListGamesShowsCorrectMaxPlayers) {
   gm.stopAll();
 }
 
-TEST_F(GameManagerIntegrationTest, ListGamesInitialPlayerCountIsZero) {
+TEST_F(GameManagerIntegrationTest, ListGamesInitialPlayerCountIsZero)
+{
   gm.createGame("sala", 4);
   auto games = gm.listGames();
   ASSERT_EQ(games.size(), 1u);
@@ -57,7 +63,8 @@ TEST_F(GameManagerIntegrationTest, ListGamesInitialPlayerCountIsZero) {
   gm.stopAll();
 }
 
-TEST_F(GameManagerIntegrationTest, JoinGameIncreasesPlayerCount) {
+TEST_F(GameManagerIntegrationTest, JoinGameIncreasesPlayerCount)
+{
   uint32_t gameId = gm.createGame("sala", 4);
   Queue<std::shared_ptr<const Message>> clientQueue;
   EXPECT_TRUE(gm.joinGame(gameId, 1, clientQueue));
@@ -66,13 +73,15 @@ TEST_F(GameManagerIntegrationTest, JoinGameIncreasesPlayerCount) {
   gm.stopAll();
 }
 
-TEST_F(GameManagerIntegrationTest, JoinNonExistentGameReturnsFalse) {
+TEST_F(GameManagerIntegrationTest, JoinNonExistentGameReturnsFalse)
+{
   Queue<std::shared_ptr<const Message>> clientQueue;
   EXPECT_FALSE(gm.joinGame(999, 1, clientQueue));
   gm.stopAll();
 }
 
-TEST_F(GameManagerIntegrationTest, JoinFullGameReturnsFalse) {
+TEST_F(GameManagerIntegrationTest, JoinFullGameReturnsFalse)
+{
   uint32_t gameId = gm.createGame("sala", 2);
   Queue<std::shared_ptr<const Message>> q1, q2, q3;
   EXPECT_TRUE(gm.joinGame(gameId, 1, q1));
@@ -81,7 +90,8 @@ TEST_F(GameManagerIntegrationTest, JoinFullGameReturnsFalse) {
   gm.stopAll();
 }
 
-TEST_F(GameManagerIntegrationTest, RemoveClientDecreasesPlayerCount) {
+TEST_F(GameManagerIntegrationTest, RemoveClientDecreasesPlayerCount)
+{
   uint32_t gameId = gm.createGame("sala", 4);
   Queue<std::shared_ptr<const Message>> clientQueue;
   gm.joinGame(gameId, 1, clientQueue);
@@ -91,12 +101,14 @@ TEST_F(GameManagerIntegrationTest, RemoveClientDecreasesPlayerCount) {
   gm.stopAll();
 }
 
-TEST_F(GameManagerIntegrationTest, RemoveNonExistentClientDoesNotCrash) {
+TEST_F(GameManagerIntegrationTest, RemoveNonExistentClientDoesNotCrash)
+{
   EXPECT_NO_THROW(gm.removeClient(999));
   gm.stopAll();
 }
 
-TEST_F(GameManagerIntegrationTest, ConcurrentJoinsRespectMaxPlayers) {
+TEST_F(GameManagerIntegrationTest, ConcurrentJoinsRespectMaxPlayers)
+{
   uint32_t gameId = gm.createGame("sala", 5);
   constexpr int NUM_CLIENTS = 20;
   std::vector<Queue<std::shared_ptr<const Message>>> queues(NUM_CLIENTS);
@@ -105,7 +117,8 @@ TEST_F(GameManagerIntegrationTest, ConcurrentJoinsRespectMaxPlayers) {
 
   for (int i = 0; i < NUM_CLIENTS; ++i)
     threads.emplace_back(
-        [&, i]() { results[i] = gm.joinGame(gameId, i + 1, queues[i]); });
+        [&, i]()
+        { results[i] = gm.joinGame(gameId, i + 1, queues[i]); });
 
   for (auto &t : threads)
     t.join();
@@ -118,7 +131,8 @@ TEST_F(GameManagerIntegrationTest, ConcurrentJoinsRespectMaxPlayers) {
   gm.stopAll();
 }
 
-TEST(ClientRegistryTest, AddAndGetQueue) {
+TEST(ClientRegistryTest, AddAndGetQueue)
+{
   Monitor registry;
   Queue<std::shared_ptr<const Message>> q;
 
@@ -126,12 +140,14 @@ TEST(ClientRegistryTest, AddAndGetQueue) {
   EXPECT_EQ(registry.getQueue(1), &q);
 }
 
-TEST(ClientRegistryTest, GetNonExistentReturnsNullptr) {
+TEST(ClientRegistryTest, GetNonExistentReturnsNullptr)
+{
   Monitor registry;
   EXPECT_EQ(registry.getQueue(999), nullptr);
 }
 
-TEST(ClientRegistryTest, RemoveThenGetReturnsNullptr) {
+TEST(ClientRegistryTest, RemoveThenGetReturnsNullptr)
+{
   Monitor registry;
   Queue<std::shared_ptr<const Message>> q;
 
@@ -140,14 +156,17 @@ TEST(ClientRegistryTest, RemoveThenGetReturnsNullptr) {
   EXPECT_EQ(registry.getQueue(1), nullptr);
 }
 
-TEST(ClientRegistryTest, ConcurrentAddAndGet) {
+TEST(ClientRegistryTest, ConcurrentAddAndGet)
+{
   Monitor registry;
   constexpr int N = 50;
   std::vector<Queue<std::shared_ptr<const Message>>> queues(N);
   std::vector<std::thread> threads;
 
-  for (int i = 0; i < N; ++i) {
-    threads.emplace_back([&, i]() { registry.addQueue(i, queues[i]); });
+  for (int i = 0; i < N; ++i)
+  {
+    threads.emplace_back([&, i]()
+                         { registry.addQueue(i, queues[i]); });
   }
 
   for (auto &t : threads)
@@ -157,7 +176,8 @@ TEST(ClientRegistryTest, ConcurrentAddAndGet) {
     EXPECT_EQ(registry.getQueue(i), &queues[i]);
 }
 
-TEST(ClientRegistryTest, ConcurrentAddAndRemove) {
+TEST(ClientRegistryTest, ConcurrentAddAndRemove)
+{
   Monitor registry;
   constexpr int N = 50;
   std::vector<Queue<std::shared_ptr<const Message>>> queues(N);
@@ -166,8 +186,10 @@ TEST(ClientRegistryTest, ConcurrentAddAndRemove) {
   for (int i = 0; i < N; ++i)
     registry.addQueue(i, queues[i]);
 
-  for (int i = 0; i < N; ++i) {
-    removeThreads.emplace_back([&, i]() { registry.removeQueue(i); });
+  for (int i = 0; i < N; ++i)
+  {
+    removeThreads.emplace_back([&, i]()
+                               { registry.removeQueue(i); });
   }
 
   for (auto &t : removeThreads)
@@ -177,7 +199,8 @@ TEST(ClientRegistryTest, ConcurrentAddAndRemove) {
     EXPECT_EQ(registry.getQueue(i), nullptr);
 }
 
-TEST(MonitorTest, SendToDeliversMessage) {
+TEST(MonitorTest, SendToDeliversMessage)
+{
   Monitor monitor;
   Queue<std::shared_ptr<const Message>> q;
   monitor.addQueue(1, q);
@@ -190,13 +213,15 @@ TEST(MonitorTest, SendToDeliversMessage) {
   EXPECT_EQ(received->opCode(), msg->opCode());
 }
 
-TEST(MonitorTest, SendToUnknownClientDoesNotCrash) {
+TEST(MonitorTest, SendToUnknownClientDoesNotCrash)
+{
   Monitor monitor;
   auto msg = std::make_shared<const ConnectOkMessage>();
   EXPECT_NO_THROW(monitor.sendTo(999, msg));
 }
 
-TEST(MonitorTest, BroadcastDeliversToAll) {
+TEST(MonitorTest, BroadcastDeliversToAll)
+{
   Monitor monitor;
   Queue<std::shared_ptr<const Message>> q1, q2, q3;
   monitor.addQueue(1, q1);
@@ -212,7 +237,8 @@ TEST(MonitorTest, BroadcastDeliversToAll) {
   EXPECT_TRUE(q3.try_pop(r3));
 }
 
-TEST(MonitorTest, RemoveQueueStopsSendTo) {
+TEST(MonitorTest, RemoveQueueStopsSendTo)
+{
   Monitor monitor;
   Queue<std::shared_ptr<const Message>> q;
   monitor.addQueue(1, q);
@@ -225,7 +251,8 @@ TEST(MonitorTest, RemoveQueueStopsSendTo) {
   EXPECT_FALSE(q.try_pop(received));
 }
 
-TEST(MonitorTest, SizeReflectsAddAndRemove) {
+TEST(MonitorTest, SizeReflectsAddAndRemove)
+{
   Monitor monitor;
   Queue<std::shared_ptr<const Message>> q1, q2;
 
@@ -238,7 +265,8 @@ TEST(MonitorTest, SizeReflectsAddAndRemove) {
   EXPECT_EQ(monitor.size(), 1);
 }
 
-TEST(MonitorTest, ConcurrentSendTo) {
+TEST(MonitorTest, ConcurrentSendTo)
+{
   Monitor monitor;
   constexpr int N = 10;
   std::vector<Queue<std::shared_ptr<const Message>>> queues(N);
@@ -247,17 +275,19 @@ TEST(MonitorTest, ConcurrentSendTo) {
     monitor.addQueue(i, queues[i]);
 
   std::vector<std::thread> threads;
-  for (int i = 0; i < N; ++i) {
-    threads.emplace_back([&, i]() {
+  for (int i = 0; i < N; ++i)
+  {
+    threads.emplace_back([&, i]()
+                         {
       auto msg = std::make_shared<const ConnectOkMessage>();
-      monitor.sendTo(i, msg);
-    });
+      monitor.sendTo(i, msg); });
   }
 
   for (auto &t : threads)
     t.join();
 
-  for (int i = 0; i < N; ++i) {
+  for (int i = 0; i < N; ++i)
+  {
     std::shared_ptr<const Message> r;
     EXPECT_TRUE(queues[i].try_pop(r));
   }

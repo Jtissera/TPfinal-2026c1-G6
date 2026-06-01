@@ -7,18 +7,21 @@
 #include "server/clientMessage.h"
 #include "server/game/session/gameManager.h"
 
-class IntegrationTest : public ::testing::Test {
+class IntegrationTest : public ::testing::Test
+{
 protected:
   toml::table config = makeConfig();
   NpcRepository npcRepo{config};
   NpcFactory npcFact{npcRepo};
   ItemRepository itemRepo{config};
   Queue<std::shared_ptr<LeaveEvent>> leaveQueue;
-  GameManager gm{npcFact, itemRepo, leaveQueue, config};
+  Queue<std::shared_ptr<InstanceTransitionEvent>> transitionQueue;
+  GameManager gm{npcFact, itemRepo, leaveQueue, transitionQueue, config};
 };
 // test 1 npc ataca Player, Player muere, item cae y se recoge
 
-TEST_F(IntegrationTest, NpcKillsPlayerDropsItemCanBePickedUp) {
+TEST_F(IntegrationTest, NpcKillsPlayerDropsItemCanBePickedUp)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
 
   Player p = makePlayer(1, 5, 5, 6);
@@ -31,7 +34,8 @@ TEST_F(IntegrationTest, NpcKillsPlayerDropsItemCanBePickedUp) {
 
   EXPECT_FALSE(result.playerHits.empty());
 
-  if (!world.getPlayer(1).isAlive()) {
+  if (!world.getPlayer(1).isAlive())
+  {
     auto item = world.pickItemAt(5, 5);
     EXPECT_TRUE(item.has_value());
   }
@@ -39,7 +43,8 @@ TEST_F(IntegrationTest, NpcKillsPlayerDropsItemCanBePickedUp) {
 
 // test 2 recoger, equipar, atacar con stats del arma
 
-TEST_F(IntegrationTest, PlayerPicksUpWeaponEquipsAndDealsDamage) {
+TEST_F(IntegrationTest, PlayerPicksUpWeaponEquipsAndDealsDamage)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
 
   world.addPlayer(makePlayer(1, 3, 3));
@@ -64,7 +69,8 @@ TEST_F(IntegrationTest, PlayerPicksUpWeaponEquipsAndDealsDamage) {
   auto result = combat.attack(attacker, target);
 
   EXPECT_TRUE(result.valid);
-  if (!result.dodged) {
+  if (!result.dodged)
+  {
     // El daño debe reflejar los stats del arma (min=max=50,daño fijo
     // 50,defensa)
     EXPECT_LT(target.getHp(), hpBefore);
@@ -73,7 +79,8 @@ TEST_F(IntegrationTest, PlayerPicksUpWeaponEquipsAndDealsDamage) {
 
 // test 3
 
-TEST_F(IntegrationTest, AttackerGainsExpOnKillAndCanLevelUp) {
+TEST_F(IntegrationTest, AttackerGainsExpOnKillAndCanLevelUp)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
 
   world.addPlayer(makePlayer(1, 3, 3)); // atacante nivel 1
@@ -95,7 +102,8 @@ TEST_F(IntegrationTest, AttackerGainsExpOnKillAndCanLevelUp) {
   EXPECT_GE(attacker.getExp(), 0u);
 }
 
-TEST_F(IntegrationTest, RemoveClientFromGameDecreasesPlayerCount) {
+TEST_F(IntegrationTest, RemoveClientFromGameDecreasesPlayerCount)
+{
   uint32_t gameId = gm.createGame("sala", 4);
   Queue<std::shared_ptr<const Message>> clientQueue;
   gm.joinGame(gameId, 1, clientQueue);
@@ -107,7 +115,8 @@ TEST_F(IntegrationTest, RemoveClientFromGameDecreasesPlayerCount) {
   gm.stopAll();
 }
 
-TEST_F(IntegrationTest, RemoveClientTwiceDoesNotCrash) {
+TEST_F(IntegrationTest, RemoveClientTwiceDoesNotCrash)
+{
   uint32_t gameId = gm.createGame("sala", 4);
   Queue<std::shared_ptr<const Message>> clientQueue;
   gm.joinGame(gameId, 1, clientQueue);
@@ -117,7 +126,8 @@ TEST_F(IntegrationTest, RemoveClientTwiceDoesNotCrash) {
   gm.stopAll();
 }
 
-TEST_F(IntegrationTest, RemoveNonExistentClientDoesNotCrash) {
+TEST_F(IntegrationTest, RemoveNonExistentClientDoesNotCrash)
+{
   EXPECT_NO_THROW(gm.removeClient(999));
   gm.stopAll();
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../lobby/leaveEvent.h"
+#include "../../lobby/instanceTransitionEvent.h"
 #include "../common/network/messages/client/movement/moveMessage.h"
 #include "../common/network/messages/server/player/EntityMoveMessage.h"
 #include "../common/network/protocol/clientOpCode.h"
@@ -16,10 +17,11 @@
 #include "../common/thread.h"
 #include "ActionDispatcher.h"
 
-class GameLoop : public Thread {
+class GameLoop : public Thread
+{
 public:
   GameLoop(Queue<ClientMessage> &gameQueue, Monitor &monitor, GameWorld &world,
-           Queue<std::shared_ptr<LeaveEvent>> &leaveQueue, uint32_t gameId,
+           Queue<std::shared_ptr<LeaveEvent>> &leaveQueue, Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue, uint32_t gameId,
            const toml::table &config);
   void run() override;
   void stop() override;
@@ -36,6 +38,9 @@ private:
   Queue<std::shared_ptr<LeaveEvent>> &leaveQueue;
   uint32_t gameId;
   float tickRateMs;
+
+  Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue;
+  void handleInstanceTransition(const GameWorld::InstanceEntry &entry);
 
   void processMessage(const ClientMessage &incoming);
   void worldUpdate(float deltaSeconds);

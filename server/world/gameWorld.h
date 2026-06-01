@@ -19,13 +19,36 @@
 #include <unordered_map>
 #include <vector>
 
-class GameWorld {
+class GameWorld
+{
 public:
   explicit GameWorld(const std::string &mapPath, NpcFactory &npcFactory,
                      ItemRepository &itemRepo, const toml::table &config);
 
   explicit GameWorld(MapData mapData, NpcFactory &npcFactory,
                      ItemRepository &itemRepo, const toml::table &config);
+
+  struct InstanceEntry
+  {
+    uint32_t playerId;
+    std::string targetMap;
+    int returnTileX;
+    int returnTileY;
+  };
+
+  struct WorldTickResult
+  {
+    std::vector<uint32_t> playersChanged;
+    std::vector<uint32_t> npcsMoved;
+    std::vector<NpcDeathResult> npcDeaths;
+    struct PlayerHit
+    {
+      uint32_t playerId;
+      int16_t damage;
+    };
+    std::vector<PlayerHit> playerHits;
+    std::vector<InstanceEntry> instanceTransitions;
+  };
 
   void addPlayer(Player player);
   std::optional<Player> removePlayer(uint32_t id);
@@ -41,9 +64,13 @@ public:
   int getPixelX(uint32_t id) const;
   int getPixelY(uint32_t id) const;
 
-  void giveExperience(uint32_t playerId, uint32_t exp);
+  const Tile &getTileAt(int tileX, int tileY) const;
 
-  struct DeathResult {
+  void giveExperience(uint32_t playerId, uint32_t exp,
+                      float xpMultiplier = 1.0f);
+
+  struct DeathResult
+  {
     uint32_t excessGold;
     std::vector<Item> droppedItems;
   };
@@ -57,23 +84,13 @@ public:
 
   void spawnNpc(const std::string &typeName, int tileX, int tileY);
 
-  // Tick para actualizar
-  struct WorldTickResult {
-    std::vector<uint32_t> playersChanged;
-    std::vector<uint32_t> npcsMoved;
-    std::vector<NpcDeathResult> npcDeaths;
-    struct PlayerHit {
-      uint32_t playerId;
-      int16_t damage;
-    };
-    std::vector<PlayerHit> playerHits;
-  };
   WorldTickResult tick(float deltaSeconds);
 
   const MapData &getMapData() const { return mapData; }
   const std::unordered_map<uint32_t, Npc> &getNpcs() const;
 
   void resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY);
+  std::pair<int, int> findSafeSpawnNear(int tileX, int tileY) const;
 
 private:
   void tickPlayers(float deltaSeconds, WorldTickResult &result);

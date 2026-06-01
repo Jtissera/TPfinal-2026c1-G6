@@ -2,7 +2,8 @@
 
 #include <cstdint>
 
-enum class ClientOpCode : uint8_t {
+enum class ClientOpCode : uint8_t
+{
 
   MSG_CONNECT = 0x01,
   MSG_LOGIN = 0x02,

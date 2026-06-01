@@ -3,20 +3,23 @@
 
 // ─── Colisiones ──────────────────────────────────────────────────────────────
 
-TEST(CollisionTest, WalkableTileAllowsMovement) {
+TEST(CollisionTest, WalkableTileAllowsMovement)
+{
   auto map = makeMap(5, 5, true);
   CollisionSystem col(map);
   EXPECT_TRUE(col.isWalkable(2, 2));
 }
 
-TEST(CollisionTest, NonWalkableTileBlocksMovement) {
+TEST(CollisionTest, NonWalkableTileBlocksMovement)
+{
   auto map = makeMap(5, 5, true);
   map.at(2, 2).walkable = false;
   CollisionSystem col(map);
   EXPECT_FALSE(col.isWalkable(2, 2));
 }
 
-TEST(CollisionTest, OutOfBoundsIsNotWalkable) {
+TEST(CollisionTest, OutOfBoundsIsNotWalkable)
+{
   auto map = makeMap(5, 5, true);
   CollisionSystem col(map);
   EXPECT_FALSE(col.isWalkable(-1, 0));
@@ -27,26 +30,30 @@ TEST(CollisionTest, OutOfBoundsIsNotWalkable) {
 
 // ─── Ocupancia ───────────────────────────────────────────────────────────────
 
-TEST(OccupancyTest, OccupyAndIsOccupied) {
+TEST(OccupancyTest, OccupyAndIsOccupied)
+{
   OccupancySystem occ;
   EXPECT_TRUE(occ.occupy(1, 1, 42));
   EXPECT_TRUE(occ.isOccupied(1, 1));
 }
 
-TEST(OccupancyTest, CannotOccupySameTileTwice) {
+TEST(OccupancyTest, CannotOccupySameTileTwice)
+{
   OccupancySystem occ;
   occ.occupy(1, 1, 42);
   EXPECT_FALSE(occ.occupy(1, 1, 99));
 }
 
-TEST(OccupancyTest, FreeReleasesToccupancy) {
+TEST(OccupancyTest, FreeReleasesToccupancy)
+{
   OccupancySystem occ;
   occ.occupy(1, 1, 42);
   occ.free(1, 1);
   EXPECT_FALSE(occ.isOccupied(1, 1));
 }
 
-TEST(OccupancyTest, MoveUpdatesOccupancy) {
+TEST(OccupancyTest, MoveUpdatesOccupancy)
+{
   OccupancySystem occ;
   occ.occupy(1, 1, 42);
   EXPECT_TRUE(occ.move(1, 1, 2, 2, 42));
@@ -54,7 +61,8 @@ TEST(OccupancyTest, MoveUpdatesOccupancy) {
   EXPECT_TRUE(occ.isOccupied(2, 2));
 }
 
-TEST(OccupancyTest, MoveFailsIfDestinationOccupied) {
+TEST(OccupancyTest, MoveFailsIfDestinationOccupied)
+{
   OccupancySystem occ;
   occ.occupy(1, 1, 42);
   occ.occupy(2, 2, 99);
@@ -63,17 +71,20 @@ TEST(OccupancyTest, MoveFailsIfDestinationOccupied) {
 
 // ─── GameWorld ───────────────────────────────────────────────────────────────
 
-class GameWorldTest : public ::testing::Test {
+class GameWorldTest : public ::testing::Test
+{
 protected:
   toml::table config = makeConfig();
   NpcRepository npcRepo{config};
   NpcFactory npcFact{npcRepo};
   ItemRepository itemRepo{toml::parse(R"([items])")};
 
-  MapData makeWalkableMap() {
+  MapData makeWalkableMap()
+  {
     MapData m(10, 10);
     for (int y = 0; y < 10; y++)
-      for (int x = 0; x < 10; x++) {
+      for (int x = 0; x < 10; x++)
+      {
         Tile t;
         t.walkable = true;
         m.at(x, y) = t;
@@ -84,35 +95,40 @@ protected:
   }
 };
 
-TEST_F(GameWorldTest, PlayerMovesOnWalkableTile) {
+TEST_F(GameWorldTest, PlayerMovesOnWalkableTile)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   world.addPlayer(makePlayer(1, 3, 3));
   EXPECT_TRUE(world.movePlayer(1, Direction::RIGHT));
   EXPECT_EQ(world.getTileX(1), 4);
 }
 
-TEST_F(GameWorldTest, PlayerBlockedByNonWalkableTile) {
+TEST_F(GameWorldTest, PlayerBlockedByNonWalkableTile)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   world.addPlayer(makePlayer(1, 4, 3));
   EXPECT_FALSE(world.movePlayer(1, Direction::RIGHT));
   EXPECT_EQ(world.getTileX(1), 4);
 }
 
-TEST_F(GameWorldTest, TwoPlayersCannotOccupySameTile) {
+TEST_F(GameWorldTest, TwoPlayersCannotOccupySameTile)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   world.addPlayer(makePlayer(1, 3, 3));
   world.addPlayer(makePlayer(2, 4, 3));
   EXPECT_FALSE(world.movePlayer(1, Direction::RIGHT));
 }
 
-TEST_F(GameWorldTest, PlayerAndNpcCannotOccupySameTile) {
+TEST_F(GameWorldTest, PlayerAndNpcCannotOccupySameTile)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   world.addPlayer(makePlayer(1, 3, 3));
   world.spawnNpc("goblin", 4, 3);
   EXPECT_FALSE(world.movePlayer(1, Direction::RIGHT));
 }
 
-TEST_F(GameWorldTest, PlayerDiesAndDropsExcessGold) {
+TEST_F(GameWorldTest, PlayerDiesAndDropsExcessGold)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   Player p = makePlayer(1, 3, 3);
   p.addGold(200);
@@ -123,7 +139,8 @@ TEST_F(GameWorldTest, PlayerDiesAndDropsExcessGold) {
   EXPECT_TRUE(world.getPlayer(1).isGhost());
 }
 
-TEST_F(GameWorldTest, ExcessGoldCanBePickedFromGround) {
+TEST_F(GameWorldTest, ExcessGoldCanBePickedFromGround)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   Player p = makePlayer(1, 3, 3);
   p.addGold(200);
@@ -135,7 +152,8 @@ TEST_F(GameWorldTest, ExcessGoldCanBePickedFromGround) {
   EXPECT_GT(*gold, 0u);
 }
 
-TEST_F(GameWorldTest, NoGoldDropIfUnderSafeAmount) {
+TEST_F(GameWorldTest, NoGoldDropIfUnderSafeAmount)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   Player p = makePlayer(1, 3, 3);
   p.addGold(50);
@@ -146,7 +164,8 @@ TEST_F(GameWorldTest, NoGoldDropIfUnderSafeAmount) {
   EXPECT_FALSE(gold.has_value());
 }
 
-TEST_F(GameWorldTest, PlayerDiesAndDropsItems) {
+TEST_F(GameWorldTest, PlayerDiesAndDropsItems)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   Player p = makePlayer(1, 3, 3);
   p.getInventory().addItem(makeWeapon(5, 10));
@@ -157,7 +176,8 @@ TEST_F(GameWorldTest, PlayerDiesAndDropsItems) {
   EXPECT_TRUE(world.getPlayer(1).getInventory().getItems().empty());
 }
 
-TEST_F(GameWorldTest, DroppedItemCanBePickedFromGround) {
+TEST_F(GameWorldTest, DroppedItemCanBePickedFromGround)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   Player p = makePlayer(1, 3, 3);
   p.getInventory().addItem(makeWeapon(5, 10));
@@ -169,7 +189,8 @@ TEST_F(GameWorldTest, DroppedItemCanBePickedFromGround) {
   EXPECT_EQ(item->typeName, "sword");
 }
 
-TEST_F(GameWorldTest, PlayerCanPickItemFromGround) {
+TEST_F(GameWorldTest, PlayerCanPickItemFromGround)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   world.addPlayer(makePlayer(1, 3, 3));
   world.addItemOnGround(makeWeapon(5, 10), 3, 3);
@@ -179,13 +200,15 @@ TEST_F(GameWorldTest, PlayerCanPickItemFromGround) {
   EXPECT_EQ(item->typeName, "sword");
 }
 
-TEST_F(GameWorldTest, PickItemEmptyIfNothingThere) {
+TEST_F(GameWorldTest, PickItemEmptyIfNothingThere)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   auto item = world.pickItemAt(3, 3);
   EXPECT_FALSE(item.has_value());
 }
 
-TEST_F(GameWorldTest, PlayerResurrects) {
+TEST_F(GameWorldTest, PlayerResurrects)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   world.addPlayer(makePlayer(1, 3, 3));
   world.handlePlayerDeath(1, 0);
@@ -195,7 +218,8 @@ TEST_F(GameWorldTest, PlayerResurrects) {
   EXPECT_TRUE(world.getPlayer(1).isAlive());
 }
 
-TEST_F(GameWorldTest, PlayerResurrectedAtTargetZone) {
+TEST_F(GameWorldTest, PlayerResurrectedAtTargetZone)
+{
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   world.addPlayer(makePlayer(1, 3, 3));
   world.handlePlayerDeath(1, 0);
@@ -210,32 +234,105 @@ TEST_F(GameWorldTest, PlayerResurrectedAtTargetZone) {
 
 // ─── NPC ─────────────────────────────────────────────────────────────────────
 
-TEST(NpcTest, TakesDamageCorrectly) {
+TEST(NpcTest, TakesDamageCorrectly)
+{
   static NpcStats stats = makeNpcStats(50);
   Npc npc(1, stats, 0, 0);
   npc.takeDamage(20);
   EXPECT_EQ(npc.getHp(), 30);
 }
 
-TEST(NpcTest, DiesWhenHpReachesZero) {
+TEST(NpcTest, DiesWhenHpReachesZero)
+{
   static NpcStats stats = makeNpcStats(10);
   Npc npc(1, stats, 0, 0);
   npc.takeDamage(10);
   EXPECT_FALSE(npc.isAlive());
 }
 
-TEST(NpcTest, CannotGoBelowZeroHp) {
+TEST(NpcTest, CannotGoBelowZeroHp)
+{
   static NpcStats stats = makeNpcStats(10);
   Npc npc(1, stats, 0, 0);
   npc.takeDamage(100);
   EXPECT_EQ(npc.getHp(), 0);
 }
 
-TEST(NpcTest, AttackCooldownRespected) {
+TEST(NpcTest, AttackCooldownRespected)
+{
   NpcStats stats = makeNpcStats(50);
   stats.attackCooldownMs = 5000;
   Npc npc(1, stats, 0, 0);
   EXPECT_TRUE(npc.canAttack());
   npc.resetAttackCooldown();
   EXPECT_FALSE(npc.canAttack());
+}
+
+TEST_F(GameWorldTest, PlayerOnEntranceTileGeneratesTransition)
+{
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+
+  // Crear un mapa con tile de entrada
+  MapData m = makeWalkableMap();
+  Tile entrance;
+  entrance.type = TileType::DUNGEON_ENTRANCE;
+  entrance.walkable = true;
+  entrance.targetMap = "dungeon.argmap";
+  m.at(3, 3) = entrance;
+
+  GameWorld worldWithEntrance(std::move(m), npcFact, itemRepo, config);
+  worldWithEntrance.addPlayer(makePlayer(1, 3, 3));
+
+  auto result = worldWithEntrance.tick(0.016f);
+
+  ASSERT_EQ(result.instanceTransitions.size(), 1u);
+  EXPECT_EQ(result.instanceTransitions[0].playerId, 1u);
+  EXPECT_EQ(result.instanceTransitions[0].targetMap, "dungeon.argmap");
+}
+
+TEST_F(GameWorldTest, PlayerOnExitTileGeneratesEmptyTransition)
+{
+  MapData m = makeWalkableMap();
+  Tile exit;
+  exit.type = TileType::EXIT;
+  exit.walkable = true;
+  m.at(3, 3) = exit;
+
+  GameWorld world(std::move(m), npcFact, itemRepo, config);
+  world.addPlayer(makePlayer(1, 3, 3));
+
+  auto result = world.tick(0.016f);
+
+  ASSERT_EQ(result.instanceTransitions.size(), 1u);
+  EXPECT_EQ(result.instanceTransitions[0].playerId, 1u);
+  EXPECT_TRUE(result.instanceTransitions[0].targetMap.empty());
+}
+
+TEST_F(GameWorldTest, PlayerOnNormalTileGeneratesNoTransition)
+{
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  world.addPlayer(makePlayer(1, 3, 3));
+
+  auto result = world.tick(0.016f);
+
+  EXPECT_TRUE(result.instanceTransitions.empty());
+}
+
+TEST_F(GameWorldTest, FindSafeSpawnNearReturnsAdjacentNonEntranceTile)
+{
+  MapData m = makeWalkableMap();
+  Tile entrance;
+  entrance.type = TileType::DUNGEON_ENTRANCE;
+  entrance.walkable = true;
+  entrance.targetMap = "dungeon.argmap";
+  m.at(3, 3) = entrance;
+
+  GameWorld world(std::move(m), npcFact, itemRepo, config);
+  auto [tx, ty] = world.findSafeSpawnNear(3, 3);
+
+  const Tile &t = world.getTileAt(tx, ty);
+  EXPECT_NE(t.type, TileType::DUNGEON_ENTRANCE);
+  EXPECT_NE(t.type, TileType::CAVERN_ENTRANCE);
+  EXPECT_NE(t.type, TileType::EXIT);
+  EXPECT_TRUE(t.walkable);
 }
