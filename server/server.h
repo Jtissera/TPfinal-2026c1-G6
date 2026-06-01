@@ -3,42 +3,45 @@
 #include "../common/network/sockets.h"
 #include "../common/queue.h"
 #include "clientMessage.h"
+#include "game/items/itemRepository.h"
+#include "game/player/playerFactory.h"
+#include "game/session/gameManager.h"
+#include "game/stats/classRepository.h"
+#include "game/stats/raceRepository.h"
+#include "lobby/leaveEvent.h"
+#include "lobby/lobbyHandler.h"
+#include "lobby/playerRepository.h"
 #include "monitorQueues.h"
-#include "gameManager.h"
-#include "lobbyHandler.h"
-#include "playerRepository.h"
-#include "game/playerFactory.h"
-#include "acceptor.h"
-#include "receiverRegistry.h"
-#include "game/classRepository.h"
-#include "game/raceRepository.h"
-#include <toml++/toml.h>
+#include "network/acceptor.h"
+#include "network/receiverRegistry.h"
 #include "npc/npcRepository.h"
-#include "game/itemRepository.h"
+#include <toml++/toml.h>
 
 class Server {
 public:
-    explicit Server(const char* servname);
-    int run();
+  explicit Server(const char *servname);
+  int run();
 
 private:
-    ClassRepository  classRepo;
-    RaceRepository   raceRepo;
-    PlayerFactory    playerFactory;
-    PlayerRepository playerRepo;
+  toml::table config;
+  ClassRepository classRepo;
+  RaceRepository raceRepo;
+  PlayerFactory playerFactory;
+  PlayerRepository playerRepo;
 
-    Monitor              lobbyMonitor;
-    Queue<ClientMessage> lobbyQueue;
+  Monitor lobbyMonitor;
+  Queue<ClientMessage> lobbyQueue;
 
-    ClientRegistry   clientRegistry;
-    ReceiverRegistry receiverRegistry;
-    GameManager      gameManager;
-    LobbyHandler     lobbyHandler;
+  Monitor clientRegistry;
+  ReceiverRegistry receiverRegistry;
+  Queue<std::shared_ptr<LeaveEvent>> leaveQueue;
+  GameManager gameManager;
+  LobbyHandler lobbyHandler;
 
-    Socket   socket;
-    Acceptor acceptor;
+  Socket socket;
+  Acceptor acceptor;
 
-    NpcRepository npcRepo;
-    ItemRepository itemRepo;
-    NpcFactory npcFactory;
+  NpcRepository npcRepo;
+  ItemRepository itemRepo;
+  NpcFactory npcFactory;
 };

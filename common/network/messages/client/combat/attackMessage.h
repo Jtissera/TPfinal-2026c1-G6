@@ -1,22 +1,13 @@
-
-#ifndef TALLER_TP_ATTACKMESSAGE_H
-#define TALLER_TP_ATTACKMESSAGE_H
+#pragma once
 #include "common/network/messages/message.h"
-
+#include "common/network/protocol/clientOpCode.h"
 
 class AttackMessage : public Message {
-
+  uint32_t targetId;
 
 public:
-    explicit AttackMessage(uint32_t targetId);
-    uint8_t opCode() const override;
-    void serializeBody(PacketWriter &writer) const override;
-
-private:
-    uint32_t targetId;
-
+  explicit AttackMessage(uint32_t targetId);
+  uint32_t getTargetId() const;
+  uint8_t opCode() const override;
+  void serializeBody(PacketWriter &writer) const override;
 };
-
-
-
-#endif //TALLER_TP_ATTACKMESSAGE_H

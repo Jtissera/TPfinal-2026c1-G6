@@ -5,7 +5,7 @@
 [server]
 host = "localhost"
 port = 8080
-tick_rate_ms = 100          # milisegundos entre ticks del game loop
+tick_rate_ms = 22          # milisegundos entre ticks del game loop
 max_clients = 50
 
 
@@ -21,6 +21,7 @@ base_intelligence = 10
 recovery_health_ms = 5000   # cada cuanto recupera vida (ms)
 recovery_mana_ms   = 3000   # cada cuanto recupera mana (ms)
 newbie_max_level = 12
+max_inventory_items = 20
 
 
 
@@ -33,6 +34,7 @@ npc_gold_drop_max = 0.2      # Oro = rand(0, 0.2) * VidaMaxNPC
 npc_xp_bonus_max  = 0.1      # Exp adicional = rand(0, 0.1) * VidaMax...
 attack_range      = 1        # distancia para cuerpo a cuerpo
 melee_range = 1
+ranged_attack_range = 10
 
 
 [experience]
@@ -50,8 +52,9 @@ gold_level_exponent = 1.1   # OroMax = 100 * Nivel^1.1
 mana_per_tick = 5           # mana recuperado por tick al meditar
 
 [npc]
-spawn_interval_ms  = 5000
-max_population     = 100
+spawn_interval_ticks = 200
+max_population       = 20
+spawn_batch_size     = 4
 aggro_range        = 5       # tiles de distancia para que el NPC ataque
 drop_chance_nothing  = 0.80
 drop_chance_gold     = 0.08
@@ -279,3 +282,6 @@ item_drop_chance = 0.01
 gold_drop_min = 2
 gold_drop_max = 12
 zones = ["COMBAT"]
+
+[world]
+tile_size = 96

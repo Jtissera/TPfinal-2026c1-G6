@@ -1,38 +1,29 @@
 #include "server.h"
 
-Server::Server(const char* servname)
-    : classRepo(toml::parse_file("config/game.toml"))
-    , raceRepo(toml::parse_file("config/game.toml"))
-    , npcRepo(toml::parse_file("config/game.toml"))
-    , itemRepo(toml::parse_file("config/game.toml"))
-    , npcFactory(npcRepo)
-    , playerFactory(classRepo, raceRepo)
-    , playerRepo()
-    , lobbyMonitor()
-    , lobbyQueue()
-    , clientRegistry()
-    , receiverRegistry()
-    , gameManager(npcFactory, itemRepo)
-    , lobbyHandler(lobbyQueue, lobbyMonitor, gameManager,
-                   clientRegistry, receiverRegistry,
-                   playerRepo, playerFactory)
-    , socket(servname)
-    , acceptor(std::move(socket), lobbyQueue, lobbyMonitor,
-               clientRegistry, gameManager, receiverRegistry)
-{}
+Server::Server(const char *servname)
+    : config(toml::parse_file("config/game.toml")), classRepo(config),
+      raceRepo(config), npcRepo(config), itemRepo(config), npcFactory(npcRepo),
+      playerFactory(classRepo, raceRepo, config), playerRepo(), lobbyMonitor(),
+      lobbyQueue(), leaveQueue(), receiverRegistry(),
+      gameManager(npcFactory, itemRepo, leaveQueue, config),
+      lobbyHandler(lobbyQueue, leaveQueue, lobbyMonitor, gameManager,
+                   receiverRegistry, playerRepo, playerFactory),
+      socket(servname), acceptor(std::move(socket), lobbyQueue, lobbyMonitor,
+                                 gameManager, receiverRegistry) {}
 
 int Server::run() {
-    lobbyHandler.start();
-    acceptor.start();
+  lobbyHandler.start();
+  acceptor.start();
 
-    while (std::cin.get() != 'q') {}
+  while (std::cin.get() != 'q') {
+  }
 
-    acceptor.stop();
-    acceptor.join();
+  acceptor.stop();
+  acceptor.join();
 
-    lobbyHandler.stop();
-    lobbyHandler.join();
+  lobbyHandler.stop();
+  lobbyHandler.join();
 
-    gameManager.stopAll();
-    return 0;
+  gameManager.stopAll();
+  return 0;
 }

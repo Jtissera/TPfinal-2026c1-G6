@@ -1,0 +1,52 @@
+#pragma once
+
+#include <cstdint>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <toml++/toml.hpp>
+#include <unordered_map>
+#include <vector>
+
+#include "../../../common/network/messages/server/lobby/gameListMessage.h"
+#include "../../../common/queue.h"
+#include "../../clientMessage.h"
+#include "../../lobby/leaveEvent.h"
+#include "../player/Player.h"
+#include "gameRoom.h"
+
+class GameManager {
+public:
+  GameManager(NpcFactory &npcFactory, ItemRepository &itemRepo,
+              Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
+              const toml::table &config);
+
+  uint32_t createGame(const std::string &gameName, uint8_t maxPlayers);
+
+  bool joinGame(uint32_t gameId, uint32_t clientId,
+                Queue<std::shared_ptr<const Message>> &clientQueue);
+
+  void addPlayerToGame(uint32_t gameId, Player player);
+
+  void removeClient(uint32_t clientId);
+
+  std::vector<GameInfo> listGames() const;
+
+  void stopAll();
+
+  Queue<ClientMessage> &getGameQueue(uint32_t gameId);
+
+private:
+  const toml::table &config;
+  mutable std::mutex mutex;
+  uint32_t nextGameId = 1;
+
+  std::unordered_map<uint32_t, std::unique_ptr<GameRoom>> rooms;
+  std::unordered_map<uint32_t, uint32_t> clientRoom;
+
+  NpcFactory &npcFactory;
+  ItemRepository &itemRepo;
+
+  Queue<std::shared_ptr<LeaveEvent>> &leaveQueue;
+};
