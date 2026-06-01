@@ -142,11 +142,9 @@ void Game::update() {
         if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE)) {
             const auto& moveMsg = static_cast<const EntityMoveMessage&>(*msg);
 
-            player->getComponent<TransformComponent>().position.x =
-                static_cast<float>(moveMsg.getX());
+            player->getComponent<TransformComponent>().position.x =static_cast<float>(moveMsg.getX());
 
-            player->getComponent<TransformComponent>().position.y =
-                static_cast<float>(moveMsg.getY());
+            player->getComponent<TransformComponent>().position.y =static_cast<float>(moveMsg.getY());
 
             std::cout << "[client] pos recibida del server: " 
                       << moveMsg.getX() << ", " << moveMsg.getY() << std::endl;
@@ -163,6 +161,15 @@ void Game::update() {
         }
     }
 
+
+    Vector2D playerPos = player->getComponent<TransformComponent>().position;
+    camera.x = static_cast<int>(playerPos.x) - 450;
+    camera.y = static_cast<int>(playerPos.y) - 343;
+    if (camera.x < 0) camera.x = 0;
+    if (camera.y < 0) camera.y = 0;
+    if (camera.x > 20 * 96 - 900) camera.x = 20 * 96 - 900;
+    if (camera.y > 15 * 96 - 687) camera.y = 15 * 96 - 687;
+
     UpdateContext updateContext{
         SDL_GetKeyboardState(nullptr),
         sendQueue,
@@ -173,15 +180,7 @@ void Game::update() {
 
     attackSystem.update();
     attackSystem.updateRespawns(enemies);
-    attackSystem.updateEnemyChase(enemies,player);
-
-    Vector2D playerPos = player->getComponent<TransformComponent>().position;
-    camera.x = static_cast<int>(playerPos.x) - 450;
-    camera.y = static_cast<int>(playerPos.y) - 343;
-    if (camera.x < 0) camera.x = 0;
-    if (camera.y < 0) camera.y = 0;
-    if (camera.x > 20 * 96 - 900) camera.x = 20 * 96 - 900;
-    if (camera.y > 15 * 96 - 687) camera.y = 15 * 96 - 687;
+    attackSystem.updateEnemyChase(enemies,player,playerState.hp);
 
 }
 

@@ -11,10 +11,17 @@ class TransformComponent : public Component {
 public:
     Vector2D position;
     Vector2D velocity;
-    int speed = 20;
+    Vector2D targetPosition;
+    int speed = 1;
     int height = 32;
     int width = 32;
     int scale = 1;
+
+    // Indica si este transform debe interpolar hacia targetPosition.
+    bool interpolateToTarget = false;
+
+    // Velocidad visual de interpolación en píxeles por segundo.
+    float interpolationSpeed = 320.0f;
 
     TransformComponent();
     explicit TransformComponent(int sc);
@@ -22,6 +29,7 @@ public:
     TransformComponent(float x, float y, int h, int w, int sc);
 
     void setPos(float x, float y);
+    void setTargetPos(float x, float y);
     void update(UpdateContext& context) override;
     void init() override;
 };

@@ -352,6 +352,7 @@ void AttackSystem::updateRespawns(std::map<uint32_t, Entity*>& enemies) {
         enemyDeadAt.erase(enemyId);
         chasingEnemies.erase(enemyId);
 
+        enemyLastAttackAt.erase(enemyId);
         std::cout << "[ENEMY] enemigo id="
                   << enemyId
                   << " reapareció con HP="
@@ -360,11 +361,11 @@ void AttackSystem::updateRespawns(std::map<uint32_t, Entity*>& enemies) {
     }
 }
 
-void AttackSystem::updateEnemyChase(
-    std::map<uint32_t, Entity*>& enemies,
-    Entity* player
-) {
+void AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp) {
     if (player == nullptr) {
+        return;
+    }
+    if (playerHp <= 0) {
         return;
     }
 
@@ -372,6 +373,8 @@ void AttackSystem::updateEnemyChase(
 
     float playerCenterX = playerTransform.position.x + 16.0f;
     float playerCenterY = playerTransform.position.y + 32.0f;
+
+    Uint32 now = SDL_GetTicks();
 
     for (uint32_t enemyId : chasingEnemies) {
         if (isEnemyDead(enemyId)) {
@@ -396,14 +399,37 @@ void AttackSystem::updateEnemyChase(
 
         float distance = std::sqrt(dx * dx + dy * dy);
 
-        if (distance <= enemyStopDistance) {
-            continue;
-        }
-
         if (distance <= 0.01f) {
             continue;
         }
 
+        if (distance <= enemyStopDistance) {
+            Uint32 lastAttack = 0;
+
+
+            auto lastIt = enemyLastAttackAt.find(enemyId);
+
+            if (lastIt != enemyLastAttackAt.end()) {
+                lastAttack = lastIt->second;
+            }
+            if (now - lastAttack >= enemyAttackCooldownMs) {
+                playerHp -= enemyAttackDamage;
+
+                if (playerHp < 0) {
+                    playerHp = 0;
+                }
+
+                enemyLastAttackAt[enemyId] = now;
+
+                std::cout << "[ENEMY ATTACK] enemigo id="
+                          << enemyId
+                          << " golpeó al jugador. HP jugador="
+                          << playerHp
+                          << std::endl;
+            }
+            continue;
+        }
+        // Si está lejos, persigue.
         float dirX = dx / distance;
         float dirY = dy / distance;
 

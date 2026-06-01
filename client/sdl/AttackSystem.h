@@ -63,7 +63,8 @@ public:
     // Vida máxima del enemigo.
     int getEnemyMaxHealth(uint32_t enemyId) const;
 
-    void updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player);
+    // Actualiza persecución y ataque del enemigo al jugador.
+    void updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp);
 
 private:
     std::vector<AttackEffect> attackEffects;
@@ -94,6 +95,13 @@ private:
 
     // Distancia mínima para que no se meta encima del jugador.
     float enemyStopDistance = 35.0f;
+
+    Uint32 enemyAttackCooldownMs = 1000;
+
+    int enemyAttackDamage = 5;
+
+    // Último momento en que atacó cada enemigo.
+    std::unordered_map<uint32_t, Uint32> enemyLastAttackAt;
 
     void markEnemyAsDead(uint32_t enemyId);
 
