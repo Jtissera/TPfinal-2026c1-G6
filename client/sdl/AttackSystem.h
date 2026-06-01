@@ -24,6 +24,13 @@ struct AttackEffect {
     Uint32 durationMs = 500;// Duración total del efecto.
 };
 
+// Resultado de la actualización de persecución de enemigos.
+// Sirve para que Game sepa si el jugador murió durante el ataque enemigo.
+enum class EnemyChaseResult {
+    PlayerStillAlive, // El enemigo actualizó persecución/ataque y el jugador sigue vivo.
+    PlayerDied        // Algún enemigo atacó y la vida del jugador llegó a 0.
+};
+
 // Sistema encargado de:
 // - detectar clicks sobre enemigos
 // - crear efectos visuales de ataque
@@ -64,7 +71,11 @@ public:
     int getEnemyMaxHealth(uint32_t enemyId) const;
 
     // Actualiza persecución y ataque del enemigo al jugador.
-    void updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp);
+    EnemyChaseResult updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp);
+
+    // Limpia toda persecución/aggro de enemigos.
+    // Se usa cuando el jugador muere o pasa a estado fantasma.
+    void clearEnemyAggro();
 
 private:
     std::vector<AttackEffect> attackEffects;

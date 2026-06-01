@@ -121,7 +121,7 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message& message) {
             std::make_shared<const ErrorMessage>("Game not found or full"));
         return;
     }
-
+    PlayerDto playerDto = buildPlayerDto(*player);
     gameManager.addPlayerToGame(gameId, std::move(*player));
     playerRepo.remove(clientId);
 
@@ -137,5 +137,55 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message& message) {
     for (const auto& info : gameManager.listGames())
         if (info.gameId == gameId) { gameName = info.gameName; break; }
 
-    clientQueue->try_push(std::make_shared<const JoinOkMessage>(gameId, gameName));
+    clientQueue->try_push(std::make_shared<const JoinOkMessage>(gameId, gameName,std::move(playerDto)));
+}
+
+PlayerDto LobbyHandler::buildPlayerDto(const Player& player) const {
+    PlayerDto dto{};
+
+    // Identidad del jugador.
+    dto.playerID = static_cast<uint8_t>(player.getClientId());
+
+    // Nombre del personaje.
+    dto.nombre = player.getName();
+
+    // Raza y clase.
+    // Si estos campos no existen como .name, abajo te digo cómo resolverlo.
+    dto.raza = player.getRace().name;
+    dto.clase = player.getCls().name;
+
+    // Apariencia inicial.
+    dto.headId = 0;
+
+    // Progresión.
+    dto.level = player.getLevel();
+
+    // Vida y maná.
+    dto.hp = player.getHp();
+    dto.hpMax = player.getMaxHp();
+    dto.mana = player.getMana();
+    dto.manaMax = player.getMaxMana();
+
+    // Economía.
+    dto.oro = static_cast<int>(player.getGold());
+    dto.oroMax = 0;
+
+    // Posición.
+    dto.xpos = static_cast<uint16_t>(player.getPixelX());
+    dto.ypos = static_cast<uint16_t>(player.getPixelY());
+
+    // Experiencia.
+    dto.exp = static_cast<int>(player.getExp());
+    dto.expMax = 1000;
+
+    // Estado lógico.
+    dto.esFantasma = player.isGhost();
+
+    // Atributos.
+    dto.fuerza = player.getStrength();
+    dto.agilidad = player.getAgility();
+    dto.inteligencia = 10;
+    dto.constitucion = 10;
+
+    return dto;
 }

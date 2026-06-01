@@ -6,4 +6,5 @@ class LobbyServerDeserializersModule
 {
 public:
     void registerDeserializers(Registry &registry) const;
+
 };

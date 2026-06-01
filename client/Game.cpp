@@ -130,6 +130,11 @@ void Game::handleEvents() {
                 equippedWeapon = &equipmentState.weapon.value();
             }
 
+            if (isLocalPlayerDead()) {
+                std::cout << "[PLAYER] No puede atacar porque está muerto/fantasma." << std::endl;
+                return;
+            }
+
             attackSystem.handleMouseClick(mouseX, mouseY, camera, enemies, sendQueue,player,equippedWeapon);
         }
     }
@@ -162,7 +167,21 @@ void Game::update() {
                       << ")" << std::endl;
         } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_STATS)) {
             const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
-            playerState.hp = stats.getHp();
+
+            // Si el servidor manda una vida positiva, ya tenemos stats válidas.
+            // Esto evita arrancar muerto por un valor inicial incompleto.
+            if (stats.getHp() > 0) {
+                hasReceivedValidPlayerStats = true;
+            }
+
+            // Si el jugador ya está fantasma, no dejamos que MSG_PLAYER_STATS común
+            // lo reviva visualmente.
+            if (playerState.isDead) {
+                playerState.hp = 0;
+            } else {
+                playerState.hp = stats.getHp();
+            }
+
             playerState.maxHp = stats.getMaxHp();
             playerState.mana = stats.getMana();
             playerState.maxMana = stats.getMaxMana();
@@ -192,8 +211,15 @@ void Game::update() {
 
     attackSystem.update();
     attackSystem.updateRespawns(enemies);
-    attackSystem.updateEnemyChase(enemies,player,playerState.hp);
+    if (isLocalPlayerDead()) {
+        applyLocalPlayerGhostState();
+    } else {
+        attackSystem.updateEnemyChase(enemies, player, playerState.hp);
 
+        if (hasReceivedValidPlayerStats && playerState.hp <= 0) {
+            applyLocalPlayerGhostState();
+        }
+    }
 }
 
 
@@ -1329,4 +1355,44 @@ void Game::renderEnemyHealthBars() {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &backgroundBar);
     }
+}
+bool Game::isLocalPlayerDead() const {
+    // Si el servidor ya marcó al jugador como fantasma, está muerto.
+    if (playerState.isDead) {
+        return true;
+    }
+
+    // Si todavía no recibimos una vida válida, no podemos asumir muerte
+    // solo porque hp sea 0.
+    if (!hasReceivedValidPlayerStats) {
+        return false;
+    }
+
+    // Luego de recibir stats válidas, hp <= 0 sí representa muerte.
+    return playerState.hp <= 0;
+}
+
+void Game::applyLocalPlayerGhostState() {
+    // Evita repetir esta lógica todos los frames.
+    if (localGhostStateApplied) {
+        return;
+    }
+
+    // Marcamos el estado visual del jugador como muerto/fantasma.
+    playerState.isDead = true;
+
+    // La vida visual queda en cero.
+    playerState.hp = 0;
+
+    // Cortamos persecución de enemigos.
+    attackSystem.clearEnemyAggro();
+
+    // Mensaje temporal para confirmar el estado.
+    showStatusMessage("Has muerto");
+
+    std::cout << "[PLAYER] Jugador pasó a fantasma. HP=0, ataque bloqueado."
+              << std::endl;
+
+    // Próximo paso:
+    // cambiar sprite/animación a fantasma.
 }

@@ -50,7 +50,7 @@ public:
     int getTileX() const override { return static_cast<int>(pixelX) / TILE_SIZE; }
     int getTileY() const override{ return static_cast<int>(pixelY)/ TILE_SIZE; }
     void setTilePos(int tx, int ty);
-
+    std::string getName()const;
     uint32_t getId()      const override{ return clientId; }  //mandar esto al cpp
     uint32_t getClientId()const { return clientId; }
     uint8_t  getLevel()   const override{ return level;    }

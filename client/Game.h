@@ -1,6 +1,7 @@
 #ifndef PRUEBA_SDL_GAME_H
 #define PRUEBA_SDL_GAME_H
 
+
 #include "../common/network/messages/server/player/playerStatsMessage.h"
 
 #include <SDL2/SDL.h>
@@ -17,6 +18,7 @@
 #include "sdl/Map.h"
 #include "common/queue.h"
 #include "sdl/AttackSystem.h"
+
 class Game {
 public:
     Game();
@@ -72,6 +74,8 @@ private:
     Uint32 statusMessageTimer = 0;
     static constexpr Uint32 STATUS_MESSAGE_DURATION_MS = 2500;
     TTF_Font* statusFont = nullptr;  // se asigna en loadAssets()
+    bool localGhostStateApplied = false;
+    bool hasReceivedValidPlayerStats = false;
 
     void showStatusMessage(const std::string& msg);
 
@@ -94,6 +98,8 @@ private:
     SDL_Point visualOffsetForCurrentRace(const ItemView& item) const;
     void refreshPlayerEquipmentVisuals();
     void renderEnemyHealthBars();
+    bool isLocalPlayerDead() const;
+    void applyLocalPlayerGhostState();
 };
 
 #endif //PRUEBA_SDL_GAME_H

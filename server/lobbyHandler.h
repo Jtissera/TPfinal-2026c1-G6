@@ -48,4 +48,7 @@ private:
     void handleListGames(uint32_t clientId);
     void handleCreateGame(uint32_t clientId, const Message& message);
     void handleJoinGame(uint32_t clientId, const Message& message);
+
+    // Convierte el Player real del servidor en un DTO para enviarlo al cliente.
+    PlayerDto buildPlayerDto(const Player& player) const;
 };

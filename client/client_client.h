@@ -29,4 +29,5 @@ private:
 
     static constexpr const char* FONT_PATH = "assets/sprites/MapAssets/arial.ttf";
     static constexpr uint8_t PROTOCOL_VERSION = 0x01;
+    
 };

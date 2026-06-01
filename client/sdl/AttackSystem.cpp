@@ -361,12 +361,22 @@ void AttackSystem::updateRespawns(std::map<uint32_t, Entity*>& enemies) {
     }
 }
 
-void AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp) {
+EnemyChaseResult AttackSystem::updateEnemyChase(
+    std::map<uint32_t, Entity*>& enemies,
+    Entity* player,
+    int& playerHp
+) {
+    // Si no hay jugador, no hay nada que perseguir.
     if (player == nullptr) {
-        return;
+        return EnemyChaseResult::PlayerStillAlive;
     }
+
+    // Si el jugador ya está muerto, cortamos aggro y no actualizamos enemigos.
+    // Esta regla evita que queden persiguiendo a un fantasma.
     if (playerHp <= 0) {
-        return;
+        playerHp = 0;
+        clearEnemyAggro();
+        return EnemyChaseResult::PlayerDied;
     }
 
     auto& playerTransform = player->getComponent<TransformComponent>();
@@ -376,19 +386,39 @@ void AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity*
 
     Uint32 now = SDL_GetTicks();
 
-    for (uint32_t enemyId : chasingEnemies) {
+    // Copiamos los IDs porque clearEnemyAggro podría modificar el set
+    // si el jugador muere durante el loop.
+    std::vector<uint32_t> chasingIds(
+        chasingEnemies.begin(),
+        chasingEnemies.end()
+    );
+
+    for (uint32_t enemyId : chasingIds) {
+        // Si el jugador murió por un enemigo anterior en este mismo frame,
+        // cortamos inmediatamente.
+        if (playerHp <= 0) {
+            playerHp = 0;
+            clearEnemyAggro();
+            return EnemyChaseResult::PlayerDied;
+        }
+
+        // Si el enemigo está muerto, no puede perseguir ni atacar.
         if (isEnemyDead(enemyId)) {
+            chasingEnemies.erase(enemyId);
+            enemyLastAttackAt.erase(enemyId);
             continue;
         }
 
         auto it = enemies.find(enemyId);
 
+        // Si el enemigo no existe visualmente, limpiamos su estado.
         if (it == enemies.end() || it->second == nullptr) {
+            chasingEnemies.erase(enemyId);
+            enemyLastAttackAt.erase(enemyId);
             continue;
         }
 
         Entity* enemy = it->second;
-
         auto& enemyTransform = enemy->getComponent<TransformComponent>();
 
         float enemyCenterX = enemyTransform.position.x + 16.0f;
@@ -399,22 +429,25 @@ void AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity*
 
         float distance = std::sqrt(dx * dx + dy * dy);
 
+        // Si están en la misma posición, no normalizamos para evitar división por cero.
         if (distance <= 0.01f) {
             continue;
         }
 
+        // Si el enemigo está cerca, intenta atacar con cooldown.
         if (distance <= enemyStopDistance) {
             Uint32 lastAttack = 0;
 
-
             auto lastIt = enemyLastAttackAt.find(enemyId);
-
             if (lastIt != enemyLastAttackAt.end()) {
                 lastAttack = lastIt->second;
             }
+
             if (now - lastAttack >= enemyAttackCooldownMs) {
+                // Aplicamos daño.
                 playerHp -= enemyAttackDamage;
 
+                // La vida nunca debe quedar negativa.
                 if (playerHp < 0) {
                     playerHp = 0;
                 }
@@ -426,9 +459,21 @@ void AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity*
                           << " golpeó al jugador. HP jugador="
                           << playerHp
                           << std::endl;
+
+                // Si este golpe mató al jugador, cortamos toda persecución.
+                if (playerHp <= 0) {
+                    clearEnemyAggro();
+
+                    std::cout << "[PLAYER] El jugador murió por ataque enemigo."
+                              << std::endl;
+
+                    return EnemyChaseResult::PlayerDied;
+                }
             }
+
             continue;
         }
+
         // Si está lejos, persigue.
         float dirX = dx / distance;
         float dirY = dy / distance;
@@ -436,6 +481,8 @@ void AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity*
         enemyTransform.position.x += dirX * enemyChaseSpeed;
         enemyTransform.position.y += dirY * enemyChaseSpeed;
     }
+
+    return EnemyChaseResult::PlayerStillAlive;
 }
 
 int AttackSystem::getEnemyHealth(uint32_t enemyId) const {
@@ -456,4 +503,17 @@ int AttackSystem::getEnemyMaxHealth(uint32_t enemyId) const {
     }
 
     return it->second;
+}
+
+void AttackSystem::clearEnemyAggro() {
+    // Limpiamos todos los enemigos que estaban persiguiendo al jugador.
+    // Esto corta el estado de combate cuando el jugador muere.
+    chasingEnemies.clear();
+
+    // Limpiamos cooldowns de ataque para no conservar estado viejo.
+    // Si luego el jugador revive, los enemigos no deben pegar instantáneamente
+    // por cooldown heredado de una vida anterior.
+    enemyLastAttackAt.clear();
+
+    std::cout << "[ENEMY] Aggro limpiado. Los enemigos dejan de perseguir." << std::endl;
 }

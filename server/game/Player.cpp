@@ -187,3 +187,7 @@ void Player::setTilePos(int tx, int ty) {
     // Sincroniza la posición real en píxeles.
     pixelY = static_cast<float>(ty * TILE_SIZE);
 }
+
+std::string Player::getName() const {
+    return name;
+}

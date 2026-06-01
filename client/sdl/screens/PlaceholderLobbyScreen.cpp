@@ -141,6 +141,8 @@ void PlaceholderLobbyScreen::tryJoinSelected() {
         protocol.send(JoinGameMessage(games[selectedGame].id));
         auto response = protocol.receive();
         if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_JOIN_OK)) {
+            const auto& joinOk = static_cast<const JoinOkMessage&>(*response);
+            joinedPlayerDto = joinOk.getPlayerDto();
             _readyToPlay = true;
         } else if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR)) {
             const auto& err = static_cast<const ErrorMessage&>(*response);
@@ -612,4 +614,8 @@ void PlaceholderLobbyScreen::drawRect(const SDL_Rect& r, SDL_Color color, bool f
     if (fill) SDL_RenderFillRect(renderer, &r);
     else      SDL_RenderDrawRect(renderer, &r);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+}
+
+const PlayerDto& PlaceholderLobbyScreen::getJoinedPlayerDto() const {
+    return joinedPlayerDto;
 }

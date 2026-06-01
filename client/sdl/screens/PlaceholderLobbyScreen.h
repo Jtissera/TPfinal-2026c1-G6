@@ -8,6 +8,7 @@
 #include "Screen.h"
 #include "../../network/clientProtocolFactory.h"
 #include "../../../common/network/messages/server/lobby/gameListMessage.h"
+#include "../../../common/dtos/gameTypes.h"
 
 // AR-79 — LobbyScreen
 // Pantalla de lobby visual completa: lista de partidas, crear partida, unirse.
@@ -20,7 +21,7 @@ public:
     ~PlaceholderLobbyScreen() override;
 
     ScreenResult run() override;
-
+    const PlayerDto& getJoinedPlayerDto() const;
 private:
     // ----------------- Red -----------------
     void fetchGameList();
@@ -75,6 +76,9 @@ private:
     std::string errorMsg;
     std::string statusMsg;
     bool        _readyToPlay = false;
+
+    // DTO real del jugador recibido desde el servidor al entrar a una partida.
+    PlayerDto joinedPlayerDto{};
 
     // Hover sobre botones principales
     bool hoverJoin    = false;
