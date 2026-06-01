@@ -1,24 +1,27 @@
-#include "testHelpers.h"
+#include "helpers/testHelpers.h"
 #include <gtest/gtest.h>
 
 // ---------------------------------------------------------------------------
 // INFINITE_HP
 // ---------------------------------------------------------------------------
 
-TEST(CheatInfiniteHp, ToggleOnSetsFlag) {
+TEST(CheatInfiniteHp, ToggleOnSetsFlag)
+{
   auto p = makePlayer(1, 0, 0);
   p.toggleInfiniteHp();
   EXPECT_TRUE(p.hasInfiniteHp());
 }
 
-TEST(CheatInfiniteHp, ToggleOffClearsFlag) {
+TEST(CheatInfiniteHp, ToggleOffClearsFlag)
+{
   auto p = makePlayer(1, 0, 0);
   p.toggleInfiniteHp();
   p.toggleInfiniteHp();
   EXPECT_FALSE(p.hasInfiniteHp());
 }
 
-TEST(CheatInfiniteHp, ActivationRestoresFullHp) {
+TEST(CheatInfiniteHp, ActivationRestoresFullHp)
+{
   auto p = makePlayer(1, 0, 0, 40);
   ASSERT_EQ(p.getHp(), 40);
 
@@ -27,7 +30,8 @@ TEST(CheatInfiniteHp, ActivationRestoresFullHp) {
   EXPECT_EQ(p.getHp(), p.getMaxHp());
 }
 
-TEST(CheatInfiniteHp, DamageIgnoredWhileActive) {
+TEST(CheatInfiniteHp, DamageIgnoredWhileActive)
+{
   auto p = makePlayer(1, 0, 0);
   p.toggleInfiniteHp();
   int16_t hpBefore = p.getHp();
@@ -38,7 +42,8 @@ TEST(CheatInfiniteHp, DamageIgnoredWhileActive) {
   EXPECT_TRUE(p.isAlive());
 }
 
-TEST(CheatInfiniteHp, DamageAppliedAfterDeactivation) {
+TEST(CheatInfiniteHp, DamageAppliedAfterDeactivation)
+{
   auto p = makePlayer(1, 0, 0);
   p.toggleInfiniteHp();
   p.toggleInfiniteHp();
@@ -48,7 +53,8 @@ TEST(CheatInfiniteHp, DamageAppliedAfterDeactivation) {
   EXPECT_EQ(p.getHp(), 90);
 }
 
-TEST(CheatInfiniteHp, PlayerCanDieNormallyWithoutCheat) {
+TEST(CheatInfiniteHp, PlayerCanDieNormallyWithoutCheat)
+{
   auto p = makePlayer(1, 0, 0);
   p.takeDamage(100);
   EXPECT_FALSE(p.isAlive());
@@ -58,20 +64,23 @@ TEST(CheatInfiniteHp, PlayerCanDieNormallyWithoutCheat) {
 // INFINITE_MANA
 // ---------------------------------------------------------------------------
 
-TEST(CheatInfiniteMana, ToggleOnSetsFlag) {
+TEST(CheatInfiniteMana, ToggleOnSetsFlag)
+{
   auto p = makeMagePlayer(1, 0, 0);
   p.toggleInfiniteMana();
   EXPECT_TRUE(p.hasInfiniteMana());
 }
 
-TEST(CheatInfiniteMana, ToggleOffClearsFlag) {
+TEST(CheatInfiniteMana, ToggleOffClearsFlag)
+{
   auto p = makeMagePlayer(1, 0, 0);
   p.toggleInfiniteMana();
   p.toggleInfiniteMana();
   EXPECT_FALSE(p.hasInfiniteMana());
 }
 
-TEST(CheatInfiniteMana, ActivationFillsMana) {
+TEST(CheatInfiniteMana, ActivationFillsMana)
+{
   auto p = makeMagePlayer(1, 0, 0);
   p.spendMana(50);
   ASSERT_LT(p.getMana(), p.getMaxMana());
@@ -81,7 +90,8 @@ TEST(CheatInfiniteMana, ActivationFillsMana) {
   EXPECT_EQ(p.getMana(), p.getMaxMana());
 }
 
-TEST(CheatInfiniteMana, SpendManaSucceedsWithoutDeducting) {
+TEST(CheatInfiniteMana, SpendManaSucceedsWithoutDeducting)
+{
   auto p = makeMagePlayer(1, 0, 0);
   p.toggleInfiniteMana();
   int16_t manaBefore = p.getMana();
@@ -92,7 +102,8 @@ TEST(CheatInfiniteMana, SpendManaSucceedsWithoutDeducting) {
   EXPECT_EQ(p.getMana(), manaBefore);
 }
 
-TEST(CheatInfiniteMana, SpendManaFailsNormallyAfterDeactivation) {
+TEST(CheatInfiniteMana, SpendManaFailsNormallyAfterDeactivation)
+{
   auto p = makeMagePlayer(1, 0, 0);
   p.toggleInfiniteMana();
   p.toggleInfiniteMana();
@@ -104,7 +115,8 @@ TEST(CheatInfiniteMana, SpendManaFailsNormallyAfterDeactivation) {
   EXPECT_FALSE(p.spendMana(1));
 }
 
-TEST(CheatInfiniteMana, IgnoredForClassWithoutMagic) {
+TEST(CheatInfiniteMana, IgnoredForClassWithoutMagic)
+{
   // makePlayer usa warrior (canUseMagic = false)
   auto p = makePlayer(1, 0, 0);
   p.toggleInfiniteMana();
@@ -113,7 +125,8 @@ TEST(CheatInfiniteMana, IgnoredForClassWithoutMagic) {
   EXPECT_EQ(p.getMana(), 0);
 }
 
-TEST(CheatInfiniteMana, TickDoesNotRestoreManaWhileActive) {
+TEST(CheatInfiniteMana, TickDoesNotRestoreManaWhileActive)
+{
   auto p = makeMagePlayer(1, 0, 0);
   p.toggleInfiniteMana(); // llena y activa
   int16_t manaFull = p.getMana();
@@ -127,7 +140,8 @@ TEST(CheatInfiniteMana, TickDoesNotRestoreManaWhileActive) {
 // DIE cheat  (lógica de Player::die directamente)
 // ---------------------------------------------------------------------------
 
-TEST(CheatDie, ForcesDeadState) {
+TEST(CheatDie, ForcesDeadState)
+{
   auto p = makePlayer(1, 0, 0);
   p.die(0);
 
@@ -135,7 +149,8 @@ TEST(CheatDie, ForcesDeadState) {
   EXPECT_EQ(p.getHp(), 0);
 }
 
-TEST(CheatDie, DropsExcessGold) {
+TEST(CheatDie, DropsExcessGold)
+{
   auto p = makePlayer(1, 0, 0);
   p.addGold(500);
 
@@ -145,7 +160,8 @@ TEST(CheatDie, DropsExcessGold) {
   EXPECT_EQ(p.getGold(), 100);
 }
 
-TEST(CheatDie, NoEffectWhenAlreadyDead) {
+TEST(CheatDie, NoEffectWhenAlreadyDead)
+{
   auto p = makePlayer(1, 0, 0);
   p.die(0);
 
@@ -155,7 +171,8 @@ TEST(CheatDie, NoEffectWhenAlreadyDead) {
   EXPECT_TRUE(p.isGhost());
 }
 
-TEST(CheatDie, BypassesInfiniteHpFlag) {
+TEST(CheatDie, BypassesInfiniteHpFlag)
+{
   // DIE llama die() directamente, no takeDamage(), asi que el flag no aplica
   auto p = makePlayer(1, 0, 0);
   p.toggleInfiniteHp();
@@ -165,7 +182,8 @@ TEST(CheatDie, BypassesInfiniteHpFlag) {
   EXPECT_TRUE(p.isGhost());
 }
 
-TEST(CheatDie, PurgesInventoryOnDeath) {
+TEST(CheatDie, PurgesInventoryOnDeath)
+{
   auto p = makePlayer(1, 0, 0);
   p.getInventory().addItem(makeWeapon(5, 10));
 
@@ -179,7 +197,8 @@ TEST(CheatDie, PurgesInventoryOnDeath) {
 // Combinaciones
 // ---------------------------------------------------------------------------
 
-TEST(CheatCombined, BothFlagsToggleIndependently) {
+TEST(CheatCombined, BothFlagsToggleIndependently)
+{
   auto p = makeMagePlayer(1, 0, 0);
   p.toggleInfiniteHp();
   p.toggleInfiniteMana();
@@ -193,7 +212,8 @@ TEST(CheatCombined, BothFlagsToggleIndependently) {
   EXPECT_TRUE(p.hasInfiniteMana());
 }
 
-TEST(CheatCombined, InfiniteHpAndManaActiveSimultaneously) {
+TEST(CheatCombined, InfiniteHpAndManaActiveSimultaneously)
+{
   auto p = makeMagePlayer(1, 0, 0);
   p.toggleInfiniteHp();
   p.toggleInfiniteMana();

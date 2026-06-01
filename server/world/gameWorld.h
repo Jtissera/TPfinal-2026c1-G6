@@ -12,6 +12,12 @@
 #include "GroundManager.h"
 #include "OccupancySystem.h"
 #include "SpawnManager.h"
+#include "../bank/bankRepository.h"
+#include "../resurrection/resurrectionSystem.h"
+#include "../city/priestHandler.h"
+#include "../city/merchantHandler.h"
+#include "../city/bankerHandler.h"
+#include "../city/cityNpcDispatcher.h"
 #include <iostream>
 #include <map>
 #include <optional>
@@ -92,6 +98,11 @@ public:
   void resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY);
   std::pair<int, int> findSafeSpawnNear(int tileX, int tileY) const;
 
+  CityResult handleCityInteraction(uint32_t playerId, NpcType npcType,
+                                   const CityCommand &cmd);
+  CityResult handleRemoteResurrect(uint32_t playerId);
+  std::optional<NpcType> getNpcTypeAtTile(int tileX, int tileY) const;
+
 private:
   void tickPlayers(float deltaSeconds, WorldTickResult &result);
   void tickNpcs(WorldTickResult &result);
@@ -102,6 +113,12 @@ private:
   GameFormulas formulas;
   NpcManager npcManager;
   ItemRepository &itemRepo;
+  BankRepository bankRepo;
+  ResurrectionSystem resurrectionSystem;
+  PriestHandler priestHandler;
+  MerchantHandler merchantHandler;
+  BankerHandler bankerHandler;
+  CityNpcDispatcher cityDispatcher;
 
   std::unordered_map<uint32_t, Player> players;
   GroundManager groundManager;

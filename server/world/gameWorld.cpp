@@ -7,17 +7,31 @@ GameWorld::GameWorld(const std::string &mapPath, NpcFactory &npcFactory,
       npcManager(npcFactory, collision, mapData),
       itemRepo(itemRepo),
       spawnManager(config, npcManager, collision, occupancy),
-      tileSize(config["world"]["tile_size"].value_or(96))
+      tileSize(config["world"]["tile_size"].value_or(96)),
+      bankRepo(),
+      resurrectionSystem(),
+      priestHandler(itemRepo, resurrectionSystem, mapData, config),
+      merchantHandler(itemRepo, config),
+      bankerHandler(bankRepo),
+      cityDispatcher(priestHandler, merchantHandler, bankerHandler)
 {
   spawnManager.loadSpawnPoints(mapData);
 }
 
 GameWorld::GameWorld(MapData mapData, NpcFactory &npcFactory,
                      ItemRepository &itemRepo, const toml::table &config)
-    : mapData(std::move(mapData)), collision(this->mapData),
-      npcManager(npcFactory, collision, this->mapData), itemRepo(itemRepo),
+    : mapData(std::move(mapData)),
+      collision(this->mapData),
+      npcManager(npcFactory, collision, this->mapData),
+      itemRepo(itemRepo),
       spawnManager(config, npcManager, collision, occupancy),
-      tileSize(config["world"]["tile_size"].value_or(96))
+      tileSize(config["world"]["tile_size"].value_or(96)),
+      bankRepo(),
+      resurrectionSystem(),
+      priestHandler(itemRepo, resurrectionSystem, this->mapData, config),
+      merchantHandler(itemRepo, config),
+      bankerHandler(bankRepo),
+      cityDispatcher(priestHandler, merchantHandler, bankerHandler)
 {
   spawnManager.loadSpawnPoints(this->mapData);
 }
@@ -68,6 +82,15 @@ std::optional<Player> GameWorld::removePlayer(uint32_t id)
 
 bool GameWorld::movePlayer(uint32_t id, Direction dir)
 {
+  auto it = players.find(id);
+  if (it == players.end())
+    return false;
+
+  Player &p = it->second;
+
+  if (p.isResurrecting())
+    return false;
+
   const std::map<Direction, std::pair<int, int>> deltas = {
       {Direction::UP, {0, -1}},
       {Direction::DOWN, {0, 1}},
@@ -75,15 +98,10 @@ bool GameWorld::movePlayer(uint32_t id, Direction dir)
       {Direction::RIGHT, {1, 0}},
   };
 
-  auto it = players.find(id);
-  if (it == players.end())
-    return false;
-
   auto deltaIt = deltas.find(dir);
   if (deltaIt == deltas.end())
     return false;
 
-  Player &p = it->second;
   int tx = p.getTileX() + deltaIt->second.first;
   int ty = p.getTileY() + deltaIt->second.second;
 
@@ -198,6 +216,13 @@ GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds)
 {
   WorldTickResult result;
 
+  float deltaMs = deltaSeconds * 1000.0f;
+  resurrectionSystem.tick(deltaMs, [this](uint32_t pid, int tx, int ty)
+                          {
+        Player &p = getPlayer(pid);
+        p.stopResurrection();
+        resurrectPlayer(pid, tx, ty); });
+
   tickPlayers(deltaSeconds, result);
   tickNpcs(result);
   spawnManager.tick();
@@ -261,6 +286,12 @@ void GameWorld::tickNpcs(WorldTickResult &result)
     if (!occupancy.move(intent.fromX, intent.fromY,
                         intent.toX, intent.toY, intent.npcId))
       continue;
+
+    const Tile &destTile = mapData.at(
+        static_cast<uint16_t>(intent.toX),
+        static_cast<uint16_t>(intent.toY));
+    if (destTile.zone == ZoneType::SAFE)
+      continue; // NPC de combate no puede entrar a ciudad
 
     npcManager.applyMove(intent.npcId, intent.toX, intent.toY);
     result.npcsMoved.push_back(intent.npcId);
@@ -361,4 +392,28 @@ std::pair<int, int> GameWorld::findSafeSpawnNear(int tileX, int tileY) const
     }
   }
   return {tileX, tileY};
+}
+
+CityResult GameWorld::handleCityInteraction(uint32_t playerId,
+                                            NpcType npcType,
+                                            const CityCommand &cmd)
+{
+  Player &player = getPlayer(playerId);
+  return cityDispatcher.dispatch(npcType, cmd, player);
+}
+
+CityResult GameWorld::handleRemoteResurrect(uint32_t playerId)
+{
+  Player &player = getPlayer(playerId);
+  return priestHandler.handleRemoteResurrect(player);
+}
+
+std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const
+{
+  if (!collision.isInBounds(tileX, tileY))
+    return std::nullopt;
+  NpcType t = mapData.at(static_cast<uint16_t>(tileX),
+                         static_cast<uint16_t>(tileY))
+                  .npc;
+  return t != NpcType::NONE ? std::optional<NpcType>(t) : std::nullopt;
 }

@@ -13,4 +13,12 @@ target_sources(taller_tests
     integration_test.cpp
     remove_player_test.cpp
     dungeon_test.cpp
+    bankerHandlerTest.cpp
+    cityCommandParserTest.cpp
+    merchantHandlerTest.cpp
+    priestHandlerTest.cpp
+    priestLocatorTest.cpp
+    resurrectionSystemTest.cpp
+    safeZoneTest.cpp
+    cityIntegrationTest.cpp
 )

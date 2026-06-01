@@ -12,7 +12,8 @@
 #include "inventory.h"
 #include "playerState.h"
 
-class Player : public Combatant {
+class Player : public Combatant
+{
 public:
   Player(uint32_t clientId, std::string name, const RaceStats &race,
          const ClassStats &cls, int16_t maxHp, int16_t maxMana,
@@ -72,6 +73,14 @@ public:
   uint16_t getShieldDefenseMin() const override;
   uint16_t getShieldDefenseMax() const override;
 
+  void restoreFullHpAndMana();
+  void spendGold(uint32_t amount);
+
+  bool isResurrecting() const { return resurrecting; }
+  void startResurrection() { resurrecting = true; }
+  void stopResurrection() { resurrecting = false; }
+  bool canInteract() const { return !isGhost() && !resurrecting; }
+
   const RaceStats &getRace() const;
   const ClassStats &getCls() const;
 
@@ -84,6 +93,8 @@ public:
   Player &operator=(Player &&) = default;
 
 private:
+  bool resurrecting = false;
+
   uint32_t clientId;
   std::string name;
   const RaceStats &race;

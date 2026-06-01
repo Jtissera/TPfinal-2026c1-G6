@@ -452,3 +452,28 @@ home_range         = 10
 attack_cooldown_ms = 1700
 move_cooldown_ms   = 950
 zones              = ["COMBAT"]
+
+
+[city]
+ms_per_tile_resurrection = 500
+
+[city.prices]
+vara_fresno      = 100
+flauta_elfica    = 500
+baculo_nudoso    = 300
+baculo_engarzado = 800
+pocion_vida      = 50
+pocion_mana      = 50
+espada           = 150
+hacha            = 200
+martillo         = 180
+arco_simple      = 120
+arco_compuesto   = 400
+armadura_cuero   = 200
+armadura_placas  = 600
+tunica_azul      = 250
+capucha          = 80
+casco_hierro     = 180
+escudo_tortuga   = 100
+escudo_hierro    = 220
+sombrero_magico  = 350

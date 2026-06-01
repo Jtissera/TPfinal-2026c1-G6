@@ -1,14 +1,15 @@
-// server/game/repositories/raceRepository.cpp
 #include "raceRepository.h"
 #include <stdexcept>
 
-RaceRepository::RaceRepository(const toml::table &config) {
+RaceRepository::RaceRepository(const toml::table &config)
+{
   const auto *racesSection = config.get_as<toml::table>("races");
   if (!racesSection)
     throw std::runtime_error(
         "RaceRepository: falta la seccion [races] en el TOML");
 
-  for (const auto &[key, value] : *racesSection) {
+  for (const auto &[key, value] : *racesSection)
+  {
     const auto *entry = value.as_table();
     if (!entry)
       continue;
@@ -17,7 +18,8 @@ RaceRepository::RaceRepository(const toml::table &config) {
   }
 }
 
-const RaceStats &RaceRepository::get(const std::string &raceName) const {
+const RaceStats &RaceRepository::get(const std::string &raceName) const
+{
   auto it = races.find(raceName);
   if (it == races.end())
     throw std::out_of_range("RaceRepository: raza desconocida '" + raceName +
@@ -25,12 +27,14 @@ const RaceStats &RaceRepository::get(const std::string &raceName) const {
   return it->second;
 }
 
-bool RaceRepository::exists(const std::string &raceName) const {
+bool RaceRepository::exists(const std::string &raceName) const
+{
   return races.count(raceName) > 0;
 }
 
 RaceStats RaceRepository::parse(const std::string &name,
-                                const toml::table &entry) const {
+                                const toml::table &entry) const
+{
   RaceStats stats;
   stats.name = name;
   stats.health = entry["health"].value_or<float>(1.0f);

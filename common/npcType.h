@@ -132,3 +132,16 @@ inline std::string npcTypeKey(NpcType type)
     return "";
   }
 }
+
+inline bool isSpawnable(NpcType type)
+{
+  switch (type)
+  {
+  case NpcType::PRIEST:
+  case NpcType::MERCHANT:
+  case NpcType::BANKER:
+    return false;
+  default:
+    return type != NpcType::NONE && !npcTypeKey(type).empty();
+  }
+}

@@ -22,7 +22,7 @@ enum class ClientOpCode : uint8_t
   MSG_MEDITATE = 0x15,
   MSG_RESURRECT = 0x16,
 
-  MSG_TALK_NPC = 0x20,
+  MSG_INTERACT_NPC = 0x20,
   MSG_BUY = 0x21,
   MSG_SELL = 0x22,
   MSG_DEPOSIT = 0x23,
