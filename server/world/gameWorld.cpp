@@ -55,27 +55,78 @@ void GameWorld::removePlayer(uint32_t id) {
     occupancy.free(it->second.getTileX(), it->second.getTileY());
     players.erase(it);
 }
-
 bool GameWorld::movePlayer(uint32_t id, Direction dir) {
+    // Buscamos al jugador por id.
     auto it = players.find(id);
-    if (it == players.end()) return false;
 
-    Player& p = it->second;
-    int tx = p.getTileX();
-    int ty = p.getTileY();
-
-    switch (dir) {
-        case Direction::UP:    ty -= 1; break;
-        case Direction::DOWN:  ty += 1; break;
-        case Direction::LEFT:  tx -= 1; break;
-        case Direction::RIGHT: tx += 1; break;
-        default: return false;
+    // Si no existe, no podemos moverlo.
+    if (it == players.end()) {
+        return false;
     }
 
-    if (!collision.isWalkable(tx, ty)) return false;
-    if (!occupancy.move(p.getTileX(), p.getTileY(), tx, ty, id)) return false;
+    // Obtenemos referencia al jugador.
+    Player& p = it->second;
 
-    p.setTilePos(tx, ty);
+    // valor fijo por ahora, para no romper cosas. PASAR AL TOML PORQUE ES LA VELOCIDAD DEL JGUADOR EN QUE SE MUEVE
+    constexpr float PLAYER_MOVE_STEP = 8.0f;
+
+    // Calculamos el desplazamiento deseado.
+    float dx = 0.0f;
+    float dy = 0.0f;
+
+    switch (dir) {
+        case Direction::UP:
+            dy = -PLAYER_MOVE_STEP;
+            break;
+
+        case Direction::DOWN:
+            dy = PLAYER_MOVE_STEP;
+            break;
+
+        case Direction::LEFT:
+            dx = -PLAYER_MOVE_STEP;
+            break;
+
+        case Direction::RIGHT:
+            dx = PLAYER_MOVE_STEP;
+            break;
+
+        default:
+            return false;
+    }
+
+    // Posición actual en píxeles.
+    float currentX = p.getPixelX();
+    float currentY = p.getPixelY();
+
+    // Posición tentativa en píxeles.
+    float nextX = currentX + dx;
+    float nextY = currentY + dy;
+
+    // Tile actual antes de moverse.
+    int oldTileX = p.getTileX();
+    int oldTileY = p.getTileY();
+
+    // Tile al que caería después de moverse.
+    int newTileX = static_cast<int>(nextX) / TILE_SIZE;
+    int newTileY = static_cast<int>(nextY) / TILE_SIZE;
+
+    // Si el nuevo tile no es caminable, bloqueamos el movimiento.
+    if (!collision.isWalkable(newTileX, newTileY)) {
+        return false;
+    }
+
+    // Si cambió de tile, actualizamos la ocupación.
+    // Si sigue dentro del mismo tile, no hace falta tocar occupancy.
+    if (oldTileX != newTileX || oldTileY != newTileY) {
+        if (!occupancy.move(oldTileX, oldTileY, newTileX, newTileY, id)) {
+            return false;
+        }
+    }
+
+    // Aplicamos el movimiento real en píxeles.
+    p.setPixelPos(nextX, nextY);
+
     return true;
 }
 
@@ -101,8 +152,17 @@ bool GameWorld::canPlayerAct(uint32_t id) const {
 
 int GameWorld::getTileX(uint32_t id)  const { return players.at(id).getTileX(); }
 int GameWorld::getTileY(uint32_t id)  const { return players.at(id).getTileY(); }
-int GameWorld::getPixelX(uint32_t id) const { return players.at(id).getTileX() * TILE_SIZE; }
-int GameWorld::getPixelY(uint32_t id) const { return players.at(id).getTileY() * TILE_SIZE; }
+int GameWorld::getPixelX(uint32_t id) const {
+    // Devuelve la posición real en píxeles.
+    // No multiplicamos por TILE_SIZE porque eso vuelve a generar saltos de 96px.
+    return static_cast<int>(players.at(id).getPixelX());
+}
+
+int GameWorld::getPixelY(uint32_t id) const {
+    // Devuelve la posición real en píxeles.
+    // No multiplicamos por TILE_SIZE porque eso vuelve a generar saltos de 96px.
+    return static_cast<int>(players.at(id).getPixelY());
+}
 
 
 void GameWorld::giveExperience(uint32_t playerId, uint32_t exp) {

@@ -11,6 +11,10 @@ Player::Player(uint32_t clientId,
     , name(std::move(name))
     , race(race)
     , cls(cls)
+    , tileX(0)
+    ,tileY(0)
+    ,pixelX(0.0f)
+    ,pixelY(0.0f)
     , maxHp(maxHp)
     , maxMana(maxMana)
     , hp(maxHp)
@@ -97,8 +101,7 @@ uint32_t Player::die(uint32_t safeGold) {
 
 void Player::resurrect(int tx, int ty) {
     state = PlayerState::ALIVE;
-    tileX = tx;
-    tileY = ty;
+    setPixelPos(tx,ty);
     hp    = maxHp / 2;
     mana  = 0;
 }
@@ -150,4 +153,37 @@ uint16_t Player::getShieldDefenseMin() const {
 uint16_t Player::getShieldDefenseMax() const {
     const Item* s = inventory.getEquipped(EquipSlot::SHIELD);
     return s ? s->stats.defenseMax : 0;
+}
+
+float Player::getPixelX() const {
+    // Devuelve la posición real en píxeles.
+    return pixelX;
+}
+
+float Player::getPixelY() const {
+    // Devuelve la posición real en píxeles.
+    return pixelY;
+}
+
+void Player::setPixelPos(float x, float y) {
+    // Actualiza la posición real del jugador.
+    pixelX = x;
+    pixelY = y;
+    tileX = static_cast<int>(pixelX) / TILE_SIZE;
+    tileY = static_cast<int>(pixelY) / TILE_SIZE;
+}
+
+void Player::setTilePos(int tx, int ty) {
+    // Guarda el tile lógico.
+    tileX = tx;
+
+    // Guarda el tile lógico.
+    tileY = ty;
+
+    // Sincroniza la posición real en píxeles.
+    // Esto sirve para spawn, respawn o teletransporte controlado.
+    pixelX = static_cast<float>(tx * TILE_SIZE);
+
+    // Sincroniza la posición real en píxeles.
+    pixelY = static_cast<float>(ty * TILE_SIZE);
 }

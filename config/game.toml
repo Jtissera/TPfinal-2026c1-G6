@@ -21,6 +21,7 @@ base_intelligence = 10
 recovery_health_ms = 5000   # cada cuanto recupera vida (ms)
 recovery_mana_ms   = 3000   # cada cuanto recupera mana (ms)
 newbie_max_level = 12
+move_step = 4.0
 
 
 
@@ -298,3 +299,7 @@ hostile = false
 hp = 100
 damage_min = 0
 damage_max = 0
+
+
+[world]
+tile_size = 96

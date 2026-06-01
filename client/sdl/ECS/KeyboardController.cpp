@@ -9,9 +9,6 @@ KeyboardController::KeyboardController(Queue<std::shared_ptr<const Message>>& se
 void KeyboardController::init() {
     transform = &entity->getComponent<TransformComponent>();
     sprite    = &entity->getComponent<SpriteComponent>();
-    transform->velocity.Zero();
-    // Evita que TransformComponent empuje al jugador local entre updates del server.
-    transform->speed = 0;
 }
 
 void KeyboardController::update(UpdateContext& context) {
@@ -19,7 +16,6 @@ void KeyboardController::update(UpdateContext& context) {
 
     // Evita movimiento local acumulado.
     // El cliente solo manda intención; no mueve directamente al jugador.
-    transform->velocity.Zero();
     movingUp    = keys[SDL_SCANCODE_W];
     movingDown  = keys[SDL_SCANCODE_S];
     movingLeft  = keys[SDL_SCANCODE_A];
@@ -65,15 +61,9 @@ void KeyboardController::update(UpdateContext& context) {
 }
 
 void KeyboardController::sendMoveIfReady(UpdateContext& context, Direction direction) {
-    Uint32 now = SDL_GetTicks();
-
-    if (now - lastMoveSentAt < moveCooldownMs) {
-        return;
-    }
 
     context.sendQueue->push(
         std::make_shared<MoveMessage>(direction)
     );
 
-    lastMoveSentAt = now;
 }

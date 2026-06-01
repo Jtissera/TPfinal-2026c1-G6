@@ -140,14 +140,26 @@ void Game::update() {
     std::shared_ptr<const Message> msg;
     while (receiveQueue->try_pop(msg)) {
         if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE)) {
+            // Convertimos el mensaje genérico al mensaje concreto de movimiento.
             const auto& moveMsg = static_cast<const EntityMoveMessage&>(*msg);
 
-            player->getComponent<TransformComponent>().position.x =static_cast<float>(moveMsg.getX());
+            // Obtenemos el TransformComponent del jugador local.
+            auto& transform = player->getComponent<TransformComponent>();
 
-            player->getComponent<TransformComponent>().position.y =static_cast<float>(moveMsg.getY());
+            // Leemos la posición enviada por el servidor.
+            float serverX = static_cast<float>(moveMsg.getX());
+            float serverY = static_cast<float>(moveMsg.getY());
 
-            std::cout << "[client] pos recibida del server: " 
-                      << moveMsg.getX() << ", " << moveMsg.getY() << std::endl;
+            // Como el server ahora mueve de a pocos píxeles,
+            // aplicamos la posición directamente.
+            // Ya no esperamos a que la diferencia sea mayor a 32px.
+            transform.position.x = serverX;
+            transform.position.y = serverY;
+
+            // Log opcional para verificar que llegan posiciones pequeñas.
+            std::cout << "[sync] server=("
+                      << serverX << ", " << serverY
+                      << ")" << std::endl;
         } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_STATS)) {
             const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
             playerState.hp = stats.getHp();

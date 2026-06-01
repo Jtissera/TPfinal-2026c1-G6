@@ -47,9 +47,9 @@ public:
 
     std::vector<Item> purgeInventoryOnDeath();
 
-    int getTileX() const override { return tileX; }
-    int getTileY() const override{ return tileY; }
-    void setTilePos(int tx, int ty) { tileX = tx; tileY = ty; }
+    int getTileX() const override { return static_cast<int>(pixelX) / TILE_SIZE; }
+    int getTileY() const override{ return static_cast<int>(pixelY)/ TILE_SIZE; }
+    void setTilePos(int tx, int ty);
 
     uint32_t getId()      const override{ return clientId; }  //mandar esto al cpp
     uint32_t getClientId()const { return clientId; }
@@ -79,6 +79,16 @@ public:
     Inventory&       getInventory()       { return inventory; }
     const Inventory& getInventory() const { return inventory; }
 
+        // Devuelve la posición X real en píxeles.
+    float getPixelX() const;
+
+    // Devuelve la posición Y real en píxeles.
+    float getPixelY() const;
+
+    // Setea la posición real del jugador en píxeles.
+    void setPixelPos(float x, float y);
+
+
     Player(const Player&)            = delete;
     Player& operator=(const Player&) = delete;
     Player(Player&&)                 = default;
@@ -89,9 +99,13 @@ private:
     std::string name;
     const RaceStats&  race;
     const ClassStats& cls;
+    const int TILE_SIZE = 96;
+    int tileX;
+    int tileY;
 
-    int tileX = 0;
-    int tileY = 0;
+    float pixelX;
+    float pixelY;
+
 
     uint8_t  level      = 1;
     int16_t  hp         = 0;
