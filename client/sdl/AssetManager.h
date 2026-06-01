@@ -11,13 +11,14 @@
 #include "../../common/dtos/gameTypes.h"
 #include "common/queue.h"
 #include "common/network/messages/message.h"
+#include "ECS/SpriteSheetConfig.h"
 
 class AssetManager
 {
 
 
 public:
-    AssetManager(Manager* man, Queue<std::shared_ptr<const Message>>& sendQueue);
+    AssetManager(Manager* manager,Queue<std::shared_ptr<const Message>>& sendQueue,TextureManager& textureManager);
     ~AssetManager();
 
     //gameobjects
@@ -29,7 +30,7 @@ public:
 
     //texture management
     void AddTexture(std::string id, const char* path);
-    SDL_Texture* GetTexture(std::string id);
+    SDL_Texture* GetTexture(const std::string& id);
 
     void AddFont(std::string id, std::string path, int fontSize);
     TTF_Font* GetFont(std::string id);
@@ -43,14 +44,22 @@ public:
     void LoadTexturesFromJson(const std::string& jsonPath);
 
 
+    SpriteSheetConfig bodyConfigForRace(const std::string& race) const;
+
 
 private:
 
     Manager* manager;
     Queue<std::shared_ptr<const Message>>& sendQueue;
+    TextureManager& textureManager;
     std::map<std::string, SDL_Texture*> textures;
     std::map<std::string, TTF_Font*> fonts;
+    std::map<std::string, SpriteSheetConfig> bodyConfigs;
+
     std::string textureForNPC(NpcType type);
+    std::string bodyTextureForRace(const std::string& race) const;
+    std::string headTextureForRace(const std::string& race) const;
+    void LoadBodiesFromJson(const std::string& path);
 
 };
 

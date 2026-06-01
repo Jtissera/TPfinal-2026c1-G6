@@ -9,18 +9,29 @@
 #include "sdl/ECS/ECS.h"
 #include "sdl/AssetManager.h"
 #include <vector>
-
+#include "sdl/state/PlayerViewState.h"
+#include "sdl/state/InventoryViewState.h"
+#include "sdl/state/EquipmentViewState.h"
+#include "sdl/state/PlayerViewStateMapper.h"
+#include "sdl/items/ItemCatalog.h"
 #include "sdl/Map.h"
 #include "common/queue.h"
 #include "sdl/AttackSystem.h"
 class Game {
 public:
     Game();
-    ~Game();
+    ~Game() = default;
 
-    void init(const char* title, int width, int height, bool fullscreen,Queue<std::shared_ptr<const Message>>& sendQueue,
-              Queue<std::shared_ptr<const Message>>& receiveQueue,
-              const PlayerDto& playerDto);
+    void init(
+        const char* title,
+        int width,
+        int height,
+        bool fullscreen,
+        Queue<std::shared_ptr<const Message>>& sendQueue,
+        Queue<std::shared_ptr<const Message>>& receiveQueue,
+        const PlayerDto& playerDto
+    );
+
     void handleEvents();
     void update();
     void render();
@@ -28,40 +39,60 @@ public:
     bool running() const;
     void renderHUD();
 
-    // Estáticos — accedidos por los componentes
-    static bool         isRunning;
-    static SDL_Renderer* renderer;
-    static SDL_Event     event;
-    static SDL_Rect      camera;
-    static AssetManager* assets;
-
-    enum groupLabels : std::size_t {
-        groupMap,
-        groupPlayers,
-        groupColliders,
-        groupProjectiles,
-        groupNPC,
-        groupEnemies,
-    };
-
 private:
+    bool isRunning = false;
+
     SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+    SDL_Event event{};
     Manager manager;
-    Map* map = nullptr;
-    Entity* player = nullptr;
-    Entity* label = nullptr;
+
+    std::unique_ptr<TextureManager> textureManager;
+    std::unique_ptr<AssetManager> assets;
 
     Queue<std::shared_ptr<const Message>>* sendQueue = nullptr;
     Queue<std::shared_ptr<const Message>>* receiveQueue = nullptr;
+
+    Map* map = nullptr;
+    Entity* player = nullptr;
+    Entity* label = nullptr;
+    SDL_Rect camera{0, 0, 0, 0};
 
     PlayerDto playerDto;
 
     std::map<uint32_t, Entity*> enemies;
 
     AttackSystem attackSystem;
+    PlayerViewState playerState;
+    InventoryViewState inventoryState;
+    EquipmentViewState equipmentState;
+    ItemCatalog itemCatalog;
+
+    std::string statusMessage;
+    Uint32 statusMessageTimer = 0;
+    static constexpr Uint32 STATUS_MESSAGE_DURATION_MS = 2500;
+    TTF_Font* statusFont = nullptr;  // se asigna en loadAssets()
+
+    void showStatusMessage(const std::string& msg);
 
     void loadAssets();
+    void loadInitialInventoryForCurrentClass();
+    int getInventorySlotIndexAt(int mouseX, int mouseY) const;
+    void handleInventorySlotClick(int slotIndex);
+    void equipItemFromInventory(int slotIndex);
 
+    int getEquipmentSlotIndexAt(int mouseX, int mouseY) const;
+    void handleEquipmentSlotClick(int equipmentSlotIndex);
+    bool addItemToFirstFreeInventorySlot(const ItemView& item);
+    void consumePotion(int slotIndex);
+    std::string visualTextureForCurrentRace(const ItemView& item) const;
+    void renderEquippedArmor();
+    void renderEquippedWeapon();
+    void renderEquippedShield();
+    void refreshPlayerBodySprite();
+    SpriteSheetConfig armorSpriteConfigForCurrentRace() const;
+    SDL_Point visualOffsetForCurrentRace(const ItemView& item) const;
+    void refreshPlayerEquipmentVisuals();
 };
 
 #endif //PRUEBA_SDL_GAME_H

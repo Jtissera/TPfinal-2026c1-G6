@@ -1,0 +1,194 @@
+
+#include "ItemCatalog.h"
+#include <fstream>
+#include <iostream>
+#include <stdexcept>
+
+#include <nlohmann/json.hpp>
+#include <stdexcept>
+
+void ItemCatalog::loadFromJson(const std::string& path) {
+    std::ifstream file(path);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("ItemCatalog: no se pudo abrir el archivo: " + path);
+    }
+
+    nlohmann::json data;
+    file >> data;
+
+    if (!data.contains("items") || !data["items"].is_array()) {
+        throw std::runtime_error("ItemCatalog: JSON invalido, falta array 'items'");
+    }
+
+    for (const auto& itemJson : data["items"]) {
+        ItemView item;
+
+        item.itemId = itemJson.value("id", 0);
+        item.itemName = itemJson.value("name", "");
+
+    // Textura usada dentro del inventario.
+    item.textureId = itemJson.value("textureId", "");
+
+    // Textura usada cuando el ítem está equipado visualmente.
+    item.visualTextureId = itemJson.value("visualTextureId", "");
+
+    // Primero cargamos el recorte del ícono.
+    // Esto es importante porque los datos visuales pueden usarlo como fallback.
+    item.iconSrcX = itemJson.value("iconSrcX", 0);
+    item.iconSrcY = itemJson.value("iconSrcY", 0);
+    item.iconSrcW = itemJson.value("iconSrcW", 32);
+    item.iconSrcH = itemJson.value("iconSrcH", 32);
+
+        // Ahora cargamos la configuración visual extra.
+        if (itemJson.contains("visuals")) {
+            const auto& visuals = itemJson["visuals"];
+
+            // Texturas específicas para armaduras grandes/chicas.
+            item.visualTextureIdTall = visuals.value("tall", item.visualTextureId);
+            item.visualTextureIdShort = visuals.value("short", item.visualTextureId);
+
+            // Offsets para armaduras grandes.
+            item.visualTallOffsetX = visuals.value("tallOffsetX", 0);
+            item.visualTallOffsetY = visuals.value("tallOffsetY", 0);
+
+            // Offsets para armaduras chicas.
+            item.visualShortOffsetX = visuals.value("shortOffsetX", 0);
+            item.visualShortOffsetY = visuals.value("shortOffsetY", 0);
+
+            // Offset genérico para casco, arma o escudo.
+            item.visualOffsetX = visuals.value("offsetX", 0);
+            item.visualOffsetY = visuals.value("offsetY", 0);
+
+            // Recortes visuales por dirección.
+            item.visualDownSrcX = visuals.value("downSrcX", item.iconSrcX);
+            item.visualDownSrcY = visuals.value("downSrcY", item.iconSrcY);
+
+            item.visualLeftSrcX = visuals.value("leftSrcX", item.iconSrcX);
+            item.visualLeftSrcY = visuals.value("leftSrcY", item.iconSrcY);
+
+            item.visualRightSrcX = visuals.value("rightSrcX", item.iconSrcX);
+            item.visualRightSrcY = visuals.value("rightSrcY", item.iconSrcY);
+
+            item.visualUpSrcX = visuals.value("upSrcX", item.iconSrcX);
+            item.visualUpSrcY = visuals.value("upSrcY", item.iconSrcY);
+
+            // Offsets por dirección.
+            // Esto es lo que necesitás para que arma y escudo no cambien de mano.
+            item.visualDownOffsetX = visuals.value("downOffsetX", item.visualOffsetX);
+            item.visualDownOffsetY = visuals.value("downOffsetY", item.visualOffsetY);
+
+            item.visualLeftOffsetX = visuals.value("leftOffsetX", item.visualOffsetX);
+            item.visualLeftOffsetY = visuals.value("leftOffsetY", item.visualOffsetY);
+
+            item.visualRightOffsetX = visuals.value("rightOffsetX", item.visualOffsetX);
+            item.visualRightOffsetY = visuals.value("rightOffsetY", item.visualOffsetY);
+
+            item.visualUpOffsetX = visuals.value("upOffsetX", item.visualOffsetX);
+            item.visualUpOffsetY = visuals.value("upOffsetY", item.visualOffsetY);
+        }
+
+        item.type = parseItemType(itemJson.value("type", "other"));
+
+        item.quantity = itemJson.value("quantity", 1);
+
+        item.damageMin = itemJson.value("damageMin", 0);
+        item.damageMax = itemJson.value("damageMax", 0);
+
+        item.defenseMin = itemJson.value("defenseMin", 0);
+        item.defenseMax = itemJson.value("defenseMax", 0);
+
+        item.manaCost = itemJson.value("manaCost", 0);
+
+        item.healAmount = itemJson.value("healAmount", 0);
+        item.manaAmount = itemJson.value("manaAmount", 0);
+
+        item.ranged = itemJson.value("ranged", false);
+
+        item.soundId = itemJson.value("soundId", "");
+        item.iconSrcX = itemJson.value("iconSrcX", 0);
+        item.iconSrcY = itemJson.value("iconSrcY", 1);
+        item.iconSrcW = itemJson.value("iconSrcW", 32);
+        item.iconSrcH = itemJson.value("iconSrcH", 32);
+
+        if (item.itemId <= 0) {
+            throw std::runtime_error("ItemCatalog: item con id invalido en " + path);
+        }
+
+        addItem(item);
+    }
+}
+
+void ItemCatalog::addItem(const ItemView& item) {
+    std::cout << "[ITEM] "
+          << item.itemName
+          << " visual="
+          << item.visualTextureId
+          << " offset=("
+          << item.visualOffsetX
+          << ", "
+          << item.visualOffsetY
+          << ")"
+          << std::endl;
+    itemsById[item.itemId] = item;
+}
+
+bool ItemCatalog::contains(int itemId) const {
+    return itemsById.find(itemId) != itemsById.end();
+}
+
+const ItemView* ItemCatalog::getById(int itemId) const {
+    auto it = itemsById.find(itemId);
+
+    if (it == itemsById.end()) {
+        return nullptr;
+    }
+
+    return &it->second;
+}
+
+const ItemView& ItemCatalog::requireById(int itemId) const {
+    const ItemView* item = getById(itemId);
+
+    if (item == nullptr) {
+        throw std::runtime_error("ItemCatalog: item id not found: " + std::to_string(itemId));
+    }
+
+    return *item;
+}
+
+ClientItemType ItemCatalog::parseItemType(const std::string& type) const {
+    if (type == "melee_weapon") {
+        return ClientItemType::MeleeWeapon;
+    }
+
+    if (type == "ranged_weapon") {
+        return ClientItemType::RangedWeapon;
+    }
+
+    if (type == "magic_weapon") {
+        return ClientItemType::MagicWeapon;
+    }
+
+    if (type == "armor") {
+        return ClientItemType::Armor;
+    }
+
+    if (type == "helmet") {
+        return ClientItemType::Helmet;
+    }
+
+    if (type == "shield") {
+        return ClientItemType::Shield;
+    }
+
+    if (type == "health_potion") {
+        return ClientItemType::HealthPotion;
+    }
+
+    if (type == "mana_potion") {
+        return ClientItemType::ManaPotion;
+    }
+
+    return ClientItemType::Other;
+}

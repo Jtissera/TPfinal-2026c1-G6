@@ -14,55 +14,70 @@ void AttackSystem::handleMouseClick(
     int screenY,
     const SDL_Rect& camera,
     std::map<uint32_t, Entity*>& enemies,
-    Queue<std::shared_ptr<const Message>>* sendQueue
+    Queue<std::shared_ptr<const Message>>* sendQueue,
+    Entity* player,
+    const ItemView* equippedWeapon
 ) {
     // Convertimos coordenadas de pantalla a coordenadas de mundo.
-    // El -133 compensa el offset vertical del HUD/mapa.
+    // El -133 compensa el offset vertical del área del mapa.
     int worldX = screenX + camera.x;
     int worldY = screenY - 133 + camera.y;
 
-    // Recorremos enemigos registrados.
     for (auto& [id, entity] : enemies) {
         if (entity == nullptr) {
             continue;
         }
 
-        // Obtenemos la posición del enemigo.
         auto& tf = entity->getComponent<TransformComponent>();
 
         int enemyX = static_cast<int>(tf.position.x);
         int enemyY = static_cast<int>(tf.position.y);
 
-        // Tamaño visual aproximado del skeleton:
-        // frame 32x64 escalado x2 => 64x128.
+        // Tamaño aproximado del enemigo visible.
         int enemyW = 64;
         int enemyH = 128;
 
-        // Verificamos si el click cayó dentro del rectángulo del enemigo.
         bool clickedEnemy =
             worldX >= enemyX &&
             worldX <= enemyX + enemyW &&
             worldY >= enemyY &&
             worldY <= enemyY + enemyH;
 
-        if (clickedEnemy) {
-            //efecto visual de ataque.
-            createLocalAttackEffect(id, *entity);
+        if (!clickedEnemy) {
+            continue;
+        }
 
-            // Por ahora está comentado dentro de sendAttackMessage.
-            sendAttackMessage(id, sendQueue);
+        // Obtenemos el rango según arma equipada.
+        int attackRange = attackRangeForWeapon(equippedWeapon);
 
-            // Para demo: cada ataque hace 25 de daño.
-            bool isDead = applyDamage(id, 25);
-
-            if (isDead) {
-                entity->destroy();
-                enemies.erase(id);
-                enemyHealth.erase(id);
-            }
-
+        // Si está fuera de rango, no se aplica daño.
+        if (!isTargetInRange(player, *entity, attackRange)) {
+            std::cout << "[ATTACK] Objetivo fuera de rango. Rango="
+                      << attackRange
+                      << std::endl;
             return;
         }
+
+        // Por ahora está comentado dentro de sendAttackMessage.
+        sendAttackMessage(id, sendQueue);
+
+        // Calculamos daño según arma equipada.
+        int damage = damageForWeapon(equippedWeapon);
+
+        bool isDead = applyDamage(id, damage);
+
+        // Solo mostramos efecto visual si el arma corresponde.
+        if (shouldCreateVisualEffect(equippedWeapon)) {
+            createLocalAttackEffect(id, *entity);
+        }
+
+        if (isDead) {
+            entity->destroy();
+            enemies.erase(id);
+            enemyHealth.erase(id);
+        }
+
+        return;
     }
 }
 bool AttackSystem::applyDamage(uint32_t targetId, int damage) {
@@ -137,9 +152,12 @@ void AttackSystem::render(
     AssetManager& assets,
     const SDL_Rect& camera
 ) {
-    SDL_Texture* texAtk = assets.GetTexture("ataque1");
+    SDL_Texture* texAtk = assets.GetTexture("effect_attack_magic_01");
 
     if (texAtk == nullptr) {
+        std::cout << "[ATTACK EFFECT] No se encontró textura: "
+          << "effect_attack_magic_01"
+          << std::endl;
         return;
     }
 
@@ -178,4 +196,84 @@ void AttackSystem::render(
 
         SDL_RenderCopy(renderer, texAtk, &src, &dst);
     }
+}
+
+int AttackSystem::attackRangeForWeapon(const ItemView* weapon) const {
+    // Si no tiene arma, rango mínimo.
+    if (weapon == nullptr) {
+        return 35;
+    }
+
+    if (weapon->type == ClientItemType::MeleeWeapon) {
+        // Espada, daga, hacha, etc.
+        return 55;
+    }
+
+    if (weapon->type == ClientItemType::RangedWeapon) {
+        // Arco. No hay flecha visible por ahora.
+        return 220;
+    }
+
+    if (weapon->type == ClientItemType::MagicWeapon) {
+        // Bastones. El efecto visual aparece sobre el objetivo.
+        return 180;
+    }
+
+    return 35;
+}
+
+int AttackSystem::damageForWeapon(const ItemView* weapon) const {
+    // Si no tiene arma, daño básico.
+    if (weapon == nullptr) {
+        return 5;
+    }
+
+    // Promedio simple entre daño mínimo y máximo.
+    // Evitamos random por ahora para que sea más fácil testear.
+    int damage = (weapon->damageMin + weapon->damageMax) / 2;
+
+    if (damage <= 0) {
+        damage = 1;
+    }
+
+    return damage;
+}
+
+bool AttackSystem::isTargetInRange(
+    Entity* attacker,
+    Entity& target,
+    int range
+) const {
+    if (attacker == nullptr) {
+        return false;
+    }
+
+    auto& attackerTf = attacker->getComponent<TransformComponent>();
+    auto& targetTf = target.getComponent<TransformComponent>();
+
+    // Centro aproximado del jugador.
+    float attackerCenterX = attackerTf.position.x + 32.0f;
+    float attackerCenterY = attackerTf.position.y + 64.0f;
+
+    // Centro aproximado del enemigo.
+    float targetCenterX = targetTf.position.x + 32.0f;
+    float targetCenterY = targetTf.position.y + 64.0f;
+
+    float dx = targetCenterX - attackerCenterX;
+    float dy = targetCenterY - attackerCenterY;
+
+    float distance = std::sqrt(dx * dx + dy * dy);
+
+    return distance <= static_cast<float>(range);
+}
+
+bool AttackSystem::shouldCreateVisualEffect(const ItemView* weapon) const {
+    if (weapon == nullptr) {
+        return false;
+    }
+
+    // - espada: solo sonido/daño, sin efecto visual
+    // - arco: solo sonido/daño, sin proyectil ni efecto
+    // - bastón: efecto visual sobre el enemigo
+    return weapon->type == ClientItemType::MagicWeapon;
 }

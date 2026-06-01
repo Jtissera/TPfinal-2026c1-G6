@@ -1,29 +1,20 @@
-
 #include "Game.h"
 #include "sdl/Map.h"
 #include "sdl/TextureManager.h"
 #include "sdl/ECS/Components.h"
-#include "sdl/ECS/UILabel.h"
 #include <sstream>
 #include <iostream>
+#include "sdl/UpdateContext.h"
+#include "sdl/RenderContext.h"
 
 #include "common/network/messages/client/combat/attackMessage.h"
 #include "common/network/messages/server/player/EntityMoveMessage.h"
 #include "common/network/protocol/serverOpCode.h"
+#include "sdl/state/PlayerViewStateMapper.h"
+#include "sdl/GroupLabels.h"
 
-// Definicion de estaticos, hay que fletarlo
-bool         Game::isRunning = false;
-SDL_Renderer* Game::renderer = nullptr;
-SDL_Event    Game::event;
-SDL_Rect     Game::camera{0, 0, 900, 720};
-AssetManager* Game::assets  = nullptr;
 
 Game::Game() {
-}
-
-Game::~Game() {
-    delete assets;
-    delete map;
 }
 
 void Game::init(const char* title, int width, int height, bool fullscreen,
@@ -33,7 +24,7 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     this->sendQueue    = &sendQ;
     this->receiveQueue = &receiveQ;
     this->playerDto    = pDto;
-    this->assets       = new AssetManager(&manager, *sendQueue);
+    this->playerState = toPlayerViewState(this->playerDto );
 
     int flags = fullscreen ? SDL_WINDOW_FULLSCREEN : 0;
 
@@ -49,26 +40,50 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     window   = SDL_CreateWindow(title,
                                 SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                 width, height, flags);
+    if (window == nullptr) {
+        std::cerr << "Error SDL_CreateWindow: " << SDL_GetError() << std::endl;
+        return;
+    }
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+    if (renderer == nullptr) {
+        std::cerr << "Error SDL_CreateRenderer: " << SDL_GetError() << std::endl;
+        return;
+    }
+
+    textureManager = std::make_unique<TextureManager>(renderer);
+    assets = std::make_unique<AssetManager>(&manager,*sendQueue,*textureManager);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     isRunning = true;
-
-    this->playerDto = pDto;
-    std::cout << "HP: " << playerDto.hp << "/" << playerDto.hpMax << std::endl;
-    std::cout << "Mana: " << playerDto.mana << "/" << playerDto.manaMax << std::endl;
-    std::cout << "Exp: " << playerDto.exp << "/" << playerDto.expMax << std::endl;
-
+    std::cout << "[INIT] antes loadAssets" << std::endl;
     loadAssets();
-   // loadText();
+    std::cout << "[INIT] antes itemCatalog" << std::endl;
+    try {
+        itemCatalog.loadFromJson("assets/items/items.json");
+        std::cout << "[INIT] itemCatalog cargado" << std::endl;
 
+        loadInitialInventoryForCurrentClass();
+        std::cout << "[INIT] inventario inicial cargado" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error cargando catálogo de ítems: " << e.what() << std::endl;
+        isRunning = false;
+        return;
+    }
+
+    std::cout << "[INIT] antes CreatePlayer" << std::endl;
     player = assets->CreatePlayer(playerDto);
+    
+    refreshPlayerEquipmentVisuals();
+    std::cout << "[INIT] antes Map" << std::endl;
 
-    map = new Map(manager, "terrain", 3, 32);
+
+    std::cout << "[INIT] antes Map" << std::endl;
+    map = new Map(manager, *assets, "terrain", 3, 32);
     map->LoadMap("assets/sprites/MapAssets/mapa.argmap");
 
-    label = &manager.addEntity();
-    SDL_Color white = {255, 255, 255, 255};
-    label->addComponent<UILabel>(10, 10, "Argentum Online", "arial", white);
+    std::cout << "Tiles cargados como entidades: "
+          << manager.getGroup(groupMap).size()
+          << std::endl;
 
     // En Game.cpp, al final de init(), después de crear el player
     NPCData fakeEnemy;
@@ -77,24 +92,48 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     fakeEnemy.x    = 600;         // posición en píxeles de mundo
     fakeEnemy.y    = 400;
 
+    std::cout << "[INIT] antes Enemy" << std::endl;
     Entity* e = assets->CreateEnemy(fakeEnemy);
-    enemies[fakeEnemy.npcID] = e;    // guardás el puntero en el mapa
-
+    enemies[fakeEnemy.npcID] = e;
+    std::cout << "[INIT] fin Game::init" << std::endl;
+    std::cout << "[INIT] fin Game::init" << std::endl;
 }
 
 void Game::handleEvents() {
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT){
             isRunning = false;
-        } 
+        }
 
         if (event.type == SDL_KEYDOWN && event.key.repeat != 0){
             event.type = SDL_USEREVENT;
         }
         if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
-            attackSystem.handleMouseClick(event.button.x,event.button.y,camera,enemies,sendQueue);
+            const int mouseX = event.button.x;
+            const int mouseY = event.button.y;
+
+            const int equipmentSlot = getEquipmentSlotIndexAt(mouseX, mouseY);
+
+            if (equipmentSlot != -1) {
+                handleEquipmentSlotClick(equipmentSlot);
+                return;
+            }
+
+            const int inventorySlot = getInventorySlotIndexAt(mouseX, mouseY);
+
+            if (inventorySlot != -1) {
+                handleInventorySlotClick(inventorySlot);
+                return;
+            }
+            const ItemView* equippedWeapon = nullptr;
+            if (equipmentState.weapon.has_value()) {
+                equippedWeapon = &equipmentState.weapon.value();
+            }
+
+            attackSystem.handleMouseClick(mouseX, mouseY, camera, enemies, sendQueue,player,equippedWeapon);
         }
     }
+
 }
 
 void Game::update() {
@@ -102,26 +141,35 @@ void Game::update() {
     while (receiveQueue->try_pop(msg)) {
         if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE)) {
             const auto& moveMsg = static_cast<const EntityMoveMessage&>(*msg);
+
             player->getComponent<TransformComponent>().position.x =
                 static_cast<float>(moveMsg.getX());
+
             player->getComponent<TransformComponent>().position.y =
                 static_cast<float>(moveMsg.getY());
+
             std::cout << "[client] pos recibida del server: " 
                       << moveMsg.getX() << ", " << moveMsg.getY() << std::endl;
         } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_STATS)) {
-    const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
-    playerDto.hp     = stats.getHp();
-    playerDto.hpMax  = stats.getMaxHp();
-    playerDto.mana   = stats.getMana();
-    playerDto.manaMax= stats.getMaxMana();
-    playerDto.exp    = stats.getExp();
-    playerDto.level  = stats.getLevel();
-    playerDto.oro    = stats.getGold();
-}
+            const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
+            playerState.hp = stats.getHp();
+            playerState.maxHp = stats.getMaxHp();
+            playerState.mana = stats.getMana();
+            playerState.maxMana = stats.getMaxMana();
+            playerState.exp = stats.getExp();
+            playerState.expToNextLevel = stats.getExpLimit();
+            playerState.level = stats.getLevel();
+            playerState.gold = stats.getGold();
+        }
     }
 
+    UpdateContext updateContext{
+        SDL_GetKeyboardState(nullptr),
+        sendQueue,
+        camera
+    };
     manager.refresh();
-    manager.update();
+    manager.update(updateContext);
     attackSystem.update();
 
     Vector2D playerPos = player->getComponent<TransformComponent>().position;
@@ -136,6 +184,7 @@ void Game::update() {
 
 
 void Game::render() {
+
     // Limpia la pantalla antes de dibujar el nuevo frame.
     SDL_RenderClear(renderer);
 
@@ -143,54 +192,119 @@ void Game::render() {
     SDL_Rect mapArea = {0, 33, 900, 687};
     SDL_RenderSetClipRect(renderer, &mapArea);
 
+    RenderContext renderContext{
+        renderer,
+        camera,
+        mapArea,
+        *textureManager,
+        133
+    };
     // Dibuja el mapa.
     for (auto& t : manager.getGroup(groupMap)) {
-        t->draw();
+        t->draw(renderContext);
     }
 
-    // Dibuja jugadores.
+
+    // Escudo detrás del personaje cuando mira arriba (animIndex 3)
+    // o derecha (animIndex 2).
+    auto& sprite = player->getComponent<SpriteComponent>();
+    bool weaponBehind = (sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 2);
+    bool shieldBehind = (sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 3);
+
+    if (shieldBehind) {
+        renderEquippedShield();
+    }
+    if (weaponBehind) {
+        renderEquippedWeapon();
+    }
+
     for (auto& p : manager.getGroup(groupPlayers)) {
-        p->draw();
+        p->draw(renderContext);
+    }
+
+    if (!shieldBehind) {
+        renderEquippedShield();
+    }
+    if (!weaponBehind) {
+        renderEquippedWeapon();
     }
 
     // Dibuja enemigos.
     for (auto& p : manager.getGroup(groupEnemies)) {
-        p->draw();
+        p->draw(renderContext);
     }
 
-    // Dibuja proyectiles, si existen.
-    for (auto& p : manager.getGroup(groupProjectiles)) {
-        p->draw();
-    }
-    // Renderiza efectos de ataque.
     attackSystem.render(renderer, *assets, camera);
-
-    // Importante: sacar el clip antes de dibujar el HUD.
     SDL_RenderSetClipRect(renderer, nullptr);
 
-    // Dibuja HUD por encima del juego.
+    // Mensaje de estado temporal — se dibuja sobre el mapa, antes del HUD, para que nada lo tape
+    if (!statusMessage.empty()) {
+        const Uint32 elapsed = SDL_GetTicks() - statusMessageTimer;
+        if (elapsed < STATUS_MESSAGE_DURATION_MS) {
+            Uint8 alpha = 255;
+            const Uint32 fadeStart = STATUS_MESSAGE_DURATION_MS - 500;
+            if (elapsed > fadeStart) {
+                alpha = static_cast<Uint8>(
+                    255 * (1.0f - static_cast<float>(elapsed - fadeStart) / 500.0f)
+                );
+            }
+            if (statusFont) {
+                int tw = 0, th = 0;
+                TTF_SizeText(statusFont, statusMessage.c_str(), &tw, &th);
+                SDL_Color red = {255, 50, 50, alpha};
+                SDL_Surface* surf = TTF_RenderText_Blended(statusFont, statusMessage.c_str(), red);
+                if (surf) {
+                    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+                    SDL_SetTextureAlphaMod(tex, alpha);
+                    SDL_Rect dest = {(900 - tw) / 2, 350, tw, th};
+                    SDL_RenderCopy(renderer, tex, nullptr, &dest);
+                    SDL_FreeSurface(surf);
+                    SDL_DestroyTexture(tex);
+                }
+            }
+        } else {
+            statusMessage.clear();
+        }
+    }
+
     renderHUD();
-
-    // Dibuja label/textos.
-    label->draw();
-
-    // Presenta el frame final en pantalla.
     SDL_RenderPresent(renderer);
 }
 
 void Game::clean() {
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
+    assets.reset();
+    textureManager.reset();
+
+    if (map != nullptr) {
+        delete map;
+        map = nullptr;
+    }
+
+    if (renderer != nullptr) {
+        SDL_DestroyRenderer(renderer);
+        renderer = nullptr;
+    }
+
+    if (window != nullptr) {
+        SDL_DestroyWindow(window);
+        window = nullptr;
+    }
+
     TTF_Quit();
     SDL_Quit();
+
     std::cout << "Game cleaned." << std::endl;
+}
+
+void Game::showStatusMessage(const std::string& msg) {
+    statusMessage      = msg;
+    statusMessageTimer = SDL_GetTicks();
 }
 
 bool Game::running() const { return isRunning; }
 
 
 void Game::renderHUD() {
-
     //1. Fondo/marco     ← primero (abajo)
     // 2. Barras          ← encima del fondo
     // 3. Slots/items     ← encima de las barras
@@ -224,8 +338,8 @@ void Game::renderHUD() {
     SDL_Rect rLogo   = {5,   0,   177,  33};
     SDL_Rect rChat   = {0,   33,  900,  100};
     SDL_Rect rPjInfo = {900, 33,  380,  100};
-    SDL_Rect rInv    = {900, 133, 380,  300};
-    SDL_Rect rStats  = {900, 433, 380,  287};
+    SDL_Rect rInv    = {900, 133, 380, 442};
+    SDL_Rect rStats  = {900, 575, 380, 145};
 
     SDL_RenderCopy(renderer, texTop,    nullptr, &rTop);
     SDL_RenderCopy(renderer, texLogo,   nullptr, &rLogo);
@@ -244,8 +358,8 @@ void Game::renderHUD() {
     SDL_RenderDrawLine(renderer, 901, 33,  901,  720);
     SDL_RenderDrawLine(renderer, 900, 133, 1280, 133);
     SDL_RenderDrawLine(renderer, 900, 134, 1280, 134);
-    SDL_RenderDrawLine(renderer, 900, 433, 1280, 433);
-    SDL_RenderDrawLine(renderer, 900, 434, 1280, 434);
+    SDL_RenderDrawLine(renderer, 900, 575, 1280, 575);
+    SDL_RenderDrawLine(renderer, 900, 576, 1280, 576);
 
     // === CAJA DE NIVEL ===
     SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
@@ -288,57 +402,158 @@ void Game::renderHUD() {
     SDL_Color yellow = {255, 215, 0,   255};
 
     // Nivel centrado en la caja
-    drawTextCentered(std::to_string(playerDto.level),
+    drawTextCentered(std::to_string(playerState.level),
                      fontBold, 908, 38, 50, 50, yellow);
 
     // Nombre grande
-    drawTextAt(playerDto.nombre, fontBold, 968, 45, yellow);
+    drawTextAt(playerState.name, fontBold, 968, 45, yellow);
 
     // Clase
-    drawTextAt("Guerrero", fontRegular, 968, 75, white);
+    drawTextAt(playerClassToString(playerState.playerClass), fontRegular, 968, 75, white);
 
     // === EQUIPAMIENTO (4 slots con frame) ===
-    drawTextCentered("Equipamiento", fontRegular, 900, 140, 380, 20, white);
+    drawTextCentered("Equipamiento", fontRegular, 900, 142, 380, 20, white);
 
     SDL_Texture* texFrame = assets->GetTexture("hud_frame");
-    int eqSlotSize = 70;  // tamaño en pantalla
-    int eqY = 165;
-    int eqStartX = 910;
+
+    const int eqSlotSize = 58;
+    const int eqGap = 12;
+    const int eqY = 168;
+    const int eqStartX = 956;
+
     std::string eqLabels[] = {"Arma", "Casco", "Armadura", "Escudo"};
 
     for (int i = 0; i < 4; i++) {
-        SDL_Rect slot = {eqStartX + i * (eqSlotSize + 5), eqY, eqSlotSize, eqSlotSize};
+        SDL_Rect slot = {
+            eqStartX + i * (eqSlotSize + eqGap),
+            eqY,
+            eqSlotSize,
+            eqSlotSize
+        };
+
         SDL_RenderCopy(renderer, texFrame, nullptr, &slot);
-        drawTextCentered(eqLabels[i], fontRegular,
-                         slot.x, slot.y + eqSlotSize + 2,
-                         eqSlotSize, 14, white);
+        const ItemView* equippedItem = nullptr;
+
+        if (i == 0 && equipmentState.weapon.has_value()) {
+            equippedItem = &equipmentState.weapon.value();
+        } else if (i == 1 && equipmentState.helmet.has_value()) {
+            equippedItem = &equipmentState.helmet.value();
+        } else if (i == 2 && equipmentState.armor.has_value()) {
+            equippedItem = &equipmentState.armor.value();
+        } else if (i == 3 && equipmentState.shield.has_value()) {
+            equippedItem = &equipmentState.shield.value();
+        }
+
+        if (equippedItem != nullptr) {
+            SDL_Texture* itemTexture = assets->GetTexture(equippedItem->textureId);
+
+            if (itemTexture != nullptr) {
+                SDL_Rect itemSrc = {
+                    equippedItem->iconSrcX,
+                    equippedItem->iconSrcY,
+                    equippedItem->iconSrcW,
+                    equippedItem->iconSrcH
+                };
+
+                SDL_Rect itemDest = {
+                    slot.x + 7,
+                    slot.y + 7,
+                    slot.w - 14,
+                    slot.h - 14
+                };
+
+                SDL_RenderCopy(renderer, itemTexture, &itemSrc, &itemDest);
+            }
+        }
+
+        drawTextCentered(
+            eqLabels[i],
+            fontRegular,
+            slot.x - 8,
+            slot.y + eqSlotSize + 4,
+            eqSlotSize + 16,
+            14,
+            white
+        );
     }
+    // === INVENTARIO (grilla 5x4) ===
+    const int inventoryTitleY = 255;
+    drawTextCentered("Inventario", fontRegular, 900, inventoryTitleY, 380, 20, white);
 
-    // === INVENTARIO (grilla 4x3) ===
-    drawTextCentered("Inventario", fontRegular, 900, 245, 380, 20, white);
+    const int invSlotSize = 44;
+    const int invGapX = 8;
+    const int invGapY = 7;
 
-    int invSlotSize = 50;
-    int invStartX   = 915;
-    int invStartY   = 268;
+    const int invStartX = 964;
+    const int invStartY = 280;
+    const int invCols = 5;
+    const int invRows = 4;
 
-    for (int fila = 0; fila < 3; fila++) {
-        for (int col = 0; col < 6; col++) {
+    for (int fila = 0; fila < invRows; fila++) {
+        for (int col = 0; col < invCols; col++) {
+            // Calcula qué slot lógico representa esta posición visual.
+            const int index = fila * invCols + col;
+
+            // Rectángulo visual del slot.
             SDL_Rect slot = {
-                invStartX + col * (invSlotSize + 8),
-                invStartY + fila * (invSlotSize + 5),
-                invSlotSize, invSlotSize
+                invStartX + col * (invSlotSize + invGapX),
+                invStartY + fila * (invSlotSize + invGapY),
+                invSlotSize,
+                invSlotSize
             };
+
+            // Fondo del slot.
             SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
             SDL_RenderFillRect(renderer, &slot);
+
+            // Borde del slot.
             SDL_SetRenderDrawColor(renderer, 100, 80, 40, 255);
             SDL_RenderDrawRect(renderer, &slot);
+
+            // Si el slot existe y contiene un ítem, lo dibujamos.
+            if (index < static_cast<int>(inventoryState.slots.size()) && inventoryState.slots[index].has_value()) {
+                const ItemView& item = inventoryState.slots[index].value();
+                // La textura viene del textureId definido en items.json.
+                SDL_Texture* itemTexture = assets->GetTexture(item.textureId);
+
+                if (itemTexture != nullptr) {
+                    SDL_Rect itemDest = {
+                        slot.x + 5,
+                        slot.y + 5,
+                        slot.w - 10,
+                        slot.h - 10
+                    };
+                    SDL_Rect itemSrc = {
+                        item.iconSrcX,
+                        item.iconSrcY,
+                        item.iconSrcW,
+                        item.iconSrcH
+                    };
+                    SDL_RenderCopy(renderer, itemTexture, &itemSrc, &itemDest);
+                }
+                // Si hay cantidad mayor a 1, mostramos el número.
+                if (item.quantity > 1) {
+                    drawTextAt(
+                        std::to_string(item.quantity),
+                        fontRegular,
+                        slot.x + slot.w - 14,
+                        slot.y + slot.h - 16,
+                        white
+                    );
+                }
+            }
         }
     }
 
     // === BARRAS CON TEXTO CENTRADO ===
-    int hpActual   = playerDto.hp,   hpMax   = playerDto.hpMax;
-    int manaActual = playerDto.mana, manaMax = playerDto.manaMax;
-    int expActual  = playerDto.exp,  expMax  = playerDto.expMax;
+    int hpActual   = playerState.hp;
+    int hpMax      = playerState.maxHp;
+
+    int manaActual = playerState.mana;
+    int manaMax    = playerState.maxMana;
+
+    int expActual  = playerState.exp;
+    int expMax     = playerState.expToNextLevel;
 
     // Función para dibujar barra con texto encima
     auto drawBar = [&](SDL_Texture* tex, int x, int y, int w, int h,
@@ -371,13 +586,17 @@ void Game::renderHUD() {
 
 
     // Stats - orden: Oro, Vida, Mana
-    drawTextAt("Oro: " + std::to_string(playerDto.oro), fontRegular, 910, 445, yellow);
+    const int statsX = 950;
+    const int statsBarW = 260;
+    const int statsBarH = 18;
 
-    drawTextCentered("Vida", fontRegular, 910, 460, 350, 20, white);
-    drawBar(texVida, 910, 480, 350, 20, hpActual, hpMax, fontRegular);
+    drawTextAt("Oro: " + std::to_string(playerState.gold), fontRegular, 915, 585, yellow);
 
-    drawTextCentered("Mana", fontRegular, 910, 510, 350, 20, white);
-    drawBar(texMana, 910, 528, 350, 20, manaActual, manaMax, fontRegular);
+    drawTextCentered("Vida", fontRegular, statsX, 610, statsBarW, 18, white);
+    drawBar(texVida, statsX, 630, statsBarW, statsBarH, hpActual, hpMax, fontRegular);
+
+    drawTextCentered("Mana", fontRegular, statsX, 665, statsBarW, 18, white);
+    drawBar(texMana, statsX, 685, statsBarW, statsBarH, manaActual, manaMax, fontRegular);
 }
 void Game::loadAssets() {
     assets->LoadManifest("assets/manifest.json");
@@ -396,6 +615,16 @@ void Game::loadAssets() {
     assets->AddFont("ao_regular", "assets/Recursos/BabelUI/static/media/Alegreya-Sans-AO-Regular..ttf", 14);
     assets->AddFont("cardo",      "assets/Recursos/BabelUI/static/media/Cardo-Regular..ttf",            14);
 
+    statusFont = assets->GetFont("ao_bold");
+    if (!statusFont) {
+        statusFont = TTF_OpenFont(
+            "assets/Recursos/BabelUI/static/media/Alegreya-Sans-AO-Bold..ttf", 24
+        );
+    }
+    if (!statusFont) {
+        statusFont = TTF_OpenFont("assets/sprites/MapAssets/arial.ttf", 24);
+    }
+
 
     // HUD
     assets->AddTexture("barra_vida", "assets/Recursos/interface/es_barradevida.bmp");
@@ -411,6 +640,605 @@ void Game::loadAssets() {
     assets->AddTexture("tile_floor", "assets/sprites/MapAssets/tile_floor.png");
 
 
+}
+
+void Game::loadInitialInventoryForCurrentClass() {
+    for (auto& slot : inventoryState.slots) {
+        slot = std::nullopt;
+    }
+
+    switch (playerState.playerClass) {
+
+        case PlayerClass::Cleric:
+            inventoryState.slots[0] = itemCatalog.requireById(2); // Báculo
+            inventoryState.slots[1] = itemCatalog.requireById(4); // Capucha
+            inventoryState.slots[2] = itemCatalog.requireById(6); // Poción vida
+            inventoryState.slots[3] = itemCatalog.requireById(7); // Poción maná
+            break;
+
+        case PlayerClass::Mage:
+            inventoryState.slots[0] = itemCatalog.requireById(2); // Báculo
+            inventoryState.slots[1] = itemCatalog.requireById(4); // Capucha
+            inventoryState.slots[2] = itemCatalog.requireById(7); // Poción maná
+            inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
+            break;
+
+        case PlayerClass::Paladin:
+            inventoryState.slots[0] = itemCatalog.requireById(1); // Espada
+            inventoryState.slots[1] = itemCatalog.requireById(3); // Armadura
+            inventoryState.slots[2] = itemCatalog.requireById(5); // Escudo
+            inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
+            inventoryState.slots[4] = itemCatalog.requireById(4); // Capucha
+            inventoryState.slots[5] = itemCatalog.requireById(7); // Poción maná
+            break;
+
+        case PlayerClass::Warrior:
+            inventoryState.slots[0] = itemCatalog.requireById(1); // Espada
+            inventoryState.slots[1] = itemCatalog.requireById(3); // Armadura
+            inventoryState.slots[2] = itemCatalog.requireById(5); // Escudo
+            inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
+            break;
+
+        default:
+            inventoryState.slots[0] = itemCatalog.requireById(1);
+            inventoryState.slots[1] = itemCatalog.requireById(6);
+            break;
+    }
+
+
+
 
 }
 
+int Game::getInventorySlotIndexAt(int mouseX, int mouseY) const {
+    //deben ir los mismos valores que el inventario del renderhud.
+    const int invSlotSize = 44;
+    const int invGapX = 8;
+    const int invGapY = 7;
+    const int invStartX = 964;
+    const int invStartY = 280;
+    const int invCols = 5;
+    const int invRows = 4;
+
+    for (int fila = 0; fila < invRows; fila++) {
+        for (int col = 0; col < invCols; col++) {
+            SDL_Rect slot = {
+                invStartX + col * (invSlotSize + invGapX),
+                invStartY + fila * (invSlotSize + invGapY),
+                invSlotSize,
+                invSlotSize
+            };
+
+            const bool inside =
+                mouseX >= slot.x &&
+                mouseX < slot.x + slot.w &&
+                mouseY >= slot.y &&
+                mouseY < slot.y + slot.h;
+
+            if (inside) {
+                return fila * invCols + col;
+            }
+        }
+    }
+
+    return -1;
+}
+void Game::handleInventorySlotClick(int slotIndex) {
+    // Valida que el índice sea válido.
+    if (slotIndex < 0 ||
+        slotIndex >= static_cast<int>(inventoryState.slots.size())) {
+        return;
+        }
+
+    // Si el slot está vacío, no hacemos nada.
+    if (!inventoryState.slots[slotIndex].has_value()) {
+        std::cout << "[INVENTORY] slot vacío: "
+                  << slotIndex
+                  << std::endl;
+        return;
+    }
+
+    // Obtenemos el ítem del slot clickeado.
+    const ItemView& item = inventoryState.slots[slotIndex].value();
+
+    std::cout << "[INVENTORY] click slot "
+              << slotIndex
+              << " item="
+              << item.itemName
+              << std::endl;
+
+    // Si es poción, todavía no la consumimos en este paso.
+    if (item.type == ClientItemType::HealthPotion ||
+        item.type == ClientItemType::ManaPotion) {
+        std::cout << "[INVENTORY] poción seleccionada, consumo pendiente"
+                  << std::endl;
+        consumePotion(slotIndex);
+        return;
+        }
+
+    // Si no es poción, intentamos equiparlo.
+    equipItemFromInventory(slotIndex);
+}
+
+void Game::equipItemFromInventory(int slotIndex) {
+    if (slotIndex < 0 ||
+        slotIndex >= static_cast<int>(inventoryState.slots.size())) {
+        return;
+        }
+
+    if (!inventoryState.slots[slotIndex].has_value()) {
+        return;
+    }
+
+    ItemView itemToEquip = inventoryState.slots[slotIndex].value();
+
+    std::optional<ItemView>* targetSlot = nullptr;
+
+    if (itemToEquip.type == ClientItemType::MeleeWeapon ||
+        itemToEquip.type == ClientItemType::RangedWeapon ||
+        itemToEquip.type == ClientItemType::MagicWeapon) {
+
+        const bool isMagic  = itemToEquip.type == ClientItemType::MagicWeapon;
+        const bool isMelee  = itemToEquip.type == ClientItemType::MeleeWeapon ||
+                              itemToEquip.type == ClientItemType::RangedWeapon;
+        const PlayerClass pc = playerState.playerClass;
+
+        // Warrior y Paladin no pueden usar armas magicas.
+        if (isMagic && (pc == PlayerClass::Warrior || pc == PlayerClass::Paladin)) {
+            showStatusMessage("Tu clase no puede usar armas magicas.");
+            return;
+        }
+
+        // Mage y Cleric no pueden usar armas cuerpo a cuerpo ni a distancia.
+        if (isMelee && (pc == PlayerClass::Mage || pc == PlayerClass::Cleric)) {
+            showStatusMessage("Tu clase no puede usar ese tipo de arma.");
+            return;
+        }
+
+        targetSlot = &equipmentState.weapon;
+        } else if (itemToEquip.type == ClientItemType::Armor) {
+            targetSlot = &equipmentState.armor;
+        } else if (itemToEquip.type == ClientItemType::Helmet) {
+            targetSlot = &equipmentState.helmet;
+        } else if (itemToEquip.type == ClientItemType::Shield) {
+            targetSlot = &equipmentState.shield;
+        } else {
+            std::cout << "[EQUIPMENT] ítem no equipable: "
+                      << itemToEquip.itemName
+                      << std::endl;
+            return;
+        }
+    // Si  había algo equipado, vuelve al slot del inventario.
+    if (targetSlot->has_value()) {
+        inventoryState.slots[slotIndex] = targetSlot->value();
+    } else {
+        inventoryState.slots[slotIndex] = std::nullopt;
+    }
+
+    *targetSlot = itemToEquip;
+
+    if (itemToEquip.type == ClientItemType::Armor) {
+        // La armadura reemplaza visualmente el cuerpo.
+        refreshPlayerBodySprite();
+    } else {
+        // Casco, arma y escudo son capas visuales extra.
+        refreshPlayerEquipmentVisuals();
+    }
+    std::cout << "[EQUIPMENT] equipado: "
+              << itemToEquip.itemName
+              << std::endl;
+}
+
+int Game::getEquipmentSlotIndexAt(int mouseX, int mouseY) const {
+    const int eqSlotSize = 58;
+    const int eqGap = 12;
+    const int eqY = 168;
+    const int eqStartX = 956;
+
+    for (int i = 0; i < 4; i++) {
+        SDL_Rect slot = {
+            eqStartX + i * (eqSlotSize + eqGap),
+            eqY,
+            eqSlotSize,
+            eqSlotSize
+        };
+
+        const bool inside =
+            mouseX >= slot.x &&
+            mouseX < slot.x + slot.w &&
+            mouseY >= slot.y &&
+            mouseY < slot.y + slot.h;
+
+        if (inside) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+bool Game::addItemToFirstFreeInventorySlot(const ItemView& item) {
+    for (auto& slot : inventoryState.slots) {
+        if (!slot.has_value()) {
+            slot = item;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
+    std::optional<ItemView>* selectedSlot = nullptr;
+
+    if (equipmentSlotIndex == 0) {
+        selectedSlot = &equipmentState.weapon;
+    } else if (equipmentSlotIndex == 1) {
+        selectedSlot = &equipmentState.helmet;
+    } else if (equipmentSlotIndex == 2) {
+        selectedSlot = &equipmentState.armor;
+    } else if (equipmentSlotIndex == 3) {
+        selectedSlot = &equipmentState.shield;
+    } else {
+        return;
+    }
+
+    if (!selectedSlot->has_value()) {
+        std::cout << "[EQUIPMENT] slot vacío" << std::endl;
+        return;
+    }
+
+    ItemView itemToUnequip = selectedSlot->value();
+
+    if (!addItemToFirstFreeInventorySlot(itemToUnequip)) {
+        showStatusMessage("Inventario lleno.");
+        return;
+    }
+
+    selectedSlot->reset();
+
+    if (itemToUnequip.type == ClientItemType::Armor) {
+        refreshPlayerBodySprite();
+    } else {
+        refreshPlayerEquipmentVisuals();
+    }
+
+    std::cout << "[EQUIPMENT] desequipado: "
+              << itemToUnequip.itemName
+              << std::endl;
+}
+void Game::consumePotion(int slotIndex) {
+    // Validamos que el índice sea válido.
+    if (slotIndex < 0 ||
+        slotIndex >= static_cast<int>(inventoryState.slots.size())) {
+        return;
+        }
+
+    // Si el slot está vacío, no hay nada para consumir.
+    if (!inventoryState.slots[slotIndex].has_value()) {
+        return;
+    }
+
+    // Tomamos una copia modificable del ítem.
+    ItemView item = inventoryState.slots[slotIndex].value();
+
+    if (item.type == ClientItemType::HealthPotion) {
+        // Calculamos nueva vida sin superar el máximo.
+        playerState.hp += item.healAmount;
+
+        if (playerState.hp > playerState.maxHp) {
+            playerState.hp = playerState.maxHp;
+        }
+
+        std::cout << "[POTION] consumida vida: "
+                  << item.itemName
+                  << " hp="
+                  << playerState.hp
+                  << "/"
+                  << playerState.maxHp
+                  << std::endl;
+
+    } else if (item.type == ClientItemType::ManaPotion) {
+        // Calculamos nuevo maná sin superar el máximo.
+        playerState.mana += item.manaAmount;
+
+        if (playerState.mana > playerState.maxMana) {
+            playerState.mana = playerState.maxMana;
+        }
+
+        std::cout << "[POTION] consumida maná: "
+                  << item.itemName
+                  << " mana="
+                  << playerState.mana
+                  << "/"
+                  << playerState.maxMana
+                  << std::endl;
+
+    } else {
+        // Si no era poción, no hacemos nada.
+        return;
+    }
+
+    // Reducimos la cantidad.
+    item.quantity--;
+
+    // Si se terminó, vaciamos el slot.
+    if (item.quantity <= 0) {
+        inventoryState.slots[slotIndex] = std::nullopt;
+    } else {
+        inventoryState.slots[slotIndex] = item;
+    }
+}
+
+std::string Game::visualTextureForCurrentRace(const ItemView& item) const {
+    if (playerState.race == "dwarf" || playerState.race == "gnome") {
+        if (!item.visualTextureIdShort.empty()) {
+            return item.visualTextureIdShort;
+        }
+    }
+
+    if (!item.visualTextureIdTall.empty()) {
+        return item.visualTextureIdTall;
+    }
+
+    return item.visualTextureId;
+}
+
+void Game::renderEquippedArmor() {
+    // Si no hay armadura equipada, no dibujamos nada.
+    if (!equipmentState.armor.has_value()) {
+        return;
+    }
+
+    // Tomamos la armadura equipada.
+    const ItemView& armor = equipmentState.armor.value();
+
+    // Elegimos la textura visual correcta según la raza:
+    // human/elf -> tall
+    // dwarf/gnome -> short
+    const std::string visualTextureId = visualTextureForCurrentRace(armor);
+
+    SDL_Texture* armorTexture = assets->GetTexture(visualTextureId);
+
+    if (armorTexture == nullptr) {
+        std::cout << "[EQUIPMENT RENDER] No existe textura: "
+                  << visualTextureId
+                  << std::endl;
+        return;
+    }
+
+    // Obtenemos el SpriteComponent del player para copiar su frame y posición.
+    auto& sprite = player->getComponent<SpriteComponent>();
+
+    const SDL_Rect& playerSrc = sprite.getSrcRect();
+    const SDL_Rect& playerDest = sprite.getDestRect();
+
+    // La armadura debe usar el mismo frame/dirección del cuerpo.
+    SDL_Rect armorSrc = {
+        playerSrc.x - sprite.getStartX(),
+        playerSrc.y - sprite.getStartY(),
+        playerSrc.w,
+        playerSrc.h
+    };
+
+    // Copiamos la posición actual del jugador en pantalla.
+    SDL_Rect armorDest = playerDest;
+
+
+    SDL_Point armorOffset = visualOffsetForCurrentRace(armor);
+    armorDest.x += armorOffset.x * armorSpriteConfigForCurrentRace().scale;
+    armorDest.y += armorOffset.y * armorSpriteConfigForCurrentRace().scale;
+    SDL_RenderCopy(renderer, armorTexture, &armorSrc, &armorDest);
+
+}
+
+SpriteSheetConfig Game::armorSpriteConfigForCurrentRace() const {
+    // Si no hay armadura equipada, devolvemos una config neutra.
+    // En la práctica casi no debería entrar acá, porque este método
+    // se llama cuando ya hay armadura.
+    if (!equipmentState.armor.has_value()) {
+        return SpriteSheetConfig{
+            27,  // ancho de cada frame
+            47,  // alto de cada frame
+            2,   // escala visual
+            0,   // startX dentro del spritesheet de armadura
+            0,   // startY dentro del spritesheet de armadura
+            0,   // offset X
+            0    // offset Y
+        };
+    }
+
+    // Tomamos la armadura actualmente equipada.
+    const ItemView& armor = equipmentState.armor.value();
+
+    // Las razas bajas necesitan usar los offsets short.
+    const bool isShortRace =
+        playerState.race == "dwarf" || playerState.race == "gnome";
+
+    // Devolvemos la config de la armadura, incluyendo offsets visuales.
+    return SpriteSheetConfig{
+        27,  // ancho de cada frame
+        47,  // alto de cada frame
+        2,   // escala visual
+        0,   // startX: el spritesheet de armadura arranca en 0
+        0,   // startY: el spritesheet de armadura arranca en 0
+
+        // Si es dwarf/gnome, usa shortOffsetX.
+        // Si no, usa tallOffsetX.
+        isShortRace ? armor.visualShortOffsetX : armor.visualTallOffsetX,
+
+        // Si es dwarf/gnome, usa shortOffsetY.
+        // Si no, usa tallOffsetY.
+        isShortRace ? armor.visualShortOffsetY : armor.visualTallOffsetY
+    };
+}
+
+void Game::refreshPlayerBodySprite() {
+    // Obtenemos el SpriteComponent del jugador local.
+    auto& sprite = player->getComponent<SpriteComponent>();
+
+    // Si hay armadura equipada, reemplazamos el cuerpo desnudo
+    // por la textura visual de la armadura.
+    if (equipmentState.armor.has_value()) {
+        const ItemView& armor = equipmentState.armor.value();
+
+        // Elige armor_iron_tall para human/elf
+        // y armor_iron_short para dwarf/gnome.
+        const std::string armorTextureId = visualTextureForCurrentRace(armor);
+
+        sprite.setSpriteTextureAndConfig(
+            armorTextureId,
+            armorSpriteConfigForCurrentRace()
+        );
+
+        return;
+    }
+
+    sprite.setSpriteTextureAndConfig(
+        "body_sheet",
+        assets->bodyConfigForRace(playerState.race)
+    );
+}
+
+// helpér
+SDL_Point Game::visualOffsetForCurrentRace(const ItemView& item) const {
+    if (playerState.race == "dwarf" || playerState.race == "gnome") {
+        return SDL_Point{
+            item.visualShortOffsetX,
+            item.visualShortOffsetY
+        };
+    }
+
+    return SDL_Point{
+        item.visualTallOffsetX,
+        item.visualTallOffsetY
+    };
+}
+
+void Game::refreshPlayerEquipmentVisuals() {
+    // Obtenemos el SpriteComponent del jugador local.
+    auto& sprite = player->getComponent<SpriteComponent>();
+
+    // Casco / capucha.
+    // Si hay casco equipado, usamos su textura visual y sus offsets.
+    if (equipmentState.helmet.has_value()) {
+        const ItemView& helmet = equipmentState.helmet.value();
+
+        sprite.setHelmetTexture(
+            helmet.visualTextureId,
+            helmet.visualOffsetX,
+            helmet.visualOffsetY,
+            helmet.iconSrcW,
+            helmet.iconSrcH,
+            helmet.visualDownSrcX,
+            helmet.visualDownSrcY,
+            helmet.visualLeftSrcX,
+            helmet.visualLeftSrcY,
+            helmet.visualRightSrcX,
+            helmet.visualRightSrcY,
+            helmet.visualUpSrcX,
+            helmet.visualUpSrcY
+        );
+    } else {
+        // Si no hay casco equipado, limpiamos el visual.
+        sprite.clearHelmet();
+    }
+    // Arma y escudo: no necesitan limpiar nada en el sprite porque se
+    // renderizan en render() chequeando equipmentState directamente.
+    // Con que el slot esté vacío alcanza para que no se dibujen.
+}
+
+void Game::renderEquippedWeapon() {
+    if (!equipmentState.weapon.has_value()) {
+        return;
+    }
+
+    const ItemView& weapon = equipmentState.weapon.value();
+
+    const std::string& textureId = weapon.visualTextureId;
+    if (textureId.empty()) {
+        return;
+    }
+
+    SDL_Texture* weaponTexture = assets->GetTexture(textureId);
+    if (weaponTexture == nullptr) {
+        std::cout << "[EQUIPMENT RENDER] No existe textura de arma: "
+                  << textureId << std::endl;
+        return;
+    }
+
+    auto& sprite = player->getComponent<SpriteComponent>();
+    const SDL_Rect& playerSrc  = sprite.getSrcRect();
+    const SDL_Rect& playerDest = sprite.getDestRect();
+
+    SDL_Rect weaponSrc = {
+        playerSrc.x - sprite.getStartX(),
+        playerSrc.y - sprite.getStartY(),
+        playerSrc.w,
+        playerSrc.h
+    };
+
+    // El destRect debe tener el tamaño del frame escalado — no el del personaje.
+    // playerDest.w/h heredan el tamaño del body (54x94 con scale 2), que es
+    // el mismo que queremos para la espada.
+    const SpriteSheetConfig cfg = armorSpriteConfigForCurrentRace();
+    SDL_Point offset = visualOffsetForCurrentRace(weapon);
+
+    SDL_Rect weaponDest = {
+        playerDest.x + offset.x,
+        playerDest.y + offset.y,
+        playerSrc.w * cfg.scale,
+        playerSrc.h * cfg.scale
+    };
+
+    //SDL_RenderCopy(renderer, weaponTexture, &weaponSrc, &weaponDest);
+    // Usamos el mismo flip que el cuerpo del personaje para que
+    // el arma acompañe la orientación y quede siempre en la mano derecha.
+    SDL_RenderCopyEx(renderer, weaponTexture, &weaponSrc, &weaponDest,
+                     0, nullptr, sprite.spriteFlip);
+}
+
+void Game::renderEquippedShield() {
+    if (!equipmentState.shield.has_value()) {
+        return;
+    }
+
+    const ItemView& shield = equipmentState.shield.value();
+
+    const std::string& textureId = shield.visualTextureId;
+    if (textureId.empty()) {
+        return;
+    }
+
+    SDL_Texture* shieldTexture = assets->GetTexture(textureId);
+    if (shieldTexture == nullptr) {
+        std::cout << "[EQUIPMENT RENDER] No existe textura de escudo: "
+                  << textureId << std::endl;
+        return;
+    }
+
+    auto& sprite = player->getComponent<SpriteComponent>();
+    const SDL_Rect& playerSrc  = sprite.getSrcRect();
+    const SDL_Rect& playerDest = sprite.getDestRect();
+
+    SDL_Rect shieldSrc = {
+        playerSrc.x - sprite.getStartX(),
+        playerSrc.y - sprite.getStartY(),
+        playerSrc.w,
+        playerSrc.h
+    };
+
+    const SpriteSheetConfig cfg = armorSpriteConfigForCurrentRace();
+    SDL_Point offset = visualOffsetForCurrentRace(shield);
+
+    SDL_Rect shieldDest = {
+        playerDest.x + offset.x,
+        playerDest.y + offset.y,
+        playerSrc.w * cfg.scale,
+        playerSrc.h * cfg.scale
+    };
+
+    //SDL_RenderCopy(renderer, shieldTexture, &shieldSrc, &shieldDest);
+    SDL_RenderCopyEx(renderer, shieldTexture, &shieldSrc, &shieldDest,
+                     0, nullptr, sprite.spriteFlip);
+}

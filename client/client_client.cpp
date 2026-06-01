@@ -134,12 +134,13 @@ int Client::run()
                     playerDto.clase   = clase;
                     playerDto.xpos    = 1500;
                     playerDto.ypos    = 1200;
-                    playerDto.hp      = 25;
+                    playerDto.hp      = 100;
                     playerDto.hpMax   = 100;
                     playerDto.mana    = 100;
                     playerDto.manaMax = 100;
                     playerDto.level   = 15;
                     playerDto.oro     = 2000;
+                    playerDto.headId = 0;
 
                     GameClient gameClient(socket, 1, playerDto);
                     gameClient.run();

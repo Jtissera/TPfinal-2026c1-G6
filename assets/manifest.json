@@ -1,8 +1,20 @@
 {
-  "assetFiles": [
+  "textureFiles": [
     "assets/sprites/players/players.json",
     "assets/sprites/enemies/enemies.json",
     "assets/sprites/equipment/equipment.json",
     "assets/sprites/effects/effects.json"
+  ],
+  "fontFiles": [
+    "assets/fonts/fonts.json"
+  ],
+  "soundFiles": [
+    "assets/sounds/sounds.json"
+  ],
+  "itemFiles": [
+    "assets/items/items.json"
+  ],
+  "bodyFiles": [
+    "assets/sprites/players/bodies.json"
   ]
 }

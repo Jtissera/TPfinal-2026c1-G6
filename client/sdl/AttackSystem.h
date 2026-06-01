@@ -9,6 +9,10 @@
 #include "AssetManager.h"
 #include <SDL2/SDL_rect.h>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+#include "state/ItemView.h"
 
 // Representa un efecto visual de ataque activo.
 // Por ahora solo guarda posición, tiempo de creación y duración.
@@ -34,7 +38,9 @@ public:
         int screenY,
         const SDL_Rect& camera,
         std::map<uint32_t, Entity*>& enemies,
-        Queue<std::shared_ptr<const Message>>* sendQueue
+        Queue<std::shared_ptr<const Message>>* sendQueue,
+        Entity* player,
+        const ItemView* equippedWeapon
     );
 
     // Borra efectos vencidos.
@@ -45,13 +51,38 @@ public:
         SDL_Renderer* renderer,
         AssetManager& assets,
         const SDL_Rect& camera
-    );
+        );
+    // Indica si el enemigo está muerto temporalmente.
+    bool isEnemyDead(uint32_t enemyId) const;
+
+    // Actualiza respawns de enemigos muertos.
+    void updateRespawns();
+
+    // Vida actual del enemigo.
+    int getEnemyHealth(uint32_t enemyId) const;
+
+    // Vida máxima del enemigo.
+    int getEnemyMaxHealth(uint32_t enemyId) const;
 
 private:
     std::vector<AttackEffect> attackEffects;
 
     // Vida local de enemigos para demo.
     std::unordered_map<uint32_t, int> enemyHealth;
+
+    // Vida máxima de enemigos.
+    std::unordered_map<uint32_t, int> enemyMaxHealth;
+
+    // Enemigos muertos esperando respawn.
+    std::unordered_set<uint32_t> deadEnemies;
+
+    // Momento en que murió cada enemigo.
+    std::unordered_map<uint32_t, Uint32> enemyDeadAt;
+
+    // Tiempo de respawn.
+    Uint32 enemyRespawnMs = 5000;
+
+    void markEnemyAsDead(uint32_t enemyId);
 
     // Crea el efecto local de ataque sobre el enemigo.
     void createLocalAttackEffect(uint32_t targetId, Entity& target);
@@ -64,6 +95,11 @@ private:
         uint32_t targetId,
         Queue<std::shared_ptr<const Message>>* sendQueue
     );
+
+    int attackRangeForWeapon(const ItemView* weapon) const;
+    int damageForWeapon(const ItemView* weapon) const;
+    bool isTargetInRange(Entity* attacker,Entity& target,int range) const;
+    bool shouldCreateVisualEffect(const ItemView* weapon) const;
 };
 
 #endif //TALLER_TP_ATTACKSYSTEM_H

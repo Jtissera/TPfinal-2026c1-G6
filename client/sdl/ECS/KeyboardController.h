@@ -18,7 +18,7 @@ class KeyboardController : public Component {
 public:
     explicit KeyboardController(Queue<std::shared_ptr<const Message>>& sendQueue);
     void init() override;
-    void update() override;
+    void update(UpdateContext& context) override;
 
 private:
     TransformComponent* transform = nullptr;

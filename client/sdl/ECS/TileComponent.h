@@ -5,6 +5,7 @@
 #include "SDL2/SDL.h"
 #include "ECS.h"
 #include "Vector2D.h"
+#include "client/sdl/AssetManager.h"
 
 class TileComponent : public Component {
 public:
@@ -14,12 +15,12 @@ public:
     Vector2D position;
 
     TileComponent() = default;
-    TileComponent(int srcX, int srcY, int xpos, int ypos,
+    TileComponent(AssetManager& assets, int srcX, int srcY, int xpos, int ypos,
                   int tsize, int tscale, const std::string& id);
     ~TileComponent();
 
-    void update() override;
-    void draw() override;
+    void update(UpdateContext& context) override;
+    void draw(RenderContext& context)  override;
 };
 
 #endif //PRUEBA_SDL_TILECOMPONENT_H

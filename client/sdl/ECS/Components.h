@@ -9,7 +9,6 @@
 #include "ColliderComponent.h"
 #include "TileComponent.h"
 #include "ProjectileComponent.h"
-#include "client/sdl/ECS/UILabel.h"
 
 
 
