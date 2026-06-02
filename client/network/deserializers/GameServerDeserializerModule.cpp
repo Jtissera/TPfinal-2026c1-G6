@@ -1,6 +1,7 @@
 #include "GameServerDeserializerModule.h"
 
 #include "common/network/messages/server/world/EntitySpawnMessage.h"
+#include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
 
 
 void GameServerDeserializersModule::registerDeserializers(Registry& registry) const {
@@ -79,6 +80,6 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
         dto.constitucion = reader.readUint32();
 
         return std::make_unique<EntitySpawnMessage>(std::move(dto));
-    }
-);
+    });
+
 }

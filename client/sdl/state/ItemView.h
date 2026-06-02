@@ -24,9 +24,14 @@ enum class ClientItemType {
 };
 
 struct ItemView {
-    // Identificador del ítem.
-    // Debe coincidir con el id usado por server/protocolo cuando sea posible.
+    // ID del catálogo visual.
+    // Debe coincidir con assets/items/items.json.
     int itemId = 0;
+
+    // ID único de esta instancia concreta en el servidor.
+    // Se usa para pedir equipar, dropear, vender o consumir ESTE item.
+    uint32_t instanceId = 0;
+
     // Nombre visible para mostrar en tooltip, debug o UI.
     std::string itemName;
 

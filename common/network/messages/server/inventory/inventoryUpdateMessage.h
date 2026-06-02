@@ -1,9 +1,17 @@
 #pragma once
-#include "common/network/messages/message.h"
-#include "common/network/protocol/serverOpCode.h"
-#include "server/game/item.h"
-#include <vector>
+
 #include <array>
+#include <cstddef>
+#include <cstdint>
+#include <utility>
+#include <vector>
+
+#include "common/network/messages/message.h"
+#include "common/network/protocol/packetWriter.h"
+#include "common/network/protocol/serverOpCode.h"
+
+#include "server/game/item.h"
+#include "server/game/EquipSlot.h"
 
 class InventoryUpdateMessage : public Message {
     std::vector<Item> items;
