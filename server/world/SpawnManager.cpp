@@ -10,16 +10,19 @@ SpawnManager::SpawnManager(const toml::table &config, NpcManager &npcManager,
       maxNpcs(config["npc"]["max_population"].value_or(20)),
       spawnBatchSize(config["npc"]["spawn_batch_size"].value_or(4)) {}
 
-void SpawnManager::loadSpawnPoints(const MapData &mapData) {
-  for (uint16_t y = 0; y < mapData.height(); y++) {
-    for (uint16_t x = 0; x < mapData.width(); x++) {
+void SpawnManager::loadSpawnPoints(const MapData &mapData)
+{
+  for (uint16_t y = 0; y < mapData.height(); y++)
+  {
+    for (uint16_t x = 0; x < mapData.width(); x++)
+    {
       const Tile &tile = mapData.at(x, y);
       if (tile.npc == NpcType::NONE)
         continue;
 
-      std::string typeName = npcTypeKey(tile.npc);
-      if (typeName.empty())
+      if (!isSpawnable(tile.npc))
         continue;
+      std::string typeName = npcTypeKey(tile.npc);
 
       spawnPoints.push_back({typeName, x, y});
       trySpawnAround(typeName, x, y);
@@ -37,6 +40,17 @@ std::optional<uint32_t> SpawnManager::spawnNpc(const std::string& typeName,
     return npcId;
 }
 
+
+void SpawnManager::spawnNpc(const std::string &typeName, int tileX, int tileY)
+{
+  if (!collision.isWalkable(tileX, tileY))
+    return;
+  if (occupancy.isOccupied(tileX, tileY))
+    return;
+  uint32_t npcId = npcManager.spawnNpc(typeName, tileX, tileY);
+  occupancy.occupy(tileX, tileY, npcId);
+}
+
 std::optional<uint32_t> SpawnManager::trySpawnAround(const std::string& typeName,
                                                       int x, int y) {
     for (int attempts = 0; attempts < 10; attempts++) {
@@ -51,8 +65,13 @@ std::optional<uint32_t> SpawnManager::trySpawnAround(const std::string& typeName
     return std::nullopt;
 }
 
-std::vector<uint32_t> SpawnManager::tick() {
-    std::vector<uint32_t> spawned;
+
+void SpawnManager::tick()
+{
+  spawnTickCounter++;
+  std::vector<uint32_t> spawned;
+  if (spawnTickCounter < spawnEveryNTicks)
+    return;
 
     spawnTickCounter++;
     if (spawnTickCounter < spawnEveryNTicks)
@@ -69,4 +88,5 @@ std::vector<uint32_t> SpawnManager::tick() {
     }
 
     return spawned;
+
 }

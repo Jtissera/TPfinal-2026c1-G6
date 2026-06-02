@@ -14,11 +14,20 @@
 #include "../player/Player.h"
 #include "gameLoop.h"
 
-class GameRoom {
+class GameRoom
+{
 public:
   GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers,
            NpcFactory &npcFactory, ItemRepository &itemRepo,
            Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
+           Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
+           const toml::table &config);
+
+  GameRoom(uint32_t gameId, std::string gameName, const std::string &mapPath,
+           bool isInstance, uint32_t originRoomId,
+           NpcFactory &npcFactory, ItemRepository &itemRepo,
+           Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
+           Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
            const toml::table &config);
 
   void addClient(uint32_t clientId,
@@ -35,6 +44,8 @@ void addPlayer(uint32_t clientId, Player player);
   bool isFull() const;
 
   Queue<ClientMessage> &getGameQueue();
+  bool getIsInstance() const { return isInstance; }
+  uint32_t getOriginRoomId() const { return originRoomId; }
 
   void start();
   void stop();
@@ -52,4 +63,7 @@ int tileSize;
   Queue<ClientMessage> gameQueue;
   GameWorld world;
   GameLoop gameLoop;
+  bool isInstance = false;
+  uint32_t originRoomId = 0;
+  std::string mapPath;
 };

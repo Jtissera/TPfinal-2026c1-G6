@@ -8,7 +8,6 @@
 #include "../common/network/protocol/clientOpCode.h"
 #include "../stats/gameFormulas.h"
 #include <cstdint>
-#include <cstdlib>
 #include <iostream>
 #include <unordered_map>
 
@@ -24,7 +23,14 @@
 #include "common/network/messages/server/player/playerDiedMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
 
-class ActionDispatcher {
+#include "../../city/cityCommandParser.h"
+#include "../../city/cityResult.h"
+#include "../../../common/network/messages/client/city/interactNpcMessage.h"
+#include "../../../common/network/messages/server/city/npcResponseMessage.h"
+#include "../../../common/network/messages/server/error/errorMessage.h"
+
+class ActionDispatcher
+{
 private:
   using ActionHandler = void (ActionDispatcher::*)(uint32_t, const Message &,
                                                    GameWorld &, Monitor &);
@@ -35,22 +41,15 @@ private:
   GameFormulas formulas;
   CombatHandler combatHandler;
 
-  void handleMove(uint32_t id, const Message &msg, GameWorld &world,
-                  Monitor &monitor);
-  void handleAttack(uint32_t id, const Message &msg, GameWorld &world,
-                    Monitor &monitor);
-  void handlePickItem(uint32_t id, const Message &msg, GameWorld &world,
-                      Monitor &monitor);
-  void handleDropItem(uint32_t id, const Message &msg, GameWorld &world,
-                      Monitor &monitor);
-  void handleEquipItem(uint32_t id, const Message &msg, GameWorld &world,
-                       Monitor &monitor);
-  void handleMeditate(uint32_t id, const Message &msg, GameWorld &world,
-                      Monitor &monitor);
-  void handleResurrect(uint32_t id, const Message &msg, GameWorld &world,
-                       Monitor &monitor);
-  void handleCheat(uint32_t id, const Message &msg, GameWorld &world,
-                   Monitor &monitor);
+  void handleMove(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleAttack(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handlePickItem(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleDropItem(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleEquipItem(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleMeditate(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleResurrect(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleCheat(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleInteractNpc(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
 
   void sendStats(uint32_t id, Player &p, Monitor &monitor);
   void sendInventory(uint32_t id, Player &p, Monitor &monitor);

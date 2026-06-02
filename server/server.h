@@ -17,7 +17,8 @@
 #include "npc/npcRepository.h"
 #include <toml++/toml.h>
 
-class Server {
+class Server
+{
 public:
   explicit Server(const char *servname);
   int run();
@@ -35,6 +36,7 @@ private:
   Monitor clientRegistry;
   ReceiverRegistry receiverRegistry;
   Queue<std::shared_ptr<LeaveEvent>> leaveQueue;
+  Queue<std::shared_ptr<InstanceTransitionEvent>> transitionQueue;
   GameManager gameManager;
   LobbyHandler lobbyHandler;
 

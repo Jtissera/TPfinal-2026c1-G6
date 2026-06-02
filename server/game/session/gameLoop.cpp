@@ -1,22 +1,25 @@
 #include "gameLoop.h"
 
 GameLoop::GameLoop(Queue<ClientMessage> &q, Monitor &m, GameWorld &w,
-                   Queue<std::shared_ptr<LeaveEvent>> &leaveQ, uint32_t gameId,
+                   Queue<std::shared_ptr<LeaveEvent>> &leaveQ, Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQ, uint32_t gameId,
                    const toml::table &config)
-    : gameQueue(q), monitor(m), world(w), leaveQueue(leaveQ), gameId(gameId),
+    : gameQueue(q), monitor(m), world(w), leaveQueue(leaveQ), transitionQueue(transitionQ), gameId(gameId),
       dispatcher(config),
       tickRateMs(config["server"]["tick_rate_ms"].value_or(33)),
       tileSize(config["world"]["tile_size"].value_or(96)) {}
 
-void GameLoop::run() {
+void GameLoop::run()
+{
   using Clock = std::chrono::steady_clock;
   using Ms = std::chrono::duration<float, std::milli>;
   using Duration = std::chrono::milliseconds;
 
   auto t1 = Clock::now();
 
-  try {
-    while (true) {
+  try
+  {
+    while (true)
+    {
       ClientMessage incoming;
       while (gameQueue.try_pop(incoming))
         processMessage(incoming);
@@ -25,33 +28,41 @@ void GameLoop::run() {
       float elapsed = std::chrono::duration_cast<Ms>(t2 - t1).count();
       float rest = tickRateMs - elapsed;
 
-      if (rest < 0) {
+      if (rest < 0)
+      {
         float behind = -rest;
         rest = tickRateMs - std::fmod(behind, tickRateMs);
         float lost = behind + rest;
         t1 += Duration(static_cast<long>(lost));
-      } else {
+      }
+      else
+      {
         std::this_thread::sleep_for(Duration(static_cast<long>(rest)));
       }
 
       worldUpdate(tickRateMs / 1000.0f);
       t1 += Duration(static_cast<long>(tickRateMs));
     }
-  } catch (const ClosedQueue &) {
-  } catch (const std::exception &e) {
+  }
+  catch (const ClosedQueue &)
+  {
+  }
+  catch (const std::exception &e)
+  {
     std::cerr << "[GameLoop] error: " << e.what() << std::endl;
   }
 }
 
-void GameLoop::processMessage(const ClientMessage &incoming) {
+void GameLoop::processMessage(const ClientMessage &incoming)
+{
   if (incoming.message->opCode() ==
-      static_cast<uint8_t>(ClientOpCode::MSG_LEAVE_GAME)) {
+      static_cast<uint8_t>(ClientOpCode::MSG_LEAVE_GAME))
+  {
     handleLeaveGame(incoming.clientId);
     return;
   }
   dispatcher.dispatch(incoming, world, monitor);
 }
-
 
 void GameLoop::worldUpdate(float deltaSeconds) {
 
@@ -64,6 +75,11 @@ void GameLoop::worldUpdate(float deltaSeconds) {
 
     for (uint32_t id : result.playersChanged)
         statManager.sendPlayerStats(id, world, monitor);
+
+    
+    for (auto &entry : result.instanceTransitions){
+      handleInstanceTransition(entry);
+    }
 
     for (uint32_t npcId : result.npcsMoved) {
         const Npc& npc = world.getNpc(npcId);
@@ -113,7 +129,32 @@ void GameLoop::handleLeaveGame(uint32_t clientId) {
       LeaveEvent{clientId, gameId, std::move(*player), clientQueue}));
 }
 
-void GameLoop::stop() {
+void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry)
+{
+  auto player = world.removePlayer(entry.playerId);
+  if (!player)
+    return;
+
+  auto [safeX, safeY] = world.findSafeSpawnNear(
+      entry.returnTileX, entry.returnTileY);
+
+  Queue<std::shared_ptr<const Message>> *clientQueue =
+      monitor.getQueue(entry.playerId);
+  monitor.removeQueue(entry.playerId);
+
+  transitionQueue.try_push(std::make_shared<InstanceTransitionEvent>(
+      InstanceTransitionEvent{
+          entry.playerId,
+          gameId,
+          std::move(*player),
+          clientQueue,
+          entry.targetMap,
+          safeX,
+          safeY}));
+}
+
+void GameLoop::stop()
+{
   Thread::stop();
   gameQueue.close();
 }

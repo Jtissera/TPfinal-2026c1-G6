@@ -285,3 +285,195 @@ zones = ["COMBAT"]
 
 [world]
 tile_size = 96
+
+
+[cavern]
+gold_multiplier = 1.5
+xp_multiplier   = 1.5
+item_multiplier = 1.5
+
+[dungeon]
+gold_multiplier = 3.0
+xp_multiplier   = 2.5
+item_multiplier = 2.5
+
+[npcs.goblin_cave]
+hp                 = 80
+damage_min         = 5
+damage_max         = 9
+level              = 6
+agility            = 9
+strength           = 7
+detection_range    = 6
+home_range         = 8
+attack_cooldown_ms = 900
+move_cooldown_ms   = 450
+zones              = ["CAVERN"]
+
+[npcs.skeleton_cave]
+hp                 = 120
+damage_min         = 8
+damage_max         = 14
+level              = 8
+agility            = 6
+strength           = 8
+detection_range    = 6
+home_range         = 8
+attack_cooldown_ms = 1100
+move_cooldown_ms   = 550
+zones              = ["CAVERN"]
+
+[npcs.spider_cave]
+hp                 = 60
+damage_min         = 6
+damage_max         = 10
+level              = 5
+agility            = 14
+strength           = 4
+detection_range    = 7
+home_range         = 8
+attack_cooldown_ms = 700
+move_cooldown_ms   = 300
+zones              = ["CAVERN"]
+
+[npcs.golem_cave]
+hp                 = 200
+damage_min         = 12
+damage_max         = 18
+level              = 10
+agility            = 3
+strength           = 16
+detection_range    = 4
+home_range         = 6
+attack_cooldown_ms = 1800
+move_cooldown_ms   = 900
+zones              = ["CAVERN"]
+
+[npcs.goblin_dungeon]
+hp                 = 150
+damage_min         = 12
+damage_max         = 20
+level              = 14
+agility            = 11
+strength           = 12
+detection_range    = 8
+home_range         = 10
+attack_cooldown_ms = 800
+move_cooldown_ms   = 400
+zones              = ["DUNGEON"]
+
+[npcs.skeleton_dungeon]
+hp                 = 220
+damage_min         = 18
+damage_max         = 28
+level              = 16
+agility            = 7
+strength           = 14
+detection_range    = 8
+home_range         = 10
+attack_cooldown_ms = 1000
+move_cooldown_ms   = 500
+zones              = ["DUNGEON"]
+
+[npcs.spider_dungeon]
+hp                 = 130
+damage_min         = 15
+damage_max         = 22
+level              = 13
+agility            = 18
+strength           = 6
+detection_range    = 10
+home_range         = 10
+attack_cooldown_ms = 600
+move_cooldown_ms   = 250
+zones              = ["DUNGEON"]
+
+[npcs.golem_dungeon]
+hp                 = 400
+damage_min         = 25
+damage_max         = 40
+level              = 18
+agility            = 2
+strength           = 22
+detection_range    = 5
+home_range         = 8
+attack_cooldown_ms = 2000
+move_cooldown_ms   = 1200
+zones              = ["DUNGEON"]
+
+[npcs.goblin_desert]
+hp                 = 70
+damage_min         = 6
+damage_max         = 11
+level              = 7
+agility            = 10
+strength           = 8
+detection_range    = 7
+home_range         = 12
+attack_cooldown_ms = 850
+move_cooldown_ms   = 400
+zones              = ["COMBAT"]
+
+[npcs.skeleton_desert]
+hp                 = 100
+damage_min         = 10
+damage_max         = 16
+level              = 9
+agility            = 6
+strength           = 10
+detection_range    = 7
+home_range         = 12
+attack_cooldown_ms = 1100
+move_cooldown_ms   = 550
+zones              = ["COMBAT"]
+
+[npcs.spider_desert]
+hp                 = 55
+damage_min         = 8
+damage_max         = 13
+level              = 6
+agility            = 15
+strength           = 5
+detection_range    = 8
+home_range         = 12
+attack_cooldown_ms = 650
+move_cooldown_ms   = 280
+zones              = ["COMBAT"]
+
+[npcs.golem_desert]
+hp                 = 280
+damage_min         = 18
+damage_max         = 26
+level              = 13
+agility            = 3
+strength           = 20
+detection_range    = 4
+home_range         = 10
+attack_cooldown_ms = 1700
+move_cooldown_ms   = 950
+zones              = ["COMBAT"]
+
+
+[city]
+ms_per_tile_resurrection = 500
+
+[city.prices]
+vara_fresno      = 100
+flauta_elfica    = 500
+baculo_nudoso    = 300
+baculo_engarzado = 800
+pocion_vida      = 50
+pocion_mana      = 50
+espada           = 150
+hacha            = 200
+martillo         = 180
+arco_simple      = 120
+arco_compuesto   = 400
+armadura_cuero   = 200
+armadura_placas  = 600
+tunica_azul      = 250
+capucha          = 80
+casco_hierro     = 180
+escudo_tortuga   = 100
+escudo_hierro    = 220
+sombrero_magico  = 350

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../lobby/leaveEvent.h"
+#include "../../lobby/instanceTransitionEvent.h"
 #include "../common/network/messages/client/movement/moveMessage.h"
 #include "../common/network/messages/server/player/EntityMoveMessage.h"
 #include "../common/network/messages/server/world/entitySpawnMessage.h"
@@ -19,14 +20,16 @@
 #include "../common/thread.h"
 #include "ActionDispatcher.h"
 
-class GameLoop : public Thread {
+class GameLoop : public Thread
+{
 public:
-    GameLoop(Queue<ClientMessage>& gameQueue,
-             Monitor& monitor,
-             GameWorld& world,
-             Queue<std::shared_ptr<LeaveEvent>>& leaveQueue,
-             uint32_t gameId,
-             const toml::table& config);
+
+  GameLoop(Queue<ClientMessage> &gameQueue, Monitor &monitor, GameWorld &world,
+           Queue<std::shared_ptr<LeaveEvent>> &leaveQueue, Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue, uint32_t gameId,
+           const toml::table &config);
+  void run() override;
+  void stop() override;
+
 
     void run() override;
     void stop() override;
@@ -42,6 +45,7 @@ private:
     StatManager statManager;
     Queue<std::shared_ptr<LeaveEvent>>& leaveQueue;
 
+<<<<<<< HEAD
     uint32_t gameId;
     float tickRateMs;
     int tileSize;
@@ -52,4 +56,7 @@ private:
     void worldUpdate(float deltaSeconds);
     void handleLeaveGame(uint32_t clientId);
     void sendInitialSnapshot();
+  Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue;
+  void handleInstanceTransition(const GameWorld::InstanceEntry &entry);
+
 };

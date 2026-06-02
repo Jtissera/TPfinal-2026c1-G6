@@ -24,10 +24,12 @@
 #include "leaveEvent.h"
 #include "playerRepository.h"
 
-class LobbyHandler : public Thread {
+class LobbyHandler : public Thread
+{
 public:
   LobbyHandler(Queue<ClientMessage> &lobbyQueue,
                Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
+               Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
                Monitor &lobbyMonitor, GameManager &gameManager,
                ReceiverRegistry &receiverRegistry, PlayerRepository &playerRepo,
                PlayerFactory &playerFactory);
@@ -43,6 +45,8 @@ private:
   ReceiverRegistry &receiverRegistry;
   PlayerRepository &playerRepo;
   PlayerFactory &playerFactory;
+  Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue;
+  void handleInstanceTransition(InstanceTransitionEvent &event);
 
   using Handler = std::function<void(uint32_t, const Message &)>;
   std::unordered_map<uint8_t, Handler> handlers;

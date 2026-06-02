@@ -10,13 +10,15 @@
 
 std::optional<EquipSlot> toEquipSlot(ItemSlot slot);
 
-class Inventory {
+class Inventory
+{
 public:
   explicit Inventory(const toml::table &config);
 
   bool addItem(Item item);
   bool equipItem(uint32_t itemId);
   bool unequipSlot(EquipSlot slot);
+  bool hasItem(const std::string &name) const;
   std::optional<Item> removeItem(uint32_t itemId);
 
   const Item *getEquipped(EquipSlot slot) const;
@@ -29,6 +31,8 @@ public:
 
   Item *findItem(uint32_t itemId);
   const Item *findItem(uint32_t itemId) const;
+
+  std::optional<Item> removeItemByName(const std::string &typeName);
 
 private:
   std::size_t maxItems;
