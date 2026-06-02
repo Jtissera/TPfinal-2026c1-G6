@@ -12,6 +12,7 @@
 #include "common/queue.h"
 #include "common/network/messages/message.h"
 #include "ECS/SpriteSheetConfig.h"
+#include "state/PlayerViewState.h"
 
 class AssetManager
 {
@@ -46,6 +47,11 @@ public:
 
     SpriteSheetConfig bodyConfigForRace(const std::string& race) const;
 
+    void applyGhostAppearance(Entity& entity);
+
+    std::string ghostTextureId() const;
+
+    void applyPlayerAppearance(Entity& entity, const PlayerViewState& playerState);
 
 private:
 

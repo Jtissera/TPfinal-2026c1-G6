@@ -237,11 +237,18 @@ void ActionDispatcher::handleMeditate(uint32_t id, const Message& msg,
 
 void ActionDispatcher::handleResurrect(uint32_t id, const Message& msg,
                                         GameWorld& world, Monitor& monitor) {
+    std::cout << "[SERVER RESURRECT] client=" << id << std::endl;
+
     Player& p = world.getPlayer(id);
-    if (!p.isGhost()) return;
+
+    std::cout << "[SERVER RESURRECT] isGhost=" << p.isGhost()
+              << " hp=" << p.getHp()
+              << std::endl;
 
     world.resurrectPlayer(id, 6, 7);
-
+    std::cout << "[SERVER RESURRECT] after resurrect hp="
+              << p.getHp()
+              << std::endl;
     monitor.sendTo(id, std::make_shared<const EntityMoveMessage>(
         static_cast<uint8_t>(id),
         world.getPixelX(id),

@@ -8,6 +8,7 @@
 #include "sdl/RenderContext.h"
 
 #include "common/network/messages/client/combat/attackMessage.h"
+#include "common/network/messages/client/combat/resurrectMessage.h"
 #include "common/network/messages/server/player/EntityMoveMessage.h"
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
@@ -172,18 +173,20 @@ void Game::update() {
         } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_STATS)) {
             const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
 
-            // Si el servidor manda una vida positiva, ya tenemos stats válidas.
-            // Esto evita arrancar muerto por un valor inicial incompleto.
-            if (stats.getHp() > 0) {
+            const int serverHp = stats.getHp();
+
+            if (serverHp > 0) {
                 hasReceivedValidPlayerStats = true;
             }
 
-            // Si el jugador ya está fantasma, no dejamos que MSG_PLAYER_STATS común
-            // lo reviva visualmente.
-            if (playerState.isDead) {
-                playerState.hp = 0;
+            // Si estoy muerto y el server manda HP positivo,
+            // significa que el server aceptó la resurrección.
+            if (playerState.isDead && serverHp > 0) {
+                reviveLocalPlayer(serverHp);
+            } else if (!playerState.isDead) {
+                playerState.hp = serverHp;
             } else {
-                playerState.hp = stats.getHp();
+                playerState.hp = 0;
             }
 
             playerState.maxHp = stats.getMaxHp();
@@ -399,6 +402,12 @@ void Game::handleCheatKeys() {
         case SDLK_l:
             playerState.level = std::min(playerState.level + 1, 99);
             showStatusMessage("[CHEAT] Nivel: " + std::to_string(playerState.level));
+            break;
+        case SDLK_r:
+            if (isLocalPlayerDead()) {
+                sendQueue->try_push(std::make_shared<const ResurrectMessage>());
+                showStatusMessage("Solicitando resurrección...");
+            }
             break;
 
         default: break;
@@ -864,7 +873,12 @@ void Game::handleInventorySlotClick(int slotIndex) {
     equipItemFromInventory(slotIndex);
 }
 
+
 void Game::equipItemFromInventory(int slotIndex) {
+    if (isLocalPlayerDead()) {
+        showStatusMessage("No puedes usar objetos estando muerto");
+        return;
+    }
     if (slotIndex < 0 ||
         slotIndex >= static_cast<int>(inventoryState.slots.size())) {
         return;
@@ -973,6 +987,10 @@ bool Game::addItemToFirstFreeInventorySlot(const ItemView& item) {
 }
 
 void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
+    if (isLocalPlayerDead()) {
+        showStatusMessage("No puedes usar objetos estando muerto");
+        return;
+    }
     std::optional<ItemView>* selectedSlot = nullptr;
 
     if (equipmentSlotIndex == 0) {
@@ -1012,6 +1030,10 @@ void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
               << std::endl;
 }
 void Game::consumePotion(int slotIndex) {
+    if (isLocalPlayerDead()) {
+        showStatusMessage("No puedes usar objetos estando muerto");
+        return;
+    }
     // Validamos que el índice sea válido.
     if (slotIndex < 0 ||
         slotIndex >= static_cast<int>(inventoryState.slots.size())) {
@@ -1075,7 +1097,7 @@ void Game::consumePotion(int slotIndex) {
 }
 
 std::string Game::visualTextureForCurrentRace(const ItemView& item) const {
-    if (playerState.race == "dwarf" || playerState.race == "gnome") {
+    if (playerState.race == "Dwarf" || playerState.race == "Gnome") {
         if (!item.visualTextureIdShort.empty()) {
             return item.visualTextureIdShort;
         }
@@ -1089,6 +1111,10 @@ std::string Game::visualTextureForCurrentRace(const ItemView& item) const {
 }
 
 void Game::renderEquippedArmor() {
+    if (isLocalPlayerDead()) {
+        showStatusMessage("No puedes usar objetos estando muerto");
+        return;
+    }
     // Si no hay armadura equipada, no dibujamos nada.
     if (!equipmentState.armor.has_value()) {
         return;
@@ -1157,7 +1183,7 @@ SpriteSheetConfig Game::armorSpriteConfigForCurrentRace() const {
 
     // Las razas bajas necesitan usar los offsets short.
     const bool isShortRace =
-        playerState.race == "dwarf" || playerState.race == "gnome";
+        playerState.race == "Dwarf" || playerState.race == "Gnome";
 
     // Devolvemos la config de la armadura, incluyendo offsets visuales.
     return SpriteSheetConfig{
@@ -1178,6 +1204,10 @@ SpriteSheetConfig Game::armorSpriteConfigForCurrentRace() const {
 }
 
 void Game::refreshPlayerBodySprite() {
+    if (isLocalPlayerDead()) {
+        showStatusMessage("No puedes usar objetos estando muerto");
+        return;
+    }
     // Obtenemos el SpriteComponent del jugador local.
     auto& sprite = player->getComponent<SpriteComponent>();
 
@@ -1206,7 +1236,7 @@ void Game::refreshPlayerBodySprite() {
 
 // helpér
 SDL_Point Game::visualOffsetForCurrentRace(const ItemView& item) const {
-    if (playerState.race == "dwarf" || playerState.race == "gnome") {
+    if (playerState.race == "Dwarf" || playerState.race == "Gnome") {
         return SDL_Point{
             item.visualShortOffsetX,
             item.visualShortOffsetY
@@ -1220,6 +1250,10 @@ SDL_Point Game::visualOffsetForCurrentRace(const ItemView& item) const {
 }
 
 void Game::refreshPlayerEquipmentVisuals() {
+    if (isLocalPlayerDead()) {
+        showStatusMessage("No puedes usar objetos estando muerto");
+        return;
+    }
     // Obtenemos el SpriteComponent del jugador local.
     auto& sprite = player->getComponent<SpriteComponent>();
 
@@ -1253,6 +1287,11 @@ void Game::refreshPlayerEquipmentVisuals() {
 }
 
 void Game::renderEquippedWeapon() {
+    if (isLocalPlayerDead()) {
+        showStatusMessage("No puedes usar objetos estando muerto");
+        return;
+    }
+
     if (!equipmentState.weapon.has_value()) {
         return;
     }
@@ -1303,6 +1342,10 @@ void Game::renderEquippedWeapon() {
 }
 
 void Game::renderEquippedShield() {
+    if (isLocalPlayerDead()) {
+        showStatusMessage("No puedes usar objetos estando muerto");
+        return;
+    }
     if (!equipmentState.shield.has_value()) {
         return;
     }
@@ -1432,11 +1475,15 @@ void Game::applyLocalPlayerGhostState() {
         return;
     }
 
+    localGhostStateApplied = true;
+
     // Marcamos el estado visual del jugador como muerto/fantasma.
     playerState.isDead = true;
 
     // La vida visual queda en cero.
     playerState.hp = 0;
+
+    assets->applyGhostAppearance(*player);
 
     // Cortamos persecución de enemigos.
     attackSystem.clearEnemyAggro();
@@ -1458,15 +1505,14 @@ void Game::reviveLocalPlayer(int newHp) {
     // Permitimos que, si muere otra vez, se pueda aplicar de nuevo
     // la transición a fantasma.
     localGhostStateApplied = false;
-
-    // La vida debe quedar en un valor positivo.
     playerState.hp = newHp;
 
     // Mensaje visual temporal.
     showStatusMessage("Has revivido");
 
     std::cout << "[PLAYER] Revivió. HP=" << playerState.hp << std::endl;
-
-    // Próximo paso visual:
-    // volver a sprite normal según raza/clase/dirección.
+    assets->applyPlayerAppearance(*player, playerState);
+    refreshPlayerEquipmentVisuals();
 }
+
+

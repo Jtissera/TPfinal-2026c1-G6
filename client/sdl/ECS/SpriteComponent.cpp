@@ -317,3 +317,19 @@ void SpriteComponent::clearHelmet() {
     helmetSrcW = 32;
     helmetSrcH = 32;
 }
+
+void SpriteComponent::setBody(const std::string& textureId, const SpriteSheetConfig& config) {
+    setText(textureId);
+
+    frameWidth = config.frameWidth;
+    frameHeight = config.frameHeight;
+    scale = config.scale;
+    startX = config.startX;
+    startY = config.startY;
+}
+
+void SpriteComponent::clearHead() {
+    headTexture = nullptr;
+    hasHead = false;
+    headIndex = 0;
+}

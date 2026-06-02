@@ -325,3 +325,29 @@ SpriteSheetConfig AssetManager::bodyConfigForRace(const std::string& race) const
 std::string AssetManager::bodyTextureForRace([[maybe_unused]] const std::string& race) const {
     return "body_sheet";
 }
+
+std::string AssetManager::ghostTextureId() const {
+    return "ghost";
+}
+void AssetManager::applyGhostAppearance(Entity& entity) {
+    auto& sprite = entity.getComponent<SpriteComponent>();
+
+    SpriteSheetConfig ghostConfig = bodyConfigForRace("ghost");
+    sprite.clearHelmet();
+
+    sprite.setBody(ghostTextureId(), ghostConfig);
+    sprite.clearHead();
+    sprite.clearHelmet();
+}
+
+void AssetManager::applyPlayerAppearance(Entity& entity, const PlayerViewState& playerState) {
+    auto& sprite = entity.getComponent<SpriteComponent>();
+
+    SpriteSheetConfig bodyConfig = bodyConfigForRace(playerState.race);
+    std::string bodyTextureId = bodyTextureForRace(playerState.race);
+
+    sprite.setBody(bodyTextureId, bodyConfig);
+
+    std::string headTextureId = headTextureForRace(playerState.race);
+    sprite.setHeadTexture(headTextureId, 0);
+}

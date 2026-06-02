@@ -15,6 +15,10 @@
     {
       "id": "heads_dwarf",
       "path": "assets/sprites/players/heads_dwarf.png"
+    },
+    {
+      "id": "ghost",
+      "path":"assets/sprites/players/player_ghost.png"
     }
   ]
 }

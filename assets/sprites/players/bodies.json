@@ -35,6 +35,15 @@
       "frameWidth": 27,
       "frameHeight": 47,
       "scale": 2
+    },
+    {
+      "race": "ghost",
+      "textureId": "ghost",
+      "srcX": 0,
+      "srcY": 0,
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "scale": 2
     }
   ]
 }
