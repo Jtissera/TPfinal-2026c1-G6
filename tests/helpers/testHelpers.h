@@ -167,7 +167,7 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 [[maybe_unused]] static Npc makeNpc(uint32_t id, int tx, int ty,
                                     int16_t hp = 50) {
   static NpcStats stats = makeNpcStats(hp);
-  return Npc(id, stats, tx, ty);
+  return Npc(id, stats, NpcType::NONE, tx, ty);
 }
 
 [[maybe_unused]] static MapData makeMap(int w, int h, bool walkable = true) {

@@ -1,5 +1,6 @@
 #include "SpawnManager.h"
 #include <cstdlib>
+#include <iostream>
 
 SpawnManager::SpawnManager(const toml::table &config, NpcManager &npcManager,
                            const CollisionSystem &collision,
@@ -24,42 +25,48 @@ void SpawnManager::loadSpawnPoints(const MapData &mapData) {
       trySpawnAround(typeName, x, y);
     }
   }
+
+  std::cout << "[SpawnManager] " << spawnPoints.size() << " spawn points cargados" << std::endl;
+}
+std::optional<uint32_t> SpawnManager::spawnNpc(const std::string& typeName,
+                                                int tileX, int tileY) {
+    if (!collision.isWalkable(tileX, tileY)) return std::nullopt;
+    if (occupancy.isOccupied(tileX, tileY))  return std::nullopt;
+    uint32_t npcId = npcManager.spawnNpc(typeName, tileX, tileY);
+    occupancy.occupy(tileX, tileY, npcId);
+    return npcId;
 }
 
-void SpawnManager::spawnNpc(const std::string &typeName, int tileX, int tileY) {
-  if (!collision.isWalkable(tileX, tileY))
-    return;
-  if (occupancy.isOccupied(tileX, tileY))
-    return;
-  uint32_t npcId = npcManager.spawnNpc(typeName, tileX, tileY);
-  occupancy.occupy(tileX, tileY, npcId);
-}
-
-void SpawnManager::trySpawnAround(const std::string &typeName, int x, int y) {
-  int attempts = 0;
-  while (attempts < 10) {
-    int dx = (std::rand() % 7) - 3;
-    int dy = (std::rand() % 7) - 3;
-    int tx = x + dx;
-    int ty = y + dy;
-    if (collision.isWalkable(tx, ty) && !occupancy.isOccupied(tx, ty)) {
-      spawnNpc(typeName, tx, ty);
-      return;
+std::optional<uint32_t> SpawnManager::trySpawnAround(const std::string& typeName,
+                                                      int x, int y) {
+    for (int attempts = 0; attempts < 10; attempts++) {
+        int tx = x + (std::rand() % 7) - 3;
+        int ty = y + (std::rand() % 7) - 3;
+        if (collision.isWalkable(tx, ty) && !occupancy.isOccupied(tx, ty))
+            return spawnNpc(typeName, tx, ty);
+          std::cout << "[SpawnManager] spawneado " << typeName << " en (" << tx << "," << ty << ")" << std::endl;
     }
-    attempts++;
-  }
+
+    
+    return std::nullopt;
 }
 
-void SpawnManager::tick() {
-  spawnTickCounter++;
-  if (spawnTickCounter < spawnEveryNTicks)
-    return;
+std::vector<uint32_t> SpawnManager::tick() {
+    std::vector<uint32_t> spawned;
 
-  spawnTickCounter = 0;
-  int toSpawn = std::min(spawnBatchSize, maxNpcs - npcManager.count());
+    spawnTickCounter++;
+    if (spawnTickCounter < spawnEveryNTicks)
+        return spawned;
 
-  for (int i = 0; i < toSpawn && !spawnPoints.empty(); i++) {
-    auto &point = spawnPoints[std::rand() % spawnPoints.size()];
-    trySpawnAround(point.typeName, point.x, point.y);
-  }
+    spawnTickCounter = 0;
+    int toSpawn = std::min(spawnBatchSize, maxNpcs - npcManager.count());
+
+    for (int i = 0; i < toSpawn && !spawnPoints.empty(); i++) {
+        auto& point = spawnPoints[std::rand() % spawnPoints.size()];
+        auto id = trySpawnAround(point.typeName, point.x, point.y);
+        if (id)
+            spawned.push_back(*id);
+    }
+
+    return spawned;
 }

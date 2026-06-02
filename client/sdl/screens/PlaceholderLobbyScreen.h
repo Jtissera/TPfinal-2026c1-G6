@@ -4,6 +4,7 @@
 #include <vector>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <iostream>
 
 #include "Screen.h"
 #include "../../network/clientProtocolFactory.h"
@@ -20,6 +21,12 @@ public:
     ~PlaceholderLobbyScreen() override;
 
     ScreenResult run() override;
+
+    uint16_t spawnX = 0;
+uint16_t spawnY = 0;
+
+uint16_t getSpawnX() const { return spawnX; }
+uint16_t getSpawnY() const { return spawnY; }
 
 private:
     // ----------------- Red -----------------

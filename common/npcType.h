@@ -77,3 +77,14 @@ inline std::string npcTypeKey(NpcType type) {
     return "";
   }
 }
+
+inline NpcType npcTypeFromKey(const std::string& key) {
+    if (key == "goblin")   return NpcType::GOBLIN;
+    if (key == "skeleton") return NpcType::SKELETON;
+    if (key == "zombie")   return NpcType::ZOMBIE;
+    if (key == "guard")    return NpcType::GUARD;
+    if (key == "priest")   return NpcType::PRIEST;
+    if (key == "merchant") return NpcType::MERCHANT;
+    if (key == "banker")   return NpcType::BANKER;
+    return NpcType::NONE;
+}

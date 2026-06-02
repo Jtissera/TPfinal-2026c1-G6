@@ -1,5 +1,6 @@
 #pragma once
 #include "../game/player/combatant.h"
+#include "../../common/npcType.h"
 #include "npcState.h"
 #include "npcStats.h"
 #include <algorithm>
@@ -8,7 +9,7 @@
 
 class Npc : public Combatant {
 public:
-  Npc(uint32_t id, const NpcStats &stats, int spawnTileX, int spawnTileY);
+  Npc(uint32_t id, const NpcStats &stats, NpcType type, int spawnTileX, int spawnTileY);
 
   uint32_t getId() const override { return id; }
   int getTileX() const override { return tileX; }
@@ -56,6 +57,8 @@ public:
   void resetAttackCooldown();
   void resetMoveCooldown();
 
+  NpcType getType() const { return type; }
+
   Npc(const Npc &) = delete;
   Npc &operator=(const Npc &) = delete;
   Npc(Npc &&) = default;
@@ -64,6 +67,7 @@ public:
 private:
   uint32_t id;
   const NpcStats &stats;
+  NpcType type;
   int tileX, tileY;
   int spawnTileX, spawnTileY;
   int16_t hp;

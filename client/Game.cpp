@@ -84,19 +84,6 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
     std::cout << "Tiles cargados como entidades: "
           << manager.getGroup(groupMap).size()
           << std::endl;
-
-    // En Game.cpp, al final de init(), después de crear el player
-    NPCData fakeEnemy;
-    fakeEnemy.npcID   = 99;          // ID falso
-    fakeEnemy.type = NpcType::SKELETON;
-    fakeEnemy.x    = 600;         // posición en píxeles de mundo
-    fakeEnemy.y    = 400;
-
-    std::cout << "[INIT] antes Enemy" << std::endl;
-    Entity* e = assets->CreateEnemy(fakeEnemy);
-    enemies[fakeEnemy.npcID] = e;
-    std::cout << "[INIT] fin Game::init" << std::endl;
-    std::cout << "[INIT] fin Game::init" << std::endl;
 }
 
 void Game::handleEvents() {
@@ -142,24 +129,68 @@ void Game::update() {
         if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE)) {
             const auto& moveMsg = static_cast<const EntityMoveMessage&>(*msg);
 
-            player->getComponent<TransformComponent>().position.x =
-                static_cast<float>(moveMsg.getX());
+            // Si es el jugador local
+            if (moveMsg.getId() == 1) {  // TODO: usar el id real del jugador
+                static constexpr float SPRITE_W    = 54.0f;
+                static constexpr float FEET_OFFSET = 175.0f;
+                targetX = static_cast<float>(moveMsg.getX()) - SPRITE_W / 2.0f;
+                targetY = static_cast<float>(moveMsg.getY()) - FEET_OFFSET;
+                isMoving        = true;
+                moveAnimStartMs = SDL_GetTicks();
+            } else {
+                // NPC se movió
+                auto it = enemies.find(moveMsg.getId());
+                if (it != enemies.end()) {
+                    auto& transform = it->second->getComponent<TransformComponent>();
+                    transform.position.x = static_cast<float>(moveMsg.getX()) - 32.0f;
+                    transform.position.y = static_cast<float>(moveMsg.getY()) - 64.0f;
+                }
+            }
 
-            player->getComponent<TransformComponent>().position.y =
-                static_cast<float>(moveMsg.getY());
+} else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_NPC_LIST)) {
+    const auto& npcList = static_cast<const NpcListMessage&>(*msg);
+    std::cout << "[GAME] MSG_NPC_LIST recibido con " << npcList.getNpcs().size() << " npcs" << std::endl;
+    for (const auto& snap : npcList.getNpcs()) {
+        std::cout << "[GAME] spawn npc id=" << snap.id 
+                  << " type=" << static_cast<int>(snap.type)
+                  << " x=" << snap.x << " y=" << snap.y << std::endl;
+        NPCData data;
+        data.npcID = snap.id;
+        data.type  = snap.type;
+data.x = snap.x - 54.0f / 2.0f;   // mismo que player
+data.y = snap.y - 175.0f; 
+        Entity* e = assets->CreateEnemy(data);
+        enemies[snap.id] = e;
+    }
 
-            std::cout << "[client] pos recibida del server: " 
-                      << moveMsg.getX() << ", " << moveMsg.getY() << std::endl;
+        } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_SPAWN)) {
+            const auto& spawnMsg = static_cast<const EntitySpawnMessage&>(*msg);
+            NPCData data;
+            data.npcID = spawnMsg.getId();
+            data.type  = spawnMsg.getType();
+            data.x     = spawnMsg.getX() - 32;
+            data.y     = spawnMsg.getY() - 128;
+            Entity* e = assets->CreateEnemy(data);
+            enemies[spawnMsg.getId()] = e;
+
+        } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_DESPAWN)) {
+            const auto& despawnMsg = static_cast<const EntityDespawnMessage&>(*msg);
+            auto it = enemies.find(despawnMsg.getId());
+            if (it != enemies.end()) {
+                it->second->destroy();
+                enemies.erase(it);
+            }
+
         } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_STATS)) {
             const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
-            playerState.hp = stats.getHp();
-            playerState.maxHp = stats.getMaxHp();
-            playerState.mana = stats.getMana();
-            playerState.maxMana = stats.getMaxMana();
-            playerState.exp = stats.getExp();
+            playerState.hp             = stats.getHp();
+            playerState.maxHp          = stats.getMaxHp();
+            playerState.mana           = stats.getMana();
+            playerState.maxMana        = stats.getMaxMana();
+            playerState.exp            = stats.getExp();
             playerState.expToNextLevel = stats.getExpLimit();
-            playerState.level = stats.getLevel();
-            playerState.gold = stats.getGold();
+            playerState.level          = stats.getLevel();
+            playerState.gold           = stats.getGold();
         }
     }
 
@@ -170,19 +201,54 @@ void Game::update() {
     };
     manager.refresh();
     manager.update(updateContext);
-    attackSystem.update();
 
+    // Interpolación de movimiento
+    if (isMoving) {
+        auto& transform = player->getComponent<TransformComponent>();
+        float dx   = targetX - transform.position.x;
+        float dy   = targetY - transform.position.y;
+        float dist = std::sqrt(dx * dx + dy * dy);
+
+        Uint32 elapsed   = SDL_GetTicks() - moveAnimStartMs;
+        Uint32 remaining = (elapsed >= MOVE_ANIM_DURATION_MS)
+                           ? 0
+                           : MOVE_ANIM_DURATION_MS - elapsed;
+
+        if (remaining == 0 || dist <= 1.0f) {
+            transform.position.x = targetX;
+            transform.position.y = targetY;
+            isMoving = false;
+        } else {
+            float frames = static_cast<float>(remaining) / 16.0f;
+            float step   = dist / frames;
+            float factor = step / dist;
+            transform.position.x += dx * factor;
+            transform.position.y += dy * factor;
+        }
+
+        auto& kb = player->getComponent<KeyboardController>();
+        if (kb.isHoldingKey()) {
+            auto& sprite = player->getComponent<SpriteComponent>();
+            switch (kb.getLastDirection()) {
+                case FacingDirection::Up:    sprite.Play("WalkUp");    break;
+                case FacingDirection::Down:  sprite.Play("WalkDown");  break;
+                case FacingDirection::Left:  sprite.Play("WalkLeft");  break;
+                case FacingDirection::Right: sprite.Play("WalkRight"); break;
+            }
+        }
+    }
+
+    // Cámara
     Vector2D playerPos = player->getComponent<TransformComponent>().position;
     camera.x = static_cast<int>(playerPos.x) - 450;
     camera.y = static_cast<int>(playerPos.y) - 343;
-    if (camera.x < 0) camera.x = 0;
-    if (camera.y < 0) camera.y = 0;
+    if (camera.x < 0)              camera.x = 0;
+    if (camera.y < 0)              camera.y = 0;
     if (camera.x > 20 * 96 - 900) camera.x = 20 * 96 - 900;
     if (camera.y > 15 * 96 - 687) camera.y = 15 * 96 - 687;
-
 }
 
-
+ 
 void Game::render() {
 
     // Limpia la pantalla antes de dibujar el nuevo frame.

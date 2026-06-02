@@ -27,7 +27,7 @@ public:
   bool joinGame(uint32_t gameId, uint32_t clientId,
                 Queue<std::shared_ptr<const Message>> &clientQueue);
 
-  void addPlayerToGame(uint32_t gameId, Player player);
+void addPlayerToGame(uint32_t gameId, uint32_t clientId, Player player);
 
   void removeClient(uint32_t clientId);
 

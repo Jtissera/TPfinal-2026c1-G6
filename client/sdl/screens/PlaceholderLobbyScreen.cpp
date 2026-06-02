@@ -102,6 +102,9 @@ void PlaceholderLobbyScreen::fetchGameList() {
 }
 
 void PlaceholderLobbyScreen::tryCreateGame() {
+
+    if (_readyToPlay) return; 
+
     if (newGameName.empty()) {
         errorMsg = "Ingresa un nombre para la partida.";
         return;
@@ -109,13 +112,24 @@ void PlaceholderLobbyScreen::tryCreateGame() {
     try {
         protocol.send(CreateGameMessage(newGameName, 4));
         auto response = protocol.receive();
+
+
+        std::cout << "[LOBBY] recibido opcode=0x" << std::hex 
+          << (int)response->opCode() << std::dec << std::endl;
+
+
+
+
         if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_GAME_CREATED)) {
             const auto& created = static_cast<const GameCreatedMessage&>(*response);
             protocol.send(JoinGameMessage(created.getGameId()));
             auto joinResponse = protocol.receive();
-            if (joinResponse->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_JOIN_OK)) {
-                _readyToPlay = true;
-            } else if (joinResponse->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR)) {
+           if (joinResponse->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_JOIN_OK)) {
+    const auto& joinOk = static_cast<const JoinOkMessage&>(*joinResponse);
+    spawnX = joinOk.getSpawnX();
+    spawnY = joinOk.getSpawnY();
+    _readyToPlay = true;
+} else if (joinResponse->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR)) {
                 const auto& err = static_cast<const ErrorMessage&>(*joinResponse);
                 errorMsg = err.getReason();
             }
@@ -129,6 +143,9 @@ void PlaceholderLobbyScreen::tryCreateGame() {
 }
 
 void PlaceholderLobbyScreen::tryJoinSelected() {
+
+    if (_readyToPlay) return; 
+
     if (selectedGame < 0 || selectedGame >= static_cast<int>(games.size())) {
         errorMsg = "Selecciona una partida primero.";
         return;
@@ -140,9 +157,19 @@ void PlaceholderLobbyScreen::tryJoinSelected() {
     try {
         protocol.send(JoinGameMessage(games[selectedGame].id));
         auto response = protocol.receive();
-        if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_JOIN_OK)) {
-            _readyToPlay = true;
-        } else if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR)) {
+
+
+        std::cout << "[LOBBY] recibido opcode=0x" << std::hex 
+          << (int)response->opCode() << std::dec << std::endl;
+
+
+
+if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_JOIN_OK)) {
+    const auto& joinOk = static_cast<const JoinOkMessage&>(*response);
+    spawnX = joinOk.getSpawnX();
+    spawnY = joinOk.getSpawnY();
+    _readyToPlay = true;
+}else if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR)) {
             const auto& err = static_cast<const ErrorMessage&>(*response);
             errorMsg = err.getReason();
         }
@@ -154,7 +181,11 @@ void PlaceholderLobbyScreen::tryJoinSelected() {
 // Loop principal
 ScreenResult PlaceholderLobbyScreen::run() {
     while (true) {
-        if (_readyToPlay) return ScreenResult::GO_LOBBY;
+        if (_readyToPlay) {
+            SDL_Event e;
+            while (SDL_PollEvent(&e)) {}  // drenar eventos pendientes
+            return ScreenResult::GO_LOBBY;
+        }
 
         // Actualizar hover del mouse cada frame
         int mx, my;

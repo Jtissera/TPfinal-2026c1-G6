@@ -111,7 +111,14 @@ Entity* AssetManager::CreatePlayer(const PlayerDto& data) {
     std::string headTextureId = headTextureForRace(data.raza);
 
     auto& player = manager->addEntity();
-    player.addComponent<TransformComponent>(data.xpos, data.ypos);
+    static constexpr float SPRITE_W    = 54.0f;
+static constexpr float FEET_OFFSET = 175.0f;
+
+float startX = static_cast<float>(data.xpos) - SPRITE_W / 2.0f;
+float startY = static_cast<float>(data.ypos) - FEET_OFFSET;
+
+player.addComponent<TransformComponent>(startX, startY);
+    //player.addComponent<TransformComponent>(data.xpos, data.ypos);
     player.addComponent<SpriteComponent>(*this, bodyTextureId, true, playerAnims, bodyConfig);
     player.getComponent<SpriteComponent>().setHeadTexture(headTextureId, data.headId);
     player.addComponent<KeyboardController>(sendQueue);
@@ -325,3 +332,5 @@ SpriteSheetConfig AssetManager::bodyConfigForRace(const std::string& race) const
 std::string AssetManager::bodyTextureForRace([[maybe_unused]] const std::string& race) const {
     return "body_sheet";
 }
+
+

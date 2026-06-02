@@ -132,8 +132,8 @@ int Client::run()
                     playerDto.nombre  = username;
                     playerDto.raza    = raza;
                     playerDto.clase   = clase;
-                    playerDto.xpos    = 1500;
-                    playerDto.ypos    = 1200;
+                    playerDto.xpos    = lobby.getSpawnX();
+                    playerDto.ypos    = lobby.getSpawnY();
                     playerDto.hp      = 100;
                     playerDto.hpMax   = 100;
                     playerDto.mana    = 100;

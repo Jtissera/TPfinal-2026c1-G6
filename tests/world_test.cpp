@@ -212,21 +212,21 @@ TEST_F(GameWorldTest, PlayerResurrectedAtTargetZone) {
 
 TEST(NpcTest, TakesDamageCorrectly) {
   static NpcStats stats = makeNpcStats(50);
-  Npc npc(1, stats, 0, 0);
+  Npc npc(1, stats, NpcType::NONE, 0, 0);
   npc.takeDamage(20);
   EXPECT_EQ(npc.getHp(), 30);
 }
 
 TEST(NpcTest, DiesWhenHpReachesZero) {
   static NpcStats stats = makeNpcStats(10);
-  Npc npc(1, stats, 0, 0);
+  Npc npc(1, stats, NpcType::NONE, 0, 0);
   npc.takeDamage(10);
   EXPECT_FALSE(npc.isAlive());
 }
 
 TEST(NpcTest, CannotGoBelowZeroHp) {
   static NpcStats stats = makeNpcStats(10);
-  Npc npc(1, stats, 0, 0);
+  Npc npc(1, stats, NpcType::NONE, 0, 0);
   npc.takeDamage(100);
   EXPECT_EQ(npc.getHp(), 0);
 }
@@ -234,7 +234,7 @@ TEST(NpcTest, CannotGoBelowZeroHp) {
 TEST(NpcTest, AttackCooldownRespected) {
   NpcStats stats = makeNpcStats(50);
   stats.attackCooldownMs = 5000;
-  Npc npc(1, stats, 0, 0);
+  Npc npc(1, stats, NpcType::NONE, 0, 0);
   EXPECT_TRUE(npc.canAttack());
   npc.resetAttackCooldown();
   EXPECT_FALSE(npc.canAttack());

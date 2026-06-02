@@ -102,10 +102,10 @@ bool GameWorld::canPlayerAct(uint32_t id) const {
 int GameWorld::getTileX(uint32_t id) const { return players.at(id).getTileX(); }
 int GameWorld::getTileY(uint32_t id) const { return players.at(id).getTileY(); }
 int GameWorld::getPixelX(uint32_t id) const {
-  return players.at(id).getTileX() * tileSize;
+  return players.at(id).getTileX() * tileSize + tileSize / 2;
 }
 int GameWorld::getPixelY(uint32_t id) const {
-  return players.at(id).getTileY() * tileSize;
+  return players.at(id).getTileY() * tileSize + tileSize / 2;
 }
 
 void GameWorld::giveExperience(uint32_t playerId, uint32_t exp) {
@@ -174,13 +174,10 @@ const std::unordered_map<uint32_t, Npc> &GameWorld::getNpcs() const {
 }
 
 GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds) {
-  WorldTickResult result;
-
-  tickPlayers(deltaSeconds, result);
-  tickNpcs(result);
-  spawnManager.tick();
-
-  return result;
+    WorldTickResult result;
+    tickPlayers(deltaSeconds, result);
+    tickNpcs(result);       // spawnManager.tick() ya está adentro
+    return result;
 }
 
 void GameWorld::tickPlayers(float deltaSeconds, WorldTickResult &result) {
@@ -200,49 +197,44 @@ void GameWorld::tickPlayers(float deltaSeconds, WorldTickResult &result) {
   }
 }
 
-void GameWorld::tickNpcs(WorldTickResult &result) {
-  auto npcResult = npcManager.tick(players);
+void GameWorld::tickNpcs(WorldTickResult& result) {
+    auto npcResult = npcManager.tick(players);
 
-  for (auto &intent : npcResult.moveIntents) {
-    if (!collision.isWalkable(intent.toX, intent.toY))
-      continue;
-    if (!occupancy.move(intent.fromX, intent.fromY, intent.toX, intent.toY,
-                        intent.npcId))
-      continue;
-
-    npcManager.applyMove(intent.npcId, intent.toX, intent.toY);
-    result.npcsMoved.push_back(intent.npcId);
-  }
-
-  for (auto &attack : npcResult.attacks) {
-    auto it = players.find(attack.targetPlayerId);
-    if (it == players.end())
-      continue;
-
-    it->second.takeDamage(attack.damage);
-    result.playerHits.push_back({attack.targetPlayerId, attack.damage});
-
-    if (!it->second.isAlive())
-      handlePlayerDeath(attack.targetPlayerId, 0);
-  }
-
-  for (auto &death : npcResult.deaths) {
-    occupancy.free(death.tileX, death.tileY);
-
-    if (death.goldDrop > 0)
-      groundManager.addGold(death.goldDrop, death.tileX, death.tileY);
-
-    if (!death.itemDrop.empty()) {
-      try {
-        groundManager.addItem(itemRepo.createItem(death.itemDrop), death.tileX,
-                              death.tileY);
-      } catch (const std::exception &e) {
-        std::cerr << "[GameWorld] item drop failed: " << e.what() << std::endl;
-      }
+    for (auto& intent : npcResult.moveIntents) {
+        if (!collision.isWalkable(intent.toX, intent.toY)) continue;
+        if (!occupancy.move(intent.fromX, intent.fromY,
+                            intent.toX, intent.toY, intent.npcId)) continue;
+        npcManager.applyMove(intent.npcId, intent.toX, intent.toY);
+        result.npcsMoved.push_back(intent.npcId);
     }
 
-    result.npcDeaths.push_back(death);
-  }
+    for (auto& attack : npcResult.attacks) {
+        auto it = players.find(attack.targetPlayerId);
+        if (it == players.end()) continue;
+        it->second.takeDamage(attack.damage);
+        result.playerHits.push_back({attack.targetPlayerId, attack.damage});
+        if (!it->second.isAlive())
+            handlePlayerDeath(attack.targetPlayerId, 0);
+    }
+
+    for (auto& death : npcResult.deaths) {
+        occupancy.free(death.tileX, death.tileY);
+        if (death.goldDrop > 0)
+            groundManager.addGold(death.goldDrop, death.tileX, death.tileY);
+        if (!death.itemDrop.empty()) {
+            try {
+                groundManager.addItem(itemRepo.createItem(death.itemDrop),
+                                      death.tileX, death.tileY);
+            } catch (const std::exception& e) {
+                std::cerr << "[GameWorld] item drop failed: " << e.what() << std::endl;
+            }
+        }
+        result.npcDeaths.push_back(death);
+    }
+
+    // Spawns del tick
+    auto spawned = spawnManager.tick();
+    result.npcSpawned = std::move(spawned);
 }
 
 void GameWorld::resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY) {
@@ -266,4 +258,8 @@ void GameWorld::resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY) {
       }
     }
   }
+}
+
+const Npc& GameWorld::getNpc(uint32_t id) const {
+    return npcManager.getNpcs().at(id);
 }

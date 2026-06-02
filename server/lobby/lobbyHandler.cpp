@@ -131,14 +131,17 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message) {
     return;
   }
 
-  gameManager.addPlayerToGame(gameId, std::move(*player));
-  playerRepo.remove(clientId);
+  uint16_t spawnX = static_cast<uint16_t>(player->getTileX() * 96 + 48);
+  uint16_t spawnY = static_cast<uint16_t>(player->getTileY() * 96 + 48);
 
   auto *receiver = receiverRegistry.get(clientId);
   if (receiver)
     receiver->setQueue(gameManager.getGameQueue(gameId));
 
   lobbyMonitor.removeQueue(clientId);
+
+  gameManager.addPlayerToGame(gameId, clientId, std::move(*player));
+  playerRepo.remove(clientId);
 
   std::string gameName;
   for (const auto &info : gameManager.listGames())
@@ -147,8 +150,8 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message) {
       break;
     }
 
-  clientQueue->try_push(
-      std::make_shared<const JoinOkMessage>(gameId, gameName));
+  clientQueue->try_push(std::make_shared<const JoinOkMessage>(
+      gameId, gameName, spawnX, spawnY));
 }
 
 void LobbyHandler::handleLeaveGame(LeaveEvent &event) {
@@ -160,5 +163,6 @@ void LobbyHandler::handleLeaveGame(LeaveEvent &event) {
 
   lobbyMonitor.addQueue(event.clientId, *event.clientQueue);
   playerRepo.save(event.clientId, std::move(event.player));
-  lobbyMonitor.sendTo(event.clientId, std::make_shared<const LeaveOkMessage>());
+  lobbyMonitor.sendTo(event.clientId,
+                      std::make_shared<const LeaveOkMessage>());
 }

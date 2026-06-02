@@ -5,7 +5,8 @@ GameLoop::GameLoop(Queue<ClientMessage> &q, Monitor &m, GameWorld &w,
                    const toml::table &config)
     : gameQueue(q), monitor(m), world(w), leaveQueue(leaveQ), gameId(gameId),
       dispatcher(config),
-      tickRateMs(config["server"]["tick_rate_ms"].value_or(33)) {}
+      tickRateMs(config["server"]["tick_rate_ms"].value_or(33)),
+      tileSize(config["world"]["tile_size"].value_or(96)) {}
 
 void GameLoop::run() {
   using Clock = std::chrono::steady_clock;
@@ -51,11 +52,53 @@ void GameLoop::processMessage(const ClientMessage &incoming) {
   dispatcher.dispatch(incoming, world, monitor);
 }
 
+
 void GameLoop::worldUpdate(float deltaSeconds) {
-  auto result = world.tick(deltaSeconds);
-  for (uint32_t id : result.playersChanged)
-    statManager.sendPlayerStats(id, world, monitor);
+
+    if (!initialSnapshotSent) {
+        sendInitialSnapshot();
+        initialSnapshotSent = true;
+    }
+
+    auto result = world.tick(deltaSeconds);
+
+    for (uint32_t id : result.playersChanged)
+        statManager.sendPlayerStats(id, world, monitor);
+
+    for (uint32_t npcId : result.npcsMoved) {
+        const Npc& npc = world.getNpc(npcId);
+        monitor.broadcast(std::make_shared<EntityMoveMessage>(
+            static_cast<uint8_t>(npcId),
+            static_cast<int16_t>(npc.getTileX() * tileSize + tileSize / 2),
+            static_cast<int16_t>(npc.getTileY() * tileSize + tileSize / 2)));
+    }
+
+    for (const auto& death : result.npcDeaths)
+        monitor.broadcast(std::make_shared<EntityDespawnMessage>(death.npcId));
+
+    for (uint32_t npcId : result.npcSpawned) {
+        const Npc& npc = world.getNpc(npcId);
+        monitor.broadcast(std::make_shared<EntitySpawnMessage>(
+            npcId,
+            npc.getType(),
+            static_cast<uint16_t>(npc.getTileX() * tileSize + tileSize / 2),
+            static_cast<uint16_t>(npc.getTileY() * tileSize + tileSize / 2)));
+    }
 }
+
+void GameLoop::sendInitialSnapshot() {
+    const auto& npcs = world.getNpcs();
+    std::vector<NpcSnapshot> snapshots;
+    for (const auto& [id, npc] : npcs) {
+        snapshots.push_back({
+            id, npc.getType(),
+            static_cast<uint16_t>(npc.getTileX() * tileSize + tileSize / 2),
+            static_cast<uint16_t>(npc.getTileY() * tileSize + tileSize / 2)
+        });
+    }
+    monitor.broadcast(std::make_shared<NpcListMessage>(std::move(snapshots)));
+}
+
 
 void GameLoop::handleLeaveGame(uint32_t clientId) {
   auto player = world.removePlayer(clientId);

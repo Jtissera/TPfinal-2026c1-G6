@@ -62,12 +62,15 @@ public:
     std::vector<uint32_t> playersChanged;
     std::vector<uint32_t> npcsMoved;
     std::vector<NpcDeathResult> npcDeaths;
+    std::vector<uint32_t> npcSpawned; 
     struct PlayerHit {
       uint32_t playerId;
       int16_t damage;
     };
     std::vector<PlayerHit> playerHits;
   };
+
+  const Npc& getNpc(uint32_t id) const;
   WorldTickResult tick(float deltaSeconds);
 
   const MapData &getMapData() const { return mapData; }

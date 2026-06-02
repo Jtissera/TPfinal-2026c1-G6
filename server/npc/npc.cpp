@@ -1,7 +1,8 @@
 #include "npc.h"
 
-Npc::Npc(uint32_t id, const NpcStats& stats, int spawnTileX, int spawnTileY)
-    : id(id), stats(stats)
+Npc::Npc(uint32_t id, const NpcStats& stats, NpcType type,
+         int spawnTileX, int spawnTileY)
+    : id(id), stats(stats), type(type)
     , tileX(spawnTileX), tileY(spawnTileY)
     , spawnTileX(spawnTileX), spawnTileY(spawnTileY)
     , hp(stats.maxHp)

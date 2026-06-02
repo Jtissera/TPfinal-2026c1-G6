@@ -89,7 +89,7 @@ TEST(CombatSystemTest, ArmorReducesDamage) {
 TEST(CombatSystemTest, NpcAttacksPlayer) {
   CombatSystem combat(makeConfig());
   static NpcStats stats = makeNpcStats(50, 10, 10);
-  Npc npc(1, stats, 0, 0);
+  Npc npc(1, stats, NpcType::NONE,0, 0);
   Player target = makePlayer(2, 0, 1);
 
   auto result = combat.attack(npc, target);
@@ -100,7 +100,7 @@ TEST(CombatSystemTest, PlayerAttacksNpc) {
   CombatSystem combat(makeConfig());
   Player attacker = makePlayer(1, 0, 0);
   static NpcStats stats = makeNpcStats(50, 1, 2);
-  Npc npc(2, stats, 0, 1);
+  Npc npc(2, stats, NpcType::NONE, 0, 1);
 
   attacker.getInventory().addItem(makeWeapon(10, 10));
   attacker.getInventory().equipItem(1);

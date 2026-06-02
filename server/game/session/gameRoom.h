@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <string>
 #include <toml++/toml.hpp>
+#include <iostream>
 
+#include "../common/network/messages/server/npc/npcListMessage.h"
 #include "../../clientMessage.h"
 #include "../../lobby/leaveEvent.h"
 #include "../../monitorQueues.h"
@@ -22,7 +24,7 @@ public:
   void addClient(uint32_t clientId,
                  Queue<std::shared_ptr<const Message>> &clientQueue);
 
-  void addPlayer(Player player);
+void addPlayer(uint32_t clientId, Player player);
 
   void removeClient(uint32_t clientId);
 
@@ -39,11 +41,13 @@ public:
   void join();
 
 private:
+
+bool initialSnapshotSent = false;
   uint32_t gameId;
   std::string gameName;
   uint8_t maxPlayers;
   Queue<std::shared_ptr<LeaveEvent>> &leaveQueue;
-
+int tileSize;
   Monitor monitor;
   Queue<ClientMessage> gameQueue;
   GameWorld world;
