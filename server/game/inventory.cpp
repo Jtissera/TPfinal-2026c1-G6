@@ -52,38 +52,49 @@ bool Inventory::unequipSlot(EquipSlot slot) {
 }
 
 std::optional<Item> Inventory::removeItem(uint32_t itemId) {
+  // itemId representa instanceId.
 
-  for (auto &slot : equipped) {
-    if (slot == itemId)
+  // Si estaba equipado, lo des-equipamos.
+  for (auto& slot : equipped) {
+    if (slot == itemId) {
       slot = EMPTY_SLOT;
+    }
   }
 
-  auto it = std::find_if(items.begin(), items.end(),
-                         [itemId](const Item &i) { return i.id == itemId; });
+  auto it = std::find_if(
+      items.begin(),
+      items.end(),
+      [itemId](const Item& item) {
+          return item.instanceId == itemId;
+      }
+  );
 
-  if (it == items.end())
+  if (it == items.end()) {
     return std::nullopt;
+  }
 
   Item removed = std::move(*it);
   items.erase(it);
+
   return removed;
 }
 
 const Item *Inventory::getEquipped(EquipSlot slot) const {
-  uint32_t id = equipped[static_cast<std::size_t>(slot)];
+  const uint32_t itemId = equipped[static_cast<std::size_t>(slot)];
 
-  if (id == EMPTY_SLOT)
+  if (itemId == EMPTY_SLOT)
     return nullptr;
 
-  return findItem(id);
+  return findItem(itemId);
 }
 
 const std::vector<Item> &Inventory::getItems() const { return items; }
 
 const Item *Inventory::findItem(uint32_t itemId) const {
 
-  auto it = std::find_if(items.begin(), items.end(),
-                         [itemId](const Item &i) { return i.id == itemId; });
+  auto it = std::find_if(items.begin(), items.end(),[itemId](const Item& item) {
+    return item.instanceId == itemId;
+  });
 
   if (it != items.end()) {
     return &(*it);
@@ -92,9 +103,13 @@ const Item *Inventory::findItem(uint32_t itemId) const {
   return nullptr;
 }
 
-Item *Inventory::findItem(uint32_t itemId) {
-  auto it = std::find_if(items.begin(), items.end(),
-                         [itemId](const Item &i) { return i.id == itemId; });
+
+Item* Inventory::findItem(uint32_t itemId) {
+  // itemId representa instanceId.
+  auto it = std::find_if(items.begin(),items.end(),[itemId](const Item& item) {
+          return item.instanceId == itemId;
+      }
+  );
 
   if (it != items.end()) {
     return &(*it);

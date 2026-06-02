@@ -104,7 +104,7 @@ static MapData makeMap(int w, int h, bool walkable = true) {
 
 static Item makeWeapon(uint16_t dmgMin, uint16_t dmgMax, bool ranged = false) {
     Item item;
-    item.id              = 1;
+    item.instanceId              = 1;
     item.typeName        = "sword";
     item.slot            = ItemSlot::WEAPON;
     item.effect          = ItemEffect::NONE;
@@ -116,7 +116,7 @@ static Item makeWeapon(uint16_t dmgMin, uint16_t dmgMax, bool ranged = false) {
 
 static Item makeArmor(uint16_t defMin, uint16_t defMax) {
     Item item;
-    item.id               = 2;
+    item.instanceId               = 2;
     item.typeName         = "armor";
     item.slot             = ItemSlot::ARMOR;
     item.stats.defenseMin = defMin;
@@ -128,7 +128,7 @@ static Item makeStaff(uint32_t id, ItemEffect effect,
                       uint16_t dmgMin = 0, uint16_t dmgMax = 0,
                       uint16_t healAmt = 0, uint16_t manaCost = 0) {
     Item item;
-    item.id              = id;
+    item.instanceId              = id;
     item.typeName        = (effect == ItemEffect::HEAL) ? "flauta_elfica" : "vara_fresno";
     item.slot            = ItemSlot::STAFF;
     item.effect          = effect;
@@ -142,7 +142,7 @@ static Item makeStaff(uint32_t id, ItemEffect effect,
 
 static Item makePotion(uint32_t id, uint16_t healAmt, uint16_t manaAmt) {
     Item item;
-    item.id              = id;
+    item.instanceId              = id;
     item.typeName        = healAmt > 0 ? "pocion_vida" : "pocion_mana";
     item.slot            = ItemSlot::CONSUMABLE;
     item.effect          = ItemEffect::NONE;
@@ -301,11 +301,11 @@ TEST(InventoryTest, MaxItemsRespected) {
     Inventory inv;
     for (std::size_t i = 0; i < Inventory::MAX_ITEMS; i++) {
         Item item = makeWeapon(1, 2);
-        item.id = i + 1;
+        item.instanceId = i + 1;
         EXPECT_TRUE(inv.addItem(item));
     }
     Item extra = makeWeapon(1, 2);
-    extra.id = 999;
+    extra.instanceId = 999;
     EXPECT_FALSE(inv.addItem(extra));
 }
 
@@ -322,7 +322,7 @@ TEST(InventoryTest, StaffReplacesWeaponInHand) {
     Inventory inv;
 
     Item weapon = makeWeapon(5, 10);
-    weapon.id   = 1;
+    weapon.instanceId   = 1;
     Item staff  = makeStaff(2, ItemEffect::DAMAGE, 2, 4, 0, 5);
 
     inv.addItem(weapon);
@@ -330,7 +330,7 @@ TEST(InventoryTest, StaffReplacesWeaponInHand) {
 
     EXPECT_TRUE(inv.equipItem(1));  // equipa arma
     EXPECT_TRUE(inv.equipItem(2));  // staff reemplaza al arma — válido
-    EXPECT_EQ(inv.getEquipped(EquipSlot::HAND)->id, 2u);  // queda el staff
+    EXPECT_EQ(inv.getEquipped(EquipSlot::HAND)->instanceId, 2u);  // queda el staff
 }
 TEST(InventoryTest, StaffReplacesStaff) {
     Inventory inv;
@@ -343,7 +343,7 @@ TEST(InventoryTest, StaffReplacesStaff) {
 
     EXPECT_TRUE(inv.equipItem(1));
     EXPECT_TRUE(inv.equipItem(2));  // reemplaza el staff anterior
-    EXPECT_EQ(inv.getEquipped(EquipSlot::HAND)->id, 2u);
+    EXPECT_EQ(inv.getEquipped(EquipSlot::HAND)->instanceId, 2u);
 }
 
 // ─── Items — efectos ─────────────────────────────────────────────────────────

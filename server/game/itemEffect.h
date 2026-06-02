@@ -1,1 +1,1 @@
-enum class ItemEffect { NONE, HEAL, DAMAGE };
+enum class ItemEffect { NONE, HEAL, DAMAGE, MANA };

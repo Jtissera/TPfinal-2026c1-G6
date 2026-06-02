@@ -22,14 +22,15 @@ public:
     }
 
     void serializeBody(PacketWriter& writer) const  override{
-    writer.writeUint8(static_cast<uint8_t>(items.size()));
-    for (const Item& item : items) {
-        writer.writeUint32(item.id);
-        writer.writeString(item.typeName);
-        writer.writeUint8(static_cast<uint8_t>(item.slot));
+        writer.writeUint8(static_cast<uint8_t>(items.size()));
+        for (const Item& item : items) {
+            writer.writeUint32(item.instanceId);
+            writer.writeUint32(item.catalogId);
+            writer.writeString(item.typeName);
+            writer.writeUint8(static_cast<uint8_t>(item.slot));
+        }
+        for (uint32_t equippedId : equipped) {
+            writer.writeUint32(equippedId);
+        }
     }
-    for (uint32_t equippedId : equipped) {
-        writer.writeUint32(equippedId);
-    }
-}
 };

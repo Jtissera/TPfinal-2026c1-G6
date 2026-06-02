@@ -84,7 +84,7 @@ static Player makePlayer(uint32_t id, int tx, int ty, int16_t hp = 100) {
  
 static Item makeWeapon(uint32_t id, uint16_t dmgMin, uint16_t dmgMax) {
     Item item;
-    item.id              = id;
+    item.instanceId             = id;
     item.typeName        = "espada";
     item.slot            = ItemSlot::WEAPON;
     item.effect          = ItemEffect::NONE;

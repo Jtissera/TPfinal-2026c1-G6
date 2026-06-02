@@ -22,33 +22,61 @@ ItemRepository::ItemRepository(const toml::table &config) {
       throw std::runtime_error("ItemRepository: item '" + typeName +
                                "' no tiene 'slot'");
 
+    const auto* catalogIdRaw = entry->get_as<int64_t>("catalog_id");
+
+    if (catalogIdRaw == nullptr) {
+      throw std::runtime_error(
+          "ItemRepository: item '" + typeName + "' no tiene 'catalog_id'"
+      );
+    }
+
     Item tmpl;
+
+    // Nombre lógico interno del server.
     tmpl.typeName = typeName;
+
+    // ID compartido con el JSON del cliente.
+    tmpl.catalogId = static_cast<uint32_t>(catalogIdRaw->get());
+
+    // Datos de dominio del server.
     tmpl.slot = parseSlot(slotRaw->get(), typeName);
     tmpl.stats = parseStats(*entry);
 
-    if (const auto *effectRaw = entry->get_as<std::string>("effect")) {
+    // Efecto opcional.
+    if (const auto* effectRaw = entry->get_as<std::string>("effect")) {
       tmpl.effect = parseEffect(effectRaw->get(), typeName);
     } else if (tmpl.slot == ItemSlot::STAFF) {
-      tmpl.effect = ItemEffect::DAMAGE; // staffs dañinos por defecto
+      // Si es báculo/vara y no especifica effect, asumimos daño mágico.
+      tmpl.effect = ItemEffect::DAMAGE;
+    } else {
+      tmpl.effect = ItemEffect::NONE;
     }
 
+    // Guardamos el template sin instanceId.
     templates[typeName] = std::move(tmpl);
   }
 }
 
-Item ItemRepository::createItem(const std::string &typeName) {
+Item ItemRepository::createItem(const std::string& typeName) {
   auto it = templates.find(typeName);
-  if (it == templates.end())
-    throw std::out_of_range("ItemRepository: tipo desconocido '" + typeName +
-                            "'");
 
-  return Item{nextId++, it->second.typeName, it->second.slot, it->second.effect,
-              it->second.stats};
+  if (it == templates.end()) {
+    throw std::out_of_range(
+        "ItemRepository: tipo desconocido '" + typeName + "'"
+    );
+  }
+
+  // Copiamos el template cargado desde TOML.
+  Item item = it->second;
+
+  // Esta copia concreta recibe su ID único.
+  item.instanceId = nextId++;
+
+  return item;
 }
 
-bool ItemRepository::exists(const std::string &typeName) const {
-  return templates.count(typeName) > 0;
+bool ItemRepository::exists(const std::string& typeName) const {
+  return templates.find(typeName) != templates.end();
 }
 
 ItemSlot ItemRepository::parseSlot(const std::string &raw,
@@ -69,27 +97,66 @@ ItemSlot ItemRepository::parseSlot(const std::string &raw,
                            "' en item '" + typeName + "'");
 }
 
-ItemEffect ItemRepository::parseEffect(const std::string &raw,
-                                       const std::string &typeName) {
-  if (raw == "damage")
-    return ItemEffect::DAMAGE;
-  if (raw == "heal")
+ItemEffect ItemRepository::parseEffect(const std::string& raw,
+                                       const std::string& typeName) {
+  if (raw == "heal") {
     return ItemEffect::HEAL;
-  throw std::runtime_error("ItemRepository: effect desconocido '" + raw +
-                           "' en item '" + typeName + "'");
+  }
+
+  if (raw == "mana") {
+    return ItemEffect::MANA;
+  }
+
+  if (raw == "damage") {
+    return ItemEffect::DAMAGE;
+  }
+
+  if (raw == "none") {
+    return ItemEffect::NONE;
+  }
+
+  throw std::runtime_error(
+      "ItemRepository: effect desconocido '" + raw +
+      "' en item '" + typeName + "'"
+  );
 }
 
 
-    ItemStats ItemRepository::parseStats(const toml::table &entry) {
+
+ItemStats ItemRepository::parseStats(const toml::table& entry) {
   ItemStats stats;
-  stats.damageMin = entry["damage_min"].value_or<uint16_t>(0);
-  stats.damageMax = entry["damage_max"].value_or<uint16_t>(0);
-  stats.defenseMin = entry["defense_min"].value_or<uint16_t>(0);
-  stats.defenseMax = entry["defense_max"].value_or<uint16_t>(0);
-  stats.healAmount = entry["heal_amount"].value_or<uint16_t>(0);
-  stats.manaAmount = entry["mana_amount"].value_or<uint16_t>(0);
-  stats.manaCost = entry["mana_cost"].value_or<uint16_t>(0);
-  stats.isRanged = entry["is_ranged"].value_or(false);
+
+  if (const auto* value = entry.get_as<bool>("is_ranged")) {
+    stats.isRanged = value->get();
+  }
+
+  if (const auto* value = entry.get_as<int64_t>("damage_min")) {
+    stats.damageMin = static_cast<int>(value->get());
+  }
+
+  if (const auto* value = entry.get_as<int64_t>("damage_max")) {
+    stats.damageMax = static_cast<int>(value->get());
+  }
+
+  if (const auto* value = entry.get_as<int64_t>("defense_min")) {
+    stats.defenseMin = static_cast<int>(value->get());
+  }
+
+  if (const auto* value = entry.get_as<int64_t>("defense_max")) {
+    stats.defenseMax = static_cast<int>(value->get());
+  }
+
+  if (const auto* value = entry.get_as<int64_t>("mana_cost")) {
+    stats.manaCost = static_cast<int>(value->get());
+  }
+
+  if (const auto* value = entry.get_as<int64_t>("heal_amount")) {
+    stats.healAmount = static_cast<int>(value->get());
+  }
+
+  if (const auto* value = entry.get_as<int64_t>("mana_amount")) {
+    stats.manaAmount = static_cast<int>(value->get());
+  }
 
   return stats;
 }
