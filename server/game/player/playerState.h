@@ -1,7 +1,9 @@
 #pragma once
-
+ 
 enum class PlayerState {
-  ALIVE,
-  DEAD,
-  MEDITATING,
+    ALIVE,
+    DEAD,
+    MEDITATING,
+    RESURRECTING,
 };
+ 

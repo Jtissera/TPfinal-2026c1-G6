@@ -5,9 +5,9 @@
 class NpcFactory {
 public:
     explicit NpcFactory(const NpcRepository& repo);
-    Npc create(const std::string& typeName, int tileX, int tileY);
+    Npc create(uint32_t id,const std::string& typeName, int tileX, int tileY, int tileSize);
 
 private:
     const NpcRepository& repo;
-    uint32_t nextId = 1;
+    //uint32_t nextId = 1;
 };

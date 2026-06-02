@@ -93,71 +93,58 @@ void GameLoop::processMessage(const ClientMessage &incoming)
 
 void GameLoop::worldUpdate(float deltaSeconds)
 {
-    if (!initialSnapshotSent)
-    {
+    if (!initialSnapshotSent) {
         sendInitialSnapshot();
         initialSnapshotSent = true;
     }
-
+ 
     auto result = world.tick(deltaSeconds);
-
+ 
     for (uint32_t id : result.playersChanged)
         statManager.sendPlayerStats(id, world, monitor);
-
-    for (auto &entry : result.instanceTransitions)
+ 
+    for (auto& entry : result.instanceTransitions)
         handleInstanceTransition(entry);
-
-    for (uint32_t npcId : result.npcsMoved)
-    {
-        const Npc &npc = world.getNpc(npcId);
-
+ 
+    for (uint32_t npcId : result.npcsMoved) {
+        const Npc& npc = world.getNpc(npcId);
+ 
+        // Los pies del NPC ya estan en pixeles — el cliente los usa directamente
         monitor.broadcast(std::make_shared<EntityMoveMessage>(
             static_cast<uint8_t>(npcId),
-            static_cast<int16_t>(
-                npc.getTileX() * tileSize + tileSize / 2),
-            static_cast<int16_t>(
-                npc.getTileY() * tileSize + tileSize / 2)));
+            static_cast<int16_t>(npc.getPixelX()),
+            static_cast<int16_t>(npc.getPixelY())));
     }
-
-    for (const auto &death : result.npcDeaths)
-        monitor.broadcast(
-            std::make_shared<EntityDespawnMessage>(death.npcId));
-
-    for (uint32_t npcId : result.npcSpawned)
-    {
-        const Npc &npc = world.getNpc(npcId);
-
+ 
+    for (const auto& death : result.npcDeaths)
+        monitor.broadcast(std::make_shared<EntityDespawnMessage>(death.npcId));
+ 
+    for (uint32_t npcId : result.npcSpawned) {
+        const Npc& npc = world.getNpc(npcId);
+ 
         monitor.broadcast(std::make_shared<EntitySpawnMessage>(
             npcId,
             npc.getType(),
-            static_cast<uint16_t>(
-                npc.getTileX() * tileSize + tileSize / 2),
-            static_cast<uint16_t>(
-                npc.getTileY() * tileSize + tileSize / 2)));
+            static_cast<uint16_t>(npc.getPixelX()),
+            static_cast<uint16_t>(npc.getPixelY())));
     }
 }
 
 void GameLoop::sendInitialSnapshot()
 {
-    const auto &npcs = world.getNpcs();
-
+    const auto& npcs = world.getNpcs();
     std::vector<NpcSnapshot> snapshots;
-
-    for (const auto &[id, npc] : npcs)
-    {
+ 
+    for (const auto& [id, npc] : npcs) {
         snapshots.push_back({
             id,
             npc.getType(),
-            static_cast<uint16_t>(
-                npc.getTileX() * tileSize + tileSize / 2),
-            static_cast<uint16_t>(
-                npc.getTileY() * tileSize + tileSize / 2)});
+            static_cast<uint16_t>(npc.getPixelX()),
+            static_cast<uint16_t>(npc.getPixelY())});
     }
-
-    monitor.broadcast(
-        std::make_shared<NpcListMessage>(std::move(snapshots)));
+ 
+    monitor.broadcast(std::make_shared<NpcListMessage>(std::move(snapshots)));
 }
-
 void GameLoop::handleLeaveGame(uint32_t clientId)
 {
     auto player = world.removePlayer(clientId);

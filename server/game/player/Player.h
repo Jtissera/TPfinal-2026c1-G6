@@ -1,122 +1,148 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include <toml++/toml.hpp>
-#include <vector>
-
-#include "../../../common/dtos/gameTypes.h"
-#include "../stats/classRepository.h"
-#include "../stats/raceRepository.h"
+#include "../items/EquipSlot.h"
+#include "../items/item.h"
+#include "../stats/classStats.h"
+#include "../stats/raceStats.h"
 #include "combatant.h"
 #include "inventory.h"
 #include "playerState.h"
+#include <cstdint>
+#include <string>
+#include <vector>
+#include <toml++/toml.hpp>
 
-class Player : public Combatant
-{
+class Player : public Combatant {
 public:
-  Player(uint32_t clientId, std::string name, const RaceStats &race,
-         const ClassStats &cls, int16_t maxHp, int16_t maxMana,
-         const toml::table &config);
+    Player(uint32_t clientId, std::string name,
+           const RaceStats& race, const ClassStats& cls,
+           int16_t maxHp, int16_t maxMana,
+           const toml::table& config);
 
-  bool isAlive() const override;
-  bool isGhost() const;
-  bool isMeditating() const;
+    // --- Combatant ---
+    uint32_t getId()      const override { return clientId; }
+    float    getPixelX()  const override { return pixelX; }
+    float    getPixelY()  const override { return pixelY; }
+    int      getTileX()   const override;
+    int      getTileY()   const override;
 
-  void takeDamage(int16_t dmg) override;
-  void heal(int16_t amount);
-  void restoreMana(int16_t amount);
-  bool spendMana(int16_t cost);
-  void addGold(uint32_t amount);
+    int16_t  getHp()      const override { return hp; }
+    int16_t  getMaxHp()   const override { return maxHp; }
+    uint8_t  getLevel()   const override { return level; }
+    uint8_t  getAgility() const override { return race.agility; }
+    uint8_t  getStrength()const override { return race.strength; }
+    bool     isAlive()    const override;
 
-  uint32_t die(uint32_t safeGold);
-  void resurrect(int tileX, int tileY);
+    // Rango de ataque en pixeles:
+    //   arma ranged => rangedAttackRangePx
+    //   melee       => meleeRangePx (aprox 1.5 * tileSize)
+    float    getAttackRangePx() const override;
 
-  void addExperience(uint32_t exp, uint32_t expLimit, int16_t newMaxHp,
-                     int16_t newMaxMana);
-  bool checkAndClearLevelUp();
-  void levelUp(int16_t newMaxHp, int16_t newMaxMana);
+    uint16_t getWeaponDamageMin()  const override;
+    uint16_t getWeaponDamageMax()  const override;
+    uint16_t getArmorDefenseMin()  const override;
+    uint16_t getArmorDefenseMax()  const override;
+    uint16_t getHelmetDefenseMin() const override;
+    uint16_t getHelmetDefenseMax() const override;
+    uint16_t getShieldDefenseMin() const override;
+    uint16_t getShieldDefenseMax() const override;
 
-  void startMeditating();
-  void stopMeditating();
-  void toggleInfiniteHp();
-  void toggleInfiniteMana();
-  bool hasInfiniteHp() const { return infiniteHp; }
-  bool hasInfiniteMana() const { return infiniteMana; }
-  void tick(float hpGained, float manaGained);
+    void takeDamage(int16_t dmg) override;
 
-  std::vector<Item> purgeInventoryOnDeath();
+    // --- Hitbox (AABB centrado en pies) ---
+    // left   = pixelX - hitboxW/2
+    // right  = pixelX + hitboxW/2
+    // top    = pixelY - hitboxH
+    // bottom = pixelY
+    float getHitboxW() const { return hitboxW; }
+    float getHitboxH() const { return hitboxH; }
 
-  void setTilePos(int tx, int ty);
+    // --- Estado ---
+    bool isGhost()       const;
+    bool isMeditating()  const;
+    bool isResurrecting()const;
 
-  int getTileX() const override;
-  int getTileY() const override;
-  uint32_t getId() const override;
-  uint32_t getClientId() const;
-  uint8_t getLevel() const override;
-  int16_t getHp() const override;
-  int16_t getMaxHp() const override;
-  int16_t getMana() const;
-  int16_t getMaxMana() const;
-  uint32_t getExp() const;
-  uint32_t getGold() const;
-  uint8_t getAgility() const override;
-  uint8_t getStrength() const override;
-  int getAttackRange() const override;
+    // --- Movimiento ---
+    // Mueve los pies en pixeles. GameWorld valida colision antes de llamar esto.
+    void setPixelPos(float px, float py);
 
-  uint16_t getWeaponDamageMin() const override;
-  uint16_t getWeaponDamageMax() const override;
-  uint16_t getArmorDefenseMin() const override;
-  uint16_t getArmorDefenseMax() const override;
-  uint16_t getHelmetDefenseMin() const override;
-  uint16_t getHelmetDefenseMax() const override;
-  uint16_t getShieldDefenseMin() const override;
-  uint16_t getShieldDefenseMax() const override;
+    // --- Stats ---
+    void heal(int16_t amount);
+    void restoreMana(int16_t amount);
+    bool spendMana(int16_t cost);
+    void addGold(uint32_t amount);
+    void spendGold(uint32_t amount);
+    void addExperience(uint32_t exp, uint32_t expLimit,
+                       int16_t newMaxHp, int16_t newMaxMana);
+    bool checkAndClearLevelUp();
 
-  void restoreFullHpAndMana();
-  void spendGold(uint32_t amount);
+    void startMeditating();
+    void stopMeditating();
+    void startResurrection();
+    void stopResurrection();
 
-  bool isResurrecting() const { return resurrecting; }
-  void startResurrection() { resurrecting = true; }
-  void stopResurrection() { resurrecting = false; }
-  bool canInteract() const { return !isGhost() && !resurrecting; }
+    uint32_t die(uint32_t safeGold);
+    void resurrect(float px, float py);
+    void tick(float hpGained, float manaGained);
 
-  const RaceStats &getRace() const;
-  const ClassStats &getCls() const;
+    std::vector<Item> purgeInventoryOnDeath();
 
-  Inventory &getInventory();
-  const Inventory &getInventory() const;
+    // --- Getters ---
+    uint32_t getClientId()  const { return clientId; }
+    int16_t  getMana()      const { return mana; }
+    int16_t  getMaxMana()   const { return maxMana; }
+    uint32_t getExp()       const { return experience; }
+    uint32_t getGold()      const { return gold; }
+    float    getStepPx()    const { return stepPx; }
 
-  Player(const Player &) = delete;
-  Player &operator=(const Player &) = delete;
-  Player(Player &&) = default;
-  Player &operator=(Player &&) = default;
+    const RaceStats&   getRace() const { return race; }
+    const ClassStats&  getCls()  const { return cls; }
+
+    Inventory&       getInventory()       { return inventory; }
+    const Inventory& getInventory() const { return inventory; }
+
+    void toggleInfiniteHp();
+    void toggleInfiniteMana();
+    void restoreFullHpAndMana();
 
 private:
-  bool resurrecting = false;
+    void levelUp(int16_t newMaxHp, int16_t newMaxMana);
 
-  uint32_t clientId;
-  std::string name;
-  const RaceStats &race;
-  const ClassStats &cls;
+    uint32_t clientId;
+    std::string name;
+    const RaceStats&  race;
+    const ClassStats& cls;
 
-  int tileX = 0;
-  int tileY = 0;
+    // Posicion — pies del sprite en pixeles
+    float pixelX = 0.0f;
+    float pixelY = 0.0f;
 
-  uint8_t level = 1;
-  int16_t hp = 0;
-  int16_t maxHp = 0;
-  int16_t mana = 0;
-  int16_t maxMana = 0;
-  uint32_t gold = 0;
-  uint32_t experience = 0;
+    // Tamano del tile (para getTileX/Y y rangos)
+    int tileSize;
 
-  int rangedAttackRange;
+    // Hitbox en pixeles
+    float hitboxW;
+    float hitboxH;
 
-  PlayerState state = PlayerState::ALIVE;
-  bool didLevelUp = false;
-  bool infiniteHp = false;
-  bool infiniteMana = false;
+    // Rango de ataque en pixeles
+    float meleeRangePx;
+    float rangedAttackRangePx;
 
-  Inventory inventory;
+    // Cuantos pixeles se mueve por paso (= tileSize normalmente)
+    float stepPx;
+
+    int16_t maxHp;
+    int16_t maxMana;
+    int16_t hp;
+    int16_t mana;
+    uint32_t experience = 0;
+    uint32_t gold       = 0;
+    uint8_t  level      = 1;
+
+    bool didLevelUp  = false;
+    bool infiniteHp   = false;
+    bool infiniteMana = false;
+
+    PlayerState state = PlayerState::ALIVE;
+    Inventory   inventory;
 };

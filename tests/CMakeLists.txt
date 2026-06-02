@@ -2,23 +2,5 @@ target_sources(taller_tests
     PRIVATE
     version_test.cpp
     protocol_test.cpp
-    mapSerializer_test.cpp
-    ../editor/map/mapData.cpp
-    ../editor/map/mapSerializer.cpp
-    lobby_test.cpp
-    combat_test.cpp
-    inventory_test.cpp
-    player_test.cpp
-    world_test.cpp
-    integration_test.cpp
-    remove_player_test.cpp
-    dungeon_test.cpp
-    bankerHandlerTest.cpp
-    cityCommandParserTest.cpp
-    merchantHandlerTest.cpp
-    priestHandlerTest.cpp
-    priestLocatorTest.cpp
-    resurrectionSystemTest.cpp
-    safeZoneTest.cpp
-    cityIntegrationTest.cpp
+
 )

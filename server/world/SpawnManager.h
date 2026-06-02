@@ -13,7 +13,7 @@
 class SpawnManager {
 public:
   SpawnManager(const toml::table &config, NpcManager &npcManager,
-               const CollisionSystem &collision, OccupancySystem &occupancy);
+               const CollisionSystem &collision);
 
   void loadSpawnPoints(const MapData &mapData);
   std::optional<uint32_t> spawnNpc(const std::string &typeName, int tileX, int tileY);
@@ -22,7 +22,6 @@ public:
 private:
   NpcManager &npcManager;
   const CollisionSystem &collision;
-  OccupancySystem &occupancy;
 
   int spawnTickCounter = 0;
   int spawnEveryNTicks;

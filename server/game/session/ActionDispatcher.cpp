@@ -68,17 +68,17 @@ void ActionDispatcher::sendDeath(uint32_t id, Player &dead, Monitor &monitor)
   sendStats(id, dead, monitor);
 }
 
-void ActionDispatcher::handleMove(uint32_t id, const Message &msg,
-                                  GameWorld &world, Monitor &monitor)
+void ActionDispatcher::handleMove(uint32_t id, const Message& msg,
+                                   GameWorld& world, Monitor& monitor)
 {
-  const auto &moveMsg = static_cast<const MoveMessage &>(msg);
-
-  if (world.movePlayer(id, moveMsg.getDirection()))
-  {
-    monitor.sendTo(id, std::make_shared<const EntityMoveMessage>(
-                           static_cast<uint8_t>(id), world.getPixelX(id),
-                           world.getPixelY(id)));
-  }
+    const auto& moveMsg = static_cast<const MoveMessage&>(msg);
+ 
+    if (world.movePlayer(id, moveMsg.getDirection())) {
+        monitor.sendTo(id, std::make_shared<const EntityMoveMessage>(
+            static_cast<uint8_t>(id),
+            static_cast<int16_t>(world.getPixelX(id)),   // ya es float, cast directo
+            static_cast<int16_t>(world.getPixelY(id))));
+    }
 }
 
 void ActionDispatcher::handleAttack(uint32_t id, const Message &msg,
@@ -161,20 +161,31 @@ void ActionDispatcher::handleMeditate(uint32_t id, const Message &msg,
   sendStats(id, p, monitor);
 }
 
-void ActionDispatcher::handleResurrect(uint32_t id, const Message &msg,
-                                       GameWorld &world, Monitor &monitor)
+void ActionDispatcher::handleResurrect(uint32_t id, const Message& msg,
+                                        GameWorld& world, Monitor& monitor)
 {
-  Player &p = world.getPlayer(id);
-  if (!p.isGhost())
-    return;
-
-  world.resurrectPlayer(id, 6, 7);
-
-  monitor.sendTo(id, std::make_shared<const EntityMoveMessage>(
-                         static_cast<uint8_t>(id), world.getPixelX(id),
-                         world.getPixelY(id)));
-  sendStats(id, p, monitor);
+    Player& p = world.getPlayer(id);
+    if (!p.isGhost()) return;
+ 
+    // Coordenadas de resurreccion en pixeles (tile 6,7 -> centro del tile)
+    // Idealmente esto vendria del config, por ahora mantenemos el hardcode
+    // convertido a pixeles con el tileSize del mundo.
+    // Si queres hacerlo configurable, agregalo al TOML y leelo desde world.
+    const int spawnTileX = 6;
+    const int spawnTileY = 7;
+    const int tileSize   = 96;
+    float spawnPx = static_cast<float>(spawnTileX * tileSize + tileSize / 2);
+    float spawnPy = static_cast<float>(spawnTileY * tileSize + tileSize / 2);
+ 
+    world.resurrectPlayer(id, spawnPx, spawnPy);
+ 
+    monitor.sendTo(id, std::make_shared<const EntityMoveMessage>(
+        static_cast<uint8_t>(id),
+        static_cast<int16_t>(world.getPixelX(id)),
+        static_cast<int16_t>(world.getPixelY(id))));
+    sendStats(id, p, monitor);
 }
+
 
 void ActionDispatcher::handleEquipItem(uint32_t id, const Message &msg,
                                        GameWorld &world, Monitor &monitor)
@@ -228,51 +239,48 @@ void ActionDispatcher::handleCheat(uint32_t id, const Message &msg,
   }
 }
 
-void ActionDispatcher::handleInteractNpc(uint32_t id, const Message &msg,
-                                         GameWorld &world, Monitor &monitor)
+void ActionDispatcher::handleInteractNpc(uint32_t id, const Message& msg,
+                                          GameWorld& world, Monitor& monitor)
 {
-  const auto &interactMsg = static_cast<const InteractNpcMessage &>(msg);
-  Player &player = world.getPlayer(id);
-
-  if (player.isGhost())
-  {
-    auto cmd = CityCommandParser::parse(interactMsg.getCmd());
-    if (!cmd || cmd->type != CityCommand::Type::RESURRECT)
-    {
-      monitor.sendTo(id, std::make_shared<const ErrorMessage>(
-                             "Un fantasma no puede interactuar."));
-      return;
+    const auto& interactMsg = static_cast<const InteractNpcMessage&>(msg);
+    Player& player = world.getPlayer(id);
+ 
+    if (player.isGhost()) {
+        auto cmd = CityCommandParser::parse(interactMsg.getCmd());
+        if (!cmd || cmd->type != CityCommand::Type::RESURRECT) {
+            monitor.sendTo(id, std::make_shared<const ErrorMessage>(
+                "Un fantasma no puede interactuar."));
+            return;
+        }
+        auto result = world.handleRemoteResurrect(id);
+        monitor.sendTo(id, std::make_shared<const NpcResponseMessage>(result.message));
+        return;
     }
-    auto result = world.handleRemoteResurrect(id);
+ 
+    // Busca NPC de ciudad en tiles adyacentes.
+    // Sigue usando getTileX/Y porque los NPCs de ciudad estan en el MapData por tile.
+    int px = player.getTileX();
+    int py = player.getTileY();
+ 
+    std::optional<NpcType> npcType;
+    for (int dx = -1; dx <= 1 && !npcType; dx++)
+        for (int dy = -1; dy <= 1 && !npcType; dy++)
+            npcType = world.getNpcTypeAtTile(px + dx, py + dy);
+ 
+    if (!npcType) {
+        monitor.sendTo(id, std::make_shared<const ErrorMessage>(
+            "No hay ningun NPC cerca."));
+        return;
+    }
+ 
+    auto cmd = CityCommandParser::parse(interactMsg.getCmd());
+    if (!cmd) {
+        monitor.sendTo(id, std::make_shared<const ErrorMessage>("Comando invalido."));
+        return;
+    }
+ 
+    auto result = world.handleCityInteraction(id, *npcType, *cmd);
     monitor.sendTo(id, std::make_shared<const NpcResponseMessage>(result.message));
-    return;
-  }
-
-  // Buscar NPC de ciudad en tiles adyacentes al jugador (distancia Chebyshev <= 1)
-  int px = player.getTileX();
-  int py = player.getTileY();
-
-  std::optional<NpcType> npcType;
-  for (int dx = -1; dx <= 1 && !npcType; dx++)
-    for (int dy = -1; dy <= 1 && !npcType; dy++)
-      npcType = world.getNpcTypeAtTile(px + dx, py + dy);
-
-  if (!npcType)
-  {
-    monitor.sendTo(id, std::make_shared<const ErrorMessage>(
-                           "No hay ningún NPC cerca."));
-    return;
-  }
-
-  auto cmd = CityCommandParser::parse(interactMsg.getCmd());
-  if (!cmd)
-  {
-    monitor.sendTo(id, std::make_shared<const ErrorMessage>("Comando inválido."));
-    return;
-  }
-
-  auto result = world.handleCityInteraction(id, *npcType, *cmd);
-  monitor.sendTo(id, std::make_shared<const NpcResponseMessage>(result.message));
-  if (result.ok)
-    sendStats(id, player, monitor);
+    if (result.ok)
+        sendStats(id, player, monitor);
 }

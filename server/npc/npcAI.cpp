@@ -26,12 +26,12 @@ NpcAI::decide(const Npc &npc,
     return {NpcIntent::Type::MOVE, tx, ty, targetId, NpcState::CHASING};
   }
 
-  int distHome = distance(npc.getTileX(), npc.getTileY(), npc.getSpawnTileX(),
-                          npc.getSpawnTileY());
+  int distHome = distance(npc.getTileX(), npc.getTileY(), npc.getSpawnPixelX(),
+                          npc.getSpawnPixelY());
 
   if (distHome > 0) {
     auto [tx, ty] = stepTowards(npc.getTileX(), npc.getTileY(),
-                                npc.getSpawnTileX(), npc.getSpawnTileY());
+                                npc.getSpawnPixelX(), npc.getSpawnPixelY());
     NpcState next = (distHome == 1) ? NpcState::IDLE : NpcState::RETURNING;
     return {NpcIntent::Type::MOVE, tx, ty, 0, next};
   }
@@ -43,7 +43,7 @@ uint32_t NpcAI::findClosestPlayerId(
     const Npc &npc, const std::unordered_map<uint32_t, Player> &players) const {
 
   uint32_t closestId = 0;
-  int minDist = npc.getDetectionRange() + 1;
+  int minDist = npc.getDetectionRangePx() + 1;
 
   for (const auto &[id, player] : players) {
     if (!player.isAlive())

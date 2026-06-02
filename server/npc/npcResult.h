@@ -3,32 +3,29 @@
 #include <string>
 #include <vector>
 
-struct NpcMoveIntent
-{
+struct NpcMoveIntent {
     uint32_t npcId;
-    int fromX, fromY;
-    int toX, toY;
+    float fromX, fromY;   // posicion actual en pixeles
+    float toX,   toY;     // posicion destino en pixeles
 };
 
-struct NpcAttack
-{
+struct NpcAttackIntent {
+    uint32_t npcId;
     uint32_t targetPlayerId;
-    int16_t damage;
-    float xpMultiplier = 1.0f;
+    int16_t  damage;
 };
 
-struct NpcDeathResult
-{
+struct NpcDeathResult {
     uint32_t npcId;
-    int tileX;
-    int tileY;
+    float    pixelX, pixelY;
+    // Para backward compat con GameLoop que usa tileX/Y al broadcast:
+    int      tileX,  tileY;
     uint32_t goldDrop;
-    std::string itemDrop; // vacío si no hay drop
+    std::string itemDrop;
 };
 
-struct NpcTickResult
-{
-    std::vector<NpcMoveIntent> moveIntents; // GameWorld aplica si puede
-    std::vector<NpcAttack> attacks;
-    std::vector<NpcDeathResult> deaths;
+struct NpcTickResult {
+    std::vector<NpcMoveIntent>  moveIntents;
+    std::vector<NpcAttackIntent> attacks;
+    std::vector<NpcDeathResult>  deaths;
 };

@@ -19,6 +19,11 @@ struct NpcStats
     uint32_t attackCooldownMs;
     uint32_t moveCooldownMs;
     std::vector<std::string> zones;
+int goldDropChance;
+int goldDropMax;
+int goldDropMin;
+int itemDropChance;
+std::string itemDrop;
     // Indica si este NPC es una criatura agresiva.
     // true  = esqueleto, goblin, zombie, etc.
     // false = comerciante, sacerdote, banquero, etc.

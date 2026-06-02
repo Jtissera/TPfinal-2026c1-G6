@@ -1,5 +1,4 @@
 #pragma once
-
 #include "../../common/dtos/gameTypes.h"
 #include "../../editor/map/mapData.h"
 #include "../../editor/map/mapSerializer.h"
@@ -10,7 +9,6 @@
 #include "../npc/npcManager.h"
 #include "CollisionSystem.h"
 #include "GroundManager.h"
-#include "OccupancySystem.h"
 #include "SpawnManager.h"
 #include "../bank/bankRepository.h"
 #include "../resurrection/resurrectionSystem.h"
@@ -24,118 +22,143 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
-#include <mutex>
 #include <string>
-#include <unordered_map>
-#include <optional>
 #include <cstdint>
 #include <utility>
 
+// OccupancySystem eliminado. La colision entre entidades se resuelve
+// con AABB usando CollisionSystem::overlaps() en movePlayer/tickNpcs.
 
-//HAY QUE SACAR EL MUTEX, era para una prueba noma dsp
-class GameWorld
-{
+class GameWorld {
 public:
-  explicit GameWorld(const std::string &mapPath, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config);
+    explicit GameWorld(const std::string& mapPath,
+                       NpcFactory& npcFactory,
+                       ItemRepository& itemRepo,
+                       const toml::table& config);
 
-explicit GameWorld(MapData mapData, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config);
+    explicit GameWorld(MapData mapData,
+                       NpcFactory& npcFactory,
+                       ItemRepository& itemRepo,
+                       const toml::table& config);
 
-  struct InstanceEntry
-  {
-    uint32_t playerId;
-    std::string targetMap;
-    int returnTileX;
-    int returnTileY;
-  };
-
-  struct WorldTickResult
-  {
-    std::vector<uint32_t> playersChanged;
-    std::vector<uint32_t> npcsMoved;
-    std::vector<NpcDeathResult> npcDeaths;
-    std::vector<uint32_t> npcSpawned;
-
-    struct PlayerHit
-    {
-      uint32_t playerId;
-      int16_t damage;
+    struct InstanceEntry {
+        uint32_t    playerId;
+        std::string targetMap;
+        int         returnTileX;
+        int         returnTileY;
     };
-    std::vector<PlayerHit> playerHits;
-    std::vector<InstanceEntry> instanceTransitions;
-  };
 
-  void addPlayer(Player player);
-  std::optional<Player> removePlayer(uint32_t id);
-  bool movePlayer(uint32_t id, Direction dir);
+    struct WorldTickResult {
+        std::vector<uint32_t>       playersChanged;
+        std::vector<uint32_t>       npcsMoved;
+        std::vector<NpcDeathResult> npcDeaths;
+        std::vector<uint32_t>       npcSpawned;
 
-  Player &getPlayer(uint32_t id);
-  const Player &getPlayer(uint32_t id) const;
+        struct PlayerHit {
+            uint32_t playerId;
+            int16_t  damage;
+        };
+        std::vector<PlayerHit>    playerHits;
+        std::vector<InstanceEntry> instanceTransitions;
+    };
 
-  bool canPlayerAct(uint32_t id) const;
+    void                  addPlayer(Player player);
+    std::optional<Player> removePlayer(uint32_t id);
 
-  int getTileX(uint32_t id) const;
-  int getTileY(uint32_t id) const;
-  int getPixelX(uint32_t id) const;
-  int getPixelY(uint32_t id) const;
+    // Intenta mover al jugador en la direccion dada.
+    // Valida colision con mapa y con otras entidades (AABB).
+    // Devuelve true si el movimiento fue exitoso.
+    bool movePlayer(uint32_t id, Direction dir);
 
-  const Tile &getTileAt(int tileX, int tileY) const;
+    Player&       getPlayer(uint32_t id);
+    const Player& getPlayer(uint32_t id) const;
 
-  void giveExperience(uint32_t playerId, uint32_t exp,
-                      float xpMultiplier = 1.0f);
+    bool canPlayerAct(uint32_t id) const;
 
-  struct DeathResult
-  {
-    uint32_t excessGold;
-    std::vector<Item> droppedItems;
-  };
-  DeathResult handlePlayerDeath(uint32_t targetId, uint32_t attackerId);
+    // Helpers de posicion
+    int   getTileX(uint32_t id)  const;
+    int   getTileY(uint32_t id)  const;
+    float getPixelX(uint32_t id) const;
+    float getPixelY(uint32_t id) const;
 
-  void addItemOnGround(Item item, int tileX, int tileY);
-  std::optional<Item> pickItemAt(int tileX, int tileY);
+    // Pixel del centro del tile para broadcast al cliente
+    int getPixelXForBroadcast(uint32_t id) const;
+    int getPixelYForBroadcast(uint32_t id) const;
 
-  void addGoldOnGround(uint32_t amount, int tileX, int tileY);
-  std::optional<uint32_t> pickGoldAt(int tileX, int tileY);
+    const Tile& getTileAt(int tileX, int tileY) const;
 
-  void spawnNpc(const std::string &typeName, int tileX, int tileY);
+    void giveExperience(uint32_t playerId, uint32_t exp,
+                        float xpMultiplier = 1.0f);
 
-  const Npc& getNpc(uint32_t id) const;
+    struct DeathResult {
+        uint32_t          excessGold;
+        std::vector<Item> droppedItems;
+    };
+    DeathResult handlePlayerDeath(uint32_t targetId, uint32_t attackerId);
 
-  WorldTickResult tick(float deltaSeconds);
+    void                  addItemOnGround(Item item, int tileX, int tileY);
+    std::optional<Item>   pickItemAt(int tileX, int tileY);
 
-  const MapData &getMapData() const { return mapData; }
-  const std::unordered_map<uint32_t, Npc> &getNpcs() const;
+    void                  addGoldOnGround(uint32_t amount, int tileX, int tileY);
+    std::optional<uint32_t> pickGoldAt(int tileX, int tileY);
 
-  void resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY);
-  std::pair<int, int> findSafeSpawnNear(int tileX, int tileY) const;
+    void spawnNpc(const std::string& typeName, int tileX, int tileY);
 
-  CityResult handleCityInteraction(uint32_t playerId, NpcType npcType,
-                                   const CityCommand &cmd);
-  CityResult handleRemoteResurrect(uint32_t playerId);
-  std::optional<NpcType> getNpcTypeAtTile(int tileX, int tileY) const;
+    const Npc& getNpc(uint32_t id) const;
+    const std::unordered_map<uint32_t, Npc>& getNpcs() const;
+
+    WorldTickResult tick(float deltaSeconds);
+
+    const MapData& getMapData() const { return mapData; }
+
+    void resurrectPlayer(uint32_t id, float pixelX, float pixelY);
+    std::pair<float, float> findSafeSpawnNear(int tileX, int tileY) const;
+
+    CityResult handleCityInteraction(uint32_t playerId,
+                                     NpcType npcType,
+                                     const CityCommand& cmd);
+    CityResult handleRemoteResurrect(uint32_t playerId);
+
+    std::optional<NpcType> getNpcTypeAtTile(int tileX, int tileY) const;
+
+    // Chequea adyacencia entre jugador y un punto en pixeles
+    // (para interaccion con NPC de ciudad, pickup, etc.)
+    bool isPlayerAdjacentTo(uint32_t playerId,
+                             float targetPixelX, float targetPixelY) const;
 
 private:
-  void tickPlayers(float deltaSeconds, WorldTickResult &result);
-  void tickNpcs(WorldTickResult &result);
+    void tickPlayers(float deltaSeconds, WorldTickResult& result);
+    void tickNpcs(WorldTickResult& result);
 
-  MapData mapData;
-  CollisionSystem collision;
-  OccupancySystem occupancy;
-  GameFormulas formulas;
-  NpcManager npcManager;
-  ItemRepository &itemRepo;
-  BankRepository bankRepo;
-  ResurrectionSystem resurrectionSystem;
-  PriestHandler priestHandler;
-  MerchantHandler merchantHandler;
-  BankerHandler bankerHandler;
-  CityNpcDispatcher cityDispatcher;
+    // Colision entre entidades: devuelve true si el hitbox en (px,py)
+    // solapa con algun otro jugador o NPC (excluyendo excludeId)
+    bool entityCollides(float px, float py,
+                        float hitboxW, float hitboxH,
+                        uint32_t excludeId) const;
 
-  std::unordered_map<uint32_t, Player> players;
-  GroundManager groundManager;
-  SpawnManager spawnManager;
-  int tileSize;
+    Rect playerHitbox(float px, float py) const;
+    Rect npcHitbox(float px, float py)    const;
 
-  std::mutex worldMutex;
+    MapData         mapData;
+    CollisionSystem collision;
+    GameFormulas    formulas;
+    NpcManager      npcManager;
+    ItemRepository& itemRepo;
+    BankRepository  bankRepo;
+    ResurrectionSystem resurrectionSystem;
+    PriestHandler   priestHandler;
+    MerchantHandler merchantHandler;
+    BankerHandler   bankerHandler;
+    CityNpcDispatcher cityDispatcher;
+
+    std::unordered_map<uint32_t, Player> players;
+    GroundManager groundManager;
+    SpawnManager  spawnManager;
+
+    int   tileSize;
+    float playerHitboxW;
+    float playerHitboxH;
+    float npcHitboxW;
+    float npcHitboxH;
+    float adjacencyThreshold;
 };

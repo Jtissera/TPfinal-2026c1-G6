@@ -11,8 +11,8 @@ uint8_t EntitySpawnMessage::opCode() const {
 void EntitySpawnMessage::serializeBody(PacketWriter& writer) const {
     writer.writeUint32(id);
     writer.writeUint8(static_cast<uint8_t>(type));
-    writer.writeUint16(x);
-    writer.writeUint16(y);
+    writer.writeUint32(x);
+    writer.writeUint32(y);
 }
 
 uint32_t EntitySpawnMessage::getId()   const { return id; }

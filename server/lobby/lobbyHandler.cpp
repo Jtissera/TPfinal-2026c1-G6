@@ -314,7 +314,7 @@ void LobbyHandler::handleInstanceTransition(
         event.clientId,
         *event.clientQueue);
 
-    event.player.setTilePos(
+    event.player.setPixelPos(
         event.spawnTileX,
         event.spawnTileY);
 

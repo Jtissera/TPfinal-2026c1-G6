@@ -6,11 +6,9 @@
 SpawnManager::SpawnManager(
     const toml::table &config,
     NpcManager &npcManager,
-    const CollisionSystem &collision,
-    OccupancySystem &occupancy)
+    const CollisionSystem &collision)
     : npcManager(npcManager),
       collision(collision),
-      occupancy(occupancy),
       spawnEveryNTicks(
           config["npc"]["spawn_interval_ticks"].value_or(200)),
       maxNpcs(
@@ -60,19 +58,11 @@ std::optional<uint32_t> SpawnManager::spawnNpc(
   if (!collision.isWalkable(tileX, tileY))
     return std::nullopt;
 
-  if (occupancy.isOccupied(tileX, tileY))
-    return std::nullopt;
-
   uint32_t npcId =
       npcManager.spawnNpc(
           typeName,
           tileX,
           tileY);
-
-  occupancy.occupy(
-      tileX,
-      tileY,
-      npcId);
 
   return npcId;
 }
@@ -87,8 +77,7 @@ std::optional<uint32_t> SpawnManager::trySpawnAround(
     int tx = x + (std::rand() % 7) - 3;
     int ty = y + (std::rand() % 7) - 3;
 
-    if (collision.isWalkable(tx, ty) &&
-        !occupancy.isOccupied(tx, ty))
+    if (collision.isWalkable(tx, ty))
     {
       auto id = spawnNpc(typeName, tx, ty);
 

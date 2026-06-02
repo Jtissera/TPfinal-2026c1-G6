@@ -284,8 +284,33 @@ gold_drop_max = 12
 zones = ["COMBAT"]
 
 [world]
-tile_size = 96
-
+tile_size            = 96
+ 
+# Hitbox de jugadores en pixeles (AABB centrado en los pies)
+# El sprite puede ser mas ancho/alto, esto es solo para colisiones
+player_hitbox_w      = 32
+player_hitbox_h      = 16
+ 
+# Hitbox de NPCs en pixeles
+npc_hitbox_w         = 32
+npc_hitbox_h         = 16
+ 
+# Cuantos pixeles se mueve el jugador por paso (normalmente = tile_size)
+player_step_px       = 96
+ 
+# Rango de ataque melee en pixeles (1.5 tiles = permite atacar al adyacente
+# aunque no esten perfectamente alineados)
+melee_range_px       = 144
+ 
+# Rango de ataque ranged en pixeles (10 tiles)
+ranged_attack_range_px = 960
+ 
+# Umbral de adyacencia en pixeles (Chebyshev) para:
+#   - interaccion con NPC de ciudad
+#   - pickup de items
+#   - spawn cerca de un punto
+# 1.5 * tile_size = permite adyacencia diagonal
+adjacency_threshold  = 144
 
 [cavern]
 gold_multiplier = 1.5
