@@ -13,7 +13,9 @@ enum class TileType : uint8_t
     DOOR = 4,
     DUNGEON_ENTRANCE = 5,
     CAVERN_ENTRANCE = 6,
-    EXIT = 7, // salida de instancia, vuelve al mundo principal
+    EXIT = 7,
+    SAND = 8,
+    FOREST = 9,
 };
 
 enum class ZoneType : uint8_t
@@ -22,13 +24,16 @@ enum class ZoneType : uint8_t
     COMBAT = 1,
     CAVERN = 2,
     DUNGEON = 3,
+    CITY = 4,
+    DESERT = 5,
+    FOREST = 6,
 };
 
 struct Tile
 {
     TileType type = TileType::GRASS;
-    ZoneType zone = ZoneType::SAFE;
+    ZoneType zone = ZoneType::COMBAT;
     bool walkable = true;
     NpcType npc = NpcType::NONE;
-    std::string targetMap = ""; // solo relevante para DUNGEON_ENTRANCE / CAVERN_ENTRANCE
+    std::string targetMap = "";
 };

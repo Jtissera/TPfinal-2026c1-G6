@@ -24,17 +24,31 @@ signals:
     void selectionChanged();
 
 private:
+    // --- Terreno ---
     QRadioButton *_rbGrass;
+    QRadioButton *_rbSand;
     QRadioButton *_rbWater;
-    QRadioButton *_rbWall;
     QRadioButton *_rbFloor;
+
+    // --- Estructuras ---
+    QRadioButton *_rbWall;
     QRadioButton *_rbDoor;
-    QRadioButton *_rbCavern;
-    QRadioButton *_rbDungeon;
+    QRadioButton *_rbForest;
+
+    // --- Especiales ---
+    QRadioButton *_rbDungeonEntrance;
+    QRadioButton *_rbCavernEntrance;
     QRadioButton *_rbExit;
-    QRadioButton *_rbCavernZone;
-    QRadioButton *_rbDungeonZone;
-    QRadioButton *_rbSafe;
-    QRadioButton *_rbCombat;
+
+    // --- Zona ---
+    QRadioButton *_rbZoneSafe;
+    QRadioButton *_rbZoneCity;
+    QRadioButton *_rbZoneCombat;
+    QRadioButton *_rbZoneDesert;
+    QRadioButton *_rbZoneForest;
+    QRadioButton *_rbZoneCavern;
+    QRadioButton *_rbZoneDungeon;
+
+    // --- Propiedades ---
     QCheckBox *_cbWalkable;
 };

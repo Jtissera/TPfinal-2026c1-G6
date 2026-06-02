@@ -1,0 +1,72 @@
+{
+  "textures": [
+    {
+      "id": "items1",
+      "path": "assets/sprites/equipment/items1.png"
+    },
+    {
+      "id": "items2",
+      "path": "assets/sprites/equipment/items2.png"
+    },
+    {
+      "id": "eq_sword",
+      "path": "assets/sprites/equipment/sword.png"
+    },
+    {
+      "id": "eq_axe",
+      "path": "assets/sprites/equipment/axe.png"
+    },
+    {
+      "id": "eq_bow",
+      "path": "assets/sprites/equipment/bow.png"
+    },
+    {
+      "id": "eq_compound_bow",
+      "path": "assets/sprites/equipment/compound_bow.png"
+    },
+    {
+      "id": "eq_hammer",
+      "path": "assets/sprites/equipment/hammer.png"
+    },
+    {
+      "id": "eq_staff1",
+      "path": "assets/sprites/equipment/staff1.png"
+    },
+    {
+      "id": "eq_staff2",
+      "path": "assets/sprites/equipment/staff2.png"
+    },
+    {
+      "id": "eq_flute",
+      "path": "assets/sprites/equipment/flute.png"
+    },
+    {
+      "id": "eq_iron_shield",
+      "path": "assets/sprites/equipment/iron_shield.png"
+    },
+    {
+      "id": "eq_tortuge_shield",
+      "path": "assets/sprites/equipment/tortuge_shield.png"
+    },
+    {
+      "id": "eq_leather_armor",
+      "path": "assets/sprites/equipment/leather_armor.png"
+    },
+    {
+      "id": "eq_plate_armor",
+      "path": "assets/sprites/equipment/plate_armor.png"
+    }
+  ],
+  "_sprite_info": {
+    "items1": {
+      "sheet_width": 512,
+      "sheet_height": 512,
+      "frame_width": 32,
+      "frame_height": 32,
+      "note": "Grilla de iconos de items 32x32. Primeras 5 filas tienen contenido real, el resto son placeholders con la V."
+    },
+    "weapon_sprites": {
+      "note": "Las armas individuales (sword, axe, bow, etc.) tienen animaciones de equipamiento sobre el cuerpo del jugador. Son spritesheets con 4 direcciones x N frames, similar al body_sheet. Medir cuando se implementen."
+    }
+  }
+}

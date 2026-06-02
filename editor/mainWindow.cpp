@@ -168,8 +168,25 @@ void MainWindow::onNewMap()
     if (!okH)
         return;
 
-    _map = std::make_unique<MapData>(static_cast<uint16_t>(w),
-                                     static_cast<uint16_t>(h));
+    QStringList tipos = {"Mundo principal", "Mazmorra", "Caverna"};
+    bool okT;
+    QString tipoStr = QInputDialog::getItem(
+        this, "Tipo de mapa", "¿Qué tipo de mapa es?",
+        tipos, 0, false, &okT);
+    if (!okT)
+        return;
+
+    MapType tipo = MapType::WORLD;
+    if (tipoStr == "Mazmorra")
+        tipo = MapType::DUNGEON;
+    else if (tipoStr == "Caverna")
+        tipo = MapType::CAVE;
+
+    _map = std::make_unique<MapData>(
+        static_cast<uint16_t>(w),
+        static_cast<uint16_t>(h),
+        tipo);
+
     _canvas->setMap(_map.get());
     _currentFilePath.clear();
     _unsavedChanges = false;
@@ -281,8 +298,27 @@ void MainWindow::updateTitle()
         QFileInfo fi(_currentFilePath);
         title += " [" + fi.fileName() + "]";
     }
+
+    if (_map)
+    {
+        QString tipoStr;
+        switch (_map->mapType())
+        {
+        case MapType::WORLD:
+            tipoStr = "Mundo";
+            break;
+        case MapType::DUNGEON:
+            tipoStr = "Mazmorra";
+            break;
+        case MapType::CAVE:
+            tipoStr = "Caverna";
+            break;
+        }
+        title += " [" + tipoStr + "]";
+    }
     if (_unsavedChanges)
         title += " *";
+
     setWindowTitle(title);
 }
 

@@ -14,8 +14,8 @@ void MapCanvas::setMap(MapData *map)
     if (_map)
     {
         setMinimumSize(
-            _map->width() * TILE_SIZE,
-            _map->height() * TILE_SIZE);
+            _map->width() * tileSize(),
+            _map->height() * tileSize());
     }
     update();
 }
@@ -28,6 +28,9 @@ QColor MapCanvas::tileColor(const Tile &tile) const
     case TileType::GRASS:
         base = QColor(100, 160, 70);
         break;
+    case TileType::SAND:
+        base = QColor(210, 185, 110);
+        break;
     case TileType::WATER:
         base = QColor(60, 120, 200);
         break;
@@ -39,6 +42,9 @@ QColor MapCanvas::tileColor(const Tile &tile) const
         break;
     case TileType::DOOR:
         base = QColor(160, 100, 50);
+        break;
+    case TileType::FOREST:
+        base = QColor(34, 90, 34);
         break;
     case TileType::DUNGEON_ENTRANCE:
         base = QColor(80, 20, 120);
@@ -53,10 +59,38 @@ QColor MapCanvas::tileColor(const Tile &tile) const
         base = QColor(200, 200, 200);
         break;
     }
-    if (tile.zone == ZoneType::COMBAT)
+
+    // Overlay de zona encima del color base
+    switch (tile.zone)
+    {
+    case ZoneType::CITY:
+        // borde dorado — el overlay lo aplicamos en paintEvent, acá solo oscurecemos un poco
+        break;
+    case ZoneType::COMBAT:
         base = base.darker(130);
+        break;
+    case ZoneType::DESERT:
+        // arena ya es visualmente desierto; si el tile es pasto, teñimos
+        if (tile.type == TileType::GRASS)
+            base = QColor(210, 185, 110).darker(110);
+        break;
+    case ZoneType::FOREST:
+        if (tile.type == TileType::GRASS)
+            base = QColor(60, 120, 50);
+        break;
+    default:
+        break;
+    }
+
     if (!tile.walkable)
-        base = base.darker(160);
+    {
+        // Hatching visual: oscurecer + tinte rojizo para no caminable
+        base = base.darker(150);
+        base = QColor(
+            qMin(base.red() + 40, 255),
+            base.green(),
+            base.blue());
+    }
     return base;
 }
 
@@ -166,6 +200,7 @@ void MapCanvas::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.fillRect(rect(), QColor(30, 30, 30));
+    const int ts = tileSize();
 
     if (!_map)
     {
@@ -179,7 +214,7 @@ void MapCanvas::paintEvent(QPaintEvent *)
         for (uint16_t x = 0; x < _map->width(); ++x)
         {
             const Tile &tile = _map->at(x, y);
-            QRect r(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            QRect r(x * ts, y * ts, ts, ts);
 
             // Color base del tile
             painter.save();
@@ -199,7 +234,7 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 QFont f = painter.font();
                 f.setPixelSize(9);
                 painter.setFont(f);
-                painter.drawText(r.adjusted(0, 14, 0, 0), Qt::AlignCenter, "ENT");
+                painter.drawText(r.adjusted(0, ts / 2, 0, 0), Qt::AlignCenter, "ENT");
                 painter.restore();
             }
 
@@ -213,7 +248,7 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 QFont f = painter.font();
                 f.setPixelSize(9);
                 painter.setFont(f);
-                painter.drawText(r.adjusted(0, 14, 0, 0), Qt::AlignCenter, "CAV");
+                painter.drawText(r.adjusted(0, ts / 2, 0, 0), Qt::AlignCenter, "CAV");
                 painter.restore();
             }
 
@@ -225,6 +260,37 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.setBrush(QColor(0, 220, 80));
                 painter.setPen(Qt::NoPen);
                 painter.drawEllipse(r.right() - 8, r.top() + 2, 6, 6);
+                painter.restore();
+            }
+
+            if (tile.zone == ZoneType::CITY)
+            {
+                painter.save();
+                painter.setBrush(Qt::NoBrush);
+                painter.setPen(QPen(QColor(220, 180, 50, 180), 1));
+                painter.drawRect(r.adjusted(1, 1, -1, -1));
+                painter.restore();
+            }
+
+            // Símbolo de árbol para FOREST
+            if (tile.type == TileType::FOREST)
+            {
+                painter.save();
+                painter.setPen(QColor(150, 220, 100));
+                QFont f = painter.font();
+                f.setPixelSize(14);
+                painter.setFont(f);
+                painter.drawText(r, Qt::AlignCenter, "▲");
+                painter.restore();
+            }
+
+            // Hatching para no caminable (X encima del color oscurecido)
+            if (!tile.walkable && tile.type != TileType::FOREST && tile.type != TileType::WALL && tile.type != TileType::WATER)
+            {
+                painter.save();
+                painter.setPen(QPen(QColor(200, 60, 60, 120), 1));
+                painter.drawLine(r.topLeft(), r.bottomRight());
+                painter.drawLine(r.topRight(), r.bottomLeft());
                 painter.restore();
             }
 
@@ -260,8 +326,8 @@ bool MapCanvas::screenToTile(const QPoint &pos, uint16_t &tx, uint16_t &ty) cons
 {
     if (!_map)
         return false;
-    int x = pos.x() / TILE_SIZE;
-    int y = pos.y() / TILE_SIZE;
+    int x = pos.x() / tileSize();
+    int y = pos.y() / tileSize();
     if (x < 0 || y < 0)
         return false;
     if (!_map->inBounds(static_cast<uint16_t>(x), static_cast<uint16_t>(y)))
@@ -282,19 +348,27 @@ void MapCanvas::applyToTile(uint16_t tx, uint16_t ty)
         t.type = _activeTileType;
         t.zone = _activeZoneType;
         t.walkable = _activeWalkable;
-        if (_activeTileType == TileType::CAVERN_ENTRANCE)
+
+        // Comportamientos automáticos por tipo
+        switch (_activeTileType)
         {
+        case TileType::FOREST:
+            // Bosque siempre no caminable
+            t.walkable = false;
+            break;
+        case TileType::CAVERN_ENTRANCE:
             t.zone = ZoneType::CAVERN;
             t.walkable = true;
-        }
-        if (_activeTileType == TileType::DUNGEON_ENTRANCE)
-        {
+            break;
+        case TileType::DUNGEON_ENTRANCE:
             t.zone = ZoneType::DUNGEON;
             t.walkable = true;
-        }
-        if (_activeTileType == TileType::EXIT)
-        {
+            break;
+        case TileType::EXIT:
             t.walkable = true;
+            break;
+        default:
+            break;
         }
     }
     else if (_editMode == EditMode::NPCS)
@@ -340,7 +414,17 @@ void MapCanvas::mouseReleaseEvent(QMouseEvent *event)
         _painting = false;
 }
 
-void MapCanvas::wheelEvent(QWheelEvent *)
+void MapCanvas::wheelEvent(QWheelEvent *event)
 {
-    // Zoom para iteraciones futuras
+    float delta = (event->angleDelta().y() > 0) ? ZOOM_STEP : -ZOOM_STEP;
+    _zoomFactor = std::clamp(_zoomFactor + delta, ZOOM_MIN, ZOOM_MAX);
+
+    if (_map)
+    {
+        setMinimumSize(
+            _map->width() * tileSize(),
+            _map->height() * tileSize());
+    }
+    update();
+    event->accept();
 }
