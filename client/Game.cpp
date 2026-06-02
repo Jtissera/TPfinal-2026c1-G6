@@ -131,10 +131,8 @@ void Game::update() {
 
             // Si es el jugador local
             if (moveMsg.getId() == 1) {  // TODO: usar el id real del jugador
-                static constexpr float SPRITE_W    = 54.0f;
-                static constexpr float FEET_OFFSET = 175.0f;
-                targetX = static_cast<float>(moveMsg.getX()) - SPRITE_W / 2.0f;
-                targetY = static_cast<float>(moveMsg.getY()) - FEET_OFFSET;
+                targetX = static_cast<float>(moveMsg.getX());
+                targetY = static_cast<float>(moveMsg.getY());
                 isMoving        = true;
                 moveAnimStartMs = SDL_GetTicks();
             } else {
@@ -142,8 +140,8 @@ void Game::update() {
                 auto it = enemies.find(moveMsg.getId());
                 if (it != enemies.end()) {
                     auto& transform = it->second->getComponent<TransformComponent>();
-                    transform.position.x = static_cast<float>(moveMsg.getX()) - 32.0f;
-                    transform.position.y = static_cast<float>(moveMsg.getY()) - 64.0f;
+                    transform.position.x = static_cast<float>(moveMsg.getX());
+                    transform.position.y = static_cast<float>(moveMsg.getY());
                 }
             }
 
@@ -157,19 +155,22 @@ void Game::update() {
         NPCData data;
         data.npcID = snap.id;
         data.type  = snap.type;
-data.x = snap.x - 54.0f / 2.0f;   // mismo que player
-data.y = snap.y - 175.0f; 
+        data.x = snap.x;
+        data.y = snap.y; 
         Entity* e = assets->CreateEnemy(data);
         enemies[snap.id] = e;
     }
 
         } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_SPAWN)) {
             const auto& spawnMsg = static_cast<const EntitySpawnMessage&>(*msg);
+                std::cout << "[GAME] ENTITY_SPAWN id=" << spawnMsg.getId()
+              << " x=" << spawnMsg.getX()
+              << " y=" << spawnMsg.getY() << std::endl;
             NPCData data;
             data.npcID = spawnMsg.getId();
             data.type  = spawnMsg.getType();
-            data.x     = spawnMsg.getX() - 32;
-            data.y     = spawnMsg.getY() - 128;
+            data.x     = spawnMsg.getX();
+            data.y     = spawnMsg.getY();
             Entity* e = assets->CreateEnemy(data);
             enemies[spawnMsg.getId()] = e;
 
@@ -246,6 +247,12 @@ data.y = snap.y - 175.0f;
     if (camera.y < 0)              camera.y = 0;
     if (camera.x > 20 * 96 - 900) camera.x = 20 * 96 - 900;
     if (camera.y > 15 * 96 - 687) camera.y = 15 * 96 - 687;
+
+    std::cout << "[CAM] playerPos=(" << playerPos.x << "," << playerPos.y << ")"
+          << " camera=(" << camera.x << "," << camera.y << ")"
+          << " clamped_x=" << (camera.x >= 20*96-900)
+          << " clamped_y=" << (camera.y >= 15*96-687)
+          << std::endl;
 }
 
  

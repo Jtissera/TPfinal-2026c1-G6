@@ -111,11 +111,9 @@ Entity* AssetManager::CreatePlayer(const PlayerDto& data) {
     std::string headTextureId = headTextureForRace(data.raza);
 
     auto& player = manager->addEntity();
-    static constexpr float SPRITE_W    = 54.0f;
-static constexpr float FEET_OFFSET = 175.0f;
 
-float startX = static_cast<float>(data.xpos) - SPRITE_W / 2.0f;
-float startY = static_cast<float>(data.ypos) - FEET_OFFSET;
+float startX = static_cast<float>(data.xpos);
+float startY = static_cast<float>(data.ypos);
 
 player.addComponent<TransformComponent>(startX, startY);
     //player.addComponent<TransformComponent>(data.xpos, data.ypos);

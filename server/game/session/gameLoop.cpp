@@ -133,6 +133,7 @@ void GameLoop::worldUpdate(float deltaSeconds)
 void GameLoop::sendInitialSnapshot()
 {
     const auto& npcs = world.getNpcs();
+    std::cout << "[SNAPSHOT] mandando " << npcs.size() << " npcs" << std::endl;  // ← agregar
     std::vector<NpcSnapshot> snapshots;
  
     for (const auto& [id, npc] : npcs) {

@@ -83,7 +83,7 @@ private:
     float  targetY         = 0.0f;
     bool   isMoving        = false;
     Uint32 moveAnimStartMs = 0;
-    static constexpr Uint32 MOVE_ANIM_DURATION_MS = 250;
+    static constexpr Uint32 MOVE_ANIM_DURATION_MS = 50;
 
     // ── HUD ───────────────────────────────────────────────────────────────────
     std::string statusMessage;

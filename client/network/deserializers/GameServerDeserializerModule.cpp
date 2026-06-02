@@ -130,11 +130,10 @@ registry.registerDeserializer(
     [](PacketReader& reader) -> std::unique_ptr<Message> {
         auto id   = reader.readUint32();
         auto type = static_cast<NpcType>(reader.readUint8());
-        auto x    = reader.readUint16();
-        auto y    = reader.readUint16();
+        auto x    = reader.readUint32();  // ← cambiar uint16 → uint32
+        auto y    = reader.readUint32();  // ← cambiar uint16 → uint32
         return std::make_unique<EntitySpawnMessage>(id, type, x, y);
     });
-
 // ── Despawn de NPC ────────────────────────────────────────────────────────
 registry.registerDeserializer(
     static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_DESPAWN),

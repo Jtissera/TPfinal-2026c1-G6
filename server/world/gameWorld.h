@@ -126,6 +126,8 @@ public:
     bool isPlayerAdjacentTo(uint32_t playerId,
                              float targetPixelX, float targetPixelY) const;
 
+    bool isMoveWalkable(float px, float py) const;
+
 private:
     void tickPlayers(float deltaSeconds, WorldTickResult& result);
     void tickNpcs(WorldTickResult& result);

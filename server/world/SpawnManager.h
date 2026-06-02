@@ -33,6 +33,7 @@ private:
     int x, y;
   };
   std::vector<SpawnPoint> spawnPoints;
+  int tileSize;  
 
   std::optional<uint32_t> trySpawnAround(const std::string &typeName, int x, int y);
 };

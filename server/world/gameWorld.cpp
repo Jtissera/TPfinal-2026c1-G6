@@ -154,7 +154,14 @@ bool GameWorld::movePlayer(uint32_t id, Direction dir) {
     float ny = p.getPixelY() + dy;
 
     // 1. Colision con el mapa
-    if (!collision.isWalkable(nx, ny)) return false;
+    if (!isMoveWalkable(nx, ny)) return false;
+
+        std::cout << "[MOVE] dir=" << static_cast<int>(dir)
+              << " from=(" << p.getPixelX() << "," << p.getPixelY() << ")"
+              << " to=(" << nx << "," << ny << ")"
+              << " tile=(" << collision.toTileX(nx) << "," << collision.toTileY(ny) << ")"
+              << " walkable=" << collision.isWalkable(nx, ny)
+              << std::endl;
 
     // 2. Colision con otras entidades (AABB)
     if (entityCollides(nx, ny, playerHitboxW, playerHitboxH, id)) return false;
@@ -357,10 +364,11 @@ void GameWorld::tickNpcs(WorldTickResult& result) {
 
     for (auto& intent : npcResult.moveIntents) {
         float nx = intent.toX;
-        float ny = intent.toY;
+        float ny = intent.toY ;
 
         // 1. Colision con el mapa
         if (!collision.isWalkable(nx, ny)) continue;
+        if (!collision.isWalkable(nx, ny - npcHitboxH)) continue;
 
         // 2. Colision con jugadores y otros NPCs (AABB)
         if (entityCollides(nx, ny, npcHitboxW, npcHitboxH, intent.npcId)) continue;
@@ -476,4 +484,18 @@ std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const {
         static_cast<uint16_t>(tileX),
         static_cast<uint16_t>(tileY)).npc;
     return t != NpcType::NONE ? std::optional<NpcType>(t) : std::nullopt;
+}
+
+
+bool GameWorld::isMoveWalkable(float px, float py) const {
+    // Pies
+    if (!collision.isWalkable(px, py)) return false;
+    // Punto medio del cuerpo
+    if (!collision.isWalkable(px, py - playerHitboxH / 2.0f)) return false;
+    // Cabeza (top del hitbox)
+    if (!collision.isWalkable(px, py - playerHitboxH)) return false;
+    // Costados
+    if (!collision.isWalkable(px - playerHitboxW / 2.0f, py - playerHitboxH / 2.0f)) return false;
+    if (!collision.isWalkable(px + playerHitboxW / 2.0f, py - playerHitboxH / 2.0f)) return false;
+    return true;
 }

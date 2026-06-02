@@ -9,6 +9,7 @@ SpawnManager::SpawnManager(
     const CollisionSystem &collision)
     : npcManager(npcManager),
       collision(collision),
+      tileSize(config["world"]["tile_size"].value_or(96)),
       spawnEveryNTicks(
           config["npc"]["spawn_interval_ticks"].value_or(200)),
       maxNpcs(
@@ -55,14 +56,18 @@ std::optional<uint32_t> SpawnManager::spawnNpc(
     int tileX,
     int tileY)
 {
-  if (!collision.isWalkable(tileX, tileY))
+  if (!collision.isWalkableTile(tileX, tileY))
     return std::nullopt;
+
+  
+  float px = static_cast<float>(tileX * tileSize + tileSize / 2);
+  float py = static_cast<float>(tileY * tileSize + tileSize / 2);
 
   uint32_t npcId =
       npcManager.spawnNpc(
           typeName,
-          tileX,
-          tileY);
+          px,
+          py);
 
   return npcId;
 }
@@ -77,7 +82,10 @@ std::optional<uint32_t> SpawnManager::trySpawnAround(
     int tx = x + (std::rand() % 7) - 3;
     int ty = y + (std::rand() % 7) - 3;
 
-    if (collision.isWalkable(tx, ty))
+    if (tx < 0 || ty < 0)  
+      continue;
+
+    if (collision.isWalkableTile(tx, ty))
     {
       auto id = spawnNpc(typeName, tx, ty);
 

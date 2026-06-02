@@ -84,8 +84,8 @@ void SpriteComponent::update(UpdateContext& context) {
     srcRect.h = frameHeight;
 
     // Coordenadas de mundo -> pantalla.
-    destRect.x = static_cast<int>(transform->position.x) - context.camera.x;
-    destRect.y = static_cast<int>(transform->position.y) - context.camera.y + 133;
+    destRect.x = static_cast<int>(transform->position.x) - context.camera.x - (frameWidth * scale) / 2;    
+    destRect.y = static_cast<int>(transform->position.y) - context.camera.y - (frameHeight * scale);
 
     // Tamaño visual.
     destRect.w = frameWidth * scale;
