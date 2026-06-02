@@ -1,5 +1,3 @@
-
-
 #include "EntityMoveMessage.h"
 
 

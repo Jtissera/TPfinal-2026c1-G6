@@ -1,4 +1,3 @@
-// PlayerDiedMessage.h
 #pragma once
 #include "common/network/messages/message.h"
 #include "common/network/protocol/serverOpCode.h"
