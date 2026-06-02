@@ -218,7 +218,7 @@ void Game::update() {
     if (isLocalPlayerDead()) {
         applyLocalPlayerGhostState();
     } else {
-        attackSystem.updateEnemyChase(enemies, player, playerState.hp);
+        attackSystem.updateEnemyChase(enemies, player, playerState.hp,sendQueue);
 
         if (hasReceivedValidPlayerStats && playerState.hp <= 0) {
             applyLocalPlayerGhostState();
