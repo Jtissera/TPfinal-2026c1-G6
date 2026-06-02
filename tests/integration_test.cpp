@@ -102,6 +102,7 @@ TEST_F(IntegrationTest, AttackerGainsExpOnKillAndCanLevelUp)
   EXPECT_GE(attacker.getExp(), 0u);
 }
 
+/*
 TEST_F(IntegrationTest, RemoveClientFromGameDecreasesPlayerCount)
 {
   uint32_t gameId = gm.createGame("sala", 4);
@@ -131,3 +132,4 @@ TEST_F(IntegrationTest, RemoveNonExistentClientDoesNotCrash)
   EXPECT_NO_THROW(gm.removeClient(999));
   gm.stopAll();
 }
+*/

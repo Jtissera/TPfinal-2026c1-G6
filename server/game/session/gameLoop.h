@@ -31,9 +31,6 @@ public:
   void stop() override;
 
 
-    void run() override;
-    void stop() override;
-
     GameLoop(const GameLoop&) = delete;
     GameLoop& operator=(const GameLoop&) = delete;
 
@@ -45,7 +42,6 @@ private:
     StatManager statManager;
     Queue<std::shared_ptr<LeaveEvent>>& leaveQueue;
 
-<<<<<<< HEAD
     uint32_t gameId;
     float tickRateMs;
     int tileSize;

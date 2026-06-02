@@ -24,14 +24,22 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+#include <mutex>
+#include <string>
+#include <unordered_map>
+#include <optional>
+#include <cstdint>
+#include <utility>
 
+
+//HAY QUE SACAR EL MUTEX, era para una prueba noma dsp
 class GameWorld
 {
 public:
   explicit GameWorld(const std::string &mapPath, NpcFactory &npcFactory,
                      ItemRepository &itemRepo, const toml::table &config);
 
-  explicit GameWorld(MapData mapData, NpcFactory &npcFactory,
+explicit GameWorld(MapData mapData, NpcFactory &npcFactory,
                      ItemRepository &itemRepo, const toml::table &config);
 
   struct InstanceEntry
@@ -47,6 +55,8 @@ public:
     std::vector<uint32_t> playersChanged;
     std::vector<uint32_t> npcsMoved;
     std::vector<NpcDeathResult> npcDeaths;
+    std::vector<uint32_t> npcSpawned;
+
     struct PlayerHit
     {
       uint32_t playerId;
@@ -90,18 +100,6 @@ public:
 
   void spawnNpc(const std::string &typeName, int tileX, int tileY);
 
-  struct WorldTickResult {
-    std::vector<uint32_t> playersChanged;
-    std::vector<uint32_t> npcsMoved;
-    std::vector<NpcDeathResult> npcDeaths;
-    std::vector<uint32_t> npcSpawned; 
-    struct PlayerHit {
-      uint32_t playerId;
-      int16_t damage;
-    };
-    std::vector<PlayerHit> playerHits;
-  };
-
   const Npc& getNpc(uint32_t id) const;
 
   WorldTickResult tick(float deltaSeconds);
@@ -138,4 +136,6 @@ private:
   GroundManager groundManager;
   SpawnManager spawnManager;
   int tileSize;
+
+  std::mutex worldMutex;
 };
