@@ -1,5 +1,7 @@
 #include "lobbyServerDeserializersModule.h"
 
+#include <iostream>
+
 #include "../../../../common/network/messages/server/lobby/gameListMessage.h"
 #include "../../../../common/network/messages/server/lobby/gameCreatedMessage.h"
 #include "../../../../common/network/messages/server/lobby/joinOkMessage.h"
@@ -50,7 +52,6 @@ void LobbyServerDeserializersModule::registerDeserializers(Registry &registry) c
         playerDto.playerID = reader.readUint8();
         playerDto.raza = reader.readString();
         playerDto.clase = reader.readString();
-
         playerDto.headId = static_cast<int>(reader.readUint32());
         playerDto.level = reader.readUint8();
 

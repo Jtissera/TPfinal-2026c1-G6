@@ -71,7 +71,7 @@ public:
     int getEnemyMaxHealth(uint32_t enemyId) const;
 
     // Actualiza persecución y ataque del enemigo al jugador.
-    EnemyChaseResult updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp);
+    EnemyChaseResult updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp,Queue<std::shared_ptr<const Message>>* sendQueue);
 
     // Limpia toda persecución/aggro de enemigos.
     // Se usa cuando el jugador muere o pasa a estado fantasma.

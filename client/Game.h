@@ -100,6 +100,7 @@ private:
     void renderEnemyHealthBars();
     bool isLocalPlayerDead() const;
     void applyLocalPlayerGhostState();
+    void reviveLocalPlayer(int newHp);
 };
 
 #endif //PRUEBA_SDL_GAME_H

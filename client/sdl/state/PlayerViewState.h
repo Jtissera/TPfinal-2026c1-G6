@@ -20,13 +20,13 @@ enum class PlayerClass {
 inline std::string playerClassToString(PlayerClass playerClass) {
     switch (playerClass) {
         case PlayerClass::Warrior:
-            return "warrior";
+            return "Warrior";
         case PlayerClass::Mage:
-            return "mage";
+            return "Mage";
         case PlayerClass::Paladin:
-            return "paladin";
+            return "Paladin";
         case PlayerClass::Cleric:
-            return "cleric";
+            return "Cleric";
         case PlayerClass::Unknown:
         default:
             return "unknown";

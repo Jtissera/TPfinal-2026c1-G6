@@ -296,19 +296,19 @@ void AssetManager::LoadBodiesFromJson(const std::string& path) {
 
 
 std::string AssetManager::headTextureForRace(const std::string& race) const {
-    if (race == "human") {
+    if (race == "Human") {
         return "heads_human_man";
     }
 
-    if (race == "elf") {
+    if (race == "Elf") {
         return "heads_elf";
     }
 
-    if (race == "dwarf") {
+    if (race == "Dwarf") {
         return "heads_dwarf";
     }
 
-    if (race == "gnome") {
+    if (race == "Gnome") {
         return "heads_elf";
     }
 

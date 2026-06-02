@@ -1,9 +1,12 @@
 #include "ActionDispatcher.h"
 
+#include "common/network/messages/client/combat/enemyHitPlayerMessage.h"
+
 
 ActionDispatcher::ActionDispatcher() {
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_MOVE)]       = &ActionDispatcher::handleMove;
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_ATTACK)]     = &ActionDispatcher::handleAttack;
+    handlers[static_cast<uint8_t>(ClientOpCode::MSG_ENEMY_HIT_PLAYER)] = &ActionDispatcher::handleEnemyHitPlayer;
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_PICK_ITEM)]  = &ActionDispatcher::handlePickItem;
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_DROP_ITEM)]  = &ActionDispatcher::handleDropItem;
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_EQUIP_ITEM)] = &ActionDispatcher::handleEquipItem;
@@ -265,4 +268,44 @@ void ActionDispatcher::handleEquipItem(uint32_t id, const Message& msg,
 
     if (p.getInventory().equipItem(equipMsg.getItemId()))
         sendInventory(id, p, monitor);
+}
+
+void ActionDispatcher::handleEnemyHitPlayer(
+    uint32_t id,
+    const Message& msg,
+    GameWorld& world,
+    Monitor& monitor
+) {
+    const auto& hitMsg = static_cast<const EnemyHitPlayerMessage&>(msg);
+
+    if (!world.hasPlayer(id)) {
+        return;
+    }
+
+    Player& player = world.getPlayer(id);
+
+    if (player.isGhost()) {
+        return;
+    }
+
+    // Daño temporal para enemigo local del cliente.
+    // Luego conviene validarlo contra NPC real del server.
+    const int16_t damage = 5;
+
+    player.takeDamage(damage);
+
+    std::cout << "[SERVER][ENEMY HIT] enemyId="
+              << hitMsg.getEnemyId()
+              << " playerId=" << id
+              << " damage=" << damage
+              << " hp=" << player.getHp()
+              << "/" << player.getMaxHp()
+              << std::endl;
+
+    sendStats(id, player, monitor);
+
+    if (!player.isAlive()) {
+        world.handlePlayerDeath(id, 0);
+        sendDeath(id, player, monitor);
+    }
 }

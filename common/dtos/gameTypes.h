@@ -6,17 +6,17 @@
 
 
 enum class Raza : uint8_t {
-    HUMANO = 0,
-    ELFO = 1,
-    ENANO = 2,
-    GNOMO = 3
+    HUMAN = 0,
+    ELF = 1,
+    DWARF = 2,
+    GNOME = 3
 };
 
 enum class Clase : uint8_t {
-    MAGO = 0,
+    MAGE = 0,
     PALADIN = 1,
-    CLERIGO = 2,
-    GUERRERO = 3
+    CLERIC = 2,
+    WARRIOR = 3
 };
 
 

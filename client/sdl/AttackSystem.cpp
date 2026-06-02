@@ -7,6 +7,8 @@
 #include <iostream>
 #include <cmath>
 
+#include "common/network/messages/client/combat/enemyHitPlayerMessage.h"
+
 // #include "common/network/messages/client/combat/attackMessage.h"
 
 void AttackSystem::handleMouseClick(int screenX,int screenY,const SDL_Rect& camera,std::map<uint32_t, Entity*>& enemies,Queue<std::shared_ptr<const Message>>* sendQueue,Entity* player,const ItemView* equippedWeapon) {
@@ -361,11 +363,7 @@ void AttackSystem::updateRespawns(std::map<uint32_t, Entity*>& enemies) {
     }
 }
 
-EnemyChaseResult AttackSystem::updateEnemyChase(
-    std::map<uint32_t, Entity*>& enemies,
-    Entity* player,
-    int& playerHp
-) {
+EnemyChaseResult AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp,Queue<std::shared_ptr<const Message>>* sendQueue) {
     // Si no hay jugador, no hay nada que perseguir.
     if (player == nullptr) {
         return EnemyChaseResult::PlayerStillAlive;
@@ -444,31 +442,16 @@ EnemyChaseResult AttackSystem::updateEnemyChase(
             }
 
             if (now - lastAttack >= enemyAttackCooldownMs) {
-                // Aplicamos daño.
-                playerHp -= enemyAttackDamage;
-
-                // La vida nunca debe quedar negativa.
-                if (playerHp < 0) {
-                    playerHp = 0;
-                }
-
                 enemyLastAttackAt[enemyId] = now;
+                if (sendQueue != nullptr) {
+                    sendQueue->try_push(std::make_shared<const EnemyHitPlayerMessage>(enemyId));
+                }
 
                 std::cout << "[ENEMY ATTACK] enemigo id="
                           << enemyId
-                          << " golpeó al jugador. HP jugador="
-                          << playerHp
+                          << " atacó. Mensaje enviado al server."
                           << std::endl;
 
-                // Si este golpe mató al jugador, cortamos toda persecución.
-                if (playerHp <= 0) {
-                    clearEnemyAggro();
-
-                    std::cout << "[PLAYER] El jugador murió por ataque enemigo."
-                              << std::endl;
-
-                    return EnemyChaseResult::PlayerDied;
-                }
             }
 
             continue;

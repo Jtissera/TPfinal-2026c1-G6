@@ -39,6 +39,7 @@ private:
     void handleEquipItem(uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleMeditate (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleResurrect(uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
+    void handleEnemyHitPlayer(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
 
     void sendStats    (uint32_t id, Player& p, Monitor& monitor);
     void sendInventory(uint32_t id, Player& p, Monitor& monitor);

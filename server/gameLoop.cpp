@@ -42,6 +42,9 @@ void GameLoop::worldUpdate() {
     for (uint32_t id : result.playersChanged) {
         statManager.sendPlayerStats(id, world, monitor);
     }
+    for (const auto& hit : result.playerHits) {
+        statManager.sendPlayerStats(hit.playerId, world, monitor);
+    }
 }
 
 void GameLoop::stop() {

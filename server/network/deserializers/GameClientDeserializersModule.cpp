@@ -13,4 +13,11 @@ void GameClientDeserializersModule::registerDeserializers(Registry& registry) co
             auto dir = static_cast<Direction>(reader.readUint8());
             return std::make_unique<MoveMessage>(dir);
         });
+    
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ClientOpCode::MSG_ENEMY_HIT_PLAYER),
+    [](PacketReader& reader) -> std::unique_ptr<Message> {
+        uint32_t enemyId = reader.readUint32();
+        return std::make_unique<EnemyHitPlayerMessage>(enemyId);
+    });
 }

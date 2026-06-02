@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 
 #include "../../../common/network/messages/client/lobby/listGamesMessage.h"
 #include "../../../common/network/messages/client/lobby/createGameMessage.h"
@@ -114,7 +115,19 @@ void PlaceholderLobbyScreen::tryCreateGame() {
             protocol.send(JoinGameMessage(created.getGameId()));
             auto joinResponse = protocol.receive();
             if (joinResponse->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_JOIN_OK)) {
+                const auto& joinOk = static_cast<const JoinOkMessage&>(*joinResponse);
+
+                joinedPlayerDto = joinOk.getPlayerDto();
+
+                std::cout << "[LOBBY DTO CREATE] raza='"
+                          << joinedPlayerDto.raza
+                          << "' clase='"
+                          << joinedPlayerDto.clase
+                          << "'"
+                          << std::endl;
+
                 _readyToPlay = true;
+
             } else if (joinResponse->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR)) {
                 const auto& err = static_cast<const ErrorMessage&>(*joinResponse);
                 errorMsg = err.getReason();

@@ -173,7 +173,8 @@ heal_amount = 100
 slot = "CONSUMABLE"
 mana_amount = 100 
 
-[races.human]
+[races.Human]
+name = "Human"
 health       = 1.0
 mana         = 1.0
 recovery     = 1.0
@@ -182,7 +183,8 @@ intelligence = 10
 strength     = 10
 agility      = 10
 
-[races.elf]
+[races.Elf]
+name = "Elf"
 health       = 0.8
 mana         = 1.3
 recovery     = 1.1
@@ -191,7 +193,8 @@ intelligence = 14
 strength     = 8
 agility      = 14
 
-[races.dwarf]
+[races.Dwarf]
+name = "Dwarf"
 health       = 1.3
 mana         = 0.8
 recovery     = 0.9
@@ -200,7 +203,8 @@ intelligence = 7
 strength     = 14
 agility      = 7
 
-[races.gnome]
+[races.Gnome]
+name = "Gnome"
 health       = 1.1
 mana         = 1.2
 recovery     = 1.0
@@ -209,31 +213,36 @@ intelligence = 13
 strength     = 8
 agility      = 8
 
-[classes.mage]
+[classes.Mage]
+name = "Mage"
 health      = 0.8
 mana        = 1.5
 meditation  = 2.0
 can_use_magic = true
 
-[classes.cleric]
+[classes.Cleric]
+name = "Cleric"
 health      = 1.0
 mana        = 1.2
 meditation  = 1.5
 can_use_magic = true
 
-[classes.paladin]
+[classes.Paladin]
+name = "Paladin"
 health      = 1.2
 mana        = 0.8
 meditation  = 1.0
 can_use_magic = true
 
-[classes.warrior]
+[classes.Warrior]
+name = "Warrior"
 health      = 1.5
 mana        = 0.0
 meditation  = 0.0
 can_use_magic = false
 
 [npcs.goblin]
+name = "Goblin"
 hp = 50
 damage_min = 2
 damage_max = 5
@@ -247,6 +256,7 @@ move_cooldown_ms = 500
 zones = ["COMBAT"]
 
 [npcs.skeleton]
+name = "Skeleton"
 hp = 80
 damage_min = 4
 damage_max = 8
@@ -265,6 +275,7 @@ zones = ["COMBAT"]
 
 
 [npcs.zombie]
+name = "Zombie"
 hp = 100
 damage_min = 3
 damage_max = 7

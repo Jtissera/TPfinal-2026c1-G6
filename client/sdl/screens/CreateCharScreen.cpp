@@ -3,8 +3,8 @@
 
 
 // Datos estaticos
-const std::vector<std::string> CreateCharScreen::RAZAS  = {"human", "elf", "dwarf", "gnome"};
-const std::vector<std::string> CreateCharScreen::CLASES = {"mage", "paladin", "cleric", "warrior"};
+const std::vector<std::string> CreateCharScreen::RAZAS  = {"Human", "Elf", "Dwarf", "Gnome"};
+const std::vector<std::string> CreateCharScreen::CLASES = {"Mage", "Paladin", "Cleric", "Warrior"};
 
 // Constructor/Destructor
 CreateCharScreen::CreateCharScreen(SDL_Renderer* renderer, int windowW, int windowH,

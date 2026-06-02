@@ -152,7 +152,9 @@ PlayerDto LobbyHandler::buildPlayerDto(const Player& player) const {
     // Raza y clase.
     // Si estos campos no existen como .name, abajo te digo cómo resolverlo.
     dto.raza = player.getRace().name;
+    std::cout << "[SERVER DTO] raza='" << dto.raza << "'" << std::endl;
     dto.clase = player.getCls().name;
+    std::cout << "[SERVER DTO] clase='" << dto.clase << "'" << std::endl;
 
     // Apariencia inicial.
     dto.headId = 0;

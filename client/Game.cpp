@@ -174,12 +174,24 @@ void Game::update() {
                 hasReceivedValidPlayerStats = true;
             }
 
-            // Si el jugador ya está fantasma, no dejamos que MSG_PLAYER_STATS común
-            // lo reviva visualmente.
-            if (playerState.isDead) {
-                playerState.hp = 0;
+            const int serverHp = stats.getHp();
+            // Si el servidor manda una vida positiva, ya tenemos stats válidas.
+            if (serverHp > 0) {
+                hasReceivedValidPlayerStats = true;
+            }
+
+            // Si el jugador estaba muerto/fantasma y el servidor manda HP positivo,
+            // entonces el servidor está indicando que revivió.
+            if (playerState.isDead && serverHp > 0) {
+                reviveLocalPlayer(serverHp);
+
+                // Si el jugador está vivo, aceptamos la vida informada por el servidor.
+            } else if (!playerState.isDead) {
+                playerState.hp = serverHp;
+
+                // Si sigue muerto y el servidor manda HP 0, mantenemos vida en 0.
             } else {
-                playerState.hp = stats.getHp();
+                playerState.hp = 0;
             }
 
             playerState.maxHp = stats.getMaxHp();
@@ -214,7 +226,7 @@ void Game::update() {
     if (isLocalPlayerDead()) {
         applyLocalPlayerGhostState();
     } else {
-        attackSystem.updateEnemyChase(enemies, player, playerState.hp);
+        attackSystem.updateEnemyChase(enemies, player, playerState.hp,sendQueue);
 
         if (hasReceivedValidPlayerStats && playerState.hp <= 0) {
             applyLocalPlayerGhostState();
@@ -1021,7 +1033,7 @@ void Game::consumePotion(int slotIndex) {
 }
 
 std::string Game::visualTextureForCurrentRace(const ItemView& item) const {
-    if (playerState.race == "dwarf" || playerState.race == "gnome") {
+    if (playerState.race == "Dwarf" || playerState.race == "Gnome") {
         if (!item.visualTextureIdShort.empty()) {
             return item.visualTextureIdShort;
         }
@@ -1103,7 +1115,7 @@ SpriteSheetConfig Game::armorSpriteConfigForCurrentRace() const {
 
     // Las razas bajas necesitan usar los offsets short.
     const bool isShortRace =
-        playerState.race == "dwarf" || playerState.race == "gnome";
+        playerState.race == "Dwarf" || playerState.race == "Gnome";
 
     // Devolvemos la config de la armadura, incluyendo offsets visuales.
     return SpriteSheetConfig{
@@ -1152,7 +1164,7 @@ void Game::refreshPlayerBodySprite() {
 
 // helpér
 SDL_Point Game::visualOffsetForCurrentRace(const ItemView& item) const {
-    if (playerState.race == "dwarf" || playerState.race == "gnome") {
+    if (playerState.race == "Dwarf" || playerState.race == "Gnome") {
         return SDL_Point{
             item.visualShortOffsetX,
             item.visualShortOffsetY
@@ -1395,4 +1407,24 @@ void Game::applyLocalPlayerGhostState() {
 
     // Próximo paso:
     // cambiar sprite/animación a fantasma.
+}
+
+void Game::reviveLocalPlayer(int newHp) {
+    // El jugador vuelve a estar vivo.
+    playerState.isDead = false;
+
+    // Permitimos que, si muere otra vez, se pueda aplicar de nuevo
+    // la transición a fantasma.
+    localGhostStateApplied = false;
+
+    // La vida debe quedar en un valor positivo.
+    playerState.hp = newHp;
+
+    // Mensaje visual temporal.
+    showStatusMessage("Has revivido");
+
+    std::cout << "[PLAYER] Revivió. HP=" << playerState.hp << std::endl;
+
+    // Próximo paso visual:
+    // volver a sprite normal según raza/clase/dirección.
 }
