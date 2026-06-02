@@ -13,12 +13,14 @@ class MoveMessage : public Message {
 
 public:
 
-    explicit MoveMessage (Direction dir);
+    explicit MoveMessage (Direction dir, bool moving);
     uint8_t opCode() const override;
     void serializeBody(PacketWriter &writer) const override;
     Direction getDirection() const;
+    bool isMoving() const;
 private:
     Direction dir;
+    bool moving;
 };
 
 

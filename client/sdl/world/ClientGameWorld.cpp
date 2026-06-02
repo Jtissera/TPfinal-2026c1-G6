@@ -94,42 +94,37 @@ void ClientGameWorld::updateLocalPlayerPosition(float x, float y) {
     transform.position.y = y;
 }
 
-void ClientGameWorld::updateRemotePlayerPosition(uint32_t entityId,float x,float y) {
-    // Buscamos el jugador remoto.
+void ClientGameWorld::updateRemotePlayerPosition(
+    uint32_t entityId,
+    float x,
+    float y,
+    Direction direction,
+    bool moving
+) {
     auto it = remotePlayers.find(entityId);
 
-    // Si no existe, NO lo creamos.
-    // El movimiento no debe crear entidades.
     if (it == remotePlayers.end()) {
         std::cout << "[CLIENT_WORLD][WARN] Movimiento recibido para remoto no spawneado. id="
                   << entityId
-                  << " pos=(" << x << ", " << y << ")"
                   << std::endl;
         return;
     }
 
-    // Si existe, actualizamos su posición.
-    it->second.setPosition(x, y);
+    it->second.setPositionAndAnimation(x, y, direction, moving);
 }
 
-void ClientGameWorld::updatePlayerPosition(uint32_t entityId,float x,float y) {
+
+void ClientGameWorld::updatePlayerPosition(
+    uint32_t entityId,
+    float x,
+    float y,
+    Direction direction,
+    bool moving
+) {
     if (isLocalPlayer(entityId)) {
-        // Movimiento/corrección del jugador local.
         updateLocalPlayerPosition(x, y);
-
-        std::cout << "[CLIENT_WORLD] sync local id="
-                  << entityId
-                  << " pos=(" << x << ", " << y << ")"
-                  << std::endl;
-
         return;
     }
 
-    // Movimiento de un jugador remoto existente.
-    updateRemotePlayerPosition(entityId, x, y);
-
-    std::cout << "[CLIENT_WORLD] sync remote id="
-              << entityId
-              << " pos=(" << x << ", " << y << ")"
-              << std::endl;
+    updateRemotePlayerPosition(entityId, x, y, direction, moving);
 }

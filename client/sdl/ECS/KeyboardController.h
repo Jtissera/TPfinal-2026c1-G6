@@ -33,8 +33,11 @@ private:
     bool movingDown  = false;
     bool movingLeft  = false;
     bool movingRight = false;
+    bool wasMoving = false;
 
-    void sendMoveIfReady(UpdateContext& context, Direction direction);
+
+    void sendMoveIfReady(Direction direction);
+    Direction toNetworkDirection(FacingDirection facing) const;
 };
 
 #endif //PRUEBA_SDL_KEYBOARDCONTROLLER_H

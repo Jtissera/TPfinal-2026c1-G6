@@ -14,56 +14,110 @@ void KeyboardController::init() {
 void KeyboardController::update(UpdateContext& context) {
     const Uint8* keys = context.keyboardState;
 
-    // Evita movimiento local acumulado.
-    // El cliente solo manda intención; no mueve directamente al jugador.
+    // Leemos el estado actual del teclado.
     movingUp    = keys[SDL_SCANCODE_W];
     movingDown  = keys[SDL_SCANCODE_S];
     movingLeft  = keys[SDL_SCANCODE_A];
     movingRight = keys[SDL_SCANCODE_D];
 
-    
     if (movingUp) {
         lastDirection = FacingDirection::Up;
-        sendMoveIfReady(context, Direction::UP);
+        sendMoveIfReady(Direction::UP);
         sprite->Play("WalkUp");
+        wasMoving = true;
+        return;
+    }
 
-    } else if (movingDown) {
+    if (movingDown) {
         lastDirection = FacingDirection::Down;
-        sendMoveIfReady(context, Direction::DOWN);
+
+        sendMoveIfReady(Direction::DOWN);
         sprite->Play("WalkDown");
 
-    } else if (movingLeft) {
+        wasMoving = true;
+        return;
+    }
+
+    if (movingLeft) {
         lastDirection = FacingDirection::Left;
-        sendMoveIfReady(context, Direction::LEFT);
+
+        sendMoveIfReady(Direction::LEFT);
         sprite->Play("WalkLeft");
 
-    } else if (movingRight) {
+        wasMoving = true;
+        return;
+    }
+
+    if (movingRight) {
         lastDirection = FacingDirection::Right;
-        sendMoveIfReady(context, Direction::RIGHT);
+
+        sendMoveIfReady(Direction::RIGHT);
         sprite->Play("WalkRight");
 
-    } else {
-        switch (lastDirection) {
-            case FacingDirection::Up:
-                sprite->Play("IdleUp");
-                break;
-            case FacingDirection::Down:
-                sprite->Play("IdleDown");
-                break;
-            case FacingDirection::Left:
-                sprite->Play("IdleLeft");
-                break;
-            case FacingDirection::Right:
-                sprite->Play("IdleRight");
-                break;
-        }
+        wasMoving = true;
+        return;
+    }
+
+    // Si llegamos acá, no hay tecla de movimiento presionada.
+    // Primero actualizamos la animación local a Idle.
+    switch (lastDirection) {
+        case FacingDirection::Up:
+            sprite->Play("IdleUp");
+            break;
+
+        case FacingDirection::Down:
+            sprite->Play("IdleDown");
+            break;
+
+        case FacingDirection::Left:
+            sprite->Play("IdleLeft");
+            break;
+
+        case FacingDirection::Right:
+            sprite->Play("IdleRight");
+            break;
+    }
+    if (wasMoving) {
+        const Direction stopDirection = toNetworkDirection(lastDirection);
+
+        sendQueue.try_push(std::make_shared<const MoveMessage>(
+            stopDirection,
+            false
+        ));
+
+        std::cout << "[CLIENT INPUT] STOP enviado. direction="
+                  << static_cast<int>(stopDirection)
+                  << std::endl;
+
+        wasMoving = false;
     }
 }
 
-void KeyboardController::sendMoveIfReady(UpdateContext& context, Direction direction) {
+void KeyboardController::sendMoveIfReady(Direction direction) {
+    const Uint32 now = SDL_GetTicks();
+    if (now - lastMoveSentAt < moveCooldownMs) {
+        return;
+    }
 
-    context.sendQueue->push(
-        std::make_shared<MoveMessage>(direction)
-    );
+    lastMoveSentAt = now;
 
+    // moving=true porque este mensaje representa una caminata.
+    sendQueue.try_push(std::make_shared<const MoveMessage>(direction, true));
+}
+
+Direction KeyboardController::toNetworkDirection(FacingDirection facing) const {
+    switch (facing) {
+        case FacingDirection::Up:
+            return Direction::UP;
+
+        case FacingDirection::Down:
+            return Direction::DOWN;
+
+        case FacingDirection::Left:
+            return Direction::LEFT;
+
+        case FacingDirection::Right:
+            return Direction::RIGHT;
+    }
+    return Direction::DOWN;
 }

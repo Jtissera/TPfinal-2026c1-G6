@@ -156,10 +156,10 @@ void Game::update() {
             // Convertimos el mensaje genérico al mensaje concreto de movimiento.
             const auto& moveMsg = static_cast<const EntityMoveMessage&>(*msg);
             const uint32_t entityId = static_cast<uint32_t>(moveMsg.getId());
-
-            // Leemos la posición enviada por el servidor.
             const float serverX = static_cast<float>(moveMsg.getX());
             const float serverY = static_cast<float>(moveMsg.getY());
+            const Direction direction = moveMsg.getDirection();
+            const bool moving = moveMsg.isMoving();
 
             auto enemyIt = enemies.find(entityId);
             if (enemyIt != enemies.end() && enemyIt->second != nullptr) {
@@ -176,13 +176,11 @@ void Game::update() {
                 continue;
             }
             if (clientWorld != nullptr) {
-                clientWorld->updatePlayerPosition(entityId, serverX, serverY);
+                clientWorld->updatePlayerPosition(entityId, serverX, serverY,direction,moving);
             }
 
             // Log opcional para verificar que llegan posiciones pequeñas.
-            std::cout << "[sync] server=("
-                      << serverX << ", " << serverY
-                      << ")" << std::endl;
+            std::cout << "[sync] server=("<< serverX << ", " << serverY<< ")" << std::endl;
         }  else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_DIED)) {
             const auto& diedMsg = static_cast<const PlayerDiedMessage&>(*msg);
 

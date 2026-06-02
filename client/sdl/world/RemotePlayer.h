@@ -30,7 +30,8 @@ public:
     Entity* getEntity() const;
 
     // Actualiza la posición visual del jugador remoto.
-    void setPosition(float x, float y);
+    // Actualiza posición y animación visual del jugador remoto.
+    void setPositionAndAnimation(float x, float y, Direction direction, bool moving);
 };
 
 

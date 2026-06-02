@@ -9,6 +9,7 @@
 #include "../AssetManager.h"
 #include "../../../common/dtos/gameTypes.h"
 
+
 class ClientGameWorld {
 private:
 
@@ -47,10 +48,10 @@ public:
 
     // Actualiza la posición de un remoto EXISTENTE.
     // No crea jugadores. Si no existe, loguea warning.
-    void updateRemotePlayerPosition(uint32_t entityId, float x, float y);
+    void updateRemotePlayerPosition(uint32_t entityId, float x, float y,Direction direction,bool moving);
 
     // Entrada general para movimientos de jugadores.
-    void updatePlayerPosition(uint32_t entityId, float x, float y);
+    void updatePlayerPosition(uint32_t entityId, float x, float y,Direction direction,bool moving);
 };
 
 

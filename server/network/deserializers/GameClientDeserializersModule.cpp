@@ -10,8 +10,14 @@ void GameClientDeserializersModule::registerDeserializers(Registry& registry) co
     registry.registerDeserializer(
         static_cast<uint8_t>(ClientOpCode::MSG_MOVE),
         [](PacketReader& reader) -> std::unique_ptr<Message> {
-            auto dir = static_cast<Direction>(reader.readUint8());
-            return std::make_unique<MoveMessage>(dir);
+            // Primero leemos la dirección enviada por el cliente.
+            auto direction = static_cast<Direction>(reader.readUint8());
+
+            // Después leemos si el jugador está caminando o se detuvo.
+            // 1 = moving, 0 = stopped.
+            bool moving = reader.readUint8() != 0;
+            // Construimos el mensaje con el nuevo formato.
+            return std::make_unique<MoveMessage>(direction, moving);
         });
 
     registry.registerDeserializer(

@@ -58,37 +58,34 @@ void ActionDispatcher::sendDeath(uint32_t id, Player& dead, Monitor& monitor) {
 void ActionDispatcher::handleMove(uint32_t id, const Message& msg,GameWorld& world, Monitor& monitor) {
 
     const auto& moveMsg = static_cast<const MoveMessage&>(msg);
+    const Direction direction = moveMsg.getDirection();
+    const bool moving = moveMsg.isMoving();
 
-    // El server valida y aplica el movimiento en el GameWorld.
-    if (world.movePlayer(id, moveMsg.getDirection())) {
-        //mensaje de movimiento
-        auto movementMsg = std::make_shared<const EntityMoveMessage>(
+    if (!moving) {
+        monitor.broadcast(std::make_shared<const EntityMoveMessage>(
             static_cast<uint8_t>(id),
             world.getPixelX(id),
             world.getPixelY(id),
-            moveMsg.getDirection(),
-            true
-        );
+            direction,
+            false
+        ));
 
-        //odos los clientes de la sala deben recibir la nueva posición de este jugador.
-        monitor.broadcast(movementMsg);
-
-        std::cout << "[SERVER MOVE] broadcast playerId="
-                  << id
-                  << " pos=("
-                  << world.getPixelX(id)
-                  << ", "
-                  << world.getPixelY(id)
-                  << ")"
-                  << std::endl;
+        return;
     }
+
+    if (world.movePlayer(id, direction)) {
+        monitor.broadcast(std::make_shared<const EntityMoveMessage>(
+            static_cast<uint8_t>(id),
+            world.getPixelX(id),
+            world.getPixelY(id),
+            direction,
+            true
+        ));
+    }
+        std::cout << "[SERVER MOVE] broadcast playerId="<< id<< " pos=("<< world.getPixelX(id)<< ", "<< world.getPixelY(id)<< ")"<< std::endl;
 }
-void ActionDispatcher::handleAttack(
-    uint32_t id,
-    const Message& msg,
-    GameWorld& world,
-    Monitor& monitor
-) {
+
+void ActionDispatcher::handleAttack(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor) {
     const auto& attackMsg = static_cast<const AttackMessage&>(msg);
     const uint32_t targetId = attackMsg.getTargetId();
 
@@ -267,7 +264,7 @@ void ActionDispatcher::handleResurrect(uint32_t id, const Message& msg,
     std::cout << "[SERVER RESURRECT] after resurrect hp="
               << p.getHp()
               << std::endl;
-    
+
     monitor.sendTo(id, std::make_shared<const EntityMoveMessage>(
         static_cast<uint8_t>(id),
         world.getPixelX(id),
