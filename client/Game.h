@@ -77,6 +77,11 @@ private:
     bool localGhostStateApplied = false;
     bool hasReceivedValidPlayerStats = false;
 
+    // --- Cheats ---
+    bool cheatGodMode    = false;  // Ctrl+H: vida y mana siempre al maximo
+    bool cheatInfMana    = false;  // Ctrl+M: mana siempre al maximo
+    void handleCheatKeys();
+
     void showStatusMessage(const std::string& msg);
 
     void loadAssets();

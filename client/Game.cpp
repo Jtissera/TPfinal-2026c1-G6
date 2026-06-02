@@ -108,6 +108,10 @@ void Game::handleEvents() {
         if (event.type == SDL_KEYDOWN && event.key.repeat != 0){
             event.type = SDL_USEREVENT;
         }
+        if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
+            handleCheatKeys();
+        }
+
         if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
             const int mouseX = event.button.x;
             const int mouseY = event.button.y;
@@ -174,24 +178,12 @@ void Game::update() {
                 hasReceivedValidPlayerStats = true;
             }
 
-            const int serverHp = stats.getHp();
-            // Si el servidor manda una vida positiva, ya tenemos stats válidas.
-            if (serverHp > 0) {
-                hasReceivedValidPlayerStats = true;
-            }
-
-            // Si el jugador estaba muerto/fantasma y el servidor manda HP positivo,
-            // entonces el servidor está indicando que revivió.
-            if (playerState.isDead && serverHp > 0) {
-                reviveLocalPlayer(serverHp);
-
-                // Si el jugador está vivo, aceptamos la vida informada por el servidor.
-            } else if (!playerState.isDead) {
-                playerState.hp = serverHp;
-
-                // Si sigue muerto y el servidor manda HP 0, mantenemos vida en 0.
-            } else {
+            // Si el jugador ya está fantasma, no dejamos que MSG_PLAYER_STATS común
+            // lo reviva visualmente.
+            if (playerState.isDead) {
                 playerState.hp = 0;
+            } else {
+                playerState.hp = stats.getHp();
             }
 
             playerState.maxHp = stats.getMaxHp();
@@ -226,7 +218,7 @@ void Game::update() {
     if (isLocalPlayerDead()) {
         applyLocalPlayerGhostState();
     } else {
-        attackSystem.updateEnemyChase(enemies, player, playerState.hp,sendQueue);
+        attackSystem.updateEnemyChase(enemies, player, playerState.hp);
 
         if (hasReceivedValidPlayerStats && playerState.hp <= 0) {
             applyLocalPlayerGhostState();
@@ -361,6 +353,56 @@ void Game::clean() {
 void Game::showStatusMessage(const std::string& msg) {
     statusMessage      = msg;
     statusMessageTimer = SDL_GetTicks();
+}
+
+// ---------------------------------------------------------------------------
+// Cheats — combinaciones Ctrl+tecla, sin repeat
+// ---------------------------------------------------------------------------
+void Game::handleCheatKeys() {
+    const Uint8* keys = SDL_GetKeyboardState(nullptr);
+    const bool ctrl = keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL];
+    if (!ctrl) return;
+
+    switch (event.key.keysym.sym) {
+
+        // Ctrl+H — God mode (vida + mana infinitos)
+        case SDLK_h:
+            cheatGodMode = !cheatGodMode;
+            if (cheatGodMode) cheatInfMana = false; // god mode incluye mana
+            showStatusMessage(cheatGodMode
+                ? "[CHEAT] God mode ON"
+                : "[CHEAT] God mode OFF");
+            break;
+
+        // Ctrl+M — Mana infinito (solo mana)
+        case SDLK_m:
+            if (!cheatGodMode) {
+                cheatInfMana = !cheatInfMana;
+                showStatusMessage(cheatInfMana
+                    ? "[CHEAT] Mana infinito ON"
+                    : "[CHEAT] Mana infinito OFF");
+            }
+            break;
+
+        // Ctrl+K — Morir
+        case SDLK_k:
+            if (!playerState.isDead) {
+                showStatusMessage("[CHEAT] Muriendo...");
+                cheatGodMode = false;
+                cheatInfMana = false;
+                playerState.hp = 0;
+                applyLocalPlayerGhostState();
+            }
+            break;
+
+        // Ctrl+L — Subir nivel local (solo visual, para testear HUD)
+        case SDLK_l:
+            playerState.level = std::min(playerState.level + 1, 99);
+            showStatusMessage("[CHEAT] Nivel: " + std::to_string(playerState.level));
+            break;
+
+        default: break;
+    }
 }
 
 bool Game::running() const { return isRunning; }
@@ -1033,7 +1075,7 @@ void Game::consumePotion(int slotIndex) {
 }
 
 std::string Game::visualTextureForCurrentRace(const ItemView& item) const {
-    if (playerState.race == "Dwarf" || playerState.race == "Gnome") {
+    if (playerState.race == "dwarf" || playerState.race == "gnome") {
         if (!item.visualTextureIdShort.empty()) {
             return item.visualTextureIdShort;
         }
@@ -1115,7 +1157,7 @@ SpriteSheetConfig Game::armorSpriteConfigForCurrentRace() const {
 
     // Las razas bajas necesitan usar los offsets short.
     const bool isShortRace =
-        playerState.race == "Dwarf" || playerState.race == "Gnome";
+        playerState.race == "dwarf" || playerState.race == "gnome";
 
     // Devolvemos la config de la armadura, incluyendo offsets visuales.
     return SpriteSheetConfig{
@@ -1164,7 +1206,7 @@ void Game::refreshPlayerBodySprite() {
 
 // helpér
 SDL_Point Game::visualOffsetForCurrentRace(const ItemView& item) const {
-    if (playerState.race == "Dwarf" || playerState.race == "Gnome") {
+    if (playerState.race == "dwarf" || playerState.race == "gnome") {
         return SDL_Point{
             item.visualShortOffsetX,
             item.visualShortOffsetY
