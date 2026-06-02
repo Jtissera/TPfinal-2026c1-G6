@@ -82,7 +82,6 @@ void ActionDispatcher::handleMove(uint32_t id, const Message& msg,GameWorld& wor
             true
         ));
     }
-        std::cout << "[SERVER MOVE] broadcast playerId="<< id<< " pos=("<< world.getPixelX(id)<< ", "<< world.getPixelY(id)<< ")"<< std::endl;
 }
 
 void ActionDispatcher::handleAttack(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor) {

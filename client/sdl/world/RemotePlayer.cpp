@@ -20,6 +20,10 @@ void RemotePlayer::setPositionAndAnimation(float x,float y,Direction direction,b
     if (entity == nullptr) {
         return;
     }
+    std::cout << "[REMOTE SYNC] id="
+          << id
+          << " pos=(" << x << ", " << y << ")"
+          << std::endl;
 
     // Obtenemos el TransformComponent de la entidad remota.
     auto& transform = entity->getComponent<TransformComponent>();
@@ -28,7 +32,6 @@ void RemotePlayer::setPositionAndAnimation(float x,float y,Direction direction,b
     transform.position.x = x;
     transform.position.y = y;
 
-    // Si la entidad no tiene SpriteComponent, no podemos animarla.
     if (!entity->hasComponent<SpriteComponent>()) {
         return;
     }

@@ -211,7 +211,7 @@ ScreenResult PlaceholderLobbyScreen::run() {
 
         render();
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        SDL_Delay(33);
     }
 }
 

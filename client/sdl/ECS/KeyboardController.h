@@ -28,7 +28,7 @@ private:
     FacingDirection lastDirection = FacingDirection::Down;
     Queue<std::shared_ptr<const Message>>& sendQueue;
     Uint32 lastMoveSentAt = 0;
-    Uint32 moveCooldownMs = 140;
+    Uint32 moveCooldownMs = 10;
     bool movingUp    = false;
     bool movingDown  = false;
     bool movingLeft  = false;

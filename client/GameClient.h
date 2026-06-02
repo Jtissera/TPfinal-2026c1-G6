@@ -15,19 +15,27 @@
 class GameClient {
 
 public:
-    GameClient(Socket& socket,const uint32_t idPlayer,const PlayerDto& playerDto);
+    GameClient(Socket& socket,uint32_t idPlayer,const PlayerDto& playerDto,SDL_Window* window,SDL_Renderer* renderer);
     void run();
 
 private:
     const uint32_t idPlayer;
     const PlayerDto playerDto;
+
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+
     ClientProtocolFactory factory;
-    Protocol senderProtocol;    // para ClientSender
-    Protocol receiverProtocol;  // para ClientReceiver
+
+    Protocol senderProtocol;
+    Protocol receiverProtocol;
+
     Queue<std::shared_ptr<const Message>> sendQueue;
     Queue<std::shared_ptr<const Message>> receiveQueue;
+
     ClientSender sender;
     ClientReceiver receiver;
+
     Game gameLoop;
 
 };

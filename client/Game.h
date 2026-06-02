@@ -26,15 +26,11 @@ public:
     Game();
     ~Game() = default;
 
-    void init(
-        const char* title,
-        int width,
-        int height,
-        bool fullscreen,
-        Queue<std::shared_ptr<const Message>>& sendQueue,
-        Queue<std::shared_ptr<const Message>>& receiveQueue,
-        const PlayerDto& playerDto
-    );
+    void init(SDL_Window* window,
+              SDL_Renderer* renderer,
+              Queue<std::shared_ptr<const Message>>& sendQ,
+              Queue<std::shared_ptr<const Message>>& receiveQ,
+              const PlayerDto& pDto);
 
     void handleEvents();
     void update();
@@ -81,6 +77,42 @@ private:
     bool localGhostStateApplied = false;
     bool hasReceivedValidPlayerStats = false;
 
+    struct CachedText {
+        // Texto actual asociado a esta textura.
+        std::string text;
+
+        // Color actual asociado a esta textura.
+        SDL_Color color{0, 0, 0, 0};
+
+        // Font usado para crear la textura.
+        // No destruimos la fuente acá, solo guardamos el puntero para comparar.
+        TTF_Font* font = nullptr;
+
+        // Textura cacheada.
+        SDL_Texture* texture = nullptr;
+
+        // Dimensiones de la textura.
+        int w = 0;
+        int h = 0;
+    };
+
+    // Cache de textos reutilizables.
+    // La key representa un lugar lógico del HUD, por ejemplo:
+    // "hud_name", "hud_gold", "hud_hp_bar_text".
+    std::unordered_map<std::string, CachedText> textCache;
+
+    SDL_Texture* getOrCreateTextTexture(
+        const std::string& key,
+        const std::string& text,
+        TTF_Font* font,
+        SDL_Color color,
+        int& outW,
+        int& outH
+    );
+
+    void clearTextCache();
+
+    bool sameColor(SDL_Color a, SDL_Color b) const;
 
     // --- Cheats ---
     bool cheatGodMode    = false;  // Ctrl+H: vida y mana siempre al maximo

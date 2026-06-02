@@ -130,7 +130,8 @@ int Client::run()
                 if (lobbyResult == ScreenResult::GO_LOBBY) {
                     PlayerDto playerDto = lobby.getJoinedPlayerDto();
 
-                    GameClient gameClient(socket, playerDto.playerID, playerDto);
+
+                    GameClient gameClient(socket, playerDto.playerID, playerDto, window, renderer);
                     gameClient.run();
                 }
             }

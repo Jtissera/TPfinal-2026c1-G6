@@ -20,87 +20,64 @@
 Game::Game() {
 }
 
-void Game::init(const char* title, int width, int height, bool fullscreen,
+void Game::init(SDL_Window* existingWindow,
+                SDL_Renderer* existingRenderer,
                 Queue<std::shared_ptr<const Message>>& sendQ,
                 Queue<std::shared_ptr<const Message>>& receiveQ,
                 const PlayerDto& pDto) {
-    this->sendQueue    = &sendQ;
+
+    this->sendQueue = &sendQ;
     this->receiveQueue = &receiveQ;
-    this->playerDto    = pDto;
-    this->playerState = toPlayerViewState(this->playerDto );
+    this->playerDto = pDto;
+    this->playerState = toPlayerViewState(this->playerDto);
 
-    int flags = fullscreen ? SDL_WINDOW_FULLSCREEN : 0;
+    this->window = existingWindow;
+    this->renderer = existingRenderer;
 
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-        std::cerr << "Error SDL_Init: " << SDL_GetError() << std::endl;
-        return;
-    }
-    if (TTF_Init() == -1) {
-        std::cerr << "Error TTF_Init: " << TTF_GetError() << std::endl;
-        return;
-    }
-
-    window   = SDL_CreateWindow(title,
-                                SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                width, height, flags);
-    if (window == nullptr) {
-        std::cerr << "Error SDL_CreateWindow: " << SDL_GetError() << std::endl;
-        return;
-    }
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
-    if (renderer == nullptr) {
-        std::cerr << "Error SDL_CreateRenderer: " << SDL_GetError() << std::endl;
+    if (this->window == nullptr || this->renderer == nullptr) {
+        std::cerr << "[Game::init] window o renderer inválidos" << std::endl;
+        isRunning = false;
         return;
     }
 
     textureManager = std::make_unique<TextureManager>(renderer);
-    assets = std::make_unique<AssetManager>(&manager,*sendQueue,*textureManager);
+    assets = std::make_unique<AssetManager>(&manager, *sendQueue, *textureManager);
+
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     isRunning = true;
-    std::cout << "[INIT] antes loadAssets" << std::endl;
+
     loadAssets();
-    std::cout << "[INIT] antes itemCatalog" << std::endl;
+
     try {
         itemCatalog.loadFromJson("assets/items/items.json");
-        std::cout << "[INIT] itemCatalog cargado" << std::endl;
-
         loadInitialInventoryForCurrentClass();
-        std::cout << "[INIT] inventario inicial cargado" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error cargando catálogo de ítems: " << e.what() << std::endl;
         isRunning = false;
         return;
     }
 
-    std::cout << "[INIT] antes CreatePlayer" << std::endl;
     player = assets->CreatePlayer(playerDto);
-    // Creamos el mundo cliente con el jugador local.
-    // Por ahora solo maneja local + remotos.
-    clientWorld = std::make_unique<ClientGameWorld>(static_cast<uint32_t>(playerDto.playerID),player,*assets);
-    
+
+    clientWorld = std::make_unique<ClientGameWorld>(
+        static_cast<uint32_t>(playerDto.playerID),
+        player,
+        *assets
+    );
+
     refreshPlayerEquipmentVisuals();
 
-    std::cout << "[INIT] antes Map" << std::endl;
     map = new Map(manager, *assets, "terrain", 3, 32);
     map->LoadMap("assets/sprites/MapAssets/mapa.argmap");
 
-    std::cout << "Tiles cargados como entidades: "
-          << manager.getGroup(groupMap).size()
-          << std::endl;
-
-    // En Game.cpp, al final de init(), después de crear el player
     NPCData fakeEnemy;
-    fakeEnemy.npcID   = 99;          // ID falso
+    fakeEnemy.npcID = 99;
     fakeEnemy.type = NpcType::SKELETON;
-    fakeEnemy.x    = 600;         // posición en píxeles de mundo
-    fakeEnemy.y    = 400;
+    fakeEnemy.x = 600;
+    fakeEnemy.y = 400;
 
-    std::cout << "[INIT] antes Enemy" << std::endl;
     Entity* e = assets->CreateEnemy(fakeEnemy);
     enemies[fakeEnemy.npcID] = e;
-    std::cout << "[INIT] fin Game::init" << std::endl;
-    std::cout << "[INIT] fin Game::init" << std::endl;
 }
 
 void Game::handleEvents() {
@@ -372,6 +349,7 @@ void Game::render() {
 }
 
 void Game::clean() {
+    clearTextCache();
     assets.reset();
     textureManager.reset();
 
@@ -380,18 +358,10 @@ void Game::clean() {
         map = nullptr;
     }
 
-    if (renderer != nullptr) {
-        SDL_DestroyRenderer(renderer);
-        renderer = nullptr;
-    }
-
-    if (window != nullptr) {
-        SDL_DestroyWindow(window);
-        window = nullptr;
-    }
-
-    TTF_Quit();
-    SDL_Quit();
+    // No destruimos renderer ni window acá.
+    // Son propiedad de main().
+    renderer = nullptr;
+    window = nullptr;
 
     std::cout << "Game cleaned." << std::endl;
 }
@@ -461,27 +431,6 @@ bool Game::running() const { return isRunning; }
 
 
 void Game::renderHUD() {
-    //1. Fondo/marco     ← primero (abajo)
-    // 2. Barras          ← encima del fondo
-    // 3. Slots/items     ← encima de las barras
-    // 4. Textos          ← último (arriba de todo)
-
-
-    //
-    // // 1. Cargar la textura una vez en loadAssets()
-
-    //
-    // // 2. En renderHUD(), dibujar la imagen donde querés el fondo
-    // SDL_Texture* fondo = assets->GetTexture("fondo_inventario");
-    //
-    // // Define dónde y qué tamaño en pantalla
-    // SDL_Rect destino = {800, 0, 280, 640};  // x, y, ancho, alto
-    //
-    // // Dibuja la imagen estirada para llenar ese rectángulo
-    // SDL_RenderCopy(renderer, fondo, nullptr, &destino);
-    //
-    // // Después dibujás todo lo demás ENCIMA (barras, slots, texto)
-
     // === FONDOS ===
     SDL_Texture* texTop    = assets->GetTexture("hud_top");
     SDL_Texture* texLogo   = assets->GetTexture("hud_logo");
@@ -497,12 +446,12 @@ void Game::renderHUD() {
     SDL_Rect rInv    = {900, 133, 380, 442};
     SDL_Rect rStats  = {900, 575, 380, 145};
 
-    SDL_RenderCopy(renderer, texTop,    nullptr, &rTop);
-    SDL_RenderCopy(renderer, texLogo,   nullptr, &rLogo);
-    SDL_RenderCopy(renderer, texChat,   nullptr, &rChat);
-    SDL_RenderCopy(renderer, texPjInfo, nullptr, &rPjInfo);
-    SDL_RenderCopy(renderer, texInv,    nullptr, &rInv);
-    SDL_RenderCopy(renderer, texStats,  nullptr, &rStats);
+    if (texTop)    SDL_RenderCopy(renderer, texTop,    nullptr, &rTop);
+    if (texLogo)   SDL_RenderCopy(renderer, texLogo,   nullptr, &rLogo);
+    if (texChat)   SDL_RenderCopy(renderer, texChat,   nullptr, &rChat);
+    if (texPjInfo) SDL_RenderCopy(renderer, texPjInfo, nullptr, &rPjInfo);
+    if (texInv)    SDL_RenderCopy(renderer, texInv,    nullptr, &rInv);
+    if (texStats)  SDL_RenderCopy(renderer, texStats,  nullptr, &rStats);
 
     // === BORDES ===
     SDL_SetRenderDrawColor(renderer, 100, 80, 40, 255);
@@ -517,58 +466,127 @@ void Game::renderHUD() {
     SDL_RenderDrawLine(renderer, 900, 575, 1280, 575);
     SDL_RenderDrawLine(renderer, 900, 576, 1280, 576);
 
-    // === CAJA DE NIVEL ===
-    SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
-    SDL_Rect nivelBox = {908, 38, 50, 50};
-    SDL_RenderFillRect(renderer, &nivelBox);
-    SDL_SetRenderDrawColor(renderer, 100, 80, 40, 255);
-    SDL_RenderDrawRect(renderer, &nivelBox);
-
-    // helper para texto centrado en un rect
+    // === FUENTES Y COLORES ===
     TTF_Font* fontBold    = assets->GetFont("ao_bold");
     TTF_Font* fontRegular = assets->GetFont("ao_regular");
 
-    auto drawTextCentered = [&](const std::string& text, TTF_Font* font,
-                                 int x, int y, int w, int h, SDL_Color color) {
-        SDL_Surface* surf = TTF_RenderText_Blended(font, text.c_str(), color);
-        if (!surf) return;
-        SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
-        int tw, th;
-        SDL_QueryTexture(tex, nullptr, nullptr, &tw, &th);
-        SDL_Rect dest = {x + (w - tw) / 2, y + (h - th) / 2, tw, th};
-        SDL_RenderCopy(renderer, tex, nullptr, &dest);
-        SDL_FreeSurface(surf);
-        SDL_DestroyTexture(tex);
-    };
-
-    auto drawTextAt = [&](const std::string& text, TTF_Font* font,
-                           int x, int y, SDL_Color color) {
-        SDL_Surface* surf = TTF_RenderText_Blended(font, text.c_str(), color);
-        if (!surf) return;
-        SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
-        int tw, th;
-        SDL_QueryTexture(tex, nullptr, nullptr, &tw, &th);
-        SDL_Rect dest = {x, y, tw, th};
-        SDL_RenderCopy(renderer, tex, nullptr, &dest);
-        SDL_FreeSurface(surf);
-        SDL_DestroyTexture(tex);
-    };
+    if (fontBold == nullptr || fontRegular == nullptr) {
+        return;
+    }
 
     SDL_Color white  = {255, 255, 255, 255};
     SDL_Color yellow = {255, 215, 0,   255};
 
-    // Nivel centrado en la caja
-    drawTextCentered(std::to_string(playerState.level),
-                     fontBold, 908, 38, 50, 50, yellow);
+    // === HELPERS DE TEXTO CACHEADO ===
+    auto drawTextCentered = [&](const std::string& key,
+                                const std::string& text,
+                                TTF_Font* font,
+                                int x,
+                                int y,
+                                int w,
+                                int h,
+                                SDL_Color color) {
+        int textW = 0;
+        int textH = 0;
 
-    // Nombre grande
-    drawTextAt(playerState.name, fontBold, 968, 45, yellow);
+        SDL_Texture* texture = getOrCreateTextTexture(
+            key,
+            text,
+            font,
+            color,
+            textW,
+            textH
+        );
 
-    // Clase
-    drawTextAt(playerClassToString(playerState.playerClass), fontRegular, 968, 75, white);
+        if (texture == nullptr) {
+            return;
+        }
 
-    // === EQUIPAMIENTO (4 slots con frame) ===
-    drawTextCentered("Equipamiento", fontRegular, 900, 142, 380, 20, white);
+        SDL_Rect dest = {
+            x + (w - textW) / 2,
+            y + (h - textH) / 2,
+            textW,
+            textH
+        };
+
+        SDL_RenderCopy(renderer, texture, nullptr, &dest);
+    };
+
+    auto drawTextAt = [&](const std::string& key,
+                          const std::string& text,
+                          TTF_Font* font,
+                          int x,
+                          int y,
+                          SDL_Color color) {
+        int textW = 0;
+        int textH = 0;
+
+        SDL_Texture* texture = getOrCreateTextTexture(
+            key,
+            text,
+            font,
+            color,
+            textW,
+            textH
+        );
+
+        if (texture == nullptr) {
+            return;
+        }
+
+        SDL_Rect dest = {x, y, textW, textH};
+        SDL_RenderCopy(renderer, texture, nullptr, &dest);
+    };
+
+    // === CAJA DE NIVEL ===
+    SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
+    SDL_Rect nivelBox = {908, 38, 50, 50};
+    SDL_RenderFillRect(renderer, &nivelBox);
+
+    SDL_SetRenderDrawColor(renderer, 100, 80, 40, 255);
+    SDL_RenderDrawRect(renderer, &nivelBox);
+
+    drawTextCentered(
+        "hud_level",
+        std::to_string(playerState.level),
+        fontBold,
+        908,
+        38,
+        50,
+        50,
+        yellow
+    );
+
+    // === NOMBRE Y CLASE ===
+    drawTextAt(
+        "hud_name",
+        playerState.name,
+        fontBold,
+        968,
+        45,
+        yellow
+    );
+
+    drawTextAt(
+        "hud_class",
+        playerClassToString(playerState.playerClass),
+        fontRegular,
+        968,
+        75,
+        white
+    );
+
+    // === EQUIPAMIENTO ===
+    drawTextCentered(
+        "hud_title_equipment",
+        "Equipamiento",
+        fontRegular,
+        900,
+        142,
+        380,
+        20,
+        white
+    );
 
     SDL_Texture* texFrame = assets->GetTexture("hud_frame");
 
@@ -587,7 +605,10 @@ void Game::renderHUD() {
             eqSlotSize
         };
 
-        SDL_RenderCopy(renderer, texFrame, nullptr, &slot);
+        if (texFrame != nullptr) {
+            SDL_RenderCopy(renderer, texFrame, nullptr, &slot);
+        }
+
         const ItemView* equippedItem = nullptr;
 
         if (i == 0 && equipmentState.weapon.has_value()) {
@@ -623,6 +644,7 @@ void Game::renderHUD() {
         }
 
         drawTextCentered(
+            "hud_eq_label_" + std::to_string(i),
             eqLabels[i],
             fontRegular,
             slot.x - 8,
@@ -632,9 +654,20 @@ void Game::renderHUD() {
             white
         );
     }
-    // === INVENTARIO (grilla 5x4) ===
+
+    // === INVENTARIO ===
     const int inventoryTitleY = 255;
-    drawTextCentered("Inventario", fontRegular, 900, inventoryTitleY, 380, 20, white);
+
+    drawTextCentered(
+        "hud_title_inventory",
+        "Inventario",
+        fontRegular,
+        900,
+        inventoryTitleY,
+        380,
+        20,
+        white
+    );
 
     const int invSlotSize = 44;
     const int invGapX = 8;
@@ -647,10 +680,8 @@ void Game::renderHUD() {
 
     for (int fila = 0; fila < invRows; fila++) {
         for (int col = 0; col < invCols; col++) {
-            // Calcula qué slot lógico representa esta posición visual.
             const int index = fila * invCols + col;
 
-            // Rectángulo visual del slot.
             SDL_Rect slot = {
                 invStartX + col * (invSlotSize + invGapX),
                 invStartY + fila * (invSlotSize + invGapY),
@@ -658,18 +689,16 @@ void Game::renderHUD() {
                 invSlotSize
             };
 
-            // Fondo del slot.
             SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
             SDL_RenderFillRect(renderer, &slot);
 
-            // Borde del slot.
             SDL_SetRenderDrawColor(renderer, 100, 80, 40, 255);
             SDL_RenderDrawRect(renderer, &slot);
 
-            // Si el slot existe y contiene un ítem, lo dibujamos.
-            if (index < static_cast<int>(inventoryState.slots.size()) && inventoryState.slots[index].has_value()) {
+            if (index < static_cast<int>(inventoryState.slots.size()) &&
+                inventoryState.slots[index].has_value()) {
+
                 const ItemView& item = inventoryState.slots[index].value();
-                // La textura viene del textureId definido en items.json.
                 SDL_Texture* itemTexture = assets->GetTexture(item.textureId);
 
                 if (itemTexture != nullptr) {
@@ -679,17 +708,20 @@ void Game::renderHUD() {
                         slot.w - 10,
                         slot.h - 10
                     };
+
                     SDL_Rect itemSrc = {
                         item.iconSrcX,
                         item.iconSrcY,
                         item.iconSrcW,
                         item.iconSrcH
                     };
+
                     SDL_RenderCopy(renderer, itemTexture, &itemSrc, &itemDest);
                 }
-                // Si hay cantidad mayor a 1, mostramos el número.
+
                 if (item.quantity > 1) {
                     drawTextAt(
+                        "hud_item_qty_" + std::to_string(index),
                         std::to_string(item.quantity),
                         fontRegular,
                         slot.x + slot.w - 14,
@@ -701,58 +733,142 @@ void Game::renderHUD() {
         }
     }
 
-    // === BARRAS CON TEXTO CENTRADO ===
-    int hpActual   = playerState.hp;
-    int hpMax      = playerState.maxHp;
+    // === BARRAS ===
+    const int hpActual   = playerState.hp;
+    const int hpMax      = playerState.maxHp;
 
-    int manaActual = playerState.mana;
-    int manaMax    = playerState.maxMana;
+    const int manaActual = playerState.mana;
+    const int manaMax    = playerState.maxMana;
 
-    int expActual  = playerState.exp;
-    int expMax     = playerState.expToNextLevel;
+    const int expActual  = playerState.exp;
+    const int expMax     = playerState.expToNextLevel;
 
-    // Función para dibujar barra con texto encima
-    auto drawBar = [&](SDL_Texture* tex, int x, int y, int w, int h,
-                       int actual, int max, TTF_Font* font) {
-        // Fondo oscuro (barra vacía)
+    auto drawBar = [&](const std::string& key,
+                       SDL_Texture* tex,
+                       int x,
+                       int y,
+                       int w,
+                       int h,
+                       int actual,
+                       int max,
+                       TTF_Font* font) {
         SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
+
         SDL_Rect bgRect = {x, y, w, h};
         SDL_RenderFillRect(renderer, &bgRect);
 
-        // Barra coloreada solo hasta fillW
-        int fillW = max > 0 ? (w * actual) / max : 0;
-        if (fillW > 0) {
+        const int fillW = max > 0 ? (w * actual) / max : 0;
+
+        if (tex != nullptr && fillW > 0) {
             SDL_Rect srcR  = {0, 0, fillW, h};
             SDL_Rect fillR = {x, y, fillW, h};
             SDL_RenderCopy(renderer, tex, &srcR, &fillR);
         }
 
-        // Texto centrado dentro de la barra
-        std::string text = std::to_string(actual) + "/" + std::to_string(max);
-        drawTextCentered(text, font, x, y, w, h, {255, 255, 255, 255});
+        const std::string text =
+            std::to_string(actual) + "/" + std::to_string(max);
+
+        drawTextCentered(
+            key,
+            text,
+            font,
+            x,
+            y,
+            w,
+            h,
+            white
+        );
     };
 
     SDL_Texture* texVida = assets->GetTexture("barra_vida");
     SDL_Texture* texMana = assets->GetTexture("barra_mana");
     SDL_Texture* texExp  = assets->GetTexture("barra_exp");
 
-    // Exp en pj_info
-    drawTextCentered("Experiencia", fontRegular, 910, 100, 350, 16, white);
-    drawBar(texExp, 910, 118, 350, 16, expActual, expMax, fontRegular);
+    // Experiencia
+    drawTextCentered(
+        "hud_label_exp",
+        "Experiencia",
+        fontRegular,
+        910,
+        100,
+        350,
+        16,
+        white
+    );
 
+    drawBar(
+        "hud_exp_bar_text",
+        texExp,
+        910,
+        118,
+        350,
+        16,
+        expActual,
+        expMax,
+        fontRegular
+    );
 
-    // Stats - orden: Oro, Vida, Mana
+    // Oro
+    drawTextAt(
+        "hud_gold",
+        "Oro: " + std::to_string(playerState.gold),
+        fontRegular,
+        915,
+        585,
+        yellow
+    );
+
+    // Vida
     const int statsX = 950;
     const int statsBarW = 260;
     const int statsBarH = 18;
 
-    drawTextAt("Oro: " + std::to_string(playerState.gold), fontRegular, 915, 585, yellow);
+    drawTextCentered(
+        "hud_label_hp",
+        "Vida",
+        fontRegular,
+        statsX,
+        610,
+        statsBarW,
+        18,
+        white
+    );
 
-    drawTextCentered("Vida", fontRegular, statsX, 610, statsBarW, 18, white);
-    drawBar(texVida, statsX, 630, statsBarW, statsBarH, hpActual, hpMax, fontRegular);
+    drawBar(
+        "hud_hp_bar_text",
+        texVida,
+        statsX,
+        630,
+        statsBarW,
+        statsBarH,
+        hpActual,
+        hpMax,
+        fontRegular
+    );
 
-    drawTextCentered("Mana", fontRegular, statsX, 665, statsBarW, 18, white);
-    drawBar(texMana, statsX, 685, statsBarW, statsBarH, manaActual, manaMax, fontRegular);
+    // Mana
+    drawTextCentered(
+        "hud_label_mana",
+        "Mana",
+        fontRegular,
+        statsX,
+        665,
+        statsBarW,
+        18,
+        white
+    );
+
+    drawBar(
+        "hud_mana_bar_text",
+        texMana,
+        statsX,
+        685,
+        statsBarW,
+        statsBarH,
+        manaActual,
+        manaMax,
+        fontRegular
+    );
 }
 void Game::loadAssets() {
     assets->LoadManifest("assets/manifest.json");
@@ -1558,4 +1674,96 @@ void Game::reviveLocalPlayer(int newHp) {
     refreshPlayerEquipmentVisuals();
 }
 
+bool Game::sameColor(SDL_Color a, SDL_Color b) const {
+    // Compara color completo, incluido alpha.
+    return a.r == b.r &&
+           a.g == b.g &&
+           a.b == b.b &&
+           a.a == b.a;
+}
 
+SDL_Texture* Game::getOrCreateTextTexture(
+    const std::string& key,
+    const std::string& text,
+    TTF_Font* font,
+    SDL_Color color,
+    int& outW,
+    int& outH
+) {
+    // Buscamos si ya existe una textura cacheada para esta key lógica.
+    auto it = textCache.find(key);
+
+    if (it != textCache.end()) {
+        CachedText& cached = it->second;
+
+        // Si texto, fuente y color siguen iguales, reutilizamos la textura.
+        if (cached.texture != nullptr &&
+            cached.text == text &&
+            cached.font == font &&
+            sameColor(cached.color, color)) {
+            outW = cached.w;
+            outH = cached.h;
+            return cached.texture;
+        }
+
+        // Si cambió algo, destruimos la textura anterior.
+        if (cached.texture != nullptr) {
+            SDL_DestroyTexture(cached.texture);
+            cached.texture = nullptr;
+        }
+    }
+
+    // Si el texto está vacío, no generamos textura.
+    if (text.empty() || font == nullptr) {
+        outW = 0;
+        outH = 0;
+        return nullptr;
+    }
+
+    // Creamos surface nueva solo cuando el texto realmente cambió.
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), color);
+    if (surface == nullptr) {
+        outW = 0;
+        outH = 0;
+        return nullptr;
+    }
+
+    // Convertimos surface a texture.
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (texture == nullptr) {
+        SDL_FreeSurface(surface);
+        outW = 0;
+        outH = 0;
+        return nullptr;
+    }
+
+    CachedText cached;
+    cached.text = text;
+    cached.color = color;
+    cached.font = font;
+    cached.texture = texture;
+    cached.w = surface->w;
+    cached.h = surface->h;
+
+    SDL_FreeSurface(surface);
+
+    // Guardamos o reemplazamos la entrada cacheada.
+    textCache[key] = cached;
+
+    outW = cached.w;
+    outH = cached.h;
+
+    return texture;
+}
+
+void Game::clearTextCache() {
+    // Destruimos todas las texturas cacheadas.
+    for (auto& [key, cached] : textCache) {
+        if (cached.texture != nullptr) {
+            SDL_DestroyTexture(cached.texture);
+            cached.texture = nullptr;
+        }
+    }
+
+    textCache.clear();
+}

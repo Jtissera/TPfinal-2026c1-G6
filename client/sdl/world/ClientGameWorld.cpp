@@ -85,6 +85,9 @@ void ClientGameWorld::updateLocalPlayerPosition(float x, float y) {
                   << std::endl;
         return;
     }
+    std::cout << "[LOCAL SYNC] pos=("
+      << x << ", " << y << ")"
+      << std::endl;
 
     // Obtenemos el TransformComponent del jugador local.
     auto& transform = localPlayer->getComponent<TransformComponent>();
@@ -92,6 +95,9 @@ void ClientGameWorld::updateLocalPlayerPosition(float x, float y) {
     // Aplicamos la posición enviada por el servidor.
     transform.position.x = x;
     transform.position.y = y;
+    std::cout << "[LOCAL SYNC] pos=("
+          << x << ", " << y << ")"
+          << std::endl;
 }
 
 void ClientGameWorld::updateRemotePlayerPosition(
