@@ -108,6 +108,10 @@ void Game::handleEvents() {
         if (event.type == SDL_KEYDOWN && event.key.repeat != 0){
             event.type = SDL_USEREVENT;
         }
+        if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
+            handleCheatKeys();
+        }
+
         if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
             const int mouseX = event.button.x;
             const int mouseY = event.button.y;
@@ -192,6 +196,12 @@ void Game::update() {
         }
     }
 
+    if (cheatGodMode && !playerState.isDead) {
+        playerState.hp   = playerState.maxHp   > 0 ? playerState.maxHp   : 9999;
+        playerState.mana = playerState.maxMana  > 0 ? playerState.maxMana : 9999;
+    } else if (cheatInfMana && !playerState.isDead) {
+        playerState.mana = playerState.maxMana > 0 ? playerState.maxMana : 9999;
+    }
 
     Vector2D playerPos = player->getComponent<TransformComponent>().position;
     camera.x = static_cast<int>(playerPos.x) - 450;
@@ -349,6 +359,56 @@ void Game::clean() {
 void Game::showStatusMessage(const std::string& msg) {
     statusMessage      = msg;
     statusMessageTimer = SDL_GetTicks();
+}
+
+// ---------------------------------------------------------------------------
+// Cheats — combinaciones Ctrl+tecla, sin repeat
+// ---------------------------------------------------------------------------
+void Game::handleCheatKeys() {
+    const Uint8* keys = SDL_GetKeyboardState(nullptr);
+    const bool ctrl = keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL];
+    if (!ctrl) return;
+
+    switch (event.key.keysym.sym) {
+
+        // Ctrl+H — God mode (vida + mana infinitos)
+        case SDLK_h:
+            cheatGodMode = !cheatGodMode;
+            if (cheatGodMode) cheatInfMana = false; // god mode incluye mana
+            showStatusMessage(cheatGodMode
+                ? "[CHEAT] God mode ON"
+                : "[CHEAT] God mode OFF");
+            break;
+
+        // Ctrl+M — Mana infinito (solo mana)
+        case SDLK_m:
+            if (!cheatGodMode) {
+                cheatInfMana = !cheatInfMana;
+                showStatusMessage(cheatInfMana
+                    ? "[CHEAT] Mana infinito ON"
+                    : "[CHEAT] Mana infinito OFF");
+            }
+            break;
+
+        // Ctrl+K — Morir
+        case SDLK_k:
+            if (!playerState.isDead) {
+                showStatusMessage("[CHEAT] Muriendo...");
+                cheatGodMode = false;
+                cheatInfMana = false;
+                playerState.hp = 0;
+                applyLocalPlayerGhostState();
+            }
+            break;
+
+        // Ctrl+L — Subir nivel local (solo visual, para testear HUD)
+        case SDLK_l:
+            playerState.level = std::min(playerState.level + 1, 99);
+            showStatusMessage("[CHEAT] Nivel: " + std::to_string(playerState.level));
+            break;
+
+        default: break;
+    }
 }
 
 bool Game::running() const { return isRunning; }
