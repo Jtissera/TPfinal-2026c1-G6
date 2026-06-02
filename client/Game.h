@@ -18,6 +18,8 @@
 #include "sdl/Map.h"
 #include "common/queue.h"
 #include "sdl/AttackSystem.h"
+#include <memory>
+#include "sdl/world/ClientGameWorld.h"
 
 class Game {
 public:
@@ -54,7 +56,9 @@ private:
 
     Queue<std::shared_ptr<const Message>>* sendQueue = nullptr;
     Queue<std::shared_ptr<const Message>>* receiveQueue = nullptr;
-
+    // Mundo visual del cliente.
+    // Maneja jugador local y jugadores remotos.
+    std::unique_ptr<ClientGameWorld> clientWorld;
     Map* map = nullptr;
     Entity* player = nullptr;
     Entity* label = nullptr;
@@ -76,6 +80,7 @@ private:
     TTF_Font* statusFont = nullptr;  // se asigna en loadAssets()
     bool localGhostStateApplied = false;
     bool hasReceivedValidPlayerStats = false;
+
 
     // --- Cheats ---
     bool cheatGodMode    = false;  // Ctrl+H: vida y mana siempre al maximo

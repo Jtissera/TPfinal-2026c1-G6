@@ -2,18 +2,31 @@
 
 #include "EntityMoveMessage.h"
 
-
-EntityMoveMessage::EntityMoveMessage(uint8_t id, int16_t x, int16_t y) : entityId(id), x(x), y(y) {}
+EntityMoveMessage::EntityMoveMessage(uint8_t id,int16_t x,int16_t y,Direction direction,bool moving)
+    : entityId(id),
+      x(x),
+      y(y),
+      direction(direction),
+      moving(moving) {
+}
 
 uint8_t EntityMoveMessage::opCode() const {
     return static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE);
 }
 
-void EntityMoveMessage::serializeBody(PacketWriter &writer) const {
+void EntityMoveMessage::serializeBody(PacketWriter& writer) const {
+    // Id de la entidad que se movió.
     writer.writeUint8(entityId);
-    writer.writeUint16(x);
-    writer.writeUint16(y);
 
+    // Posición final validada por servidor.
+    writer.writeUint16(static_cast<uint16_t>(x));
+    writer.writeUint16(static_cast<uint16_t>(y));
+
+    // Dirección aceptada por servidor.
+    writer.writeUint8(static_cast<uint8_t>(direction));
+
+    // Estado de movimiento. Por ahora true cuando el movimiento fue válido.
+    writer.writeUint8(moving ? 1 : 0);
 }
 
 uint8_t EntityMoveMessage::getId() const {
@@ -26,4 +39,12 @@ int16_t EntityMoveMessage::getX() const {
 
 int16_t EntityMoveMessage::getY() const {
     return y;
+}
+
+Direction EntityMoveMessage::getDirection() const {
+    return direction;
+}
+
+bool EntityMoveMessage::isMoving() const {
+    return moving;
 }

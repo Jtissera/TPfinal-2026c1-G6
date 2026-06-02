@@ -18,7 +18,7 @@ public:
                    Queue<std::shared_ptr<const Message>>& clientQueue);
 
     void addPlayer(Player player);
-
+    void syncPlayerJoin(uint32_t newPlayerId);
     void removeClient(uint32_t clientId);
 
     uint32_t getId() const;
@@ -29,6 +29,7 @@ public:
 
     Queue<ClientMessage>& getGameQueue();
 
+
     void start();
     void stop();
     void join();
@@ -37,10 +38,14 @@ private:
     uint32_t gameId;
     std::string gameName;
     uint8_t maxPlayers;
-
     Monitor monitor;
     Queue<ClientMessage> gameQueue;
-    GameLoop gameLoop;
     GameWorld world;
+    GameLoop gameLoop;
+
+    void sendExistingPlayersTo(uint32_t newClientId);
+    void broadcastPlayerSpawn(uint32_t playerId);
+    PlayerDto buildPlayerDto(const Player& player) const;
+
 
 };

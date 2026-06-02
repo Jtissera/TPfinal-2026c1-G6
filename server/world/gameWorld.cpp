@@ -413,3 +413,7 @@ Npc& GameWorld::getNpc(uint32_t npcId) {
 const Npc& GameWorld::getNpc(uint32_t npcId) const {
     return npcManager.getNpc(npcId);
 }
+
+const std::unordered_map<uint32_t, Player>& GameWorld::getPlayers() const {
+    return players;
+}

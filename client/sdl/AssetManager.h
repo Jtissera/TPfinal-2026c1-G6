@@ -28,6 +28,7 @@ public:
     Entity* CreateNpc(const NPCData& data);
     Entity* CreateEnemy(const NPCData& data);
     Entity* CreatePlayer(const PlayerDto& data);
+    Entity* CreateRemotePlayer(const PlayerDto& data);
 
     //texture management
     void AddTexture(std::string id, const char* path);

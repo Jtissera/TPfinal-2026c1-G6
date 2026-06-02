@@ -84,6 +84,10 @@ public:
     Npc& getNpc(uint32_t npcId);
     const Npc& getNpc(uint32_t npcId) const;
 
+    // Devuelve una vista de solo lectura de los jugadores del mundo.
+    // Se usa para enviar spawns al cliente que acaba de entrar.
+    const std::unordered_map<uint32_t, Player>& getPlayers() const;
+
 private:
     static constexpr int TILE_SIZE = 96; //toml
 
@@ -93,6 +97,7 @@ private:
     GameFormulas    formulas;
     NpcManager      npcManager;
     ItemRepository& itemRepo;
+
 
     std::unordered_map<uint32_t, Player> players;
 

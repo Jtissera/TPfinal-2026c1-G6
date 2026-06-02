@@ -342,13 +342,13 @@ namespace
 
 
     TEST(EntityMoveMessageTest, OpCode) {
-    EntityMoveMessage msg(1, 400, 320);
+    EntityMoveMessage msg(1, 400, 320,Direction::DOWN,true);
     EXPECT_EQ(msg.opCode(), static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE));
 }
 
 TEST(EntityMoveMessageTest, RoundTrip) {
-    EntityMoveMessage original(1, 400, 320);
 
+    EntityMoveMessage original(1, 400, 320, Direction::DOWN, true);
     PacketWriter writer;
     original.serializeBody(writer);
 
@@ -364,7 +364,7 @@ TEST(EntityMoveMessageTest, RoundTrip) {
 }
 
 TEST(EntityMoveMessageTest, Getters) {
-    EntityMoveMessage msg(3, 1500, 960);
+    EntityMoveMessage msg(3, 1500, 960, Direction::RIGHT, true);
     EXPECT_EQ(msg.getId(), 3);
     EXPECT_EQ(msg.getX(), 1500);
     EXPECT_EQ(msg.getY(), 960);
@@ -372,7 +372,7 @@ TEST(EntityMoveMessageTest, Getters) {
 
 TEST(EntityMoveMessageTest, MaxMapCoords) {
     // Máximo del mapa: 25*96=2400, 20*96=1920
-    EntityMoveMessage msg(1, 2400, 1920);
+    EntityMoveMessage msg(1, 2400, 1920, Direction::DOWN, true);
     PacketWriter writer;
     msg.serializeBody(writer);
     PacketReader reader(writer.data(), writer.size());

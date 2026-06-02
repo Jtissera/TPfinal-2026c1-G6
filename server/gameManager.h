@@ -25,6 +25,8 @@ public:
 
     void addPlayerToGame(uint32_t gameId, Player player);
 
+    void syncPlayerJoin(uint32_t gameId, uint32_t playerId);
+
     void removeClient(uint32_t clientId);
 
     std::vector<GameInfo> listGames() const;

@@ -351,3 +351,61 @@ void AssetManager::applyPlayerAppearance(Entity& entity, const PlayerViewState& 
     std::string headTextureId = headTextureForRace(playerState.race);
     sprite.setHeadTexture(headTextureId, 0);
 }
+
+Entity* AssetManager::CreateRemotePlayer(const PlayerDto& data) {
+    // Animaciones básicas del jugador remoto.
+    std::map<std::string, Animation> playerAnims;
+
+    // Animaciones quietas.
+    playerAnims.emplace("IdleDown",  Animation(0, 1, 150));
+    playerAnims.emplace("IdleUp",    Animation(1, 1, 150));
+    playerAnims.emplace("IdleRight", Animation(3, 1, 150));
+    playerAnims.emplace("IdleLeft",  Animation(2, 1, 150));
+
+    // Animaciones de caminata.
+    playerAnims.emplace("WalkDown",  Animation(0, 6, 100));
+    playerAnims.emplace("WalkUp",    Animation(1, 6, 100));
+    playerAnims.emplace("WalkRight", Animation(3, 5, 100));
+    playerAnims.emplace("WalkLeft",  Animation(2, 5, 100));
+
+    // Buscamos configuración de sprites según raza.
+    SpriteSheetConfig bodyConfig = bodyConfigForRace(data.raza);
+
+    // Buscamos textura de cuerpo y cabeza según raza.
+    std::string bodyTextureId = bodyTextureForRace(data.raza);
+    std::string headTextureId = headTextureForRace(data.raza);
+
+    auto& remotePlayer = manager->addEntity();
+
+    remotePlayer.addComponent<TransformComponent>(data.xpos, data.ypos);
+
+    // Sprite principal del cuerpo.
+    remotePlayer.addComponent<SpriteComponent>(
+        *this,
+        bodyTextureId,
+        true,
+        playerAnims,
+        bodyConfig
+    );
+
+    // Cabeza del jugador remoto.
+    remotePlayer.getComponent<SpriteComponent>().setHeadTexture(
+        headTextureId,
+        data.headId
+    );
+
+    // Collider diferente para no confundirlo con el player local.
+    remotePlayer.addComponent<ColliderComponent>("remote_player");
+
+    // Lo agregamos al mismo grupo de players para que se dibuje
+    // en el loop actual de Game::render().
+    remotePlayer.addGroup(groupPlayers);
+
+    std::cout << "[REMOTE_PLAYER] creado id="
+              << static_cast<int>(data.playerID)
+              << " race=" << data.raza
+              << " pos=(" << data.xpos << ", " << data.ypos << ")"
+              << std::endl;
+
+    return &remotePlayer;
+}

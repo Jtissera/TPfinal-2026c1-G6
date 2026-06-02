@@ -11,6 +11,7 @@
 #include "common/network/messages/client/combat/resurrectMessage.h"
 #include "common/network/messages/server/player/EntityMoveMessage.h"
 #include "common/network/messages/server/player/playerDiedMessage.h"
+#include "common/network/messages/server/world/EntitySpawnMessage.h"
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"
@@ -74,10 +75,11 @@ void Game::init(const char* title, int width, int height, bool fullscreen,
 
     std::cout << "[INIT] antes CreatePlayer" << std::endl;
     player = assets->CreatePlayer(playerDto);
+    // Creamos el mundo cliente con el jugador local.
+    // Por ahora solo maneja local + remotos.
+    clientWorld = std::make_unique<ClientGameWorld>(static_cast<uint32_t>(playerDto.playerID),player,*assets);
     
     refreshPlayerEquipmentVisuals();
-    std::cout << "[INIT] antes Map" << std::endl;
-
 
     std::cout << "[INIT] antes Map" << std::endl;
     map = new Map(manager, *assets, "terrain", 3, 32);
@@ -153,19 +155,29 @@ void Game::update() {
         if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE)) {
             // Convertimos el mensaje genérico al mensaje concreto de movimiento.
             const auto& moveMsg = static_cast<const EntityMoveMessage&>(*msg);
-
-            // Obtenemos el TransformComponent del jugador local.
-            auto& transform = player->getComponent<TransformComponent>();
+            const uint32_t entityId = static_cast<uint32_t>(moveMsg.getId());
 
             // Leemos la posición enviada por el servidor.
-            float serverX = static_cast<float>(moveMsg.getX());
-            float serverY = static_cast<float>(moveMsg.getY());
+            const float serverX = static_cast<float>(moveMsg.getX());
+            const float serverY = static_cast<float>(moveMsg.getY());
 
-            // Como el server ahora mueve de a pocos píxeles,
-            // aplicamos la posición directamente.
-            // Ya no esperamos a que la diferencia sea mayor a 32px.
-            transform.position.x = serverX;
-            transform.position.y = serverY;
+            auto enemyIt = enemies.find(entityId);
+            if (enemyIt != enemies.end() && enemyIt->second != nullptr) {
+                auto& enemyTransform = enemyIt->second->getComponent<TransformComponent>();
+
+                enemyTransform.position.x = serverX;
+                enemyTransform.position.y = serverY;
+
+                std::cout << "[sync enemy] id="
+                          << entityId
+                          << " server=(" << serverX << ", " << serverY << ")"
+                          << std::endl;
+
+                continue;
+            }
+            if (clientWorld != nullptr) {
+                clientWorld->updatePlayerPosition(entityId, serverX, serverY);
+            }
 
             // Log opcional para verificar que llegan posiciones pequeñas.
             std::cout << "[sync] server=("
@@ -187,6 +199,7 @@ void Game::update() {
 
             // Aplica el estado muerto/fantasma en el cliente.
             applyLocalPlayerGhostState();
+
         }else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_STATS)) {
             const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
 
@@ -213,6 +226,21 @@ void Game::update() {
             playerState.expToNextLevel = stats.getExpLimit();
             playerState.level = stats.getLevel();
             playerState.gold = stats.getGold();
+        } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_SPAWN)) {
+            const auto& spawnMsg = static_cast<const EntitySpawnMessage&>(*msg);
+
+            const PlayerDto& dto = spawnMsg.getPlayerDto();
+
+            std::cout << "[CLIENT] MSG_ENTITY_SPAWN recibido. playerID="
+                      << static_cast<int>(dto.playerID)
+                      << " localID="
+                      << static_cast<int>(playerDto.playerID)
+                      << " pos=(" << dto.xpos << ", " << dto.ypos << ")"
+                      << std::endl;
+
+            if (clientWorld != nullptr) {
+                clientWorld->spawnRemotePlayer(dto);
+            }
         }
     }
 

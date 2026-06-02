@@ -125,6 +125,13 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message& message) {
     gameManager.addPlayerToGame(gameId, std::move(*player));
     playerRepo.remove(clientId);
 
+    std::string gameName;
+    for (const auto& info : gameManager.listGames())
+        if (info.gameId == gameId) { gameName = info.gameName; break; }
+
+    clientQueue->try_push(std::make_shared<const JoinOkMessage>(gameId, gameName,std::move(playerDto)));
+    gameManager.syncPlayerJoin(gameId,clientId);
+
     auto* receiver = receiverRegistry.get(clientId);
     std::cout << "[LobbyHandler] receiver for client=" << clientId 
           << " is " << (receiver ? "found" : "NULL") << std::endl;
@@ -133,11 +140,7 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message& message) {
 
     lobbyMonitor.removeQueue(clientId);
 
-    std::string gameName;
-    for (const auto& info : gameManager.listGames())
-        if (info.gameId == gameId) { gameName = info.gameName; break; }
 
-    clientQueue->try_push(std::make_shared<const JoinOkMessage>(gameId, gameName,std::move(playerDto)));
 }
 
 PlayerDto LobbyHandler::buildPlayerDto(const Player& player) const {

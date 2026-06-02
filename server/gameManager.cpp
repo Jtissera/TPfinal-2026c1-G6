@@ -37,14 +37,6 @@ bool GameManager::joinGame(uint32_t gameId,
     return true;
 }
 
-void GameManager::addPlayerToGame(uint32_t gameId, Player player) {
-    std::unique_lock<std::mutex> lock(mutex);
-
-    auto it = rooms.find(gameId);
-    if (it != rooms.end())
-        it->second->addPlayer(std::move(player));
-}
-
 void GameManager::removeClient(uint32_t clientId) {
     std::unique_lock<std::mutex> lock(mutex);
 
@@ -91,4 +83,21 @@ void GameManager::stopAll() {
 Queue<ClientMessage>& GameManager::getGameQueue(uint32_t gameId) {
     std::unique_lock<std::mutex> lock(mutex);
     return rooms.at(gameId)->getGameQueue();
+}
+
+void GameManager::addPlayerToGame(uint32_t gameId, Player player) {
+    std::unique_lock<std::mutex> lock(mutex);
+
+    auto it = rooms.find(gameId);
+    if (it != rooms.end())
+        it->second->addPlayer(std::move(player));
+}
+
+void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId) {
+    std::unique_lock<std::mutex> lock(mutex);
+
+    auto it = rooms.find(gameId);
+    if (it != rooms.end()) {
+        it->second->syncPlayerJoin(playerId);
+    }
 }
