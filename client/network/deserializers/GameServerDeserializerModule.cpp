@@ -1,6 +1,4 @@
 #include "GameServerDeserializerModule.h"
-#include "common/network/messages/server/player/playerStatsMessage.h"
-#include "../../../common/network/messages/server/player/playerDiedMessage.h"
 
 
 void GameServerDeserializersModule::registerDeserializers(Registry& registry) const {
@@ -27,7 +25,7 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
             return std::make_unique<PlayerStatsMessage>(
                 level, hp, maxHp, mana, maxMana, exp, expLimit, gold);
         });
-    
+
     registry.registerDeserializer(
     static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_DIED),
     [](PacketReader& reader) -> std::unique_ptr<Message> {

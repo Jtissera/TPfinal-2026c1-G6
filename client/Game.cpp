@@ -10,6 +10,7 @@
 #include "common/network/messages/client/combat/attackMessage.h"
 #include "common/network/messages/client/combat/resurrectMessage.h"
 #include "common/network/messages/server/player/EntityMoveMessage.h"
+#include "common/network/messages/server/player/playerDiedMessage.h"
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"
@@ -170,7 +171,23 @@ void Game::update() {
             std::cout << "[sync] server=("
                       << serverX << ", " << serverY
                       << ")" << std::endl;
-        } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_STATS)) {
+        }  else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_DIED)) {
+            const auto& diedMsg = static_cast<const PlayerDiedMessage&>(*msg);
+
+            // Leemos el id del jugador muerto enviado por el server.
+            const uint32_t deadPlayerId = diedMsg.getId();
+
+            std::cout << "[SERVER] MSG_PLAYER_DIED recibido. playerId="
+                      << deadPlayerId
+                      << std::endl;
+
+            // más adelante varios players visibles, acá deberías comparar:
+            // if (deadPlayerId == playerDto.id) { ... }
+            playerState.hp = 0;
+
+            // Aplica el estado muerto/fantasma en el cliente.
+            applyLocalPlayerGhostState();
+        }else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_STATS)) {
             const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
 
             const int serverHp = stats.getHp();
