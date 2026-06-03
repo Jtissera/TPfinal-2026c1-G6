@@ -1,4 +1,5 @@
 #include "gameWorld.h"
+
 //Esta hace cada vez mas, habria que pensar que hacer si sigue creciendo
 
 GameWorld::GameWorld(const std::string& mapPath,
@@ -27,7 +28,8 @@ GameWorld::GameWorld(MapData mapData,
 //busca tile para spawnear y sino adyacentes
 
 void GameWorld::addPlayer(Player player) {
-    uint32_t id = player.getId();
+    loadInitialInventoryForPlayer(player);
+    const uint32_t id = player.getId();
     int tx = player.getTileX();
     int ty = player.getTileY();
 
@@ -416,4 +418,50 @@ const Npc& GameWorld::getNpc(uint32_t npcId) const {
 
 const std::unordered_map<uint32_t, Player>& GameWorld::getPlayers() const {
     return players;
+}
+
+void GameWorld::loadInitialInventoryForPlayer(Player& player) {
+    const std::string& className = player.getCls().name;
+
+    if (className == "Cleric") {
+        player.getInventory().addItem(itemRepo.createItem("vara_fresno"));
+        player.getInventory().addItem(itemRepo.createItem("capucha"));
+        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
+        player.getInventory().addItem(itemRepo.createItem("pocion_mana"));
+        return;
+    }
+
+    if (className == "Mage") {
+        player.getInventory().addItem(itemRepo.createItem("vara_fresno"));
+        player.getInventory().addItem(itemRepo.createItem("capucha"));
+        player.getInventory().addItem(itemRepo.createItem("pocion_mana"));
+        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
+        return;
+    }
+
+    if (className == "Paladin") {
+        player.getInventory().addItem(itemRepo.createItem("espada"));
+        player.getInventory().addItem(itemRepo.createItem("armadura_placas"));
+        player.getInventory().addItem(itemRepo.createItem("escudo_tortuga"));
+        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
+        player.getInventory().addItem(itemRepo.createItem("capucha"));
+        player.getInventory().addItem(itemRepo.createItem("pocion_mana"));
+        return;
+    }
+
+    if (className == "Warrior") {
+        player.getInventory().addItem(itemRepo.createItem("espada"));
+        player.getInventory().addItem(itemRepo.createItem("armadura_placas"));
+        player.getInventory().addItem(itemRepo.createItem("escudo_tortuga"));
+        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
+        return;
+    }
+
+    std::cerr << "[GameWorld][Inventory] clase desconocida='"
+              << className
+              << "', cargando inventario default."
+              << std::endl;
+
+    player.getInventory().addItem(itemRepo.createItem("espada"));
+    player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
 }

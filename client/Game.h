@@ -20,6 +20,10 @@
 #include "sdl/AttackSystem.h"
 #include <memory>
 #include "sdl/world/ClientGameWorld.h"
+#include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
+#include "common/network/messages/server/player/EntityMoveMessage.h"
+#include "common/network/messages/server/player/playerDiedMessage.h"
+#include "common/network/messages/server/world/EntitySpawnMessage.h"
 
 class Game {
 public:
@@ -122,7 +126,6 @@ private:
     void showStatusMessage(const std::string& msg);
 
     void loadAssets();
-    void loadInitialInventoryForCurrentClass();
     int getInventorySlotIndexAt(int mouseX, int mouseY) const;
     void handleInventorySlotClick(int slotIndex);
     void equipItemFromInventory(int slotIndex);
@@ -143,6 +146,17 @@ private:
     bool isLocalPlayerDead() const;
     void applyLocalPlayerGhostState();
     void reviveLocalPlayer(int newHp);
+
+
+
+    void processServerMessage(const Message& msg);
+    void handleEntityMove(const EntityMoveMessage& msg);
+    void handlePlayerDied(const PlayerDiedMessage& msg);
+    void handlePlayerStats(const PlayerStatsMessage& msg);
+    void handleEntitySpawn(const EntitySpawnMessage& msg);
+    void handleInventoryUpdate(const InventoryUpdateMessage& msg);
+    void applyInventoryUpdate(const InventoryUpdateMessage& msg);
+
 };
 
 #endif //PRUEBA_SDL_GAME_H

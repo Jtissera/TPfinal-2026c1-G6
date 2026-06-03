@@ -81,5 +81,36 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
 
         return std::make_unique<EntitySpawnMessage>(std::move(dto));
     });
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ServerOpCode::MSG_INVENTORY_UPDATE),
+    [](PacketReader& reader) -> std::unique_ptr<Message> {
+        const uint8_t itemCount = reader.readUint8();
+
+        std::vector<Item> items;
+        items.reserve(itemCount);
+
+        for (uint8_t i = 0; i < itemCount; ++i) {
+            Item item{};
+
+            item.instanceId = reader.readUint32();
+            item.catalogId  = reader.readUint32();
+            item.typeName   = reader.readString();
+            item.slot       = static_cast<ItemSlot>(reader.readUint8());
+
+            items.push_back(std::move(item));
+        }
+
+        std::array<uint32_t, static_cast<std::size_t>(EquipSlot::COUNT)> equipped{};
+
+        for (std::size_t i = 0; i < equipped.size(); ++i) {
+            equipped[i] = reader.readUint32();
+        }
+
+        return std::make_unique<InventoryUpdateMessage>(
+            std::move(items),
+            equipped
+        );
+    }
+);
 
 }

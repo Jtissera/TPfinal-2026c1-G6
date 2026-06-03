@@ -31,7 +31,7 @@ struct ItemView {
     // ID único de esta instancia concreta en el servidor.
     // Se usa para pedir equipar, dropear, vender o consumir ESTE item.
     uint32_t instanceId = 0;
-
+    
     // Nombre visible para mostrar en tooltip, debug o UI.
     std::string itemName;
 

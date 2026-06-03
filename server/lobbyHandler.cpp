@@ -130,15 +130,20 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message& message) {
         if (info.gameId == gameId) { gameName = info.gameName; break; }
 
     clientQueue->try_push(std::make_shared<const JoinOkMessage>(gameId, gameName,std::move(playerDto)));
-    gameManager.syncPlayerJoin(gameId,clientId);
+
 
     auto* receiver = receiverRegistry.get(clientId);
-    std::cout << "[LobbyHandler] receiver for client=" << clientId 
-          << " is " << (receiver ? "found" : "NULL") << std::endl;
-    if (receiver)
-        receiver->setQueue(gameManager.getGameQueue(gameId));
+    if (!receiver) {
+        lobbyMonitor.sendTo(
+            clientId,
+            std::make_shared<const ErrorMessage>("Internal error: receiver not found")
+        );
+        return;
+    }
+    receiver->setQueue(gameManager.getGameQueue(gameId));
 
     lobbyMonitor.removeQueue(clientId);
+    gameManager.syncPlayerJoin(gameId,clientId);
 
 
 }

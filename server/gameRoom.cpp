@@ -12,8 +12,7 @@ GameRoom::GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers, Np
       gameLoop(gameQueue, monitor, world)
 {}
 
-void GameRoom::addClient(uint32_t clientId,
-                         Queue<std::shared_ptr<const Message>>& clientQueue) {
+void GameRoom::addClient(uint32_t clientId,Queue<std::shared_ptr<const Message>>& clientQueue) {
     monitor.addQueue(clientId, clientQueue);
 }
 
@@ -124,8 +123,24 @@ PlayerDto GameRoom::buildPlayerDto(const Player& player) const {
 void GameRoom::syncPlayerJoin(uint32_t newPlayerId) {
     // Al jugador nuevo le enviamos los jugadores que ya estaban en la sala.
     sendExistingPlayersTo(newPlayerId);
-
-    // A todos los clientes les avisamos que existe el nuevo jugador.
-    // El cliente local debe ignorar su propio spawn.
     broadcastPlayerSpawn(newPlayerId);
+    sendInventoryTo(newPlayerId);
+}
+
+void GameRoom::sendInventoryTo(uint32_t playerId) {
+    Player& player = world.getPlayer(playerId);
+
+    monitor.sendTo(
+        playerId,
+        std::make_shared<const InventoryUpdateMessage>(
+            player.getInventory().getItems(),
+            player.getInventory().getEquippedArray()
+        )
+    );
+
+    std::cout << "[GameRoom] inventario enviado a playerId="
+              << playerId
+              << " items="
+              << player.getInventory().getItems().size()
+              << std::endl;
 }

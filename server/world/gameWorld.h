@@ -114,6 +114,7 @@ private:
     std::vector<GroundGold> groundGold;
 
     void spawnMapNpcs();
+    void loadInitialInventoryForPlayer(Player& player);
 
     int spawnTickCounter = 0;
     static constexpr int SPAWN_EVERY_N_TICKS = 200;

@@ -100,4 +100,5 @@ void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId) {
     if (it != rooms.end()) {
         it->second->syncPlayerJoin(playerId);
     }
+
 }

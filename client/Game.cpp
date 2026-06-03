@@ -50,7 +50,6 @@ void Game::init(SDL_Window* existingWindow,
 
     try {
         itemCatalog.loadFromJson("assets/items/items.json");
-        loadInitialInventoryForCurrentClass();
     } catch (const std::exception& e) {
         std::cerr << "Error cargando catálogo de ítems: " << e.what() << std::endl;
         isRunning = false;
@@ -129,94 +128,7 @@ void Game::handleEvents() {
 void Game::update() {
     std::shared_ptr<const Message> msg;
     while (receiveQueue->try_pop(msg)) {
-        if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE)) {
-            // Convertimos el mensaje genérico al mensaje concreto de movimiento.
-            const auto& moveMsg = static_cast<const EntityMoveMessage&>(*msg);
-            const uint32_t entityId = static_cast<uint32_t>(moveMsg.getId());
-            const float serverX = static_cast<float>(moveMsg.getX());
-            const float serverY = static_cast<float>(moveMsg.getY());
-            const Direction direction = moveMsg.getDirection();
-            const bool moving = moveMsg.isMoving();
-
-            auto enemyIt = enemies.find(entityId);
-            if (enemyIt != enemies.end() && enemyIt->second != nullptr) {
-                auto& enemyTransform = enemyIt->second->getComponent<TransformComponent>();
-
-                enemyTransform.position.x = serverX;
-                enemyTransform.position.y = serverY;
-
-                std::cout << "[sync enemy] id="
-                          << entityId
-                          << " server=(" << serverX << ", " << serverY << ")"
-                          << std::endl;
-
-                continue;
-            }
-            if (clientWorld != nullptr) {
-                clientWorld->updatePlayerPosition(entityId, serverX, serverY,direction,moving);
-            }
-
-            // Log opcional para verificar que llegan posiciones pequeñas.
-            std::cout << "[sync] server=("<< serverX << ", " << serverY<< ")" << std::endl;
-        }  else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_DIED)) {
-            const auto& diedMsg = static_cast<const PlayerDiedMessage&>(*msg);
-
-            // Leemos el id del jugador muerto enviado por el server.
-            const uint32_t deadPlayerId = diedMsg.getId();
-
-            std::cout << "[SERVER] MSG_PLAYER_DIED recibido. playerId="
-                      << deadPlayerId
-                      << std::endl;
-
-            // más adelante varios players visibles, acá deberías comparar:
-            // if (deadPlayerId == playerDto.id) { ... }
-            playerState.hp = 0;
-
-            // Aplica el estado muerto/fantasma en el cliente.
-            applyLocalPlayerGhostState();
-
-        }else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_STATS)) {
-            const auto& stats = static_cast<const PlayerStatsMessage&>(*msg);
-
-            const int serverHp = stats.getHp();
-
-            if (serverHp > 0) {
-                hasReceivedValidPlayerStats = true;
-            }
-
-            // Si estoy muerto y el server manda HP positivo,
-            // significa que el server aceptó la resurrección.
-            if (playerState.isDead && serverHp > 0) {
-                reviveLocalPlayer(serverHp);
-            } else if (!playerState.isDead) {
-                playerState.hp = serverHp;
-            } else {
-                playerState.hp = 0;
-            }
-
-            playerState.maxHp = stats.getMaxHp();
-            playerState.mana = stats.getMana();
-            playerState.maxMana = stats.getMaxMana();
-            playerState.exp = stats.getExp();
-            playerState.expToNextLevel = stats.getExpLimit();
-            playerState.level = stats.getLevel();
-            playerState.gold = stats.getGold();
-        } else if (msg->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_SPAWN)) {
-            const auto& spawnMsg = static_cast<const EntitySpawnMessage&>(*msg);
-
-            const PlayerDto& dto = spawnMsg.getPlayerDto();
-
-            std::cout << "[CLIENT] MSG_ENTITY_SPAWN recibido. playerID="
-                      << static_cast<int>(dto.playerID)
-                      << " localID="
-                      << static_cast<int>(playerDto.playerID)
-                      << " pos=(" << dto.xpos << ", " << dto.ypos << ")"
-                      << std::endl;
-
-            if (clientWorld != nullptr) {
-                clientWorld->spawnRemotePlayer(dto);
-            }
-        }
+        processServerMessage(*msg);
     }
 
 
@@ -910,54 +822,6 @@ void Game::loadAssets() {
     assets->AddTexture("tile_grass", "assets/sprites/MapAssets/tile_grass.png");
     assets->AddTexture("tile_water", "assets/sprites/MapAssets/tile_water.png");
     assets->AddTexture("tile_floor", "assets/sprites/MapAssets/tile_floor.png");
-
-
-}
-
-void Game::loadInitialInventoryForCurrentClass() {
-    for (auto& slot : inventoryState.slots) {
-        slot = std::nullopt;
-    }
-
-    switch (playerState.playerClass) {
-
-        case PlayerClass::Cleric:
-            inventoryState.slots[0] = itemCatalog.requireById(2); // Báculo
-            inventoryState.slots[1] = itemCatalog.requireById(4); // Capucha
-            inventoryState.slots[2] = itemCatalog.requireById(6); // Poción vida
-            inventoryState.slots[3] = itemCatalog.requireById(7); // Poción maná
-            break;
-
-        case PlayerClass::Mage:
-            inventoryState.slots[0] = itemCatalog.requireById(2); // Báculo
-            inventoryState.slots[1] = itemCatalog.requireById(4); // Capucha
-            inventoryState.slots[2] = itemCatalog.requireById(7); // Poción maná
-            inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
-            break;
-
-        case PlayerClass::Paladin:
-            inventoryState.slots[0] = itemCatalog.requireById(1); // Espada
-            inventoryState.slots[1] = itemCatalog.requireById(3); // Armadura
-            inventoryState.slots[2] = itemCatalog.requireById(5); // Escudo
-            inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
-            inventoryState.slots[4] = itemCatalog.requireById(4); // Capucha
-            inventoryState.slots[5] = itemCatalog.requireById(7); // Poción maná
-            break;
-
-        case PlayerClass::Warrior:
-            inventoryState.slots[0] = itemCatalog.requireById(1); // Espada
-            inventoryState.slots[1] = itemCatalog.requireById(3); // Armadura
-            inventoryState.slots[2] = itemCatalog.requireById(5); // Escudo
-            inventoryState.slots[3] = itemCatalog.requireById(6); // Poción vida
-            break;
-
-        default:
-            inventoryState.slots[0] = itemCatalog.requireById(1);
-            inventoryState.slots[1] = itemCatalog.requireById(6);
-            break;
-    }
-
-
 
 
 }
@@ -1766,4 +1630,243 @@ void Game::clearTextCache() {
     }
 
     textCache.clear();
+}
+
+void Game::applyInventoryUpdate(const InventoryUpdateMessage& msg) {
+    // Limpiamos el inventario visual actual.
+    for (auto& slot : inventoryState.slots) {
+        slot.reset();
+    }
+
+    // Limpiamos el equipamiento visual actual.
+    equipmentState.weapon.reset();
+    equipmentState.helmet.reset();
+    equipmentState.armor.reset();
+    equipmentState.shield.reset();
+
+    const auto& serverItems = msg.getItems();
+
+    // El mensaje actual no manda slotIndex de inventario.
+    // Por ahora mostramos los items en orden secuencial.
+    for (std::size_t i = 0;
+         i < serverItems.size() && i < inventoryState.slots.size();
+         ++i) {
+
+        const Item& serverItem = serverItems[i];
+
+        try {
+            // catalogId se usa para buscar la metadata visual del item en items.json.
+            ItemView view = itemCatalog.requireById(
+                static_cast<int>(serverItem.catalogId)
+            );
+
+            // instanceId se guarda para futuras acciones:
+            // equipar, dropear, vender, consumir.
+            view.instanceId = serverItem.instanceId;
+
+            inventoryState.slots[i] = view;
+        } catch (const std::exception& e) {
+            std::cerr << "[CLIENT][INV] catalogId desconocido="
+                      << serverItem.catalogId
+                      << " instanceId="
+                      << serverItem.instanceId
+                      << " typeName="
+                      << serverItem.typeName
+                      << " error="
+                      << e.what()
+                      << std::endl;
+        }
+    }
+
+    const auto& equipped = msg.getEquipped();
+
+    auto applyEquipped = [&](EquipSlot slot, std::optional<ItemView>& target) {
+        const auto index = static_cast<std::size_t>(slot);
+
+        if (index >= equipped.size()) {
+            return;
+        }
+
+        const uint32_t equippedInstanceId = equipped[index];
+
+        // 0 significa slot vacío.
+        if (equippedInstanceId == 0) {
+            target.reset();
+            return;
+        }
+
+        // Buscamos el item equipado entre los items enviados por el server.
+        auto it = std::find_if(
+            serverItems.begin(),
+            serverItems.end(),
+            [equippedInstanceId](const Item& item) {
+                return item.instanceId == equippedInstanceId;
+            }
+        );
+
+        if (it == serverItems.end()) {
+            target.reset();
+
+            std::cerr << "[CLIENT][EQUIP] instanceId equipado no vino en items. id="
+                      << equippedInstanceId
+                      << std::endl;
+            return;
+        }
+
+        try {
+            ItemView view = itemCatalog.requireById(
+                static_cast<int>(it->catalogId)
+            );
+
+            view.instanceId = it->instanceId;
+            target = view;
+        } catch (const std::exception& e) {
+            target.reset();
+
+            std::cerr << "[CLIENT][EQUIP] catalogId desconocido="
+                      << it->catalogId
+                      << " instanceId="
+                      << it->instanceId
+                      << " error="
+                      << e.what()
+                      << std::endl;
+        }
+    };
+
+    applyEquipped(EquipSlot::HAND,   equipmentState.weapon);
+    applyEquipped(EquipSlot::HELMET, equipmentState.helmet);
+    applyEquipped(EquipSlot::ARMOR,  equipmentState.armor);
+    applyEquipped(EquipSlot::SHIELD, equipmentState.shield);
+
+    // Refresca sprite visual: arma, armadura, casco, escudo.
+    refreshPlayerEquipmentVisuals();
+}
+
+
+void Game::handleEntityMove(const EntityMoveMessage& moveMsg) {
+    const uint32_t entityId = static_cast<uint32_t>(moveMsg.getId());
+    const float serverX = static_cast<float>(moveMsg.getX());
+    const float serverY = static_cast<float>(moveMsg.getY());
+    const Direction direction = moveMsg.getDirection();
+    const bool moving = moveMsg.isMoving();
+
+    auto enemyIt = enemies.find(entityId);
+    if (enemyIt != enemies.end() && enemyIt->second != nullptr) {
+        auto& enemyTransform = enemyIt->second->getComponent<TransformComponent>();
+
+        enemyTransform.position.x = serverX;
+        enemyTransform.position.y = serverY;
+
+        std::cout << "[sync enemy] id="
+                  << entityId
+                  << " server=(" << serverX << ", " << serverY << ")"
+                  << std::endl;
+
+        return;
+    }
+
+    if (clientWorld != nullptr) {
+        clientWorld->updatePlayerPosition(entityId, serverX, serverY,direction,moving);
+    }
+
+    // Log opcional para verificar que llegan posiciones pequeñas.
+    std::cout << "[sync] server=("<< serverX << ", " << serverY<< ")" << std::endl;
+
+}
+void Game::handlePlayerDied(const PlayerDiedMessage& diedMsg) {
+
+    // Leemos el id del jugador muerto enviado por el server.
+    const uint32_t deadPlayerId = diedMsg.getId();
+
+    std::cout << "[SERVER] MSG_PLAYER_DIED recibido. playerId="
+              << deadPlayerId
+              << std::endl;
+
+    // mas adelante varios players visibles, acá deberías comparar:
+    // if (deadPlayerId == playerDto.id) { ... }
+    playerState.hp = 0;
+
+    // Aplica el estado muerto/fantasma en el cliente.
+    applyLocalPlayerGhostState();
+}
+void Game::handlePlayerStats(const PlayerStatsMessage& stats) {
+
+
+    const int serverHp = stats.getHp();
+
+    if (serverHp > 0) {
+        hasReceivedValidPlayerStats = true;
+    }
+
+    // Si estoy muerto y el server manda HP positivo,
+    // significa que el server aceptó la resurrección.
+    if (playerState.isDead && serverHp > 0) {
+        reviveLocalPlayer(serverHp);
+    } else if (!playerState.isDead) {
+        playerState.hp = serverHp;
+    } else {
+        playerState.hp = 0;
+    }
+
+    playerState.maxHp = stats.getMaxHp();
+    playerState.mana = stats.getMana();
+    playerState.maxMana = stats.getMaxMana();
+    playerState.exp = stats.getExp();
+    playerState.expToNextLevel = stats.getExpLimit();
+    playerState.level = stats.getLevel();
+    playerState.gold = stats.getGold();
+}
+void Game::handleEntitySpawn(const EntitySpawnMessage& spawnMsg) {
+
+
+    const PlayerDto& dto = spawnMsg.getPlayerDto();
+
+    std::cout << "[CLIENT] MSG_ENTITY_SPAWN recibido. playerID="
+              << static_cast<int>(dto.playerID)
+              << " localID="
+              << static_cast<int>(playerDto.playerID)
+              << " pos=(" << dto.xpos << ", " << dto.ypos << ")"
+              << std::endl;
+
+    if (clientWorld != nullptr) {
+        clientWorld->spawnRemotePlayer(dto);
+    }
+}
+void Game::handleInventoryUpdate(const InventoryUpdateMessage& inventoryMsg) {
+
+    applyInventoryUpdate(inventoryMsg);
+
+    std::cout << "[CLIENT] MSG_INVENTORY_UPDATE recibido. items="
+              << inventoryMsg.getItems().size()
+              << std::endl;
+}
+
+void Game::processServerMessage(const Message& msg) {
+    switch (static_cast<ServerOpCode>(msg.opCode())) {
+        case ServerOpCode::MSG_ENTITY_MOVE:
+            handleEntityMove(static_cast<const EntityMoveMessage&>(msg));
+            return;
+
+        case ServerOpCode::MSG_PLAYER_DIED:
+            handlePlayerDied(static_cast<const PlayerDiedMessage&>(msg));
+            return;
+
+        case ServerOpCode::MSG_PLAYER_STATS:
+            handlePlayerStats(static_cast<const PlayerStatsMessage&>(msg));
+            return;
+
+        case ServerOpCode::MSG_ENTITY_SPAWN:
+            handleEntitySpawn(static_cast<const EntitySpawnMessage&>(msg));
+            return;
+
+        case ServerOpCode::MSG_INVENTORY_UPDATE:
+            handleInventoryUpdate(static_cast<const InventoryUpdateMessage&>(msg));
+            return;
+
+        default:
+            std::cout << "[CLIENT] opcode no manejado: 0x"
+                      << std::hex << static_cast<int>(msg.opCode())
+                      << std::dec << std::endl;
+            return;
+    }
 }
