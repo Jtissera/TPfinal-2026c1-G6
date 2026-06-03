@@ -2,14 +2,12 @@
 #define PRUEBA_SDL_GAME_H
 
 
-#include "../common/network/messages/server/player/playerStatsMessage.h"
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
+
 #include <SDL2/SDL_ttf.h>
 #include "sdl/ECS/ECS.h"
 #include "sdl/AssetManager.h"
-#include <vector>
 #include "sdl/state/PlayerViewState.h"
 #include "sdl/state/InventoryViewState.h"
 #include "sdl/state/EquipmentViewState.h"
@@ -20,10 +18,16 @@
 #include "sdl/AttackSystem.h"
 #include <memory>
 #include "sdl/world/ClientGameWorld.h"
-#include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
+
+#include "common/network/messages/client/combat/attackMessage.h"
+#include "common/network/messages/client/combat/resurrectMessage.h"
+#include "common/network/messages/client/inventory/equipItemMessage.h"
+
 #include "common/network/messages/server/player/EntityMoveMessage.h"
 #include "common/network/messages/server/player/playerDiedMessage.h"
 #include "common/network/messages/server/world/EntitySpawnMessage.h"
+#include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
+#include "common/network/messages/server/player/playerStatsMessage.h"
 
 class Game {
 public:
@@ -146,7 +150,8 @@ private:
     bool isLocalPlayerDead() const;
     void applyLocalPlayerGhostState();
     void reviveLocalPlayer(int newHp);
-
+    std::optional<ClientEquipmentSlot> toClientEquipmentSlot(int index) const;
+    EquipSlot toServerEquipSlot(ClientEquipmentSlot slot) const;
 
 
     void processServerMessage(const Message& msg);

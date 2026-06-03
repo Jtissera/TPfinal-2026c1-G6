@@ -299,7 +299,7 @@ TEST(InventoryTest, RemoveItemClearsEquip) {
 
 TEST(InventoryTest, MaxItemsRespected) {
     Inventory inv;
-    for (std::size_t i = 0; i < Inventory::MAX_ITEMS; i++) {
+    for (std::size_t i = 0; i < Inventory::MAX_INVENTORY_SLOTS; i++) {
         Item item = makeWeapon(1, 2);
         item.instanceId = i + 1;
         EXPECT_TRUE(inv.addItem(item));

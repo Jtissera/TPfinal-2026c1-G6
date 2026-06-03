@@ -1,6 +1,7 @@
 #include "ActionDispatcher.h"
 
 #include "common/network/messages/client/combat/enemyHitPlayerMessage.h"
+#include "common/network/messages/client/inventory/unequipSlotMessage.h"
 
 
 ActionDispatcher::ActionDispatcher() {
@@ -12,6 +13,8 @@ ActionDispatcher::ActionDispatcher() {
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_EQUIP_ITEM)] = &ActionDispatcher::handleEquipItem;
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_MEDITATE)]   = &ActionDispatcher::handleMeditate;
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_RESURRECT)]  = &ActionDispatcher::handleResurrect;
+    handlers[static_cast<uint8_t>(ClientOpCode::MSG_UNEQUIP_SLOT)] =&ActionDispatcher::handleUnequipSlot;
+
 }
 
 void ActionDispatcher::dispatch(const ClientMessage& msg,
@@ -46,6 +49,7 @@ void ActionDispatcher::sendStats(uint32_t id, Player& p, Monitor& monitor) {
 void ActionDispatcher::sendInventory(uint32_t id, Player& p, Monitor& monitor) {
     monitor.sendTo(id, std::make_shared<const InventoryUpdateMessage>(
         p.getInventory().getItems(),
+        p.getInventory().getInventorySlots(),
         p.getInventory().getEquippedArray()));
 }
 
@@ -275,25 +279,41 @@ void ActionDispatcher::handleResurrect(uint32_t id, const Message& msg,
     sendStats(id, p, monitor);
 }
 
-void ActionDispatcher::handleEquipItem(uint32_t id, const Message& msg,
-                                        GameWorld& world, Monitor& monitor) {
+void ActionDispatcher::handleEquipItem(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor) {
     const auto& equipMsg = static_cast<const EquipItemMessage&>(msg);
-    Player& p = world.getPlayer(id);
+    const uint32_t itemInstanceId = equipMsg.getItemInstanceId();
 
-    const Item* item = p.getInventory().findItem(equipMsg.getItemId());
-    if (!item) return;
+    std::cout << "[SERVER EQUIP] client="
+              << id
+              << " itemInstanceId="
+              << itemInstanceId
+              << std::endl;
 
-    if (item->slot == ItemSlot::CONSUMABLE) {
-        Item copy = *item;
-        p.getInventory().removeItem(equipMsg.getItemId());
-        effects.apply(copy, p, nullptr);
-        sendStats(id, p, monitor);
-        sendInventory(id, p, monitor);
+    if (!world.hasPlayer(id)) {
+        std::cerr << "[SERVER EQUIP] jugador inexistente id="
+                  << id
+                  << std::endl;
         return;
     }
 
-    if (p.getInventory().equipItem(equipMsg.getItemId()))
-        sendInventory(id, p, monitor);
+    Player& player = world.getPlayer(id);
+
+    const bool equipped = player.getInventory().equipItem(itemInstanceId);
+
+    if (!equipped) {
+        std::cerr << "[SERVER EQUIP] no se pudo equipar itemInstanceId="
+                  << itemInstanceId
+                  << std::endl;
+
+        sendInventory(id, player, monitor);
+        return;
+    }
+
+    std::cout << "[SERVER EQUIP] equipado correctamente itemInstanceId="
+              << itemInstanceId
+              << std::endl;
+
+    sendInventory(id, player, monitor);
 }
 
 void ActionDispatcher::handleEnemyHitPlayer(
@@ -334,4 +354,27 @@ void ActionDispatcher::handleEnemyHitPlayer(
         world.handlePlayerDeath(id, 0);
         sendDeath(id, player, monitor);
     }
+}
+
+void ActionDispatcher::handleUnequipSlot(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor) {
+    const auto& unequipMsg = static_cast<const UnequipSlotMessage&>(msg);
+    const EquipSlot slot = unequipMsg.getSlot();
+
+    if (!world.hasPlayer(id)) {
+        return;
+    }
+
+    Player& player = world.getPlayer(id);
+
+    const bool ok = player.getInventory().unequipSlot(slot);
+
+    std::cout << "[SERVER UNEQUIP] client="
+              << id
+              << " slot="
+              << static_cast<int>(slot)
+              << " ok="
+              << ok
+              << std::endl;
+
+    sendInventory(id, player, monitor);
 }

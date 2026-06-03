@@ -134,6 +134,7 @@ void GameRoom::sendInventoryTo(uint32_t playerId) {
         playerId,
         std::make_shared<const InventoryUpdateMessage>(
             player.getInventory().getItems(),
+            player.getInventory().getInventorySlots(),
             player.getInventory().getEquippedArray()
         )
     );

@@ -2,9 +2,10 @@
 #include "GameClientDeserializersModule.h"
 
 #include "common/dtos/gameTypes.h"
+#include "common/network/messages/client/inventory/equipItemMessage.h"
 #include "common/network/messages/client/movement/moveMessage.h"
 #include "common/network/protocol/clientOpCode.h"
-
+#include "common/network/messages/client/inventory/unequipSlotMessage.h"
 
 void GameClientDeserializersModule::registerDeserializers(Registry& registry) const {
     registry.registerDeserializer(
@@ -31,5 +32,18 @@ void GameClientDeserializersModule::registerDeserializers(Registry& registry) co
     [](PacketReader& reader) -> std::unique_ptr<Message> {
         (void)reader;
         return std::make_unique<ResurrectMessage>();
+    });
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ClientOpCode::MSG_EQUIP_ITEM),
+    [](PacketReader& reader) -> std::unique_ptr<Message> {
+        const uint32_t itemInstanceId = reader.readUint32();
+
+        return std::make_unique<EquipItemMessage>(itemInstanceId);
+    });
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ClientOpCode::MSG_UNEQUIP_SLOT),
+    [](PacketReader& reader) -> std::unique_ptr<Message> {
+        const auto slot = static_cast<EquipSlot>(reader.readUint8());
+        return std::make_unique<UnequipSlotMessage>(slot);
     });
 }

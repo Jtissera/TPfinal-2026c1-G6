@@ -1,17 +1,21 @@
 #pragma once
+
+#include <cstdint>
+
 #include "common/network/messages/message.h"
 #include "common/network/protocol/clientOpCode.h"
+#include "common/network/protocol/packetWriter.h"
 
 class EquipItemMessage : public Message {
-    uint32_t itemId;
-public:
-    explicit EquipItemMessage(uint32_t itemId) : itemId(itemId) {}
-    uint32_t getItemId() const { return itemId; }
-    uint8_t opCode() const override {
-        return static_cast<uint8_t>(ClientOpCode::MSG_EQUIP_ITEM);
-    }
+private:
+    uint32_t itemInstanceId;
 
-    void serializeBody(PacketWriter& writer) const override {
-    writer.writeUint32(itemId);
-}
+public:
+    explicit EquipItemMessage(uint32_t itemInstanceId);
+
+    uint8_t opCode() const override;
+
+    void serializeBody(PacketWriter& writer) const override;
+
+    uint32_t getItemInstanceId() const;
 };

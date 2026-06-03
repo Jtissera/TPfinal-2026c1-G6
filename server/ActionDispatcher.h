@@ -37,6 +37,7 @@ private:
     void handlePickItem (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleDropItem (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleEquipItem(uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
+    void handleUnequipSlot(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
     void handleMeditate (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleResurrect(uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleEnemyHitPlayer(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);

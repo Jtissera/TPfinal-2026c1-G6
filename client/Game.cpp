@@ -6,13 +6,12 @@
 #include <iostream>
 #include "sdl/UpdateContext.h"
 #include "sdl/RenderContext.h"
+#include <unordered_set>
 
-#include "common/network/messages/client/combat/attackMessage.h"
-#include "common/network/messages/client/combat/resurrectMessage.h"
-#include "common/network/messages/server/player/EntityMoveMessage.h"
-#include "common/network/messages/server/player/playerDiedMessage.h"
-#include "common/network/messages/server/world/EntitySpawnMessage.h"
+
+#include "common/network/messages/client/inventory/unequipSlotMessage.h"
 #include "common/network/protocol/serverOpCode.h"
+
 #include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"
 
@@ -881,94 +880,36 @@ void Game::handleInventorySlotClick(int slotIndex) {
               << slotIndex
               << " item="
               << item.itemName
+              << " instanceId="
+              << item.instanceId
               << std::endl;
 
-    // Si es poción, todavía no la consumimos en este paso.
     if (item.type == ClientItemType::HealthPotion ||
-        item.type == ClientItemType::ManaPotion) {
-        std::cout << "[INVENTORY] poción seleccionada, consumo pendiente"
+    item.type == ClientItemType::ManaPotion) {
+        std::cout << "[INVENTORY] poción pendiente de UseItemMessage. instanceId="
+                  << item.instanceId
                   << std::endl;
-        consumePotion(slotIndex);
         return;
-        }
-
-    // Si no es poción, intentamos equiparlo.
-    equipItemFromInventory(slotIndex);
-}
-
-
-void Game::equipItemFromInventory(int slotIndex) {
+    }
     if (isLocalPlayerDead()) {
         showStatusMessage("No puedes usar objetos estando muerto");
         return;
     }
-    if (slotIndex < 0 ||
-        slotIndex >= static_cast<int>(inventoryState.slots.size())) {
-        return;
-        }
 
-    if (!inventoryState.slots[slotIndex].has_value()) {
+    if (sendQueue == nullptr) {
+        std::cerr << "[INVENTORY] sendQueue nullptr. No se puede enviar acción."
+                  << std::endl;
         return;
     }
 
-    ItemView itemToEquip = inventoryState.slots[slotIndex].value();
-
-    std::optional<ItemView>* targetSlot = nullptr;
-
-    if (itemToEquip.type == ClientItemType::MeleeWeapon ||
-        itemToEquip.type == ClientItemType::RangedWeapon ||
-        itemToEquip.type == ClientItemType::MagicWeapon) {
-
-        const bool isMagic  = itemToEquip.type == ClientItemType::MagicWeapon;
-        const bool isMelee  = itemToEquip.type == ClientItemType::MeleeWeapon ||
-                              itemToEquip.type == ClientItemType::RangedWeapon;
-        const PlayerClass pc = playerState.playerClass;
-
-        // Warrior y Paladin no pueden usar armas magicas.
-        if (isMagic && (pc == PlayerClass::Warrior || pc == PlayerClass::Paladin)) {
-            showStatusMessage("Tu clase no puede usar armas magicas.");
-            return;
-        }
-
-        // Mage y Cleric no pueden usar armas cuerpo a cuerpo ni a distancia.
-        if (isMelee && (pc == PlayerClass::Mage || pc == PlayerClass::Cleric)) {
-            showStatusMessage("Tu clase no puede usar ese tipo de arma.");
-            return;
-        }
-
-        targetSlot = &equipmentState.weapon;
-        } else if (itemToEquip.type == ClientItemType::Armor) {
-            targetSlot = &equipmentState.armor;
-        } else if (itemToEquip.type == ClientItemType::Helmet) {
-            targetSlot = &equipmentState.helmet;
-        } else if (itemToEquip.type == ClientItemType::Shield) {
-            targetSlot = &equipmentState.shield;
-        } else {
-            std::cout << "[EQUIPMENT] ítem no equipable: "
-                      << itemToEquip.itemName
-                      << std::endl;
-            return;
-        }
-    // Si  había algo equipado, vuelve al slot del inventario.
-    if (targetSlot->has_value()) {
-        inventoryState.slots[slotIndex] = targetSlot->value();
-    } else {
-        inventoryState.slots[slotIndex] = std::nullopt;
-    }
-
-    *targetSlot = itemToEquip;
-
-    if (itemToEquip.type == ClientItemType::Armor) {
-        // La armadura reemplaza visualmente el cuerpo.
-        refreshPlayerBodySprite();
-    } else {
-        // Casco, arma y escudo son capas visuales extra.
-        refreshPlayerEquipmentVisuals();
-    }
-    std::cout << "[EQUIPMENT] equipado: "
-              << itemToEquip.itemName
-              << std::endl;
+    // Por ahora, todo click sobre item equipable se manda al server.
+    // El cliente NO equipa localmente.
+    sendQueue->try_push(
+        std::make_shared<const EquipItemMessage>(item.instanceId)
+    );
 }
+
+
 
 int Game::getEquipmentSlotIndexAt(int mouseX, int mouseY) const {
     const int eqSlotSize = 58;
@@ -1014,44 +955,63 @@ void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
         showStatusMessage("No puedes usar objetos estando muerto");
         return;
     }
-    std::optional<ItemView>* selectedSlot = nullptr;
 
-    if (equipmentSlotIndex == 0) {
-        selectedSlot = &equipmentState.weapon;
-    } else if (equipmentSlotIndex == 1) {
-        selectedSlot = &equipmentState.helmet;
-    } else if (equipmentSlotIndex == 2) {
-        selectedSlot = &equipmentState.armor;
-    } else if (equipmentSlotIndex == 3) {
-        selectedSlot = &equipmentState.shield;
-    } else {
+    if (sendQueue == nullptr) {
+        std::cerr << "[EQUIPMENT] sendQueue nullptr. No se puede desequipar."
+                  << std::endl;
         return;
     }
 
-    if (!selectedSlot->has_value()) {
-        std::cout << "[EQUIPMENT] slot vacío" << std::endl;
+    const auto maybeSlot = toClientEquipmentSlot(equipmentSlotIndex);
+
+    if (!maybeSlot.has_value()) {
         return;
     }
 
-    ItemView itemToUnequip = selectedSlot->value();
+    const ClientEquipmentSlot visualSlot = maybeSlot.value();
 
-    if (!addItemToFirstFreeInventorySlot(itemToUnequip)) {
-        showStatusMessage("Inventario lleno.");
+    const std::optional<ItemView>* selectedSlot = nullptr;
+
+    switch (visualSlot) {
+        case ClientEquipmentSlot::Weapon:
+            selectedSlot = &equipmentState.weapon;
+            break;
+
+        case ClientEquipmentSlot::Helmet:
+            selectedSlot = &equipmentState.helmet;
+            break;
+
+        case ClientEquipmentSlot::Armor:
+            selectedSlot = &equipmentState.armor;
+            break;
+
+        case ClientEquipmentSlot::Shield:
+            selectedSlot = &equipmentState.shield;
+            break;
+    }
+
+    if (selectedSlot == nullptr || !selectedSlot->has_value()) {
+        std::cout << "[EQUIPMENT] slot vacío visual="
+                  << equipmentSlotIndex
+                  << std::endl;
         return;
     }
 
-    selectedSlot->reset();
+    const EquipSlot serverSlot = toServerEquipSlot(visualSlot);
 
-    if (itemToUnequip.type == ClientItemType::Armor) {
-        refreshPlayerBodySprite();
-    } else {
-        refreshPlayerEquipmentVisuals();
-    }
-
-    std::cout << "[EQUIPMENT] desequipado: "
-              << itemToUnequip.itemName
+    std::cout << "[EQUIPMENT] pedido desequipar visualSlot="
+              << equipmentSlotIndex
+              << " serverSlot="
+              << static_cast<int>(serverSlot)
+              << " item="
+              << selectedSlot->value().itemName
               << std::endl;
+
+    sendQueue->try_push(
+        std::make_shared<const UnequipSlotMessage>(serverSlot)
+    );
 }
+
 void Game::consumePotion(int slotIndex) {
     if (isLocalPlayerDead()) {
         showStatusMessage("No puedes usar objetos estando muerto");
@@ -1633,38 +1593,55 @@ void Game::clearTextCache() {
 }
 
 void Game::applyInventoryUpdate(const InventoryUpdateMessage& msg) {
-    // Limpiamos el inventario visual actual.
+    // Guardamos el estado visual anterior para mantener posiciones.
+    const auto previousSlots = inventoryState.slots;
+
+    // Limpiamos inventario visual actual.
     for (auto& slot : inventoryState.slots) {
         slot.reset();
     }
 
-    // Limpiamos el equipamiento visual actual.
+    // Limpiamos equipamiento visual actual.
     equipmentState.weapon.reset();
     equipmentState.helmet.reset();
     equipmentState.armor.reset();
     equipmentState.shield.reset();
 
     const auto& serverItems = msg.getItems();
+    const auto& equipped = msg.getEquipped();
 
-    // El mensaje actual no manda slotIndex de inventario.
-    // Por ahora mostramos los items en orden secuencial.
-    for (std::size_t i = 0;
-         i < serverItems.size() && i < inventoryState.slots.size();
-         ++i) {
+    // Armamos set de items equipados.
+    std::unordered_set<uint32_t> equippedIds;
 
-        const Item& serverItem = serverItems[i];
+    for (uint32_t equippedId : equipped) {
+        if (equippedId != 0) {
+            equippedIds.insert(equippedId);
+        }
+    }
 
+    // Mapa de items NO equipados por instanceId.
+    std::unordered_map<uint32_t, const Item*> availableItems;
+
+    for (const Item& serverItem : serverItems) {
+        if (equippedIds.find(serverItem.instanceId) != equippedIds.end()) {
+            continue;
+        }
+
+        availableItems[serverItem.instanceId] = &serverItem;
+    }
+
+    // Items ya colocados visualmente.
+    std::unordered_set<uint32_t> placedIds;
+
+    auto makeItemView = [&](const Item& serverItem) -> std::optional<ItemView> {
         try {
-            // catalogId se usa para buscar la metadata visual del item en items.json.
             ItemView view = itemCatalog.requireById(
                 static_cast<int>(serverItem.catalogId)
             );
 
-            // instanceId se guarda para futuras acciones:
-            // equipar, dropear, vender, consumir.
             view.instanceId = serverItem.instanceId;
+            return view;
 
-            inventoryState.slots[i] = view;
         } catch (const std::exception& e) {
             std::cerr << "[CLIENT][INV] catalogId desconocido="
                       << serverItem.catalogId
@@ -1675,10 +1652,69 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage& msg) {
                       << " error="
                       << e.what()
                       << std::endl;
+
+            return std::nullopt;
         }
+    };
+
+    // 1. Primero mantenemos en su lugar los items que ya estaban visibles.
+    for (std::size_t i = 0; i < previousSlots.size() && i < inventoryState.slots.size(); ++i) {
+        if (!previousSlots[i].has_value()) {
+            continue;
+        }
+
+        const uint32_t previousInstanceId = previousSlots[i]->instanceId;
+
+        auto it = availableItems.find(previousInstanceId);
+
+        if (it == availableItems.end()) {
+            continue;
+        }
+
+        std::optional<ItemView> view = makeItemView(*it->second);
+
+        if (!view.has_value()) {
+            continue;
+        }
+
+        inventoryState.slots[i] = view.value();
+        placedIds.insert(previousInstanceId);
     }
 
-    const auto& equipped = msg.getEquipped();
+    // 2. Después colocamos items nuevos o recién desequipados en el primer slot libre.
+    for (const Item& serverItem : serverItems) {
+        if (equippedIds.find(serverItem.instanceId) != equippedIds.end()) {
+            continue;
+        }
+
+        if (placedIds.find(serverItem.instanceId) != placedIds.end()) {
+            continue;
+        }
+
+        std::optional<ItemView> view = makeItemView(serverItem);
+
+        if (!view.has_value()) {
+            continue;
+        }
+
+        auto freeSlot = std::find_if(
+            inventoryState.slots.begin(),
+            inventoryState.slots.end(),
+            [](const std::optional<ItemView>& slot) {
+                return !slot.has_value();
+            }
+        );
+
+        if (freeSlot == inventoryState.slots.end()) {
+            std::cerr << "[CLIENT][INV] no hay slot libre para instanceId="
+                      << serverItem.instanceId
+                      << std::endl;
+            continue;
+        }
+
+        *freeSlot = view.value();
+        placedIds.insert(serverItem.instanceId);
+    }
 
     auto applyEquipped = [&](EquipSlot slot, std::optional<ItemView>& target) {
         const auto index = static_cast<std::size_t>(slot);
@@ -1689,13 +1725,11 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage& msg) {
 
         const uint32_t equippedInstanceId = equipped[index];
 
-        // 0 significa slot vacío.
         if (equippedInstanceId == 0) {
             target.reset();
             return;
         }
 
-        // Buscamos el item equipado entre los items enviados por el server.
         auto it = std::find_if(
             serverItems.begin(),
             serverItems.end(),
@@ -1713,24 +1747,14 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage& msg) {
             return;
         }
 
-        try {
-            ItemView view = itemCatalog.requireById(
-                static_cast<int>(it->catalogId)
-            );
+        std::optional<ItemView> view = makeItemView(*it);
 
-            view.instanceId = it->instanceId;
-            target = view;
-        } catch (const std::exception& e) {
+        if (!view.has_value()) {
             target.reset();
-
-            std::cerr << "[CLIENT][EQUIP] catalogId desconocido="
-                      << it->catalogId
-                      << " instanceId="
-                      << it->instanceId
-                      << " error="
-                      << e.what()
-                      << std::endl;
+            return;
         }
+
+        target = view.value();
     };
 
     applyEquipped(EquipSlot::HAND,   equipmentState.weapon);
@@ -1738,8 +1762,8 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage& msg) {
     applyEquipped(EquipSlot::ARMOR,  equipmentState.armor);
     applyEquipped(EquipSlot::SHIELD, equipmentState.shield);
 
-    // Refresca sprite visual: arma, armadura, casco, escudo.
     refreshPlayerEquipmentVisuals();
+    refreshPlayerBodySprite();
 }
 
 
@@ -1869,4 +1893,41 @@ void Game::processServerMessage(const Message& msg) {
                       << std::dec << std::endl;
             return;
     }
+}
+
+std::optional<ClientEquipmentSlot> Game::toClientEquipmentSlot(int index) const {
+    switch (index) {
+        case static_cast<int>(ClientEquipmentSlot::Weapon):
+            return ClientEquipmentSlot::Weapon;
+
+        case static_cast<int>(ClientEquipmentSlot::Helmet):
+            return ClientEquipmentSlot::Helmet;
+
+        case static_cast<int>(ClientEquipmentSlot::Armor):
+            return ClientEquipmentSlot::Armor;
+
+        case static_cast<int>(ClientEquipmentSlot::Shield):
+            return ClientEquipmentSlot::Shield;
+
+        default:
+            return std::nullopt;
+    }
+}
+
+EquipSlot Game::toServerEquipSlot(ClientEquipmentSlot slot) const {
+    switch (slot) {
+        case ClientEquipmentSlot::Weapon:
+            return EquipSlot::HAND;
+
+        case ClientEquipmentSlot::Helmet:
+            return EquipSlot::HELMET;
+
+        case ClientEquipmentSlot::Armor:
+            return EquipSlot::ARMOR;
+
+        case ClientEquipmentSlot::Shield:
+            return EquipSlot::SHIELD;
+    }
+
+    return EquipSlot::HAND;
 }

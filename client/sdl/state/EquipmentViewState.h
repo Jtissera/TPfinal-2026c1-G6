@@ -18,5 +18,10 @@ struct EquipmentViewState {
     std::optional<ItemView>  shield;
 
 };
-
+enum class ClientEquipmentSlot : int {
+    Weapon = 0,
+    Helmet = 1,
+    Armor = 2,
+    Shield = 3
+};
 #endif //TALLER_TP_EQUIPMENTVIEWSTATE_H

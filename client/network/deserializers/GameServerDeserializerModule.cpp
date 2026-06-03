@@ -99,6 +99,17 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
 
             items.push_back(std::move(item));
         }
+        const uint8_t slotCount = reader.readUint8();
+
+        std::array<uint32_t, InventoryUpdateMessage::INVENTORY_SLOT_COUNT> inventorySlots{};
+
+        for (uint8_t i = 0; i < slotCount; ++i) {
+            const uint32_t itemInstanceId = reader.readUint32();
+
+            if (i < inventorySlots.size()) {
+                inventorySlots[i] = itemInstanceId;
+            }
+        }
 
         std::array<uint32_t, static_cast<std::size_t>(EquipSlot::COUNT)> equipped{};
 
@@ -108,9 +119,8 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
 
         return std::make_unique<InventoryUpdateMessage>(
             std::move(items),
-            equipped
-        );
-    }
-);
+            inventorySlots,
+            equipped);
+    });
 
 }
