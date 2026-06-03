@@ -1593,53 +1593,51 @@ void Game::clearTextCache() {
 }
 
 void Game::applyInventoryUpdate(const InventoryUpdateMessage& msg) {
-    // Guardamos el estado visual anterior para mantener posiciones.
-    const auto previousSlots = inventoryState.slots;
-
-    // Limpiamos inventario visual actual.
+    // Limpiamos el inventario visual actual.
+    // El server manda el estado completo, así que reconstruimos todo desde cero.
     for (auto& slot : inventoryState.slots) {
         slot.reset();
     }
 
-    // Limpiamos equipamiento visual actual.
+    // Limpiamos el equipamiento visual actual.
+    // Luego lo reconstruimos usando msg.getEquipped().
     equipmentState.weapon.reset();
     equipmentState.helmet.reset();
     equipmentState.armor.reset();
     equipmentState.shield.reset();
 
+    // Lista completa de items reales que tiene el jugador en el server.
     const auto& serverItems = msg.getItems();
+
+    // Slots reales del inventario, decididos por el server.
+    // Cada posición guarda un instanceId o 0 si está vacía.
+    const auto& inventorySlots = msg.getInventorySlots();
+
+    // Array de equipados.
+    // Cada posición guarda un instanceId equipado o 0 si el slot está vacío.
     const auto& equipped = msg.getEquipped();
 
-    // Armamos set de items equipados.
-    std::unordered_set<uint32_t> equippedIds;
+    // Creamos un índice rápido:
+    // instanceId -> Item*
+    // Así podemos buscar cada item por id sin recorrer el vector muchas veces.
+    std::unordered_map<uint32_t, const Item*> itemByInstanceId;
 
-    for (uint32_t equippedId : equipped) {
-        if (equippedId != 0) {
-            equippedIds.insert(equippedId);
-        }
+    for (const Item& item : serverItems) {
+        itemByInstanceId[item.instanceId] = &item;
     }
 
-    // Mapa de items NO equipados por instanceId.
-    std::unordered_map<uint32_t, const Item*> availableItems;
-
-    for (const Item& serverItem : serverItems) {
-        if (equippedIds.find(serverItem.instanceId) != equippedIds.end()) {
-            continue;
-        }
-
-        availableItems[serverItem.instanceId] = &serverItem;
-    }
-
-    // Items ya colocados visualmente.
-    std::unordered_set<uint32_t> placedIds;
-
+    // Función auxiliar:
+    // Convierte un Item del server en un ItemView del cliente.
     auto makeItemView = [&](const Item& serverItem) -> std::optional<ItemView> {
         try {
+            // catalogId permite buscar la metadata visual en items.json.
             ItemView view = itemCatalog.requireById(
                 static_cast<int>(serverItem.catalogId)
             );
 
+            // instanceId identifica esta instancia real del server.
             view.instanceId = serverItem.instanceId;
+
             return view;
 
         } catch (const std::exception& e) {
@@ -1657,88 +1655,66 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage& msg) {
         }
     };
 
-    // 1. Primero mantenemos en su lugar los items que ya estaban visibles.
-    for (std::size_t i = 0; i < previousSlots.size() && i < inventoryState.slots.size(); ++i) {
-        if (!previousSlots[i].has_value()) {
+    // 1. Aplicamos los slots de inventario EXACTAMENTE como los manda el server.
+    for (std::size_t slotIndex = 0;
+         slotIndex < inventorySlots.size() && slotIndex < inventoryState.slots.size();
+         ++slotIndex) {
+
+        const uint32_t itemInstanceId = inventorySlots[slotIndex];
+
+        // 0 significa slot vacío.
+        if (itemInstanceId == 0) {
+            inventoryState.slots[slotIndex].reset();
             continue;
         }
 
-        const uint32_t previousInstanceId = previousSlots[i]->instanceId;
+        // Buscamos ese instanceId en los items enviados por el server.
+        auto it = itemByInstanceId.find(itemInstanceId);
 
-        auto it = availableItems.find(previousInstanceId);
+        if (it == itemByInstanceId.end()) {
+            inventoryState.slots[slotIndex].reset();
 
-        if (it == availableItems.end()) {
-            continue;
-        }
-
-        std::optional<ItemView> view = makeItemView(*it->second);
-
-        if (!view.has_value()) {
-            continue;
-        }
-
-        inventoryState.slots[i] = view.value();
-        placedIds.insert(previousInstanceId);
-    }
-
-    // 2. Después colocamos items nuevos o recién desequipados en el primer slot libre.
-    for (const Item& serverItem : serverItems) {
-        if (equippedIds.find(serverItem.instanceId) != equippedIds.end()) {
-            continue;
-        }
-
-        if (placedIds.find(serverItem.instanceId) != placedIds.end()) {
-            continue;
-        }
-
-        std::optional<ItemView> view = makeItemView(serverItem);
-
-        if (!view.has_value()) {
-            continue;
-        }
-
-        auto freeSlot = std::find_if(
-            inventoryState.slots.begin(),
-            inventoryState.slots.end(),
-            [](const std::optional<ItemView>& slot) {
-                return !slot.has_value();
-            }
-        );
-
-        if (freeSlot == inventoryState.slots.end()) {
-            std::cerr << "[CLIENT][INV] no hay slot libre para instanceId="
-                      << serverItem.instanceId
+            std::cerr << "[CLIENT][INV] slot="
+                      << slotIndex
+                      << " apunta a instanceId inexistente="
+                      << itemInstanceId
                       << std::endl;
             continue;
         }
 
-        *freeSlot = view.value();
-        placedIds.insert(serverItem.instanceId);
+        // Convertimos Item server -> ItemView cliente.
+        std::optional<ItemView> view = makeItemView(*it->second);
+
+        if (!view.has_value()) {
+            inventoryState.slots[slotIndex].reset();
+            continue;
+        }
+
+        // Dibujamos el item en el slot exacto que mandó el server.
+        inventoryState.slots[slotIndex] = view.value();
     }
 
+    // 2. Aplicamos equipamiento.
     auto applyEquipped = [&](EquipSlot slot, std::optional<ItemView>& target) {
         const auto index = static_cast<std::size_t>(slot);
 
         if (index >= equipped.size()) {
+            target.reset();
             return;
         }
 
         const uint32_t equippedInstanceId = equipped[index];
 
+        // 0 significa slot de equipo vacío.
         if (equippedInstanceId == 0) {
             target.reset();
             return;
         }
 
-        auto it = std::find_if(
-            serverItems.begin(),
-            serverItems.end(),
-            [equippedInstanceId](const Item& item) {
-                return item.instanceId == equippedInstanceId;
-            }
-        );
+        // Buscamos el item equipado en la lista completa del server.
+        auto it = itemByInstanceId.find(equippedInstanceId);
 
-        if (it == serverItems.end()) {
+        if (it == itemByInstanceId.end()) {
             target.reset();
 
             std::cerr << "[CLIENT][EQUIP] instanceId equipado no vino en items. id="
@@ -1747,7 +1723,7 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage& msg) {
             return;
         }
 
-        std::optional<ItemView> view = makeItemView(*it);
+        std::optional<ItemView> view = makeItemView(*it->second);
 
         if (!view.has_value()) {
             target.reset();
@@ -1762,6 +1738,7 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage& msg) {
     applyEquipped(EquipSlot::ARMOR,  equipmentState.armor);
     applyEquipped(EquipSlot::SHIELD, equipmentState.shield);
 
+    // Refrescamos visuales.
     refreshPlayerEquipmentVisuals();
     refreshPlayerBodySprite();
 }
