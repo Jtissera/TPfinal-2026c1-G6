@@ -85,3 +85,17 @@ void RemotePlayer::setPositionAndAnimation(float x,float y,Direction direction,b
             break;
     }
 }
+
+void RemotePlayer::setEquipment(const EquipmentDto& equipment) {
+    if (entity == nullptr) {
+        return;
+    }
+
+    std::cout << "[REMOTE EQUIP] id="
+              << id
+              << " weaponCatalogId=" << equipment.weaponCatalogId
+              << " armorCatalogId=" << equipment.armorCatalogId
+              << " helmetCatalogId=" << equipment.helmetCatalogId
+              << " shieldCatalogId=" << equipment.shieldCatalogId
+              << std::endl;
+}

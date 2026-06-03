@@ -3,6 +3,7 @@
 #include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/world/EntitySpawnMessage.h"
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
+#include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/protocol/clientOpCode.h"
 
 
@@ -129,5 +130,21 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
     [](PacketReader& reader) -> std::unique_ptr<Message> {
         const uint32_t itemInstanceId = reader.readUint32();
         return std::make_unique<UseItemMessage>(itemInstanceId);
+    });
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_EQUIPMENT_UPDATE),
+    [](PacketReader& reader) -> std::unique_ptr<Message> {
+        const uint32_t playerId = reader.readUint32();
+
+        EquipmentDto equipment{};
+        equipment.weaponCatalogId = reader.readUint32();
+        equipment.armorCatalogId  = reader.readUint32();
+        equipment.helmetCatalogId = reader.readUint32();
+        equipment.shieldCatalogId = reader.readUint32();
+
+        return std::make_unique<PlayerEquipmentUpdateMessage>(
+            playerId,
+            equipment
+        );
     });
 }

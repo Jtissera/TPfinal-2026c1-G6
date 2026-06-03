@@ -27,6 +27,7 @@
 #include "common/network/messages/server/player/playerDiedMessage.h"
 #include "common/network/messages/server/world/EntitySpawnMessage.h"
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
+#include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
 
 class Game {
@@ -161,6 +162,7 @@ private:
     void handleEntitySpawn(const EntitySpawnMessage& msg);
     void handleInventoryUpdate(const InventoryUpdateMessage& msg);
     void applyInventoryUpdate(const InventoryUpdateMessage& msg);
+    void handlePlayerEquipmentUpdate(const PlayerEquipmentUpdateMessage& msg);
 
 };
 

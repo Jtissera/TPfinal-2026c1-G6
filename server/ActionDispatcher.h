@@ -23,6 +23,7 @@
 #include "common/network/messages/server/combat/combatLogMessage.h"
 #include "common/network/messages/server/player/levelUpMessage.h"
 #include "common/network/messages/server/npc/npcHealthMessage.h"
+#include "common/dtos/equipmentDto.h"
 
 
 class ActionDispatcher {
@@ -44,6 +45,7 @@ private:
     void handleResurrect(uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleEnemyHitPlayer(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
     void handleUseItem(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
+    EquipmentDto buildEquipmentDto(const Player& player) const;
 
     void sendStats    (uint32_t id, Player& p, Monitor& monitor);
     void sendInventory(uint32_t id, Player& p, Monitor& monitor);

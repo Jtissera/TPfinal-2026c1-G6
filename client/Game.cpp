@@ -11,6 +11,7 @@
 
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
 #include "common/network/messages/client/inventory/useItemMessage.h"
+#include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/protocol/serverOpCode.h"
 
 #include "sdl/state/PlayerViewStateMapper.h"
@@ -1868,6 +1869,11 @@ void Game::processServerMessage(const Message& msg) {
         case ServerOpCode::MSG_INVENTORY_UPDATE:
             handleInventoryUpdate(static_cast<const InventoryUpdateMessage&>(msg));
             return;
+        case ServerOpCode::MSG_PLAYER_EQUIPMENT_UPDATE:
+            handlePlayerEquipmentUpdate(
+                static_cast<const PlayerEquipmentUpdateMessage&>(msg)
+            );
+            return;
 
         default:
             std::cout << "[CLIENT] opcode no manejado: 0x"
@@ -1913,3 +1919,23 @@ EquipSlot Game::toServerEquipSlot(ClientEquipmentSlot slot) const {
 
     return EquipSlot::HAND;
 }
+
+void Game::handlePlayerEquipmentUpdate(const PlayerEquipmentUpdateMessage& msg) {
+    const uint32_t updatedPlayerId = msg.getPlayerId();
+
+    // El jugador local ya se actualiza mediante InventoryUpdateMessage.
+    // Este mensaje se usa para actualizar jugadores remotos.
+    if (updatedPlayerId == static_cast<uint32_t>(playerDto.playerID)) {
+        return;
+    }
+
+    if (clientWorld == nullptr) {
+        return;
+    }
+
+    clientWorld->updateRemotePlayerEquipment(
+        updatedPlayerId,
+        msg.getEquipment()
+    );
+}
+

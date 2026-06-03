@@ -8,6 +8,7 @@
 #include "RemotePlayer.h"
 #include "../AssetManager.h"
 #include "../../../common/dtos/gameTypes.h"
+#include "common/dtos/equipmentDto.h"
 
 
 class ClientGameWorld {
@@ -52,6 +53,9 @@ public:
 
     // Entrada general para movimientos de jugadores.
     void updatePlayerPosition(uint32_t entityId, float x, float y,Direction direction,bool moving);
+
+    void updateRemotePlayerEquipment(uint32_t entityId,const EquipmentDto& equipment);
+
 };
 
 

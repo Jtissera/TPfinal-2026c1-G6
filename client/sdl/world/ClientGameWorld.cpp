@@ -134,3 +134,22 @@ void ClientGameWorld::updatePlayerPosition(
 
     updateRemotePlayerPosition(entityId, x, y, direction, moving);
 }
+void ClientGameWorld::updateRemotePlayerEquipment(
+    uint32_t entityId,
+    const EquipmentDto& equipment
+) {
+    auto it = remotePlayers.find(entityId);
+
+    if (it == remotePlayers.end()) {
+        std::cout << "[CLIENT_WORLD][WARN] Equipment update para remoto no spawneado. id="
+                  << entityId
+                  << std::endl;
+        return;
+    }
+
+    it->second.setEquipment(equipment);
+
+    std::cout << "[CLIENT_WORLD] Equipment remoto actualizado. id="
+              << entityId
+              << std::endl;
+}

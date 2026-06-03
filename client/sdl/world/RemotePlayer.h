@@ -9,6 +9,7 @@
 
 #include "../ECS/ECS.h"
 #include "../ECS/Components.h"
+#include "common/dtos/equipmentDto.h"
 
 class RemotePlayer {
 private:
@@ -32,6 +33,8 @@ public:
     // Actualiza la posición visual del jugador remoto.
     // Actualiza posición y animación visual del jugador remoto.
     void setPositionAndAnimation(float x, float y, Direction direction, bool moving);
+
+    void setEquipment(const EquipmentDto& equipment);
 };
 
 

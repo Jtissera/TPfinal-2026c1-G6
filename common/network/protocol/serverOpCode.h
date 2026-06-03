@@ -26,6 +26,7 @@ enum class ServerOpCode : uint8_t
     MSG_PLAYER_DIED = 0x58,
     MSG_PLAYER_RESURRECTED = 0x59,
     MSG_LEVEL_UP = 0x5A,
+    MSG_PLAYER_EQUIPMENT_UPDATE = 0x5B,
 
     MSG_CHAT_MESSAGE = 0x60,
     MSG_COMBAT_LOG = 0x61,
