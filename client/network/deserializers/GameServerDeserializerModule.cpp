@@ -1,7 +1,9 @@
 #include "GameServerDeserializerModule.h"
 
+#include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/world/EntitySpawnMessage.h"
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
+#include "common/network/protocol/clientOpCode.h"
 
 
 void GameServerDeserializersModule::registerDeserializers(Registry& registry) const {
@@ -122,5 +124,10 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
             inventorySlots,
             equipped);
     });
-
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ClientOpCode::MSG_USE_ITEM),
+    [](PacketReader& reader) -> std::unique_ptr<Message> {
+        const uint32_t itemInstanceId = reader.readUint32();
+        return std::make_unique<UseItemMessage>(itemInstanceId);
+    });
 }

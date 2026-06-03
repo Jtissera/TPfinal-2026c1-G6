@@ -14,7 +14,7 @@ ActionDispatcher::ActionDispatcher() {
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_MEDITATE)]   = &ActionDispatcher::handleMeditate;
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_RESURRECT)]  = &ActionDispatcher::handleResurrect;
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_UNEQUIP_SLOT)] =&ActionDispatcher::handleUnequipSlot;
-
+    handlers[static_cast<uint8_t>(ClientOpCode::MSG_USE_ITEM)] = &ActionDispatcher::handleUseItem;
 }
 
 void ActionDispatcher::dispatch(const ClientMessage& msg,
@@ -376,5 +376,71 @@ void ActionDispatcher::handleUnequipSlot(uint32_t id,const Message& msg,GameWorl
               << ok
               << std::endl;
 
+    sendInventory(id, player, monitor);
+}
+
+void ActionDispatcher::handleUseItem(
+    uint32_t id,
+    const Message& msg,
+    GameWorld& world,
+    Monitor& monitor
+) {
+    const auto& useMsg = static_cast<const UseItemMessage&>(msg);
+    const uint32_t itemInstanceId = useMsg.getItemInstanceId();
+
+    if (!world.hasPlayer(id)) {
+        std::cerr << "[SERVER USE ITEM] jugador inexistente id="
+                  << id
+                  << std::endl;
+        return;
+    }
+
+    Player& player = world.getPlayer(id);
+
+    const Item* item = player.getInventory().findItem(itemInstanceId);
+
+    if (item == nullptr) {
+        std::cerr << "[SERVER USE ITEM] item inexistente instanceId="
+                  << itemInstanceId
+                  << std::endl;
+
+        sendInventory(id, player, monitor);
+        return;
+    }
+
+    bool used = false;
+
+    if (item->slot == ItemSlot::CONSUMABLE) {
+        if (item->stats.healAmount > 0) {
+            player.heal(item->stats.healAmount);
+            used = true;
+        }
+
+        if (item->stats.manaAmount > 0) {
+            player.restoreMana(item->stats.manaAmount);
+            used = true;
+        }
+    }
+
+    if (!used) {
+        std::cerr << "[SERVER USE ITEM] item no consumible o sin efecto. instanceId="
+                  << itemInstanceId
+                  << std::endl;
+
+        sendInventory(id, player, monitor);
+        sendStats(id, player, monitor);
+        return;
+    }
+
+    player.getInventory().removeItem(itemInstanceId);
+
+    std::cout << "[SERVER USE ITEM] client="
+              << id
+              << " itemInstanceId="
+              << itemInstanceId
+              << " usado correctamente"
+              << std::endl;
+
+    sendStats(id, player, monitor);
     sendInventory(id, player, monitor);
 }

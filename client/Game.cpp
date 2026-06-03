@@ -10,6 +10,7 @@
 
 
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
+#include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/protocol/serverOpCode.h"
 
 #include "sdl/state/PlayerViewStateMapper.h"
@@ -884,11 +885,15 @@ void Game::handleInventorySlotClick(int slotIndex) {
               << item.instanceId
               << std::endl;
 
-    if (item.type == ClientItemType::HealthPotion ||
-    item.type == ClientItemType::ManaPotion) {
-        std::cout << "[INVENTORY] poción pendiente de UseItemMessage. instanceId="
-                  << item.instanceId
-                  << std::endl;
+    if (item.type == ClientItemType::HealthPotion ||item.type == ClientItemType::ManaPotion) {
+
+        std::cout << "[INVENTORY] pedido usar poción item="
+          << item.itemName
+          << " instanceId="
+          << item.instanceId
+          << std::endl;
+
+        sendQueue->try_push(std::make_shared<const UseItemMessage>(item.instanceId));
         return;
     }
     if (isLocalPlayerDead()) {

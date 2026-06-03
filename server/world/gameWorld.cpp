@@ -446,6 +446,9 @@ void GameWorld::loadInitialInventoryForPlayer(Player& player) {
         player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
         player.getInventory().addItem(itemRepo.createItem("capucha"));
         player.getInventory().addItem(itemRepo.createItem("pocion_mana"));
+        player.getInventory().addItem(itemRepo.createItem("vara_fresno"));
+        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
+        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
         return;
     }
 

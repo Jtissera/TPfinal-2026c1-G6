@@ -15,6 +15,7 @@
 #include "common/network/messages/client/combat/attackMessage.h"
 #include "common/network/messages/client/inventory/equipItemMessage.h"
 #include "common/network/messages/client/inventory/dropItemMessage.h"
+#include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/player/EntityMoveMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
 #include "common/network/messages/server/player/playerDiedMessage.h"
@@ -22,6 +23,7 @@
 #include "common/network/messages/server/combat/combatLogMessage.h"
 #include "common/network/messages/server/player/levelUpMessage.h"
 #include "common/network/messages/server/npc/npcHealthMessage.h"
+
 
 class ActionDispatcher {
 private:
@@ -41,6 +43,7 @@ private:
     void handleMeditate (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleResurrect(uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleEnemyHitPlayer(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
+    void handleUseItem(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
 
     void sendStats    (uint32_t id, Player& p, Monitor& monitor);
     void sendInventory(uint32_t id, Player& p, Monitor& monitor);
