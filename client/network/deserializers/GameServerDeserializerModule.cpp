@@ -1,5 +1,7 @@
 #include "GameServerDeserializerModule.h"
 
+#include <iostream>
+
 #include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/world/EntitySpawnMessage.h"
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
@@ -127,12 +129,6 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
             equipped);
     });
     registry.registerDeserializer(
-    static_cast<uint8_t>(ClientOpCode::MSG_USE_ITEM),
-    [](PacketReader& reader) -> std::unique_ptr<Message> {
-        const uint32_t itemInstanceId = reader.readUint32();
-        return std::make_unique<UseItemMessage>(itemInstanceId);
-    });
-    registry.registerDeserializer(
     static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_EQUIPMENT_UPDATE),
     [](PacketReader& reader) -> std::unique_ptr<Message> {
         const uint32_t playerId = reader.readUint32();
@@ -150,7 +146,9 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
     });registry.registerDeserializer(
     static_cast<uint8_t>(ServerOpCode::MSG_LEVEL_UP),
     [](PacketReader& reader) -> std::unique_ptr<Message> {
-        const uint16_t newLevel = reader.readUint16();
+        std::cout << "[DESERIALIZER] MSG_LEVEL_UP leyendo uint8"
+          << std::endl;
+        const uint8_t newLevel = reader.readUint8();
 
         return std::make_unique<LevelUpMessage>(newLevel);
     });
