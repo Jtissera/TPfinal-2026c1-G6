@@ -114,8 +114,10 @@ Entity* AssetManager::CreatePlayer(const PlayerDto& data) {
     player.addComponent<TransformComponent>(data.xpos, data.ypos);
     player.addComponent<SpriteComponent>(*this, bodyTextureId, true, playerAnims, bodyConfig);
     player.getComponent<SpriteComponent>().setHeadTexture(headTextureId, data.headId);
+    player.addComponent<EquipmentComponent>(*this,data.raza);
     player.addComponent<KeyboardController>(sendQueue);
     player.addComponent<ColliderComponent>("player");
+
     player.addGroup(groupPlayers);
     
 
@@ -389,17 +391,11 @@ Entity* AssetManager::CreateRemotePlayer(const PlayerDto& data) {
     );
 
     // Cabeza del jugador remoto.
-    remotePlayer.getComponent<SpriteComponent>().setHeadTexture(
-        headTextureId,
-        data.headId
-    );
-
-    // Collider diferente para no confundirlo con el player local.
+    remotePlayer.getComponent<SpriteComponent>().setHeadTexture(headTextureId,data.headId);
+    remotePlayer.addComponent<EquipmentComponent>(*this,data.raza);
     remotePlayer.addComponent<ColliderComponent>("remote_player");
-
-    // Lo agregamos al mismo grupo de players para que se dibuje
-    // en el loop actual de Game::render().
     remotePlayer.addGroup(groupPlayers);
+
 
     std::cout << "[REMOTE_PLAYER] creado id="
               << static_cast<int>(data.playerID)

@@ -187,27 +187,32 @@ void Game::render() {
 
     // Escudo detrás del personaje cuando mira arriba (animIndex 3)
     // o derecha (animIndex 2).
-    auto& sprite = player->getComponent<SpriteComponent>();
-    bool weaponBehind = (sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 2);
-    bool shieldBehind = (sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 3);
+    //auto& sprite = player->getComponent<SpriteComponent>();
+    // bool weaponBehind = (sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 2);
+    // bool shieldBehind = (sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 3);
 
-    if (shieldBehind) {
-        renderEquippedShield();
-    }
-    if (weaponBehind) {
-        renderEquippedWeapon();
+    // if (shieldBehind) {
+    //     renderEquippedShield();
+    // }
+    // if (weaponBehind) {
+    //     renderEquippedWeapon();
+    // }
+
+    for (auto& p : manager.getGroup(groupPlayers)) {
+        if (p->hasComponent<EquipmentComponent>()) {
+            p->getComponent<EquipmentComponent>().drawBehind(renderContext);
+        }
     }
 
     for (auto& p : manager.getGroup(groupPlayers)) {
         p->draw(renderContext);
     }
-
-    if (!shieldBehind) {
-        renderEquippedShield();
-    }
-    if (!weaponBehind) {
-        renderEquippedWeapon();
-    }
+    // if (!shieldBehind) {
+    //     renderEquippedShield();
+    // }
+    // if (!weaponBehind) {
+    //     renderEquippedWeapon();
+    // }
 
     // Dibuja enemigos vivos.
     for (const auto& [enemyId, enemy] : enemies) {
@@ -1744,9 +1749,17 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage& msg) {
     applyEquipped(EquipSlot::ARMOR,  equipmentState.armor);
     applyEquipped(EquipSlot::SHIELD, equipmentState.shield);
 
+    if (player != nullptr && player->hasComponent<EquipmentComponent>()) {
+        auto& equipment = player->getComponent<EquipmentComponent>();
+
+        equipment.setWeapon(equipmentState.weapon);
+        equipment.setArmor(equipmentState.armor);
+        equipment.setHelmet(equipmentState.helmet);
+        equipment.setShield(equipmentState.shield);
+    }
     // Refrescamos visuales.
-    refreshPlayerEquipmentVisuals();
-    refreshPlayerBodySprite();
+    // refreshPlayerEquipmentVisuals();
+    // refreshPlayerBodySprite();
 }
 
 
@@ -1933,9 +1946,6 @@ void Game::handlePlayerEquipmentUpdate(const PlayerEquipmentUpdateMessage& msg) 
         return;
     }
 
-    clientWorld->updateRemotePlayerEquipment(
-        updatedPlayerId,
-        msg.getEquipment()
-    );
+    clientWorld->updateRemotePlayerEquipment(updatedPlayerId,msg.getEquipment(),itemCatalog);
 }
 

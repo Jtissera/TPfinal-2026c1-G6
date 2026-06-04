@@ -54,7 +54,7 @@ public:
     // Entrada general para movimientos de jugadores.
     void updatePlayerPosition(uint32_t entityId, float x, float y,Direction direction,bool moving);
 
-    void updateRemotePlayerEquipment(uint32_t entityId,const EquipmentDto& equipment);
+    void updateRemotePlayerEquipment(uint32_t entityId, const EquipmentDto &equipment, const ItemCatalog &itemCatalog);
 
 };
 

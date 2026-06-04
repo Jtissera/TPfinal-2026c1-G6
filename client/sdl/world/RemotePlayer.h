@@ -24,17 +24,20 @@ public:
     // Constructor: asocia un id remoto con una entidad visual.
     RemotePlayer(uint32_t id, Entity* entity);
 
-    // Devuelve el id de red del jugador remoto.
+
     uint32_t getId() const;
 
-    // Devuelve la entidad visual asociada.
-    Entity* getEntity() const;
+    // Versión mutable: permite modificar la Entity.
+    Entity* getEntity();
+
+    // Versión const: permite leer desde un RemotePlayer const.
+    const Entity* getEntity() const;
 
     // Actualiza la posición visual del jugador remoto.
     // Actualiza posición y animación visual del jugador remoto.
     void setPositionAndAnimation(float x, float y, Direction direction, bool moving);
 
-    void setEquipment(const EquipmentDto& equipment);
+    void setEquipment(const EquipmentDto& equipment, const ItemCatalog& itemCatalog);
 };
 
 

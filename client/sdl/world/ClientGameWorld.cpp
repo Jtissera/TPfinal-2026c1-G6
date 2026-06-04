@@ -78,7 +78,7 @@ void ClientGameWorld::removeRemotePlayer(uint32_t entityId) {
               << std::endl;
 }
 
-void ClientGameWorld::updateLocalPlayerPosition(float x, float y) {
+void ClientGameWorld::updateLocalPlayerPosition(const float x, const float y) {
     // Si por algún error el local todavía no existe, cortamos.
     if (localPlayer == nullptr) {
         std::cout << "[CLIENT_WORLD][WARN] localPlayer es nullptr."
@@ -100,13 +100,7 @@ void ClientGameWorld::updateLocalPlayerPosition(float x, float y) {
           << std::endl;
 }
 
-void ClientGameWorld::updateRemotePlayerPosition(
-    uint32_t entityId,
-    float x,
-    float y,
-    Direction direction,
-    bool moving
-) {
+void ClientGameWorld::updateRemotePlayerPosition( uint32_t entityId, float x, float y, Direction direction, bool moving) {
     auto it = remotePlayers.find(entityId);
 
     if (it == remotePlayers.end()) {
@@ -120,13 +114,7 @@ void ClientGameWorld::updateRemotePlayerPosition(
 }
 
 
-void ClientGameWorld::updatePlayerPosition(
-    uint32_t entityId,
-    float x,
-    float y,
-    Direction direction,
-    bool moving
-) {
+void ClientGameWorld::updatePlayerPosition( uint32_t entityId,float x,float y,Direction direction,bool moving) {
     if (isLocalPlayer(entityId)) {
         updateLocalPlayerPosition(x, y);
         return;
@@ -134,10 +122,7 @@ void ClientGameWorld::updatePlayerPosition(
 
     updateRemotePlayerPosition(entityId, x, y, direction, moving);
 }
-void ClientGameWorld::updateRemotePlayerEquipment(
-    uint32_t entityId,
-    const EquipmentDto& equipment
-) {
+void ClientGameWorld::updateRemotePlayerEquipment( uint32_t entityId,const EquipmentDto& equipment,const ItemCatalog& itemCatalog) {
     auto it = remotePlayers.find(entityId);
 
     if (it == remotePlayers.end()) {
@@ -147,7 +132,7 @@ void ClientGameWorld::updateRemotePlayerEquipment(
         return;
     }
 
-    it->second.setEquipment(equipment);
+    it->second.setEquipment(equipment,itemCatalog);
 
     std::cout << "[CLIENT_WORLD] Equipment remoto actualizado. id="
               << entityId

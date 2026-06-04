@@ -11,7 +11,11 @@ uint32_t RemotePlayer::getId() const {
     return id;
 }
 
-Entity* RemotePlayer::getEntity() const {
+Entity* RemotePlayer::getEntity() {
+    return entity;
+}
+
+const Entity* RemotePlayer::getEntity() const {
     return entity;
 }
 
@@ -86,10 +90,23 @@ void RemotePlayer::setPositionAndAnimation(float x,float y,Direction direction,b
     }
 }
 
-void RemotePlayer::setEquipment(const EquipmentDto& equipment) {
+void RemotePlayer::setEquipment(
+    const EquipmentDto& equipment,
+    const ItemCatalog& itemCatalog
+) {
     if (entity == nullptr) {
         return;
     }
+
+    if (!entity->hasComponent<EquipmentComponent>()) {
+        std::cerr << "[REMOTE EQUIP] remote entity no tiene EquipmentComponent. id="
+                  << id
+                  << std::endl;
+        return;
+    }
+
+    auto& component = entity->getComponent<EquipmentComponent>();
+    component.setFromDto(equipment, itemCatalog);
 
     std::cout << "[REMOTE EQUIP] id="
               << id
