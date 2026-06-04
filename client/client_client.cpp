@@ -128,21 +128,10 @@ int Client::run()
                 if (lobbyResult == ScreenResult::GO_MAIN_MENU) continue;
 
                 if (lobbyResult == ScreenResult::GO_LOBBY) {
-                    PlayerDto playerDto;
-                    playerDto.nombre  = username;
-                    playerDto.raza    = raza;
-                    playerDto.clase   = clase;
-                    playerDto.xpos    = lobby.getSpawnX();
-                    playerDto.ypos    = lobby.getSpawnY();
-                    playerDto.hp      = 100;
-                    playerDto.hpMax   = 100;
-                    playerDto.mana    = 100;
-                    playerDto.manaMax = 100;
-                    playerDto.level   = 15;
-                    playerDto.oro     = 2000;
-                    playerDto.headId = 0;
+                    PlayerDto playerDto = lobby.getJoinedPlayerDto();
 
-                    GameClient gameClient(socket, 1, playerDto);
+
+                    GameClient gameClient(socket, playerDto.playerID, playerDto, window, renderer);
                     gameClient.run();
                 }
             }

@@ -1,7 +1,7 @@
 {
   "bodies": [
     {
-      "race": "human",
+      "race": "Human",
       "textureId": "body_sheet",
       "srcX": 0,
       "srcY": 0,
@@ -10,7 +10,7 @@
       "scale": 2
     },
     {
-      "race": "elf",
+      "race": "Elf",
       "textureId": "body_sheet",
       "srcX": 512,
       "srcY": 510,
@@ -19,7 +19,7 @@
       "scale": 2
     },
     {
-      "race": "dwarf",
+      "race": "Dwarf",
       "textureId": "body_sheet",
       "srcX": 0,
       "srcY": 520,
@@ -28,12 +28,21 @@
       "scale": 2
     },
     {
-      "race": "gnome",
+      "race": "Gnome",
       "textureId": "body_sheet",
       "srcX": 0,
       "srcY": 264,
       "frameWidth": 27,
       "frameHeight": 47,
+      "scale": 2
+    },
+    {
+      "race": "ghost",
+      "textureId": "ghost",
+      "srcX": 0,
+      "srcY": 0,
+      "frameWidth": 32,
+      "frameHeight": 32,
       "scale": 2
     }
   ]

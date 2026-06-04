@@ -3,8 +3,8 @@
 
 
 // Datos estaticos
-const std::vector<std::string> CreateCharScreen::RAZAS  = {"human", "elf", "dwarf", "gnome"};
-const std::vector<std::string> CreateCharScreen::CLASES = {"mage", "paladin", "cleric", "warrior"};
+const std::vector<std::string> CreateCharScreen::RAZAS  = {"Human", "Elf", "Dwarf", "Gnome"};
+const std::vector<std::string> CreateCharScreen::CLASES = {"Mage", "Paladin", "Cleric", "Warrior"};
 
 // Constructor/Destructor
 CreateCharScreen::CreateCharScreen(SDL_Renderer* renderer, int windowW, int windowH,
@@ -35,6 +35,7 @@ void CreateCharScreen::setError(const std::string& msg) { errorMsg = msg; }
 
 // Loop principal
 ScreenResult CreateCharScreen::run() {
+    bool dirty = true;
     while (true) {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
@@ -44,10 +45,24 @@ ScreenResult CreateCharScreen::run() {
             ScreenResult res;
             if (handleEvent(e, res))
                 return res;
+            // Si hubo evento, probablemente cambió algo visual.
+            dirty = true;
         }
-        render();
-        SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        static Uint32 lastBlinkUpdate = 0;
+        Uint32 now = SDL_GetTicks();
+
+        if (now - lastBlinkUpdate >= 500) {
+            dirty = true;
+            lastBlinkUpdate = now;
+        }
+
+        if (dirty) {
+            render();
+            SDL_RenderPresent(renderer);
+            dirty = false;
+        }
+
+        SDL_Delay(33);
     }
 }
 

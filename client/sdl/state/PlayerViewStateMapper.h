@@ -9,19 +9,19 @@
 #include "common/dtos/gameTypes.h"
 
 inline PlayerClass parsePlayerClass(const std::string& value) {
-    if (value == "warrior") {
+    if (value == "Warrior") {
         return PlayerClass::Warrior;
     }
 
-    if (value == "mage") {
+    if (value == "Mage") {
         return PlayerClass::Mage;
     }
 
-    if (value == "paladin") {
+    if (value == "Paladin") {
         return PlayerClass::Paladin;
     }
 
-    if (value == "cleric") {
+    if (value == "Cleric") {
         return PlayerClass::Cleric;
     }
 
@@ -33,8 +33,11 @@ inline PlayerViewState toPlayerViewState(const PlayerDto& dto) {
     PlayerViewState state;
 
     state.name = dto.nombre;
+    std::cout << "[CLIENT DTO] raza='" << dto.raza << "'" << std::endl;
     state.race = dto.raza;
+    std::cout << "[CLIENT DTO] clase='" << dto.clase << "'" << std::endl;
     state.playerClass = parsePlayerClass(dto.clase);
+
 
     state.level = dto.level;
 

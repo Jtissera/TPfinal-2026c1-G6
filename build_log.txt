@@ -1,0 +1,75 @@
+[  7%] Built target taller_common
+[ 17%] Built target sdl_headers_copy
+[ 46%] Built target SDL2
+[ 46%] Built target SDL2main
+[ 48%] Built target SDL2pp
+[ 51%] Built target SDL2_image
+[ 55%] Built target SDL2_mixer
+[ 55%] Built target SDL2_ttf
+[ 56%] Building CXX object CMakeFiles/taller_client.dir/client/sdl/screens/PlaceholderLobbyScreen.cpp.o
+[ 56%] Linking CXX executable taller_client
+[ 59%] Built target taller_client
+[ 59%] Building CXX object CMakeFiles/taller_server_lib.dir/server/lobby/lobbyHandler.cpp.o
+[ 59%] Building CXX object CMakeFiles/taller_server_lib.dir/server/lobby/playerRepository.cpp.o
+[ 59%] Building CXX object CMakeFiles/taller_server_lib.dir/server/monitorQueues.cpp.o
+[ 59%] Building CXX object CMakeFiles/taller_server_lib.dir/server/network/acceptor.cpp.o
+[ 59%] Building CXX object CMakeFiles/taller_server_lib.dir/server/network/clientHandler.cpp.o
+[ 60%] Building CXX object CMakeFiles/taller_server_lib.dir/server/network/deserializers/authClientDeserializersModule.cpp.o
+[ 60%] Building CXX object CMakeFiles/taller_server_lib.dir/server/network/deserializers/charClientDeserializersModule.cpp.o
+[ 60%] Building CXX object CMakeFiles/taller_server_lib.dir/server/network/deserializers/lobbyClientDeserializersModule.cpp.o
+[ 60%] Building CXX object CMakeFiles/taller_server_lib.dir/server/network/protocol/serverProtocolFactory.cpp.o
+[ 60%] Building CXX object CMakeFiles/taller_server_lib.dir/server/network/receiver.cpp.o
+[ 60%] Building CXX object CMakeFiles/taller_server_lib.dir/server/network/receiverRegistry.cpp.o
+[ 60%] Building CXX object CMakeFiles/taller_server_lib.dir/server/network/sender.cpp.o
+[ 60%] Building CXX object CMakeFiles/taller_server_lib.dir/server/npc/npc.cpp.o
+[ 60%] Building CXX object CMakeFiles/taller_server_lib.dir/server/npc/npcAI.cpp.o
+[ 61%] Building CXX object CMakeFiles/taller_server_lib.dir/server/npc/npcFactory.cpp.o
+[ 61%] Building CXX object CMakeFiles/taller_server_lib.dir/server/npc/npcManager.cpp.o
+[ 61%] Building CXX object CMakeFiles/taller_server_lib.dir/server/npc/npcRepository.cpp.o
+[ 61%] Building CXX object CMakeFiles/taller_server_lib.dir/server/resurrection/priestLocator.cpp.o
+[ 61%] Building CXX object CMakeFiles/taller_server_lib.dir/server/resurrection/resurrectionSystem.cpp.o
+[ 61%] Building CXX object CMakeFiles/taller_server_lib.dir/server/server.cpp.o
+[ 61%] Building CXX object CMakeFiles/taller_server_lib.dir/server/world/CollisionSystem.cpp.o
+[ 61%] Building CXX object CMakeFiles/taller_server_lib.dir/server/world/GroundManager.cpp.o
+[ 62%] Building CXX object CMakeFiles/taller_server_lib.dir/server/world/SpawnManager.cpp.o
+[ 62%] Building CXX object CMakeFiles/taller_server_lib.dir/server/world/gameWorld.cpp.o
+[ 62%] Building CXX object CMakeFiles/taller_server_lib.dir/editor/map/mapSerializer.cpp.o
+[ 62%] Building CXX object CMakeFiles/taller_server_lib.dir/editor/map/mapData.cpp.o
+[ 62%] Linking CXX static library libtaller_server_lib.a
+[ 65%] Built target taller_server_lib
+[ 65%] Building CXX object CMakeFiles/taller_server.dir/server/main.cpp.o
+[ 65%] Linking CXX executable taller_server
+[ 65%] Built target taller_server
+[ 65%] Built target taller_editor_autogen_timestamp_deps
+[ 65%] Automatic MOC and UIC for target taller_editor
+[ 65%] Built target taller_editor_autogen
+[ 65%] Building CXX object CMakeFiles/taller_editor.dir/taller_editor_autogen/mocs_compilation.cpp.o
+[ 65%] Building CXX object CMakeFiles/taller_editor.dir/editor/main.cpp.o
+[ 65%] Building CXX object CMakeFiles/taller_editor.dir/editor/mainWindow.cpp.o
+[ 65%] Building CXX object CMakeFiles/taller_editor.dir/editor/map/mapData.cpp.o
+[ 66%] Building CXX object CMakeFiles/taller_editor.dir/editor/map/mapSerializer.cpp.o
+[ 66%] Building CXX object CMakeFiles/taller_editor.dir/editor/widgets/mapCanvas.cpp.o
+[ 66%] Building CXX object CMakeFiles/taller_editor.dir/editor/widgets/tilePalette.cpp.o
+[ 66%] Building CXX object CMakeFiles/taller_editor.dir/editor/widgets/npcPalette.cpp.o
+[ 66%] Linking CXX executable taller_editor
+[ 66%] Built target taller_editor
+[ 66%] Built target gtest_autogen_timestamp_deps
+[ 67%] Built target gtest_autogen
+[ 67%] Built target gtest
+[ 67%] Built target gtest_main_autogen_timestamp_deps
+[ 67%] Built target gtest_main_autogen
+[ 67%] Built target gtest_main
+[ 67%] Built target taller_tests_autogen_timestamp_deps
+[ 68%] Automatic MOC and UIC for target taller_tests
+[ 68%] Built target taller_tests_autogen
+[ 68%] Building CXX object CMakeFiles/taller_tests.dir/tests/protocol_test.cpp.o
+[ 68%] Linking CXX executable taller_tests
+[ 68%] Built target taller_tests
+[ 97%] Built target SDL2-static
+[ 99%] Built target SDL2_test
+[ 99%] Built target gmock_autogen_timestamp_deps
+[ 99%] Built target gmock_autogen
+[ 99%] Built target gmock
+[ 99%] Built target gmock_main_autogen_timestamp_deps
+[ 99%] Built target gmock_main_autogen
+[100%] Built target gmock_main

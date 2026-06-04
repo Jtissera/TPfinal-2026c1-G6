@@ -1,29 +1,43 @@
-#pragma once
+
+#ifndef PRUEBA_SDL_KEYBOARDCONTROLLER_H
+#define PRUEBA_SDL_KEYBOARDCONTROLLER_H
 #include "ECS.h"
 #include "TransformComponent.h"
 #include "SpriteComponent.h"
+#include "../../../common/network/protocol/protocol.h"
 #include "common/queue.h"
-#include <SDL2/SDL.h>
+#include "common/dtos/gameTypes.h"
 
-enum class FacingDirection { Down, Up, Left, Right };
 
+enum class FacingDirection {
+    Down,
+    Up,
+    Left,
+    Right
+};
 class KeyboardController : public Component {
 public:
     explicit KeyboardController(Queue<std::shared_ptr<const Message>>& sendQueue);
-
-    void init()                     override;
-    void update(UpdateContext& ctx) override;
-
-    FacingDirection getLastDirection() const { return lastDirection; }
-    bool            isHoldingKey()     const { return holdingKey;    }
+    void init() override;
+    void update(UpdateContext& context) override;
 
 private:
-    TransformComponent* transform     = nullptr;
-    SpriteComponent*    sprite        = nullptr;
-    FacingDirection     lastDirection = FacingDirection::Down;
-    bool                holdingKey    = false;
 
+    TransformComponent* transform = nullptr;
+    SpriteComponent*    sprite    = nullptr;
+    FacingDirection lastDirection = FacingDirection::Down;
     Queue<std::shared_ptr<const Message>>& sendQueue;
-    Uint32 lastSendMs = 0;
-    static constexpr Uint32 SEND_INTERVAL_MS = 250;
+    Uint32 lastMoveSentAt = 0;
+    Uint32 moveCooldownMs = 10;
+    bool movingUp    = false;
+    bool movingDown  = false;
+    bool movingLeft  = false;
+    bool movingRight = false;
+    bool wasMoving = false;
+
+
+    void sendMoveIfReady(Direction direction);
+    Direction toNetworkDirection(FacingDirection facing) const;
 };
+
+#endif //PRUEBA_SDL_KEYBOARDCONTROLLER_H

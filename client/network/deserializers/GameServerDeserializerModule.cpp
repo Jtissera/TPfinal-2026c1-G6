@@ -1,3 +1,4 @@
+#include "common/dtos/gameTypes.h"
 #include "GameServerDeserializerModule.h"
 
 void GameServerDeserializersModule::registerDeserializers(Registry& registry) const {

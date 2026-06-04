@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <vector>
 #include "../../liberror.h"
+#include "common/dtos/gameTypes.h"
 
 class Protocol
 {

@@ -1,3 +1,6 @@
+
+#ifndef TALLER_TP_GAMECLIENT_H
+#define TALLER_TP_GAMECLIENT_H
 #pragma once
 #include <memory>
 
@@ -10,18 +13,31 @@
 #include "Game.h"
 
 class GameClient {
+
 public:
-    GameClient(Socket& socket, uint32_t idPlayer, const PlayerDto& playerDto);
+    GameClient(Socket& socket,uint32_t idPlayer,const PlayerDto& playerDto,SDL_Window* window,SDL_Renderer* renderer);
     void run();
 
 private:
-    uint32_t idPlayer;
-    PlayerDto playerDto;
+    const uint32_t idPlayer;
+    const PlayerDto playerDto;
+
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+
     ClientProtocolFactory factory;
-    Protocol protocol;
+
+    Protocol senderProtocol;
+    Protocol receiverProtocol;
+
     Queue<std::shared_ptr<const Message>> sendQueue;
     Queue<std::shared_ptr<const Message>> receiveQueue;
+
     ClientSender sender;
     ClientReceiver receiver;
+
     Game gameLoop;
+
 };
+
+#endif //TALLER_TP_GAMECLIENT_H

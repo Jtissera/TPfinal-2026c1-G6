@@ -62,6 +62,8 @@ public:
     // Quita visualmente el casco/capucha.
     void clearHelmet();
     int getAnimationIndex() const { return animationIndex; }
+    void setBody(const std::string& textureId, const SpriteSheetConfig& config);
+    void clearHead();
 
 private:
 

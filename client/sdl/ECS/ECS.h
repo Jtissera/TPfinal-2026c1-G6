@@ -18,7 +18,10 @@ class Manager;
 
 using ComponentID = std::size_t;
 using Group = std::size_t;
+constexpr std::size_t maxComponents = 32;
+constexpr std::size_t maxGroups = 32;
 
+// genera id unicos para cada componente nueva
 inline ComponentID getNewComponentTypeID() {
     static ComponentID lastID = 0u;
     return lastID++;
@@ -26,18 +29,17 @@ inline ComponentID getNewComponentTypeID() {
 
 template <typename T> inline ComponentID getComponentTypeID() noexcept {
     static_assert(std::is_base_of<Component, T >::value,"");
-    static ComponentID typeID = getNewComponentTypeID();
+    static ComponentID typeID = getNewComponentTypeID(); // Este static se crea una sola vez por cada tipo T.
     return typeID;
-}
-
-constexpr std::size_t maxComponents = 32;
-constexpr std::size_t maxGroups = 32;
-
-using  ComponentBitSet = std::bitset<maxComponents>;
-using  GroupBitSet = std::bitset<maxGroups>;
-using  ComponentArray = std::array<Component*,maxComponents>;
+} // devuelve siempre el mismo id para las componentes, ej: transformcomponent
 
 
+
+using  ComponentBitSet = std::bitset<maxComponents>; // sirve para saber si una entidad tiene cierto componente
+using  GroupBitSet = std::bitset<maxGroups>; // idem pero para grupos
+using  ComponentArray = std::array<Component*,maxComponents>; //sirve paara acceder rapidamente al componente
+
+// clase base de cada componente
 class Component {
 
 public:
@@ -52,17 +54,18 @@ public:
 class Entity {
 
 private:
-    Manager& manager;
-    bool active = true;
-    std::vector<std::unique_ptr<Component>> components;
+    Manager& manager;  // referencia al manager dueño
+    bool active = true;  // si esta vida o destruida
+    std::vector<std::unique_ptr<Component>> components; // dueña de las comp
 
-    ComponentArray componentArray;
-    ComponentBitSet componentBitSet;
-    GroupBitSet groupBitSet;
+    ComponentArray componentArray;  // acceso rapido por tipo
+    ComponentBitSet componentBitSet;  // los componentes que tiene
+    GroupBitSet groupBitSet;  // dice el grupo al que pertenece
 
 public:
     explicit Entity(Manager& mManager): manager(mManager){}
 
+    // para cada entidad recorre sus componentes y que se actualice cada una
     void update(UpdateContext& context) {
         for (auto& c : components) {
             c->update(context);
@@ -90,6 +93,7 @@ public:
 
         groupBitSet[mGroup] = false;
     }
+
     template <typename T, typename... TArgs>
     T& addComponent(TArgs&&... mArgs) {
 

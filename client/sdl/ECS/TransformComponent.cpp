@@ -26,6 +26,7 @@ TransformComponent::TransformComponent(float x, float y, int h, int w, int sc) {
 void TransformComponent::setPos(float x, float y) {
     position.x = x;
     position.y = y;
+
 }
 
 void TransformComponent::update(UpdateContext& context) {
@@ -40,5 +41,7 @@ void TransformComponent::update(UpdateContext& context) {
 void TransformComponent::init() {
     velocity.Zero();
 }
+
+
 
 
