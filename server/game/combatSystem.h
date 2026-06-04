@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
-#include "combatant.h"
 
 class CombatSystem {
 public:

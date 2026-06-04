@@ -5,11 +5,12 @@
 #include <vector>
 
 #include "../../common/dtos/gameTypes.h"
-#include "inventory.h"
-#include "raceRepository.h"
-#include "classRepository.h"
-#include "playerState.h"
-#include "combatant.h"
+#include "items/item.h"
+#include "player/combatant.h"
+#include "player/inventory.h"
+#include "player/playerState.h"
+#include "stats/classStats.h"
+#include "stats/raceStats.h"
 
 class Player : public Combatant{
 public:

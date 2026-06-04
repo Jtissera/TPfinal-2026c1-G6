@@ -1,6 +1,20 @@
 #include "inventory.h"
 #include <algorithm>
 
+#include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
+
+Inventory::Inventory()
+    : maxItems(MAX_INVENTORY_SLOTS) {
+  equipped.fill(EMPTY_SLOT);
+  inventorySlots.fill(EMPTY_SLOT);
+}
+
+Inventory::Inventory(const toml::table& config)
+    : maxItems(config["player"]["max_inventory_items"].value_or<std::size_t>(MAX_INVENTORY_SLOTS)) {
+  equipped.fill(EMPTY_SLOT);
+  inventorySlots.fill(EMPTY_SLOT);
+}
+
 std::optional<EquipSlot> toEquipSlot(ItemSlot slot) {
   switch (slot) {
   case ItemSlot::WEAPON:
@@ -18,13 +32,21 @@ std::optional<EquipSlot> toEquipSlot(ItemSlot slot) {
 }
 
 bool Inventory::addItem(Item item) {
+  if (items.size() >= maxItems) {
+    return false;
+  }
+
   const auto freeSlot = findFirstFreeInventorySlot();
+
   if (!freeSlot.has_value()) {
     return false;
   }
+
   const uint32_t itemId = item.instanceId;
+
   items.push_back(std::move(item));
-  inventorySlots[freeSlot.value()]= itemId;
+  inventorySlots[freeSlot.value()] = itemId;
+
   return true;
 }
 

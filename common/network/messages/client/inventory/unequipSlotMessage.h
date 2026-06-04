@@ -9,7 +9,7 @@
 #include "common/network/messages/message.h"
 #include "common/network/protocol/clientOpCode.h"
 #include "common/network/protocol/packetWriter.h"
-#include "server/game/EquipSlot.h"
+#include "server/game/items/EquipSlot.h"
 
 class UnequipSlotMessage : public Message {
 private:

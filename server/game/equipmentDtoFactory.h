@@ -6,7 +6,7 @@
 #pragma once
 
 #include "common/dtos/equipmentDto.h"
-#include "server/game/Player.h"
+#include "server/game/player/Player.h"
 
 EquipmentDto buildEquipmentDtoFromPlayer(const Player& player);
 

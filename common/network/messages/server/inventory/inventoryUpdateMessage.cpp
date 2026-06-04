@@ -1,5 +1,7 @@
 #include "inventoryUpdateMessage.h"
 
+#include "server/game/items/item.h"
+
 InventoryUpdateMessage::InventoryUpdateMessage(
     std::vector<Item> items,
     std::array<uint32_t, INVENTORY_SLOT_COUNT> inventorySlots,

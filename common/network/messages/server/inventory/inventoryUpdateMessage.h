@@ -8,8 +8,9 @@
 #include "common/network/messages/message.h"
 #include "common/network/protocol/packetWriter.h"
 #include "common/network/protocol/serverOpCode.h"
-#include "server/game/EquipSlot.h"
-#include "server/game/item.h"
+#include "server/game/items/EquipSlot.h"
+#include "server/game/items/item.h"
+
 
 class InventoryUpdateMessage : public Message {
 public:

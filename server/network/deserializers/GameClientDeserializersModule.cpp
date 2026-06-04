@@ -5,6 +5,7 @@
 #include "common/network/messages/client/combat/attackMessage.h"
 #include "common/network/messages/client/inventory/equipItemMessage.h"
 #include "common/network/messages/client/cheat/cheatMessage.h"
+#include "common/network/messages/client/city/interactNpcMessage.h"
 #include "common/network/messages/client/movement/moveMessage.h"
 #include "common/network/protocol/clientOpCode.h"
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
