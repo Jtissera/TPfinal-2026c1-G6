@@ -26,5 +26,5 @@ private:
     int16_t maxHp;
 };
 
-
 #endif //TALLER_TP_NPCHEALTHMESSAGE_H
+

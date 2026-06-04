@@ -1,86 +1,155 @@
 #include "tilePalette.h"
 #include <QButtonGroup>
 
-TilePalette::TilePalette(QWidget* parent) : QWidget(parent) {
-    auto* mainLayout = new QVBoxLayout(this);
+TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
+{
+    auto *mainLayout = new QVBoxLayout(this);
     mainLayout->setAlignment(Qt::AlignTop);
     setFixedWidth(160);
 
-    auto* tileGroup = new QGroupBox("Tipo de tile", this);
-    auto* tileLayout = new QVBoxLayout(tileGroup);
+    // ── Terreno ───────────────────────────────────────────
+    auto *terrainGroup = new QGroupBox("Terreno", this);
+    auto *terrainLayout = new QVBoxLayout(terrainGroup);
 
-    _rbGrass   = new QRadioButton("Pasto",                    tileGroup);
-    _rbWater   = new QRadioButton("Agua",                     tileGroup);
-    _rbWall    = new QRadioButton("Pared",                    tileGroup);
-    _rbFloor   = new QRadioButton("Piso",                     tileGroup);
-    _rbDoor    = new QRadioButton("Puerta",                   tileGroup);
-    _rbDungeon = new QRadioButton("Entrada a caverna/mazmorra", tileGroup);
+    _rbGrass = new QRadioButton("🌿 Pasto", terrainGroup);
+    _rbSand = new QRadioButton("🏜 Arena", terrainGroup);
+    _rbWater = new QRadioButton("💧 Agua", terrainGroup);
+    _rbFloor = new QRadioButton("🟫 Piso", terrainGroup);
     _rbGrass->setChecked(true);
 
-    auto* tileButtons = new QButtonGroup(this);
-    tileButtons->addButton(_rbGrass);
-    tileButtons->addButton(_rbWater);
-    tileButtons->addButton(_rbWall);
-    tileButtons->addButton(_rbFloor);
-    tileButtons->addButton(_rbDoor);
-    tileButtons->addButton(_rbDungeon);
+    auto *terrainBtns = new QButtonGroup(this);
+    for (auto *rb : {_rbGrass, _rbSand, _rbWater, _rbFloor})
+    {
+        terrainBtns->addButton(rb);
+        terrainLayout->addWidget(rb);
+    }
+    mainLayout->addWidget(terrainGroup);
 
-    tileLayout->addWidget(_rbGrass);
-    tileLayout->addWidget(_rbWater);
-    tileLayout->addWidget(_rbWall);
-    tileLayout->addWidget(_rbFloor);
-    tileLayout->addWidget(_rbDoor);
-    tileLayout->addWidget(_rbDungeon);
-    mainLayout->addWidget(tileGroup);
+    // ── Estructuras ───────────────────────────────────────
+    auto *structGroup = new QGroupBox("Estructuras", this);
+    auto *structLayout = new QVBoxLayout(structGroup);
 
-    auto* zoneGroup = new QGroupBox("Zona", this);
-    auto* zoneLayout = new QVBoxLayout(zoneGroup);
+    _rbWall = new QRadioButton("🧱 Pared", structGroup);
+    _rbDoor = new QRadioButton("🚪 Puerta", structGroup);
+    _rbForest = new QRadioButton("🌲 Bosque", structGroup);
 
-    _rbSafe   = new QRadioButton("Segura (ciudad)",   zoneGroup);
-    _rbCombat = new QRadioButton("Combate (caverna)", zoneGroup);
-    _rbSafe->setChecked(true);
+    auto *structBtns = new QButtonGroup(this);
+    for (auto *rb : {_rbWall, _rbDoor, _rbForest})
+    {
+        structBtns->addButton(rb);
+        structLayout->addWidget(rb);
+    }
+    mainLayout->addWidget(structGroup);
 
-    auto* zoneButtons = new QButtonGroup(this);
-    zoneButtons->addButton(_rbSafe);
-    zoneButtons->addButton(_rbCombat);
+    // ── Especiales ────────────────────────────────────────
+    auto *specGroup = new QGroupBox("Especiales", this);
+    auto *specLayout = new QVBoxLayout(specGroup);
 
-    zoneLayout->addWidget(_rbSafe);
-    zoneLayout->addWidget(_rbCombat);
+    _rbDungeonEntrance = new QRadioButton("⬛ Entrada Mazmorra", specGroup);
+    _rbCavernEntrance = new QRadioButton("🕳 Entrada Caverna", specGroup);
+    _rbExit = new QRadioButton("🔼 Salida instancia", specGroup);
+
+    auto *specBtns = new QButtonGroup(this);
+    for (auto *rb : {_rbDungeonEntrance, _rbCavernEntrance, _rbExit})
+    {
+        specBtns->addButton(rb);
+        specLayout->addWidget(rb);
+    }
+    mainLayout->addWidget(specGroup);
+
+    // Un único ButtonGroup para todos los tiles (exclusión global)
+    auto *allTileBtns = new QButtonGroup(this);
+    allTileBtns->setExclusive(true);
+    for (auto *g : {terrainBtns, structBtns, specBtns})
+        for (auto *b : g->buttons())
+            allTileBtns->addButton(b);
+
+    // ── Zona ──────────────────────────────────────────────
+    auto *zoneGroup = new QGroupBox("Zona", this);
+    auto *zoneLayout = new QVBoxLayout(zoneGroup);
+
+    _rbZoneSafe = new QRadioButton("🛡 Segura", zoneGroup);
+    _rbZoneCity = new QRadioButton("🏘 Ciudad", zoneGroup);
+    _rbZoneCombat = new QRadioButton("⚔ Combate", zoneGroup);
+    _rbZoneDesert = new QRadioButton("☀ Desierto", zoneGroup);
+    _rbZoneForest = new QRadioButton("🌳 Bosque", zoneGroup);
+    _rbZoneCavern = new QRadioButton("🌑 Caverna", zoneGroup);
+    _rbZoneDungeon = new QRadioButton("💀 Mazmorra", zoneGroup);
+    _rbZoneCombat->setChecked(true);
+
+    auto *zoneBtns = new QButtonGroup(this);
+    for (auto *rb : {_rbZoneSafe, _rbZoneCity, _rbZoneCombat,
+                     _rbZoneDesert, _rbZoneForest,
+                     _rbZoneCavern, _rbZoneDungeon})
+    {
+        zoneBtns->addButton(rb);
+        zoneLayout->addWidget(rb);
+    }
     mainLayout->addWidget(zoneGroup);
 
-    auto* walkGroup = new QGroupBox("Propiedades", this);
-    auto* walkLayout = new QVBoxLayout(walkGroup);
+    // ── Propiedades ───────────────────────────────────────
+    auto *propGroup = new QGroupBox("Propiedades", this);
+    auto *propLayout = new QVBoxLayout(propGroup);
 
-    _cbWalkable = new QCheckBox("Caminable", walkGroup);
+    _cbWalkable = new QCheckBox("Caminable", propGroup);
     _cbWalkable->setChecked(true);
-    walkLayout->addWidget(_cbWalkable);
-    mainLayout->addWidget(walkGroup);
+    propLayout->addWidget(_cbWalkable);
+    mainLayout->addWidget(propGroup);
 
-    connect(tileButtons,
-            static_cast<void(QButtonGroup::*)(QAbstractButton*)>(
+    // ── Señales ───────────────────────────────────────────
+    connect(allTileBtns,
+            static_cast<void (QButtonGroup::*)(QAbstractButton *)>(
                 &QButtonGroup::buttonClicked),
             this, &TilePalette::selectionChanged);
-    connect(zoneButtons,
-            static_cast<void(QButtonGroup::*)(QAbstractButton*)>(
+    connect(zoneBtns,
+            static_cast<void (QButtonGroup::*)(QAbstractButton *)>(
                 &QButtonGroup::buttonClicked),
             this, &TilePalette::selectionChanged);
     connect(_cbWalkable, &QCheckBox::stateChanged,
             this, &TilePalette::selectionChanged);
 }
 
-TileType TilePalette::selectedTileType() const {
-    if (_rbWater->isChecked())   return TileType::WATER;
-    if (_rbWall->isChecked())    return TileType::WALL;
-    if (_rbFloor->isChecked())   return TileType::FLOOR;
-    if (_rbDoor->isChecked())    return TileType::DOOR;
-    if (_rbDungeon->isChecked()) return TileType::DUNGEON_ENTRANCE;
+TileType TilePalette::selectedTileType() const
+{
+    if (_rbSand->isChecked())
+        return TileType::SAND;
+    if (_rbWater->isChecked())
+        return TileType::WATER;
+    if (_rbFloor->isChecked())
+        return TileType::FLOOR;
+    if (_rbWall->isChecked())
+        return TileType::WALL;
+    if (_rbDoor->isChecked())
+        return TileType::DOOR;
+    if (_rbForest->isChecked())
+        return TileType::FOREST;
+    if (_rbDungeonEntrance->isChecked())
+        return TileType::DUNGEON_ENTRANCE;
+    if (_rbCavernEntrance->isChecked())
+        return TileType::CAVERN_ENTRANCE;
+    if (_rbExit->isChecked())
+        return TileType::EXIT;
     return TileType::GRASS;
 }
 
-ZoneType TilePalette::selectedZoneType() const {
-    return _rbCombat->isChecked() ? ZoneType::COMBAT : ZoneType::SAFE;
+ZoneType TilePalette::selectedZoneType() const
+{
+    if (_rbZoneCity->isChecked())
+        return ZoneType::CITY;
+    if (_rbZoneCombat->isChecked())
+        return ZoneType::COMBAT;
+    if (_rbZoneDesert->isChecked())
+        return ZoneType::DESERT;
+    if (_rbZoneForest->isChecked())
+        return ZoneType::FOREST;
+    if (_rbZoneCavern->isChecked())
+        return ZoneType::CAVERN;
+    if (_rbZoneDungeon->isChecked())
+        return ZoneType::DUNGEON;
+    return ZoneType::SAFE;
 }
 
-bool TilePalette::selectedWalkable() const {
+bool TilePalette::selectedWalkable() const
+{
     return _cbWalkable->isChecked();
 }

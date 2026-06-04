@@ -1,16 +1,16 @@
 #pragma once
-#include "npcStats.h"
+#include "../game/player/combatant.h"
 #include "npcState.h"
-#include "../game/combatant.h"
-#include <cstdint>
-#include <chrono>
+#include "npcStats.h"
 #include <algorithm>
+#include <chrono>
+#include <cstdint>
 
 #include "common/npcType.h"
 
 class Npc : public Combatant {
 public:
-    Npc(uint32_t id, const NpcStats& stats, int spawnTileX, int spawnTileY);
+  Npc(uint32_t id, const NpcStats &stats, int spawnTileX, int spawnTileY);
 
 
     uint32_t getId()          const override { return id;              }
@@ -36,7 +36,7 @@ public:
     uint16_t getShieldDefenseMin() const override { return 0; }
     uint16_t getShieldDefenseMax() const override { return 0; }
 
-    void takeDamage(int16_t dmg) override;
+  void takeDamage(int16_t dmg) override;
 
     int      getSpawnTileX()     const { return spawnTileX;           }
     int      getSpawnTileY()     const { return spawnTileY;           }
@@ -53,10 +53,10 @@ public:
     void setTargetId(uint32_t id)   { targetId = id;           }
     void clearTarget() { targetId = 0; state = NpcState::IDLE; }
 
-    bool canAttack() const;
-    bool canMove()   const;
-    void resetAttackCooldown();
-    void resetMoveCooldown();
+  bool canAttack() const;
+  bool canMove() const;
+  void resetAttackCooldown();
+  void resetMoveCooldown();
 
     Npc(const Npc&)            = delete;
     Npc& operator=(const Npc&) = delete;
@@ -64,13 +64,13 @@ public:
     Npc& operator=(Npc&&)      = default;
 
 private:
-    uint32_t id;
-    const NpcStats& stats;
-    int tileX, tileY;
-    int spawnTileX, spawnTileY;
-    int16_t  hp;
-    NpcState state    = NpcState::IDLE;
-    uint32_t targetId = 0;
+  uint32_t id;
+  const NpcStats &stats;
+  int tileX, tileY;
+  int spawnTileX, spawnTileY;
+  int16_t hp;
+  NpcState state = NpcState::IDLE;
+  uint32_t targetId = 0;
 
     using Clock = std::chrono::steady_clock;
     Clock::time_point lastAttack;

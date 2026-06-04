@@ -1,28 +1,39 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include "common/npcType.h"
 
-// Tipos de tile del mapa
-enum class TileType : uint8_t {
-    GRASS     = 0,
-    WATER     = 1,
-    WALL      = 2,
-    FLOOR     = 3,
-    DOOR      = 4,
+enum class TileType : uint8_t
+{
+    GRASS = 0,
+    WATER = 1,
+    WALL = 2,
+    FLOOR = 3,
+    DOOR = 4,
     DUNGEON_ENTRANCE = 5,
+    CAVERN_ENTRANCE = 6,
+    EXIT = 7,
+    SAND = 8,
+    FOREST = 9,
 };
 
-// Tipos de zona
-enum class ZoneType : uint8_t {
-    SAFE      = 0,   // ciudad/pueblo: no se puede atacar
-    COMBAT    = 1,   // caverna/zona libre: se puede atacar
+enum class ZoneType : uint8_t
+{
+    SAFE = 0,
+    COMBAT = 1,
+    CAVERN = 2,
+    DUNGEON = 3,
+    CITY = 4,
+    DESERT = 5,
+    FOREST = 6,
 };
 
-// Un tile del mapa
-struct Tile {
-    TileType  type     = TileType::GRASS;
-    ZoneType  zone     = ZoneType::SAFE;
-    bool      walkable = true;
-    NpcType   npc      = NpcType::NONE;   // NPC fijo en este tile
+struct Tile
+{
+    TileType type = TileType::GRASS;
+    ZoneType zone = ZoneType::COMBAT;
+    bool walkable = true;
+    NpcType npc = NpcType::NONE;
+    std::string targetMap = "";
 };
