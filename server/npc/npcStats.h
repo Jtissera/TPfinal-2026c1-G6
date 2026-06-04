@@ -3,7 +3,11 @@
 #include <string>
 #include <vector>
 
+#include "common/npcType.h"
+
 struct NpcStats {
+    NpcType type = NpcType::NONE;
+    std::string name;
     std::string typeName;
     int16_t  maxHp;
     uint16_t damageMin;

@@ -1,6 +1,43 @@
 #include "npcRepository.h"
 #include <stdexcept>
 
+namespace {
+
+    NpcType npcTypeFromKey(const std::string& typeName) {
+        if (typeName == "priest") {
+            return NpcType::PRIEST;
+        }
+
+        if (typeName == "merchant") {
+            return NpcType::MERCHANT;
+        }
+
+        if (typeName == "banker") {
+            return NpcType::BANKER;
+        }
+
+        if (typeName == "goblin") {
+            return NpcType::GOBLIN;
+        }
+
+        if (typeName == "skeleton") {
+            return NpcType::SKELETON;
+        }
+
+        if (typeName == "zombie") {
+            return NpcType::ZOMBIE;
+        }
+
+        if (typeName == "guard") {
+            return NpcType::GUARD;
+        }
+
+        return NpcType::NONE;
+    }
+
+}
+
+
 NpcRepository::NpcRepository(const toml::table& config) {
     const auto* section = config.get_as<toml::table>("npcs");
     
@@ -26,9 +63,26 @@ bool NpcRepository::exists(const std::string& typeName) const {
     return npcs.count(typeName) > 0;
 }
 
-NpcStats NpcRepository::parse(const std::string& name, const toml::table& entry) const {
+NpcStats NpcRepository::parse(const std::string& typeName, const toml::table& entry) const {
+
     NpcStats stats;
-    stats.typeName         = name;
+    stats.typeName = typeName;
+    stats.type = npcTypeFromKey(typeName);
+
+    if (stats.type == NpcType::NONE) {
+        throw std::runtime_error(
+            "NpcRepository: unknown npc typeName: " + typeName
+        );
+    }
+
+    // Nombre visible por defecto.
+    stats.name = npcTypeName(stats.type);
+
+    // Si el TOML trae name, pisa el default.
+    if (auto value = entry["name"].value<std::string>()) {
+        stats.name = *value;
+    }
+
     stats.maxHp            = entry["hp"].value_or<int16_t>(50);
     stats.damageMin        = entry["damage_min"].value_or<uint16_t>(1);
     stats.damageMax        = entry["damage_max"].value_or<uint16_t>(3);
@@ -40,9 +94,14 @@ NpcStats NpcRepository::parse(const std::string& name, const toml::table& entry)
     stats.attackCooldownMs = entry["attack_cooldown_ms"].value_or<uint32_t>(1000);
     stats.moveCooldownMs   = entry["move_cooldown_ms"].value_or<uint32_t>(500);
 
+    if (stats.type == NpcType::NONE) {
+        throw std::runtime_error("NpcRepository: unknown npc typeName: " + typeName);
+    }
+
     if (const auto* arr = entry["zones"].as_array())
         for (const auto& z : *arr)
             if (auto s = z.value<std::string>()) stats.zones.push_back(*s);
 
     return stats;
 }
+

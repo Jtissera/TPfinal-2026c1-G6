@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include <toml++/toml.hpp>
+#include <stdexcept>
 
 class NpcRepository {
 public:
@@ -12,5 +13,5 @@ public:
 
 private:
     std::map<std::string, NpcStats> npcs;
-    NpcStats parse(const std::string& name, const toml::table& entry) const;
+    NpcStats parse(const std::string& typeName, const toml::table& entry) const;
 };

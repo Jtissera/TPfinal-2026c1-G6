@@ -6,6 +6,8 @@
 #include <chrono>
 #include <algorithm>
 
+#include "common/npcType.h"
+
 class Npc : public Combatant {
 public:
     Npc(uint32_t id, const NpcStats& stats, int spawnTileX, int spawnTileY);
@@ -21,6 +23,9 @@ public:
     uint8_t  getStrength()    const override { return stats.strength;  }
     int      getAttackRange() const override { return 1;               }
     bool     isAlive()        const override { return hp > 0;          }
+    NpcType getType() const {return stats.type;}
+    const std::string& getName() const {return stats.name;}
+    const std::string& getTypeName() const {return stats.typeName;}
 
     uint16_t getWeaponDamageMin()  const override { return stats.damageMin; }
     uint16_t getWeaponDamageMax()  const override { return stats.damageMax; }

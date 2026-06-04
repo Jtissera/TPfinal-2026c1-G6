@@ -46,9 +46,12 @@ private:
     GameLoop gameLoop;
 
     void sendExistingPlayersTo(uint32_t newClientId);
+    void sendExistingNpcsTo(uint32_t newClientId);
+
     void broadcastPlayerSpawn(uint32_t playerId);
     PlayerDto buildPlayerDto(const Player& player) const;
     void sendInventoryTo(uint32_t playerId);
+
 
 
 };

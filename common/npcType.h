@@ -33,16 +33,28 @@ struct NpcSpawnZone {
 };
 
 // Retorna el nombre legible de un NpcType
+inline std::string npcTypeKey(NpcType type) {
+    switch (type) {
+        case NpcType::PRIEST:   return "priest";
+        case NpcType::MERCHANT: return "merchant";
+        case NpcType::BANKER:   return "banker";
+        case NpcType::GOBLIN:   return "goblin";
+        case NpcType::SKELETON: return "skeleton";
+        case NpcType::ZOMBIE:   return "zombie";
+        case NpcType::GUARD:    return "guard";
+        default:                return "";
+    }
+}
+
 inline std::string npcTypeName(NpcType type) {
     switch (type) {
-        case NpcType::NONE:     return "Ninguno";
         case NpcType::PRIEST:   return "Sacerdote";
-        case NpcType::MERCHANT: return "Comerciante";
+        case NpcType::MERCHANT: return "Mercader";
         case NpcType::BANKER:   return "Banquero";
         case NpcType::GOBLIN:   return "Goblin";
         case NpcType::SKELETON: return "Esqueleto";
-        case NpcType::ZOMBIE:   return "Zombie";
+        case NpcType::ZOMBIE:   return "Zombi";
         case NpcType::GUARD:    return "Guardia";
-        default:                return "Desconocido";
+        default:                return "NPC";
     }
 }
