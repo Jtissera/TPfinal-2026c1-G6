@@ -11,6 +11,7 @@
 
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
 #include "common/network/messages/client/inventory/useItemMessage.h"
+#include "common/network/messages/server/player/levelUpMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/protocol/serverOpCode.h"
 
@@ -120,10 +121,25 @@ void Game::handleEvents() {
                 return;
             }
 
-            attackSystem.handleMouseClick(mouseX, mouseY, camera, enemies, sendQueue,player,equippedWeapon);
+            std::vector<AttackTarget> attackTargets;
+
+
+            for (auto& [enemyId, enemyEntity] : enemies) {
+                if (enemyEntity == nullptr) {
+                    continue;
+                }
+
+                attackTargets.push_back(AttackTarget{enemyId,enemyEntity});
+            }
+
+            // Jugadores remotos.
+            if (clientWorld != nullptr) {
+                clientWorld->appendRemoteAttackTargets(attackTargets);
+            }
+
+            attackSystem.handleMouseClick(mouseX,mouseY,camera,attackTargets,sendQueue,player,equippedWeapon);
         }
     }
-
 }
 
 void Game::update() {
@@ -154,7 +170,7 @@ void Game::update() {
     if (isLocalPlayerDead()) {
         applyLocalPlayerGhostState();
     } else {
-        attackSystem.updateEnemyChase(enemies, player, playerState.hp,sendQueue);
+        attackSystem.updateEnemyChase(enemies, player, playerState.hp);
 
         if (hasReceivedValidPlayerStats && playerState.hp <= 0) {
             applyLocalPlayerGhostState();
@@ -1868,6 +1884,10 @@ void Game::processServerMessage(const Message& msg) {
                 static_cast<const PlayerEquipmentUpdateMessage&>(msg)
             );
             return;
+        case ServerOpCode::MSG_LEVEL_UP:
+            handleLevelUp(static_cast<const LevelUpMessage&>(msg));
+            return;
+
 
         default:
             std::cout << "[CLIENT] opcode no manejado: 0x"
@@ -1930,3 +1950,13 @@ void Game::handlePlayerEquipmentUpdate(const PlayerEquipmentUpdateMessage& msg) 
     clientWorld->updateRemotePlayerEquipment(updatedPlayerId,msg.getEquipment(),itemCatalog);
 }
 
+
+void Game::handleLevelUp(const LevelUpMessage& msg) {
+    playerState.level = msg.newLevel_get();
+
+    std::cout << "[CLIENT] LEVEL UP recibido. level="
+              << playerState.level
+              << std::endl;
+
+    showStatusMessage("Subiste de nivel");
+}

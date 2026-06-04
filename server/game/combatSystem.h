@@ -20,6 +20,7 @@ public:
 
     Result attack(Combatant& attacker, Combatant& target);
     Result attackPlayer(Player& attacker, Player& target);
+    Result attackNpc(Player& attacker, Combatant& target);
     bool canAttack(const Combatant& attacker, const Combatant& target) const;
     bool canAttackPlayer(const Player& attacker, const Player& target) const;
 

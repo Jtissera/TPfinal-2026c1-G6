@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
+#include <iostream>
 
 CombatSystem::Result CombatSystem::attack(Combatant& attacker, Combatant& target) {
     Result result;
@@ -72,9 +73,9 @@ bool CombatSystem::canAttackPlayer(const Player& attacker, const Player& target)
     if (!canAttack(attacker, target)) return false;
 
     // Fair play 
-    if (attacker.getLevel() <= 12 || target.getLevel() <= 12) return false;
-    int levelDiff = std::abs((int)attacker.getLevel() - (int)target.getLevel());
-    if (levelDiff > 10) return false;
+    //if (attacker.getLevel() <= 12 || target.getLevel() <= 12) return false;
+    //int levelDiff = std::abs((int)attacker.getLevel() - (int)target.getLevel());
+    //if (levelDiff > 10) return false;
 
     return true;
 }
@@ -108,4 +109,33 @@ int16_t CombatSystem::rollDefense(const Combatant& target) const {
 int16_t CombatSystem::rollArmorDefense(uint16_t min, uint16_t max) const {
     int range = max - min;
     return static_cast<int16_t>(min + (range > 0 ? std::rand() % range : 0));
+}
+
+CombatSystem::Result CombatSystem::attackNpc(Player& attacker,Combatant& target) {
+    Result result;
+
+    if (!canAttack(attacker, target)) {
+        return result;
+    }
+
+    const Item* weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
+
+    if (weapon != nullptr && weapon->stats.manaCost > 0) {
+        const int16_t manaCost =
+            static_cast<int16_t>(weapon->stats.manaCost);
+
+        std::cout << "[COMBAT] PvE manaCost="<< manaCost<< " currentMana="<< attacker.getMana() << std::endl;
+
+        if (!attacker.spendMana(manaCost)) {
+            std::cout << "[COMBAT] PvE mana insuficiente"<< std::endl;
+            return result;
+        }
+
+        std::cout << "[COMBAT] PvE mana restante="<< attacker.getMana()<< std::endl;
+    }
+
+    // Resolvemos el ataque normal.
+    return attack(attacker, target);;
+
+
 }

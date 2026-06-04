@@ -9,6 +9,7 @@
 #include "../AssetManager.h"
 #include "../../../common/dtos/gameTypes.h"
 #include "common/dtos/equipmentDto.h"
+#include "client/sdl/AttackSystem.h"
 
 
 class ClientGameWorld {
@@ -56,6 +57,7 @@ public:
 
     void updateRemotePlayerEquipment(uint32_t entityId, const EquipmentDto &equipment, const ItemCatalog &itemCatalog);
 
+    void appendRemoteAttackTargets(std::vector<AttackTarget>& targets);
 };
 
 

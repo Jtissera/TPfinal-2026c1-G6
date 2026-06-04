@@ -36,16 +36,20 @@ private:
     GameFormulas    formulas;
 
     void handleMove     (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
-    void handleAttack   (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handlePickItem (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleDropItem (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleEquipItem(uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleUnequipSlot(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
+    void handleUseItem(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
+
     void handleMeditate (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
     void handleResurrect(uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
-    void handleEnemyHitPlayer(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
-    void handleUseItem(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
-    EquipmentDto buildEquipmentDto(const Player& player) const;
+
+    void handleAttackPlayer(uint32_t attackerid,uint32_t targetId,GameWorld& world,Monitor& monitor);
+    void handleAttackNpc(uint32_t attackerid,uint32_t targetId,GameWorld& world,Monitor& monitor);
+    void sendLevelUpIfNeeded(uint32_t playerId,Player& player, Monitor& monitor);
+    void handleAttack(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
+
 
     void sendStats    (uint32_t id, Player& p, Monitor& monitor);
     void sendInventory(uint32_t id, Player& p, Monitor& monitor);

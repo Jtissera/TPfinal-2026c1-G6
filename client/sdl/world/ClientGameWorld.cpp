@@ -138,3 +138,22 @@ void ClientGameWorld::updateRemotePlayerEquipment( uint32_t entityId,const Equip
               << entityId
               << std::endl;
 }
+
+void ClientGameWorld::appendRemoteAttackTargets(
+    std::vector<AttackTarget>& targets
+) {
+    for (auto& [remotePlayerId, remotePlayer] : remotePlayers) {
+        Entity* entity = remotePlayer.getEntity();
+
+        if (entity == nullptr) {
+            continue;
+        }
+
+        targets.push_back(
+            AttackTarget{
+                remotePlayerId,
+                entity
+            }
+        );
+    }
+}

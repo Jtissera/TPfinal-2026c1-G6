@@ -14,6 +14,7 @@
 #include <cmath>
 
 #include "state/ItemView.h"
+#include "world/RemotePlayer.h"
 
 // Representa un efecto visual de ataque activo.
 // Por ahora solo guarda posición, tiempo de creación y duración.
@@ -22,6 +23,11 @@ struct AttackEffect {
     int y;                  // Posición Y en coordenadas de mundo.
     Uint32 createdAt;       // Momento en que se creó el efecto.
     Uint32 durationMs = 500;// Duración total del efecto.
+};
+
+struct AttackTarget {
+    uint32_t id;
+    Entity* entity;
 };
 
 // Resultado de la actualización de persecución de enemigos.
@@ -41,11 +47,7 @@ public:
     AttackSystem() = default;
 
     // Detecta si el click cayó sobre algún enemigo.
-    void handleMouseClick(
-        int screenX,
-        int screenY,
-        const SDL_Rect& camera,
-        std::map<uint32_t, Entity*>& enemies,
+    void handleMouseClick(int screenX,int screenY,const SDL_Rect& camera,const std::vector<AttackTarget>& targets,
         Queue<std::shared_ptr<const Message>>* sendQueue,
         Entity* player,
         const ItemView* equippedWeapon
@@ -71,7 +73,7 @@ public:
     int getEnemyMaxHealth(uint32_t enemyId) const;
 
     // Actualiza persecución y ataque del enemigo al jugador.
-    EnemyChaseResult updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp,Queue<std::shared_ptr<const Message>>* sendQueue);
+    EnemyChaseResult updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp);
 
     // Limpia toda persecución/aggro de enemigos.
     // Se usa cuando el jugador muere o pasa a estado fantasma.

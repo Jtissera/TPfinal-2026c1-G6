@@ -2,6 +2,7 @@
 #include "GameClientDeserializersModule.h"
 
 #include "common/dtos/gameTypes.h"
+#include "common/network/messages/client/combat/attackMessage.h"
 #include "common/network/messages/client/inventory/equipItemMessage.h"
 #include "common/network/messages/client/movement/moveMessage.h"
 #include "common/network/protocol/clientOpCode.h"
@@ -22,12 +23,6 @@ void GameClientDeserializersModule::registerDeserializers(Registry& registry) co
             return std::make_unique<MoveMessage>(direction, moving);
         });
 
-    registry.registerDeserializer(
-    static_cast<uint8_t>(ClientOpCode::MSG_ENEMY_HIT_PLAYER),
-    [](PacketReader& reader) -> std::unique_ptr<Message> {
-        uint32_t enemyId = reader.readUint32();
-        return std::make_unique<EnemyHitPlayerMessage>(enemyId);
-    });
     registry.registerDeserializer(
     static_cast<uint8_t>(ClientOpCode::MSG_RESURRECT),
     [](PacketReader& reader) -> std::unique_ptr<Message> {
@@ -53,6 +48,13 @@ void GameClientDeserializersModule::registerDeserializers(Registry& registry) co
         const uint32_t itemInstanceId = reader.readUint32();
 
         return std::make_unique<UseItemMessage>(itemInstanceId);
-    }
-);
+    });
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ClientOpCode::MSG_ATTACK),
+    [](PacketReader& reader) -> std::unique_ptr<Message> {
+        const uint32_t targetId = reader.readUint32();
+
+        return std::make_unique<AttackMessage>(targetId);
+    });
+
 }

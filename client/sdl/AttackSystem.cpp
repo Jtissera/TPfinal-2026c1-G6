@@ -7,78 +7,68 @@
 #include <iostream>
 #include <cmath>
 
-#include "common/network/messages/client/combat/enemyHitPlayerMessage.h"
+#include "common/network/messages/client/combat/attackMessage.h"
+#include "world/RemotePlayer.h"
 
-// #include "common/network/messages/client/combat/attackMessage.h"
+void AttackSystem::handleMouseClick(
+    int screenX,
+    int screenY,
+    const SDL_Rect& camera,
+    const std::vector<AttackTarget>& targets,
+    Queue<std::shared_ptr<const Message>>* sendQueue,
+    Entity* player,
+    const ItemView* equippedWeapon
+) {
 
-void AttackSystem::handleMouseClick(int screenX,int screenY,const SDL_Rect& camera,std::map<uint32_t, Entity*>& enemies,Queue<std::shared_ptr<const Message>>* sendQueue,Entity* player,const ItemView* equippedWeapon) {
-    // Convertimos coordenadas de pantalla a coordenadas de mundo.
-    // El -133 compensa el offset vertical del área del mapa.
-    int worldX = screenX + camera.x;
-    int worldY = screenY - 133 + camera.y;
+    const int worldX = screenX + camera.x;
+    const int worldY = screenY - 133 + camera.y;
 
-    for (auto& [id, entity] : enemies) {
-        if (entity == nullptr) {
+    for (const AttackTarget& target : targets) {
+        if (target.entity == nullptr) {
             continue;
         }
 
-        if (isEnemyDead(id)) {
+        auto& tf = target.entity->getComponent<TransformComponent>();
+
+        const int targetX = static_cast<int>(tf.position.x);
+        const int targetY = static_cast<int>(tf.position.y);
+
+        // Bounding box aproximado.
+        // Sirve para enemigos y jugadores. Luego se puede ajustar por tipo.
+        const int targetW = 128;
+        const int targetH = 128;
+
+        const bool clickedTarget =
+            worldX >= targetX &&
+            worldX <= targetX + targetW &&
+            worldY >= targetY &&
+            worldY <= targetY + targetH;
+
+        if (!clickedTarget) {
             continue;
         }
 
-        auto& tf = entity->getComponent<TransformComponent>();
+        const int attackRange = attackRangeForWeapon(equippedWeapon);
 
-        if (enemySpawnPositions.find(id) == enemySpawnPositions.end()) {
-            enemySpawnPositions[id] = tf.position;
-        }
-
-        int enemyX = static_cast<int>(tf.position.x);
-        int enemyY = static_cast<int>(tf.position.y);
-
-        // Tamaño aproximado del enemigo visible.
-        int enemyW = 128;
-        int enemyH = 128;
-
-        bool clickedEnemy =
-            worldX >= enemyX &&
-            worldX <= enemyX + enemyW &&
-            worldY >= enemyY &&
-            worldY <= enemyY + enemyH;
-
-        if (!clickedEnemy) {
-            continue;
-        }
-
-        // Obtenemos el rango según arma equipada.
-        int attackRange = attackRangeForWeapon(equippedWeapon);
-
-        // Si está fuera de rango, no se aplica daño.
-        if (!isTargetInRange(player, *entity, attackRange)) {
+        // Esto es solo validación visual del cliente.
+        // La validación real la hace el server.
+        if (!isTargetInRange(player, *target.entity, attackRange)) {
             std::cout << "[ATTACK] Objetivo fuera de rango. Rango="
                       << attackRange
                       << std::endl;
             return;
         }
 
-        // Por ahora está comentado dentro de sendAttackMessage.
-        sendAttackMessage(id, sendQueue);
+        // El cliente solo manda intención de ataque.
+        // El server decide si el target es player o NPC, calcula daño,
+        // consume maná, mata, da exp/oro, etc.
+        sendAttackMessage(target.id, sendQueue);
 
-        // Calculamos daño según arma equipada.
-        int damage = damageForWeapon(equippedWeapon);
-
-        bool isDead = applyDamage(id, damage);
-
-        // Solo mostramos efecto visual si el arma corresponde.
+        // Efecto visual local opcional.
         if (shouldCreateVisualEffect(equippedWeapon)) {
-            createLocalAttackEffect(id, *entity);
+            createLocalAttackEffect(target.id, *target.entity);
         }
 
-        if (isDead) {
-            markEnemyAsDead(id);
-        }else {
-            // Si recibió daño y sigue vivo, empieza a perseguir al jugador.
-            chasingEnemies.insert(id);
-        }
         return;
     }
 }
@@ -126,20 +116,19 @@ void AttackSystem::createLocalAttackEffect(uint32_t targetId, Entity& target) {
         500
     });
 
-    std::cout << "Ataque local sobre enemigo id=" << targetId << std::endl;
+    std::cout << "[ATTACK EFFECT] efecto local sobre targetId="<< targetId<< std::endl;
 }
 
-void AttackSystem::sendAttackMessage(
-    uint32_t targetId,
-    Queue<std::shared_ptr<const Message>>* sendQueue
-) {
-    // Evitamos warnings de variables no usadas mientras el socket está desactivado.
-    (void)targetId;
-    (void)sendQueue;
+void AttackSystem::sendAttackMessage(uint32_t targetId,Queue<std::shared_ptr<const Message>>* sendQueue) {
+    // Si no hay cola de envío, no podemos mandar nada al server.
+    if (sendQueue == nullptr) {
+        return;
+    }
 
-    // Cuando el protocolo de ataque esté listo, se reactiva esto:
-    // auto msg = std::make_shared<AttackMessage>(targetId);
-    // sendQueue->push(msg);
+
+    sendQueue->try_push(std::make_shared<const AttackMessage>(targetId));
+
+    std::cout << "[ATTACK] AttackMessage enviado. targetId="<< targetId<< std::endl;
 }
 
 void AttackSystem::update() {
@@ -363,7 +352,7 @@ void AttackSystem::updateRespawns(std::map<uint32_t, Entity*>& enemies) {
     }
 }
 
-EnemyChaseResult AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp,Queue<std::shared_ptr<const Message>>* sendQueue) {
+EnemyChaseResult AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp) {
     // Si no hay jugador, no hay nada que perseguir.
     if (player == nullptr) {
         return EnemyChaseResult::PlayerStillAlive;
@@ -382,10 +371,7 @@ EnemyChaseResult AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& ene
     float playerCenterX = playerTransform.position.x + 16.0f;
     float playerCenterY = playerTransform.position.y + 32.0f;
 
-    Uint32 now = SDL_GetTicks();
 
-    // Copiamos los IDs porque clearEnemyAggro podría modificar el set
-    // si el jugador muere durante el loop.
     std::vector<uint32_t> chasingIds(
         chasingEnemies.begin(),
         chasingEnemies.end()
@@ -433,29 +419,29 @@ EnemyChaseResult AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& ene
         }
 
         // Si el enemigo está cerca, intenta atacar con cooldown.
-        if (distance <= enemyStopDistance) {
-            Uint32 lastAttack = 0;
-
-            auto lastIt = enemyLastAttackAt.find(enemyId);
-            if (lastIt != enemyLastAttackAt.end()) {
-                lastAttack = lastIt->second;
-            }
-
-            if (now - lastAttack >= enemyAttackCooldownMs) {
-                enemyLastAttackAt[enemyId] = now;
-                if (sendQueue != nullptr) {
-                    sendQueue->try_push(std::make_shared<const EnemyHitPlayerMessage>(enemyId));
-                }
-
-                std::cout << "[ENEMY ATTACK] enemigo id="
-                          << enemyId
-                          << " atacó. Mensaje enviado al server."
-                          << std::endl;
-
-            }
-
-            continue;
-        }
+        // if (distance <= enemyStopDistance) {
+        //     Uint32 lastAttack = 0;
+        //
+        //     auto lastIt = enemyLastAttackAt.find(enemyId);
+        //     if (lastIt != enemyLastAttackAt.end()) {
+        //         lastAttack = lastIt->second;
+        //     }
+        //
+        //     // if (now - lastAttack >= enemyAttackCooldownMs) {
+        //     //     enemyLastAttackAt[enemyId] = now;
+        //     //     if (sendQueue != nullptr) {
+        //     //         sendQueue->try_push(std::make_shared<const EnemyHitPlayerMessage>(enemyId));
+        //     //     }
+        //     //
+        //     //     std::cout << "[ENEMY ATTACK] enemigo id="
+        //     //               << enemyId
+        //     //               << " atacó. Mensaje enviado al server."
+        //     //               << std::endl;
+        //     //
+        //     // }
+        //
+        //     continue;
+        // }
 
         // Si está lejos, persigue.
         float dirX = dx / distance;
