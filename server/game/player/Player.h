@@ -53,6 +53,7 @@ public:
   int getTileY() const override;
   uint32_t getId() const override;
   uint32_t getClientId() const;
+  const std::string& getName() const;
   uint8_t getLevel() const override;
   int16_t getHp() const override;
   int16_t getMaxHp() const override;

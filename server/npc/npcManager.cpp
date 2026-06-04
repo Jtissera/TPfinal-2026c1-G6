@@ -31,16 +31,10 @@ NpcManager::tick(const std::unordered_map<uint32_t, Player> &players)
 
   for (auto &[id, npc] : npcs)
   {
-    if (!npc.isAlive())
-      continue;
+    if (!npc.isAlive()) continue;
+    if (!npc.isHostile()) continue;
 
     NpcIntent intent = ai.decide(npc, players);
-    for (auto& [id, npc] : npcs) {
-        if (!npc.isAlive()) continue;
-        if (!npc.isHostile()) {
-            continue;
-        }
-        NpcIntent intent = ai.decide(npc, players);
 
     npc.setState(intent.nextState);
     npc.setTargetId(intent.targetId);

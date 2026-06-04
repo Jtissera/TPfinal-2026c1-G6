@@ -42,6 +42,8 @@ public:
   bool isFull() const;
 
   Queue<ClientMessage> &getGameQueue();
+  void broadcastExcept(uint32_t excludeId, const std::shared_ptr<const Message> &msg);
+  const GameWorld& getWorld() const;
   bool getIsInstance() const { return isInstance; }
   uint32_t getOriginRoomId() const { return originRoomId; }
 

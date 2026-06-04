@@ -78,6 +78,7 @@ public:
     uint32_t excessGold;
     std::vector<Item> droppedItems;
   };
+  void giveExperience(uint32_t playerId, uint32_t exp, float xpMultiplier = 1.0f);
   DeathResult handlePlayerDeath(uint32_t targetId, uint32_t attackerId);
 
   void addItemOnGround(Item item, int tileX, int tileY);

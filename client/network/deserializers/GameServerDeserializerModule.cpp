@@ -1,4 +1,5 @@
 #include "GameServerDeserializerModule.h"
+#include "common/network/messages/server/player/playerResurrectedMessage.h"
 
 #include <iostream>
 
@@ -151,5 +152,13 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
         const uint8_t newLevel = reader.readUint8();
 
         return std::make_unique<LevelUpMessage>(newLevel);
+    });
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_RESURRECTED),
+    [](PacketReader& reader) -> std::unique_ptr<Message> {
+        const uint32_t playerId = reader.readUint32();
+        const uint16_t tileX   = reader.readUint16();
+        const uint16_t tileY   = reader.readUint16();
+        return std::make_unique<PlayerResurrectedMessage>(playerId, tileX, tileY);
     });
 }

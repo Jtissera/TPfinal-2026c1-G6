@@ -7,7 +7,7 @@ Player::Player(uint32_t clientId, std::string name, const RaceStats &race,
     : clientId(clientId), name(std::move(name)), race(race), cls(cls),
       maxHp(maxHp), maxMana(maxMana), hp(maxHp), mana(maxMana),
       rangedAttackRange(config["combat"]["ranged_attack_range"].value_or(10)),
-      inventory(config) {}
+      inventory() {}
 
 bool Player::isAlive() const { return state == PlayerState::ALIVE; }
 bool Player::isGhost() const { return state == PlayerState::DEAD; }
@@ -192,6 +192,7 @@ int Player::getTileX() const { return tileX; }
 int Player::getTileY() const { return tileY; }
 uint32_t Player::getId() const { return clientId; }
 uint32_t Player::getClientId() const { return clientId; }
+const std::string& Player::getName() const { return name; }
 uint8_t Player::getLevel() const { return level; }
 int16_t Player::getHp() const { return hp; }
 int16_t Player::getMaxHp() const { return maxHp; }

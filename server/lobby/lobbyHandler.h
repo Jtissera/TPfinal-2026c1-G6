@@ -13,6 +13,8 @@
 #include "../common/network/messages/server/lobby/gameListMessage.h"
 #include "../common/network/messages/server/lobby/joinOkMessage.h"
 #include "../common/network/messages/server/lobby/leaveOkMessage.h"
+#include "../common/network/messages/server/world/EntitySpawnMessage.h"
+#include "../common/network/messages/server/player/EntityMoveMessage.h"
 #include "../common/network/protocol/clientOpCode.h"
 #include "../common/queue.h"
 #include "../common/thread.h"

@@ -1,9 +1,9 @@
 
 #include "equipmentDtoFactory.h"
 
-#include "server/game/EquipSlot.h"
-#include "server/game/inventory.h"
-#include "server/game/item.h"
+#include "server/game/items/EquipSlot.h"
+#include "server/game/player/inventory.h"
+#include "server/game/items/item.h"
 
 EquipmentDto buildEquipmentDtoFromPlayer(const Player& player) {
     EquipmentDto dto{};

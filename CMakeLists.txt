@@ -238,9 +238,21 @@ endif()
 # Install
 # 
 
-install(TARGETS taller_client taller_server taller_editor
-    RUNTIME DESTINATION $ENV{HOME}/.local/bin
-)
+set(INSTALL_TARGETS "")
+if(TALLER_CLIENT)
+    list(APPEND INSTALL_TARGETS taller_client)
+endif()
+if(TALLER_SERVER)
+    list(APPEND INSTALL_TARGETS taller_server)
+endif()
+if(TALLER_EDITOR)
+    list(APPEND INSTALL_TARGETS taller_editor)
+endif()
+if(INSTALL_TARGETS)
+    install(TARGETS ${INSTALL_TARGETS}
+        RUNTIME DESTINATION $ENV{HOME}/.local/bin
+    )
+endif()
 
 install(DIRECTORY assets/
     DESTINATION $ENV{HOME}/.local/share/argentum

@@ -17,6 +17,7 @@
 
 #include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"
+#include "common/network/messages/client/cheat/cheatMessage.h"
 
 
 Game::Game() {
@@ -71,14 +72,6 @@ void Game::init(SDL_Window* existingWindow,
     map = new Map(manager, *assets, "terrain", 3, 32);
     map->LoadMap("assets/sprites/MapAssets/mapa.argmap");
 
-    NPCData fakeEnemy;
-    fakeEnemy.npcID = 99;
-    fakeEnemy.type = NpcType::SKELETON;
-    fakeEnemy.x = 600;
-    fakeEnemy.y = 400;
-
-    Entity* e = assets->CreateEnemy(fakeEnemy);
-    enemies[fakeEnemy.npcID] = e;
 }
 
 void Game::handleEvents() {
@@ -299,10 +292,13 @@ void Game::handleCheatKeys() {
         // Ctrl+H — God mode (vida + mana infinitos)
         case SDLK_h:
             cheatGodMode = !cheatGodMode;
-            if (cheatGodMode) cheatInfMana = false; // god mode incluye mana
+            if (cheatGodMode) cheatInfMana = false;
             showStatusMessage(cheatGodMode
                 ? "[CHEAT] God mode ON"
                 : "[CHEAT] God mode OFF");
+            // Notificar al servidor: toggle HP infinito
+            sendQueue->try_push(
+                std::make_shared<const CheatMessage>(CheatType::INFINITE_HP));
             break;
 
         // Ctrl+M — Mana infinito (solo mana)
@@ -312,10 +308,13 @@ void Game::handleCheatKeys() {
                 showStatusMessage(cheatInfMana
                     ? "[CHEAT] Mana infinito ON"
                     : "[CHEAT] Mana infinito OFF");
+                // Notificar al servidor
+                sendQueue->try_push(
+                    std::make_shared<const CheatMessage>(CheatType::INFINITE_MANA));
             }
             break;
 
-        // Ctrl+K — Morir
+        // Ctrl+K — Morir instantáneamente (servidor aplica la muerte)
         case SDLK_k:
             if (!playerState.isDead) {
                 showStatusMessage("[CHEAT] Muriendo...");
@@ -323,6 +322,8 @@ void Game::handleCheatKeys() {
                 cheatInfMana = false;
                 playerState.hp = 0;
                 applyLocalPlayerGhostState();
+                sendQueue->try_push(
+                    std::make_shared<const CheatMessage>(CheatType::DIE));
             }
             break;
 
@@ -331,6 +332,8 @@ void Game::handleCheatKeys() {
             playerState.level = std::min(playerState.level + 1, 99);
             showStatusMessage("[CHEAT] Nivel: " + std::to_string(playerState.level));
             break;
+
+        // Ctrl+R — Resucitar (ya conectado al servidor)
         case SDLK_r:
             if (isLocalPlayerDead()) {
                 sendQueue->try_push(std::make_shared<const ResurrectMessage>());

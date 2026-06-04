@@ -58,6 +58,7 @@ void ActionDispatcher::sendInventory(uint32_t id, Player &p, Monitor &monitor)
 {
   monitor.sendTo(id, std::make_shared<const InventoryUpdateMessage>(
                          p.getInventory().getItems(),
+                         p.getInventory().getInventorySlots(),
                          p.getInventory().getEquippedArray()));
 }
 
@@ -75,9 +76,7 @@ void ActionDispatcher::handleMove(uint32_t id, const Message &msg,
 
   if (world.movePlayer(id, moveMsg.getDirection()))
   {
-    monitor.sendTo(id, std::make_shared<const EntityMoveMessage>(
-                           static_cast<uint8_t>(id), world.getPixelX(id),
-                           world.getPixelY(id)));
+    monitor.sendTo(id, std::make_shared<const EntityMoveMessage>(static_cast<uint8_t>(id), world.getPixelX(id), world.getPixelY(id), Direction::NONE, false));
   }
 }
 
@@ -170,9 +169,7 @@ void ActionDispatcher::handleResurrect(uint32_t id, const Message &msg,
 
   world.resurrectPlayer(id, 6, 7);
 
-  monitor.sendTo(id, std::make_shared<const EntityMoveMessage>(
-                         static_cast<uint8_t>(id), world.getPixelX(id),
-                         world.getPixelY(id)));
+  monitor.sendTo(id, std::make_shared<const EntityMoveMessage>(static_cast<uint8_t>(id), world.getPixelX(id), world.getPixelY(id), Direction::NONE, false));
   sendStats(id, p, monitor);
 }
 
@@ -182,21 +179,21 @@ void ActionDispatcher::handleEquipItem(uint32_t id, const Message &msg,
   const auto &equipMsg = static_cast<const EquipItemMessage &>(msg);
   Player &p = world.getPlayer(id);
 
-  const Item *item = p.getInventory().findItem(equipMsg.getItemId());
+  const Item *item = p.getInventory().findItem(equipMsg.getItemInstanceId());
   if (!item)
     return;
 
   if (item->slot == ItemSlot::CONSUMABLE)
   {
     Item copy = *item;
-    p.getInventory().removeItem(equipMsg.getItemId());
+    p.getInventory().removeItem(equipMsg.getItemInstanceId());
     effects.apply(copy, p, nullptr);
     sendStats(id, p, monitor);
     sendInventory(id, p, monitor);
     return;
   }
 
-  if (p.getInventory().equipItem(equipMsg.getItemId()))
+  if (p.getInventory().equipItem(equipMsg.getItemInstanceId()))
     sendInventory(id, p, monitor);
 }
 

@@ -45,3 +45,13 @@ void Monitor::broadcast(const std::shared_ptr<const Message> &message) {
     entry.queue.try_push(message);
   }
 }
+
+void Monitor::broadcastExcept(uint32_t excludeId,
+                               const std::shared_ptr<const Message> &message) {
+  std::unique_lock<std::mutex> lock(mutex);
+  for (auto &entry : entries) {
+    if (entry.clientId != excludeId) {
+      entry.queue.try_push(message);
+    }
+  }
+}

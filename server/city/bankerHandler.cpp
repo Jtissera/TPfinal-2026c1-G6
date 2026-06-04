@@ -6,7 +6,7 @@ BankerHandler::BankerHandler(BankRepository &bankRepo)
 CityResult BankerHandler::handleDeposit(Player &player,
                                         const std::string &itemName)
 {
-    auto removed = player.getInventory().removeItem(itemName);
+    auto removed = player.getInventory().removeItemByName(itemName);
     if (!removed)
         return {false, "No tenés '" + itemName + "' en el inventario."};
 

@@ -61,3 +61,9 @@ void GameRoom::start() { gameLoop.start(); }
 void GameRoom::stop() { gameLoop.stop(); }
 
 void GameRoom::join() { gameLoop.join(); }
+void GameRoom::broadcastExcept(uint32_t excludeId,
+                                const std::shared_ptr<const Message> &msg) {
+  monitor.broadcastExcept(excludeId, msg);
+}
+
+const GameWorld& GameRoom::getWorld() const { return world; }

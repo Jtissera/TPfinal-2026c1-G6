@@ -23,6 +23,7 @@ public:
   void sendTo(uint32_t clientId, const std::shared_ptr<const Message> &message);
 
   void broadcast(const std::shared_ptr<const Message> &message);
+  void broadcastExcept(uint32_t excludeId, const std::shared_ptr<const Message> &message);
 
   uint8_t size() const;
 

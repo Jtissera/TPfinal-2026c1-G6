@@ -1,4 +1,6 @@
 #pragma once
+#include <map>
+#include <string>
 
 
 #include <array>
@@ -23,6 +25,7 @@ public:
   bool equipItem(uint32_t itemId);
   bool unequipSlot(EquipSlot slot);
   std::optional<Item> removeItem(uint32_t itemId);
+  std::optional<Item> removeItemByName(const std::string &typeName);
 
   const Item *getEquipped(EquipSlot slot) const;
   const std::vector<Item> &getItems() const;

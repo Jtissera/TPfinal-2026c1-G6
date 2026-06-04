@@ -150,3 +150,18 @@ uint32_t GameManager::getOriginRoomId(uint32_t instanceRoomId) const
     return 0;
   return it->second->getOriginRoomId();
 }
+void GameManager::broadcastExceptInGame(
+    uint32_t gameId, uint32_t excludeId,
+    const std::shared_ptr<const Message> &msg) {
+  std::unique_lock<std::mutex> lock(mutex);
+  auto it = rooms.find(gameId);
+  if (it != rooms.end())
+    it->second->broadcastExcept(excludeId, msg);
+}
+
+const GameWorld* GameManager::getGameWorld(uint32_t gameId) const {
+  std::unique_lock<std::mutex> lock(mutex);
+  auto it = rooms.find(gameId);
+  if (it == rooms.end()) return nullptr;
+  return &it->second->getWorld();
+}

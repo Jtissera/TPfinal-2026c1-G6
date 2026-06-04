@@ -163,6 +163,67 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message)
     return;
   }
 
+  // Antes de mover el player, capturamos su DTO para el broadcast
+  PlayerDto newDto;
+  newDto.nombre    = player->getName();
+  newDto.playerID  = static_cast<uint8_t>(clientId);
+  newDto.raza      = player->getRace().name;
+  newDto.clase     = player->getCls().name;
+  newDto.headId    = 0;
+  newDto.level     = player->getLevel();
+  newDto.hp        = player->getHp();
+  newDto.mana      = player->getMana();
+  newDto.hpMax     = player->getMaxHp();
+  newDto.manaMax   = player->getMaxMana();
+  newDto.oro       = player->getGold();
+  newDto.oroMax    = 9999;
+  newDto.xpos      = static_cast<uint16_t>(player->getTileX() * 32);
+  newDto.ypos      = static_cast<uint16_t>(player->getTileY() * 32);
+  newDto.exp       = player->getExp();
+  newDto.expMax    = 0;
+  newDto.esFantasma = player->isGhost();
+  newDto.fuerza        = player->getStrength();
+  newDto.agilidad      = player->getAgility();
+  newDto.inteligencia  = 0;
+  newDto.constitucion  = 0;
+
+  // Avisar a los jugadores ya en sala que spawneó uno nuevo
+  gameManager.broadcastExceptInGame(
+      gameId, clientId,
+      std::make_shared<const EntitySpawnMessage>(newDto));
+
+  // Enviar al jugador nuevo los spawns de quienes ya están en sala
+  const GameWorld *world = gameManager.getGameWorld(gameId);
+  if (world) {
+    for (const auto &[otherId, otherPlayer] : world->getPlayers()) {
+      if (otherId == clientId) continue;
+      PlayerDto otherDto;
+      otherDto.nombre    = otherPlayer.getName();
+      otherDto.playerID  = static_cast<uint8_t>(otherId);
+      otherDto.raza      = otherPlayer.getRace().name;
+      otherDto.clase     = otherPlayer.getCls().name;
+      otherDto.headId    = 0;
+      otherDto.level     = otherPlayer.getLevel();
+      otherDto.hp        = otherPlayer.getHp();
+      otherDto.mana      = otherPlayer.getMana();
+      otherDto.hpMax     = otherPlayer.getMaxHp();
+      otherDto.manaMax   = otherPlayer.getMaxMana();
+      otherDto.oro       = otherPlayer.getGold();
+      otherDto.oroMax    = 9999;
+      otherDto.xpos      = static_cast<uint16_t>(otherPlayer.getTileX() * 32);
+      otherDto.ypos      = static_cast<uint16_t>(otherPlayer.getTileY() * 32);
+      otherDto.exp       = otherPlayer.getExp();
+      otherDto.expMax    = 0;
+      otherDto.esFantasma = otherPlayer.isGhost();
+      otherDto.fuerza        = otherPlayer.getStrength();
+      otherDto.agilidad      = otherPlayer.getAgility();
+      otherDto.inteligencia  = 0;
+      otherDto.constitucion  = 0;
+      clientQueue->try_push(
+          std::make_shared<const EntitySpawnMessage>(std::move(otherDto)));
+    }
+  }
+
   gameManager.addPlayerToGame(gameId, std::move(*player));
   playerRepo.remove(clientId);
 
@@ -181,7 +242,7 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message)
     }
 
   clientQueue->try_push(
-      std::make_shared<const JoinOkMessage>(gameId, gameName));
+      std::make_shared<const JoinOkMessage>(gameId, gameName, newDto));
 }
 
 void LobbyHandler::handleLeaveGame(LeaveEvent &event)
