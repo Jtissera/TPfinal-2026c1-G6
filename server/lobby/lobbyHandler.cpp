@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "lobbyHandler.h"
 
 #include "../common/network/messages/client/lobby/createGameMessage.h"
@@ -129,12 +130,16 @@ void LobbyHandler::handleCreateChar(
 
   try
   {
+    std::string raza = msg.getRaza();
+    std::transform(raza.begin(), raza.end(), raza.begin(), ::tolower);
+    std::string clase = msg.getClase();
+    std::transform(clase.begin(), clase.end(), clase.begin(), ::tolower);
     Player player =
         playerFactory.create(
             clientId,
             msg.getName(),
-            msg.getRaza(),
-            msg.getClase(),
+            raza,
+            clase,
             6,
             7);
 
