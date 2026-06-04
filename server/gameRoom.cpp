@@ -51,10 +51,15 @@ void GameRoom::sendExistingPlayersTo(uint32_t newClientId) {
 
         PlayerDto dto = buildPlayerDto(player);
 
-        monitor.sendTo(
-            newClientId,
-            std::make_shared<const EntitySpawnMessage>(std::move(dto))
-        );
+        monitor.sendTo(newClientId,std::make_shared<const EntitySpawnMessage>(std::move(dto)));
+
+        monitor.sendTo(newClientId,std::make_shared<const PlayerEquipmentUpdateMessage>(playerId,buildEquipmentDtoFromPlayer(player)));
+
+        std::cout << "[GameRoom] enviado existing player="
+                  << playerId
+                  << " a newClientId="
+                  << newClientId
+                  << std::endl;
     }
 }
 
@@ -63,9 +68,13 @@ void GameRoom::broadcastPlayerSpawn(uint32_t playerId) {
 
     PlayerDto dto = buildPlayerDto(player);
 
-    monitor.broadcast(
-        std::make_shared<const EntitySpawnMessage>(std::move(dto))
-    );
+    monitor.broadcast(std::make_shared<const EntitySpawnMessage>(std::move(dto)));
+
+    monitor.broadcast(std::make_shared<const PlayerEquipmentUpdateMessage>(playerId,buildEquipmentDtoFromPlayer(player)));
+
+    std::cout << "[GameRoom] broadcast spawn playerId="
+              << playerId
+              << std::endl;
 }
 
 PlayerDto GameRoom::buildPlayerDto(const Player& player) const {
@@ -121,10 +130,25 @@ PlayerDto GameRoom::buildPlayerDto(const Player& player) const {
 }
 
 void GameRoom::syncPlayerJoin(uint32_t newPlayerId) {
-    // Al jugador nuevo le enviamos los jugadores que ya estaban en la sala.
-    sendExistingPlayersTo(newPlayerId);
-    broadcastPlayerSpawn(newPlayerId);
+    std::cout << "[GameRoom] syncPlayerJoin newPlayerId="
+              << newPlayerId
+              << std::endl;
+
+    if (!world.hasPlayer(newPlayerId)) {
+        std::cerr << "[GameRoom] syncPlayerJoin jugador inexistente id="
+                  << newPlayerId
+                  << std::endl;
+        return;
+    }
+
+    // 1. El jugador nuevo recibe su inventario.
     sendInventoryTo(newPlayerId);
+
+    // 2. El jugador nuevo recibe los jugadores que ya estaban.
+    sendExistingPlayersTo(newPlayerId);
+
+    // 3. Todos reciben el spawn del jugador nuevo.
+    broadcastPlayerSpawn(newPlayerId);
 }
 
 void GameRoom::sendInventoryTo(uint32_t playerId) {

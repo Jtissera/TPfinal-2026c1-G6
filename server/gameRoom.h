@@ -9,6 +9,8 @@
 #include "gameLoop.h"
 #include "monitorQueues.h"
 #include "game/Player.h"
+#include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
+#include "server/game/equipmentDtoFactory.h"
 
 class GameRoom {
 public:

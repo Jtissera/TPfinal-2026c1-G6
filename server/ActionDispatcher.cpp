@@ -3,7 +3,7 @@
 #include "common/network/messages/client/combat/enemyHitPlayerMessage.h"
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
-
+#include "server/game/equipmentDtoFactory.h"
 
 ActionDispatcher::ActionDispatcher() {
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_MOVE)]       = &ActionDispatcher::handleMove;
@@ -316,7 +316,7 @@ void ActionDispatcher::handleEquipItem(uint32_t id,const Message& msg,GameWorld&
 
     sendInventory(id, player, monitor);
     std::cout << "[SERVER EQUIP UPDATE] broadcast playerId="<< id << std::endl;
-    monitor.broadcast(std::make_shared<const PlayerEquipmentUpdateMessage>(id,buildEquipmentDto(player)));
+    monitor.broadcast(std::make_shared<const PlayerEquipmentUpdateMessage>(id,buildEquipmentDtoFromPlayer(player)));
 }
 
 void ActionDispatcher::handleEnemyHitPlayer(
@@ -383,7 +383,7 @@ void ActionDispatcher::handleUnequipSlot(uint32_t id,const Message& msg,GameWorl
     std::cout << "[SERVER EQUIP UPDATE] broadcast playerId="
           << id
           << std::endl;
-    monitor.broadcast(std::make_shared<const PlayerEquipmentUpdateMessage>(id,buildEquipmentDto(player)));
+    monitor.broadcast(std::make_shared<const PlayerEquipmentUpdateMessage>(id,buildEquipmentDtoFromPlayer(player)));
 }
 
 void ActionDispatcher::handleUseItem(
@@ -450,35 +450,4 @@ void ActionDispatcher::handleUseItem(
 
     sendStats(id, player, monitor);
     sendInventory(id, player, monitor);
-}
-
-EquipmentDto ActionDispatcher::buildEquipmentDto(const Player& player) const {
-    // DTO visual que se mandará a otros clientes.
-    // Cada campo es catalogId, no instanceId.
-    EquipmentDto dto{};
-
-    // Obtenemos el inventario real del jugador en server.
-    const Inventory& inventory = player.getInventory();
-
-    // Si hay arma equipada, mandamos su catalogId.
-    if (const Item* weapon = inventory.getEquipped(EquipSlot::HAND)) {
-        dto.weaponCatalogId = weapon->catalogId;
-    }
-
-    // Si hay armadura equipada, mandamos su catalogId.
-    if (const Item* armor = inventory.getEquipped(EquipSlot::ARMOR)) {
-        dto.armorCatalogId = armor->catalogId;
-    }
-
-    // Si hay casco/capucha equipada, mandamos su catalogId.
-    if (const Item* helmet = inventory.getEquipped(EquipSlot::HELMET)) {
-        dto.helmetCatalogId = helmet->catalogId;
-    }
-
-    // Si hay escudo equipado, mandamos su catalogId.
-    if (const Item* shield = inventory.getEquipped(EquipSlot::SHIELD)) {
-        dto.shieldCatalogId = shield->catalogId;
-    }
-
-    return dto;
 }
