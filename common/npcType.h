@@ -145,3 +145,23 @@ inline bool isSpawnable(NpcType type)
     return type != NpcType::NONE && !npcTypeKey(type).empty();
   }
 }
+inline NpcType npcTypeFromKey(const std::string& key) {
+  if (key == "priest")            return NpcType::PRIEST;
+  if (key == "merchant")         return NpcType::MERCHANT;
+  if (key == "banker")           return NpcType::BANKER;
+  if (key == "goblin")           return NpcType::GOBLIN;
+  if (key == "skeleton")         return NpcType::SKELETON;
+  if (key == "zombie")           return NpcType::ZOMBIE;
+  if (key == "guard")            return NpcType::GUARD;
+  if (key == "goblin_cave")      return NpcType::GOBLIN_CAVE;
+  if (key == "skeleton_cave")    return NpcType::SKELETON_CAVE;
+  if (key == "spider_cave")      return NpcType::SPIDER_CAVE;
+  if (key == "golem_cave")       return NpcType::GOLEM_CAVE;
+  if (key == "goblin_dungeon")   return NpcType::GOBLIN_DUNGEON;
+  if (key == "skeleton_dungeon") return NpcType::SKELETON_DUNGEON;
+  if (key == "spider_dungeon")   return NpcType::SPIDER_DUNGEON;
+  if (key == "golem_dungeon")    return NpcType::GOLEM_DUNGEON;
+  if (key == "goblin_desert")    return NpcType::GOBLIN_DESERT;
+  if (key == "skeleton_desert")  return NpcType::SKELETON_DESERT;
+  return NpcType::NONE;
+}
