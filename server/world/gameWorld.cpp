@@ -220,18 +220,56 @@ std::optional<uint32_t> GameWorld::pickGoldAt(int tileX, int tileY)
     return groundManager.pickGoldAt(tileX, tileY);
 }
 
-void GameWorld::spawnNpc(const std::string &typeName, int tileX, int tileY)
-{
-    spawnManager.spawnNpc(typeName, tileX, tileY);
+void GameWorld::spawnNpc(const std::string& typeName, int tileX, int tileY) {
+    if (!collision.isWalkable(tileX, tileY)) {
+        std::cout << "[WORLD NPC] no spawn. tile no caminable typeName="
+                  << typeName
+                  << " tile=("
+                  << tileX
+                  << ","
+                  << tileY
+                  << ")"
+                  << std::endl;
+        return;
+    }
+
+    if (occupancy.isOccupied(tileX, tileY)) {
+        std::cout << "[WORLD NPC] no spawn. tile ocupado typeName="
+                  << typeName
+                  << " tile=("
+                  << tileX
+                  << ","
+                  << tileY
+                  << ")"
+                  << std::endl;
+        return;
+    }
+
+    const uint32_t npcId = npcManager.spawnNpc(typeName, tileX, tileY);
+
+    occupancy.occupy(tileX, tileY, npcId);
+
+    std::cout << "[WORLD NPC] spawned npcId="
+              << npcId
+              << " typeName="
+              << typeName
+              << " tile=("
+              << tileX
+              << ","
+              << tileY
+              << ")"
+              << std::endl;
 }
 
 void GameWorld::spawnMapNpcs() {
     std::cout << "[WORLD NPC] spawnMapNpcs iniciado. map="
-          << mapData.width()
-          << "x"
-          << mapData.height()
-          << std::endl;
+              << mapData.width()
+              << "x"
+              << mapData.height()
+              << std::endl;
+
     int npcTilesFound = 0;
+    int npcSpawned = 0;
 
     for (uint16_t y = 0; y < mapData.height(); ++y) {
         for (uint16_t x = 0; x < mapData.width(); ++x) {
@@ -242,16 +280,31 @@ void GameWorld::spawnMapNpcs() {
                 continue;
             }
 
+            ++npcTilesFound;
+
+            // Evitamos spawnear NPCs no combatibles si el mapa los marca.
+            if (!isSpawnable(tile.npc)) {
+                std::cout << "[WORLD NPC] npc no spawnable en x="
+                          << x
+                          << " y="
+                          << y
+                          << " npcType="
+                          << static_cast<int>(tile.npc)
+                          << std::endl;
+                continue;
+            }
+
             const std::string typeName = npcTypeKey(tile.npc);
+
             std::cout << "[WORLD NPC] tile con npc en x="
-          << x
-          << " y="
-          << y
-          << " npcType="
-          << static_cast<int>(tile.npc)
-          << " key="
-          << typeName
-          << std::endl;
+                      << x
+                      << " y="
+                      << y
+                      << " npcType="
+                      << static_cast<int>(tile.npc)
+                      << " key="
+                      << typeName
+                      << std::endl;
 
             // Si no hay key válida, ignoramos el NPC.
             if (typeName.empty()) {
@@ -262,9 +315,9 @@ void GameWorld::spawnMapNpcs() {
             spawnPoints.push_back({typeName, {x, y}});
 
             // Spawn inicial con desplazamiento aleatorio alrededor del punto base.
-            int attempts = 0;
+            bool spawned = false;
 
-            while (attempts < 10) {
+            for (int attempts = 0; attempts < 10; ++attempts) {
                 const int dx = (std::rand() % 7) - 3;
                 const int dy = (std::rand() % 7) - 3;
 
@@ -274,16 +327,31 @@ void GameWorld::spawnMapNpcs() {
                 if (collision.isWalkable(tx, ty) &&
                     !occupancy.isOccupied(tx, ty)) {
                     spawnNpc(typeName, tx, ty);
+                    spawned = true;
+                    ++npcSpawned;
                     break;
-                    }
+                }
+            }
 
-                ++attempts;
+            if (!spawned) {
+                std::cout << "[WORLD NPC] no se pudo spawnear typeName="
+                          << typeName
+                          << " alrededor de x="
+                          << x
+                          << " y="
+                          << y
+                          << std::endl;
             }
         }
     }
+
     std::cout << "[WORLD NPC] spawnMapNpcs terminado. npcTilesFound="
-          << npcTilesFound
-          << std::endl;
+              << npcTilesFound
+              << " npcSpawned="
+              << npcSpawned
+              << " spawnPoints="
+              << spawnPoints.size()
+              << std::endl;
 }
 
 const std::unordered_map<uint32_t, Npc> &GameWorld::getNpcs() const
