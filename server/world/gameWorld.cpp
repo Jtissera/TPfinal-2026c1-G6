@@ -73,33 +73,69 @@ std::optional<Player> GameWorld::removePlayer(uint32_t id)
 
 bool GameWorld::movePlayer(uint32_t id, Direction dir) {
     auto it = players.find(id);
-    if (it == players.end()) return false;
 
-    Player& p = it->second;
-    if (p.isResurrecting()) return false;
-
-    int dx = 0, dy = 0;
-    switch (dir) {
-        case Direction::UP:    dy = -1; break;
-        case Direction::DOWN:  dy =  1; break;
-        case Direction::LEFT:  dx = -1; break;
-        case Direction::RIGHT: dx =  1; break;
-        default: return false;
+    if (it == players.end()) {
+        return false;
     }
 
-    int oldTileX = p.getTileX();
-    int oldTileY = p.getTileY();
-    int newTileX = oldTileX + dx;
-    int newTileY = oldTileY + dy;
+    Player& p = it->second;
 
-    if (!collision.isWalkable(newTileX, newTileY)) return false;
+    if (p.isResurrecting()) {
+        return false;
+    }
 
-    if (oldTileX != newTileX || oldTileY != newTileY) {
-        if (!occupancy.move(oldTileX, oldTileY, newTileX, newTileY, id))
+    // Movimiento fino en píxeles.
+    // Si queda lento, subilo a 5 o 6. No vuelvas a mover por tile.
+
+
+    float dx = 0.0f;
+    float dy = 0.0f;
+
+    switch (dir) {
+        case Direction::UP:
+            dy = -PLAYER_MOVE_STEP;
+            break;
+
+        case Direction::DOWN:
+            dy = PLAYER_MOVE_STEP;
+            break;
+
+        case Direction::LEFT:
+            dx = -PLAYER_MOVE_STEP;
+            break;
+
+        case Direction::RIGHT:
+            dx = PLAYER_MOVE_STEP;
+            break;
+
+        default:
             return false;
     }
 
-    p.setTilePos(newTileX, newTileY);
+    const float currentX = p.getPixelX();
+    const float currentY = p.getPixelY();
+
+    const float nextX = currentX + dx;
+    const float nextY = currentY + dy;
+
+    const int oldTileX = p.getTileX();
+    const int oldTileY = p.getTileY();
+
+    const int newTileX = static_cast<int>(nextX) / tileSize;
+    const int newTileY = static_cast<int>(nextY) / tileSize;
+
+    if (!collision.isWalkable(newTileX, newTileY)) {
+        return false;
+    }
+
+    if (oldTileX != newTileX || oldTileY != newTileY) {
+        if (!occupancy.move(oldTileX, oldTileY, newTileX, newTileY, id)) {
+            return false;
+        }
+    }
+
+    p.setPixelPos(nextX, nextY);
+
     return true;
 }
 
@@ -125,8 +161,8 @@ bool GameWorld::canPlayerAct(uint32_t id) const {
 
 int GameWorld::getTileX(uint32_t id)  const { return players.at(id).getTileX(); }
 int GameWorld::getTileY(uint32_t id)  const { return players.at(id).getTileY(); }
-int GameWorld::getPixelX(uint32_t id) const { return players.at(id).getTileX() * tileSize; }
-int GameWorld::getPixelY(uint32_t id) const { return players.at(id).getTileY() * tileSize; }
+int GameWorld::getPixelX(uint32_t id) const {return static_cast<int>(players.at(id).getPixelX());}
+int GameWorld::getPixelY(uint32_t id) const {return static_cast<int>(players.at(id).getPixelY());}
 
 void GameWorld::giveExperience(uint32_t playerId, uint32_t exp, float xpMultiplier)
 {
@@ -190,28 +226,64 @@ void GameWorld::spawnNpc(const std::string &typeName, int tileX, int tileY)
 }
 
 void GameWorld::spawnMapNpcs() {
+    std::cout << "[WORLD NPC] spawnMapNpcs iniciado. map="
+          << mapData.width()
+          << "x"
+          << mapData.height()
+          << std::endl;
+    int npcTilesFound = 0;
+
     for (uint16_t y = 0; y < mapData.height(); ++y) {
         for (uint16_t x = 0; x < mapData.width(); ++x) {
             const Tile& tile = mapData.at(x, y);
-            if (tile.npc == NpcType::NONE) continue;
+
+            // Si el tile no tiene NPC configurado, no hacemos nada.
+            if (tile.npc == NpcType::NONE) {
+                continue;
+            }
 
             const std::string typeName = npcTypeKey(tile.npc);
-            if (typeName.empty()) continue;
+            std::cout << "[WORLD NPC] tile con npc en x="
+          << x
+          << " y="
+          << y
+          << " npcType="
+          << static_cast<int>(tile.npc)
+          << " key="
+          << typeName
+          << std::endl;
 
+            // Si no hay key válida, ignoramos el NPC.
+            if (typeName.empty()) {
+                continue;
+            }
+
+            // Guardamos el punto base para respawns.
+            spawnPoints.push_back({typeName, {x, y}});
+
+            // Spawn inicial con desplazamiento aleatorio alrededor del punto base.
             int attempts = 0;
+
             while (attempts < 10) {
                 const int dx = (std::rand() % 7) - 3;
                 const int dy = (std::rand() % 7) - 3;
+
                 const int tx = static_cast<int>(x) + dx;
                 const int ty = static_cast<int>(y) + dy;
-                if (collision.isWalkable(tx, ty) && !occupancy.isOccupied(tx, ty)) {
+
+                if (collision.isWalkable(tx, ty) &&
+                    !occupancy.isOccupied(tx, ty)) {
                     spawnNpc(typeName, tx, ty);
                     break;
-                }
+                    }
+
                 ++attempts;
             }
         }
     }
+    std::cout << "[WORLD NPC] spawnMapNpcs terminado. npcTilesFound="
+          << npcTilesFound
+          << std::endl;
 }
 
 const std::unordered_map<uint32_t, Npc> &GameWorld::getNpcs() const
@@ -383,6 +455,8 @@ void GameWorld::loadInitialInventoryForPlayer(Player& player) {
         player.getInventory().addItem(itemRepo.createItem("capucha"));
         player.getInventory().addItem(itemRepo.createItem("pocion_mana"));
         player.getInventory().addItem(itemRepo.createItem("vara_fresno"));
+        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
+        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
         return;
     }
     if (className == "Warrior") {

@@ -58,26 +58,70 @@ void Inventory::removeFromInventorySlots(uint32_t itemId)
       slot = EMPTY_SLOT;
 }
 
-bool Inventory::equipItem(uint32_t itemId)
-{
-  Item *item = findItem(itemId);
-  if (!item)
-    return false;
+bool Inventory::equipItem(uint32_t itemId) {
+  Item* item = findItem(itemId);
 
-  auto slot = toEquipSlot(item->slot);
-  if (!slot)
+  if (!item) {
     return false;
+  }
 
-  equipped[static_cast<std::size_t>(*slot)] = itemId;
+  const auto slot = toEquipSlot(item->slot);
+
+  if (!slot.has_value()) {
+    return false;
+  }
+
+  const auto idx = static_cast<std::size_t>(slot.value());
+
+  if (idx >= equipped.size()) {
+    return false;
+  }
+
+  if (equipped[idx] == itemId) {
+    return true;
+  }
+
+  const uint32_t previousEquippedId = equipped[idx];
+
+  if (previousEquippedId != EMPTY_SLOT) {
+    const auto freeSlot = findFirstFreeInventorySlot();
+
+    if (!freeSlot.has_value()) {
+      return false;
+    }
+
+    inventorySlots[freeSlot.value()] = previousEquippedId;
+  }
+
+  removeFromInventorySlots(itemId);
+
+  equipped[idx] = itemId;
+
   return true;
 }
 
-bool Inventory::unequipSlot(EquipSlot slot)
-{
-  auto idx = static_cast<std::size_t>(slot);
-  if (equipped[idx] == EMPTY_SLOT)
+bool Inventory::unequipSlot(EquipSlot slot) {
+  const auto idx = static_cast<std::size_t>(slot);
+
+  if (idx >= equipped.size()) {
     return false;
+  }
+
+  const uint32_t equippedItemId = equipped[idx];
+
+  if (equippedItemId == EMPTY_SLOT) {
+    return false;
+  }
+
+  const auto freeSlot = findFirstFreeInventorySlot();
+
+  if (!freeSlot.has_value()) {
+    return false;
+  }
+
+  inventorySlots[freeSlot.value()] = equippedItemId;
   equipped[idx] = EMPTY_SLOT;
+
   return true;
 }
 

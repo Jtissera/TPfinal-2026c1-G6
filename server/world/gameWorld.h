@@ -112,7 +112,8 @@ public:
   std::optional<NpcType> getNpcTypeAtTile(int tileX, int tileY) const;
 
 private:
-    static constexpr int TILE_SIZE = 96; //toml
+  static constexpr int TILE_SIZE = 96; //toml
+  static constexpr float PLAYER_MOVE_STEP = 8.0f;
   int tileSize;
   void tickPlayers(float deltaSeconds, WorldTickResult &result);
   void tickNpcs(WorldTickResult &result);
