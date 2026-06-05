@@ -1,6 +1,18 @@
 #include "inventory.h"
 #include <algorithm>
 
+Inventory::Inventory()
+    : maxItems(MAX_INVENTORY_SLOTS) {
+  equipped.fill(EMPTY_SLOT);
+  inventorySlots.fill(EMPTY_SLOT);
+}
+
+Inventory::Inventory(const toml::table& config)
+    : maxItems(config["player"]["max_inventory_items"].value_or<std::size_t>(
+          static_cast<std::size_t>(MAX_INVENTORY_SLOTS))) {
+  equipped.fill(EMPTY_SLOT);
+  inventorySlots.fill(EMPTY_SLOT);
+}
 std::optional<EquipSlot> toEquipSlot(ItemSlot slot)
 {
   const std::map<ItemSlot, EquipSlot> mapping = {
@@ -144,4 +156,12 @@ std::vector<Item> Inventory::removeAllItems()
   std::vector<Item> all = std::move(items);
   items.clear();
   return all;
+}
+
+
+bool Inventory::hasItem(const std::string &name) const
+{
+  return std::any_of(items.begin(), items.end(),
+                     [&](const Item &i)
+                     { return i.typeName == name; });
 }

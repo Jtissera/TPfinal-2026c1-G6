@@ -31,11 +31,11 @@ TEST(InventoryTest, MaxItemsRespected) {
   constexpr std::size_t MAX = 20;
   for (std::size_t i = 0; i < MAX; i++) {
     Item item = makeWeapon(1, 2);
-    item.id = i + 1;
+    item.instanceId = i + 1;
     EXPECT_TRUE(inv.addItem(item));
   }
   Item extra = makeWeapon(1, 2);
-  extra.id = 999;
+  extra.instanceId = 999;
   EXPECT_FALSE(inv.addItem(extra));
 }
 
@@ -51,7 +51,7 @@ TEST(InventoryTest, RemoveAllItemsClearsInventory) {
 TEST(InventoryTest, StaffReplacesWeaponInHand) {
   Inventory inv = makeInventory();
   Item weapon = makeWeapon(5, 10);
-  weapon.id = 1;
+  weapon.instanceId = 1;
   Item staff = makeStaff(2, ItemEffect::DAMAGE, 2, 4, 0, 5);
 
   inv.addItem(weapon);
@@ -59,7 +59,7 @@ TEST(InventoryTest, StaffReplacesWeaponInHand) {
 
   EXPECT_TRUE(inv.equipItem(1));
   EXPECT_TRUE(inv.equipItem(2));
-  EXPECT_EQ(inv.getEquipped(EquipSlot::HAND)->id, 2u);
+  EXPECT_EQ(inv.getEquipped(EquipSlot::HAND)->instanceId, 2u);
 }
 
 TEST(InventoryTest, StaffReplacesStaff) {
@@ -72,7 +72,7 @@ TEST(InventoryTest, StaffReplacesStaff) {
 
   EXPECT_TRUE(inv.equipItem(1));
   EXPECT_TRUE(inv.equipItem(2));
-  EXPECT_EQ(inv.getEquipped(EquipSlot::HAND)->id, 2u);
+  EXPECT_EQ(inv.getEquipped(EquipSlot::HAND)->instanceId, 2u);
 }
 
 // ─── Efectos de items ────────────────────────────────────────────────────────

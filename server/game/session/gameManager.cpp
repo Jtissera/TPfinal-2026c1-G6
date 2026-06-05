@@ -82,11 +82,31 @@ void GameManager::addPlayerToGame(uint32_t gameId, Player player)
 {
   std::unique_lock<std::mutex> lock(mutex);
 
-  auto it = rooms.find(gameId);
-  if (it != rooms.end())
-    it->second->addPlayer(std::move(player));
-}
+  const uint32_t playerId = player.getClientId();
 
+  std::cout << "[GameManager] addPlayerToGame gameId="
+            << gameId
+            << " playerId="
+            << playerId
+            << std::endl;
+
+  auto it = rooms.find(gameId);
+
+  if (it == rooms.end()) {
+    std::cerr << "[GameManager] addPlayerToGame fallo. gameId inexistente="
+              << gameId
+              << std::endl;
+    return;
+  }
+
+  it->second->addPlayer(std::move(player));
+
+  std::cout << "[GameManager] addPlayerToGame OK gameId="
+            << gameId
+            << " playerId="
+            << playerId
+            << std::endl;
+}
 void GameManager::removeClient(uint32_t clientId)
 {
   std::unique_lock<std::mutex> lock(mutex);
@@ -164,4 +184,20 @@ const GameWorld* GameManager::getGameWorld(uint32_t gameId) const {
   auto it = rooms.find(gameId);
   if (it == rooms.end()) return nullptr;
   return &it->second->getWorld();
+}
+
+void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId) {
+  std::unique_lock<std::mutex> lock(mutex);
+
+  auto it = rooms.find(gameId);
+
+  if (it != rooms.end()) {
+    std::cout << "[GameManager] syncPlayerJoin gameId="
+              << gameId
+              << " playerId="
+              << playerId
+              << std::endl;
+
+    it->second->syncPlayerJoin(playerId);
+  }
 }

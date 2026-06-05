@@ -163,5 +163,7 @@ inline NpcType npcTypeFromKey(const std::string& key) {
   if (key == "golem_dungeon")    return NpcType::GOLEM_DUNGEON;
   if (key == "goblin_desert")    return NpcType::GOBLIN_DESERT;
   if (key == "skeleton_desert")  return NpcType::SKELETON_DESERT;
+  if (key == "spider_desert") return NpcType::SPIDER_DESERT;
+  if (key == "golem_desert")  return NpcType::GOLEM_DESERT;
   return NpcType::NONE;
 }

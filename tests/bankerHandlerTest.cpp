@@ -15,7 +15,7 @@ TEST_F(BankerHandlerTest, DepositaItemDelInventario)
     Player player = PlayerBuilder().withId(1).withItem("espada").build();
     auto result = handler.handleDeposit(player, "espada");
     EXPECT_TRUE(result.ok);
-    EXPECT_FALSE(player.getInventory().hasItem("espada"));
+    EXPECT_FALSE(player.getInventory().findItem(1));
     EXPECT_EQ(bankRepo.get(1).getItems().size(), 1u);
 }
 
@@ -30,13 +30,13 @@ TEST_F(BankerHandlerTest, RetiraItemDelBanco)
 {
     Player player = PlayerBuilder().withId(1).build();
     Item item;
-    item.id = 1;
+    item.instanceId = 1;
     item.typeName = "espada";
     item.slot = ItemSlot::WEAPON;
     bankRepo.get(1).depositItem(std::move(item));
     auto result = handler.handleWithdraw(player, "espada");
     EXPECT_TRUE(result.ok);
-    EXPECT_TRUE(player.getInventory().hasItem("espada"));
+    EXPECT_TRUE(player.getInventory().findItem(1));
 }
 
 TEST_F(BankerHandlerTest, RetiraItemInexistenteFalla)

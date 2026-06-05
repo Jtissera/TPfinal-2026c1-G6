@@ -111,7 +111,7 @@
 [[maybe_unused]] static Item makeWeaponWithId(uint32_t id, uint16_t dmgMin,
                                               uint16_t dmgMax) {
   Item item;
-  item.id = id;
+  item.catalogId = id;
   item.typeName = "espada";
   item.slot = ItemSlot::WEAPON;
   item.effect = ItemEffect::NONE;
@@ -184,7 +184,7 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 [[maybe_unused]] static Item makeWeapon(uint16_t dmgMin, uint16_t dmgMax,
                                         bool ranged = false) {
   Item item;
-  item.id = 1;
+  item.catalogId = 1;
   item.typeName = "sword";
   item.slot = ItemSlot::WEAPON;
   item.effect = ItemEffect::NONE;
@@ -196,7 +196,7 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 
 [[maybe_unused]] static Item makeArmor(uint16_t defMin, uint16_t defMax) {
   Item item;
-  item.id = 2;
+  item.catalogId = 2;
   item.typeName = "armor";
   item.slot = ItemSlot::ARMOR;
   item.stats.defenseMin = defMin;
@@ -209,7 +209,7 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
                                        uint16_t healAmt = 0,
                                        uint16_t manaCost = 0) {
   Item item;
-  item.id = id;
+  item.catalogId = id;
   item.typeName =
       (effect == ItemEffect::HEAL) ? "flauta_elfica" : "vara_fresno";
   item.slot = ItemSlot::STAFF;
@@ -225,7 +225,7 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 [[maybe_unused]] static Item makePotion(uint32_t id, uint16_t healAmt,
                                         uint16_t manaAmt) {
   Item item;
-  item.id = id;
+  item.catalogId = id;
   item.typeName = healAmt > 0 ? "pocion_vida" : "pocion_mana";
   item.slot = ItemSlot::CONSUMABLE;
   item.effect = ItemEffect::NONE;

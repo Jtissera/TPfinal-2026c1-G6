@@ -132,119 +132,82 @@ void LobbyHandler::handleCreateGame(uint32_t clientId, const Message &message)
                                     createMsg.getMaxPlayers()));
 }
 
-void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message)
-{
-  const auto &joinMsg = static_cast<const JoinGameMessage &>(message);
-  uint32_t gameId = joinMsg.getGameId();
+void LobbyHandler::handleJoinGame(uint32_t clientId, const Message& message) {
+    const auto& joinMsg = static_cast<const JoinGameMessage&>(message);
+    const uint32_t gameId = joinMsg.getGameId();
 
-  Queue<std::shared_ptr<const Message>> *clientQueue =
-      lobbyMonitor.getQueue(clientId);
-  if (!clientQueue)
-  {
-    lobbyMonitor.sendTo(clientId,
-                        std::make_shared<const ErrorMessage>(
-                            "Internal error: client queue not found"));
-    return;
-  }
+    Queue<std::shared_ptr<const Message>>* clientQueue =
+        lobbyMonitor.getQueue(clientId);
 
-  Player *player = playerRepo.get(clientId);
-  if (!player)
-  {
-    lobbyMonitor.sendTo(clientId,
-                        std::make_shared<const ErrorMessage>(
-                            "Must create a character before joining"));
-    return;
-  }
-
-  if (!gameManager.joinGame(gameId, clientId, *clientQueue))
-  {
-    lobbyMonitor.sendTo(clientId, std::make_shared<const ErrorMessage>(
-                                      "Game not found or full"));
-    return;
-  }
-
-  // Antes de mover el player, capturamos su DTO para el broadcast
-  PlayerDto newDto;
-  newDto.nombre    = player->getName();
-  newDto.playerID  = static_cast<uint8_t>(clientId);
-  newDto.raza      = player->getRace().name;
-  newDto.clase     = player->getCls().name;
-  newDto.headId    = 0;
-  newDto.level     = player->getLevel();
-  newDto.hp        = player->getHp();
-  newDto.mana      = player->getMana();
-  newDto.hpMax     = player->getMaxHp();
-  newDto.manaMax   = player->getMaxMana();
-  newDto.oro       = player->getGold();
-  newDto.oroMax    = 9999;
-  newDto.xpos      = static_cast<uint16_t>(player->getTileX() * 32);
-  newDto.ypos      = static_cast<uint16_t>(player->getTileY() * 32);
-  newDto.exp       = player->getExp();
-  newDto.expMax    = 0;
-  newDto.esFantasma = player->isGhost();
-  newDto.fuerza        = player->getStrength();
-  newDto.agilidad      = player->getAgility();
-  newDto.inteligencia  = 0;
-  newDto.constitucion  = 0;
-
-  // Avisar a los jugadores ya en sala que spawneó uno nuevo
-  gameManager.broadcastExceptInGame(
-      gameId, clientId,
-      std::make_shared<const EntitySpawnMessage>(newDto));
-
-  // Enviar al jugador nuevo los spawns de quienes ya están en sala
-  const GameWorld *world = gameManager.getGameWorld(gameId);
-  if (world) {
-    for (const auto &[otherId, otherPlayer] : world->getPlayers()) {
-      if (otherId == clientId) continue;
-      PlayerDto otherDto;
-      otherDto.nombre    = otherPlayer.getName();
-      otherDto.playerID  = static_cast<uint8_t>(otherId);
-      otherDto.raza      = otherPlayer.getRace().name;
-      otherDto.clase     = otherPlayer.getCls().name;
-      otherDto.headId    = 0;
-      otherDto.level     = otherPlayer.getLevel();
-      otherDto.hp        = otherPlayer.getHp();
-      otherDto.mana      = otherPlayer.getMana();
-      otherDto.hpMax     = otherPlayer.getMaxHp();
-      otherDto.manaMax   = otherPlayer.getMaxMana();
-      otherDto.oro       = otherPlayer.getGold();
-      otherDto.oroMax    = 9999;
-      otherDto.xpos      = static_cast<uint16_t>(otherPlayer.getTileX() * 32);
-      otherDto.ypos      = static_cast<uint16_t>(otherPlayer.getTileY() * 32);
-      otherDto.exp       = otherPlayer.getExp();
-      otherDto.expMax    = 0;
-      otherDto.esFantasma = otherPlayer.isGhost();
-      otherDto.fuerza        = otherPlayer.getStrength();
-      otherDto.agilidad      = otherPlayer.getAgility();
-      otherDto.inteligencia  = 0;
-      otherDto.constitucion  = 0;
-      clientQueue->try_push(
-          std::make_shared<const EntitySpawnMessage>(std::move(otherDto)));
-    }
-  }
-
-  gameManager.addPlayerToGame(gameId, std::move(*player));
-  playerRepo.remove(clientId);
-
-  auto *receiver = receiverRegistry.get(clientId);
-  if (receiver)
-    receiver->setQueue(gameManager.getGameQueue(gameId));
-
-  lobbyMonitor.removeQueue(clientId);
-
-  std::string gameName;
-  for (const auto &info : gameManager.listGames())
-    if (info.gameId == gameId)
-    {
-      gameName = info.gameName;
-      break;
+    if (!clientQueue) {
+        lobbyMonitor.sendTo(
+            clientId,
+            std::make_shared<const ErrorMessage>(
+                "Internal error: client queue not found"
+            )
+        );
+        return;
     }
 
-  clientQueue->try_push(
-      std::make_shared<const JoinOkMessage>(gameId, gameName, newDto));
+    Player* player = playerRepo.get(clientId);
+
+    if (!player) {
+        lobbyMonitor.sendTo(
+            clientId,
+            std::make_shared<const ErrorMessage>(
+                "Must create a character before joining"
+            )
+        );
+        return;
+    }
+
+    if (!gameManager.joinGame(gameId, clientId, *clientQueue)) {
+        lobbyMonitor.sendTo(
+            clientId,
+            std::make_shared<const ErrorMessage>("Game not found or full")
+        );
+        return;
+    }
+
+    // Armamos DTO antes de mover el Player.
+    PlayerDto playerDto = buildPlayerDto(*player);
+
+    // Ahora sí, el jugador entra al GameWorld.
+    gameManager.addPlayerToGame(gameId, std::move(*player));
+    playerRepo.remove(clientId);
+
+    std::string gameName;
+
+    for (const auto& info : gameManager.listGames()) {
+        if (info.gameId == gameId) {
+            gameName = info.gameName;
+            break;
+        }
+    }
+
+    // Primero avisamos al cliente que ya entró.
+    // Esto evita que siga operando como lobby mientras el server ya lo trata como game.
+    clientQueue->try_push(
+        std::make_shared<const JoinOkMessage>(
+            gameId,
+            gameName,
+            std::move(playerDto)
+        )
+    );
+
+    // Después redirigimos los mensajes entrantes del cliente a la cola del juego.
+    auto* receiver = receiverRegistry.get(clientId);
+
+    if (receiver) {
+        receiver->setQueue(gameManager.getGameQueue(gameId));
+    }
+
+    // Ya no debe recibir mensajes desde el monitor del lobby.
+    lobbyMonitor.removeQueue(clientId);
+
+    // Finalmente sincronizamos inventario, jugadores existentes y spawn.
+    gameManager.syncPlayerJoin(gameId, clientId);
 }
-
 void LobbyHandler::handleLeaveGame(LeaveEvent &event)
 {
   gameManager.removeClient(event.clientId);
@@ -288,4 +251,56 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
     if (receiver)
       receiver->setQueue(gameManager.getGameQueue(instanceId));
   }
+}
+
+PlayerDto LobbyHandler::buildPlayerDto(const Player& player) const {
+  PlayerDto dto{};
+
+  // Identidad del jugador.
+  dto.playerID = static_cast<uint8_t>(player.getClientId());
+
+  // Nombre del personaje.
+  dto.nombre = player.getName();
+
+  // Raza y clase.
+  // Si estos campos no existen como .name, abajo te digo cómo resolverlo.
+  dto.raza = player.getRace().name;
+  std::cout << "[SERVER DTO] raza='" << dto.raza << "'" << std::endl;
+  dto.clase = player.getCls().name;
+  std::cout << "[SERVER DTO] clase='" << dto.clase << "'" << std::endl;
+
+  // Apariencia inicial.
+  dto.headId = 0;
+
+  // Progresión.
+  dto.level = player.getLevel();
+
+  // Vida y maná.
+  dto.hp = player.getHp();
+  dto.hpMax = player.getMaxHp();
+  dto.mana = player.getMana();
+  dto.manaMax = player.getMaxMana();
+
+  // Economía.
+  dto.oro = static_cast<int>(player.getGold());
+  dto.oroMax = 0;
+
+  // Posición.
+  dto.xpos = static_cast<uint16_t>(player.getPixelX());
+  dto.ypos = static_cast<uint16_t>(player.getPixelY());
+
+  // Experiencia.
+  dto.exp = static_cast<int>(player.getExp());
+  dto.expMax = 1000;
+
+  // Estado lógico.
+  dto.esFantasma = player.isGhost();
+
+  // Atributos.
+  dto.fuerza = player.getStrength();
+  dto.agilidad = player.getAgility();
+  dto.inteligencia = 10;
+  dto.constitucion = 10;
+
+  return dto;
 }

@@ -48,9 +48,11 @@ public:
   std::vector<Item> purgeInventoryOnDeath();
 
   void setTilePos(int tx, int ty);
+  void setPixelPos(float tx, float ty);
 
-  int getTileX() const override;
-  int getTileY() const override;
+
+  int getTileX() const override { return static_cast<int>(pixelX) / TILE_SIZE; }
+  int getTileY() const override{ return static_cast<int>(pixelY)/ TILE_SIZE; }
   uint32_t getId() const override;
   uint32_t getClientId() const;
   const std::string& getName() const;
@@ -64,6 +66,13 @@ public:
   uint8_t getAgility() const override;
   uint8_t getStrength() const override;
   int getAttackRange() const override;
+
+
+  // Devuelve la posición X real en píxeles.
+  float getPixelX() const;
+
+  // Devuelve la posición Y real en píxeles.
+  float getPixelY() const;
 
   uint16_t getWeaponDamageMin() const override;
   uint16_t getWeaponDamageMax() const override;
@@ -100,9 +109,13 @@ private:
   std::string name;
   const RaceStats &race;
   const ClassStats &cls;
+  const int TILE_SIZE = 96;
 
   int tileX = 0;
   int tileY = 0;
+
+  float pixelX;
+  float pixelY;
 
   uint8_t level = 1;
   int16_t hp = 0;

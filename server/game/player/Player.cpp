@@ -182,14 +182,7 @@ uint16_t Player::getShieldDefenseMax() const
   return s ? s->stats.defenseMax : 0;
 }
 
-void Player::setTilePos(int tx, int ty)
-{
-  tileX = tx;
-  tileY = ty;
-}
 
-int Player::getTileX() const { return tileX; }
-int Player::getTileY() const { return tileY; }
 uint32_t Player::getId() const { return clientId; }
 uint32_t Player::getClientId() const { return clientId; }
 const std::string& Player::getName() const { return name; }
@@ -233,3 +226,37 @@ void Player::spendGold(uint32_t amount)
 {
   gold = (gold >= amount) ? gold - amount : 0;
 }
+
+float Player::getPixelX() const {
+  // Devuelve la posición real en píxeles.
+  return pixelX;
+}
+
+float Player::getPixelY() const {
+  // Devuelve la posición real en píxeles.
+  return pixelY;
+}
+
+void Player::setPixelPos(float x, float y) {
+  // Actualiza la posición real del jugador.
+  pixelX = x;
+  pixelY = y;
+  tileX = static_cast<int>(pixelX) / TILE_SIZE;
+  tileY = static_cast<int>(pixelY) / TILE_SIZE;
+}
+
+void Player::setTilePos(int tx, int ty) {
+  // Guarda el tile lógico.
+  tileX = tx;
+
+  // Guarda el tile lógico.
+  tileY = ty;
+
+  // Sincroniza la posición real en píxeles.
+  // Esto sirve para spawn, respawn o teletransporte controlado.
+  pixelX = static_cast<float>(tx * TILE_SIZE);
+
+  // Sincroniza la posición real en píxeles.
+  pixelY = static_cast<float>(ty * TILE_SIZE);
+}
+

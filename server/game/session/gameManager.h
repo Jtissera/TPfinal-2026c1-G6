@@ -43,6 +43,7 @@ public:
   Queue<ClientMessage> &getGameQueue(uint32_t gameId);
   void broadcastExceptInGame(uint32_t gameId, uint32_t excludeId, const std::shared_ptr<const Message> &msg);
   const GameWorld* getGameWorld(uint32_t gameId) const;
+    void syncPlayerJoin(uint32_t gameId, uint32_t playerId);
 
 private:
   const toml::table &config;

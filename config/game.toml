@@ -337,8 +337,6 @@ damage_max = 0
 
 [world]
 tile_size = 96
-[world]
-tile_size = 96
 
 
 [cavern]

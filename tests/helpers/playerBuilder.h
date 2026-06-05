@@ -67,7 +67,7 @@ public:
         for (const auto &typeName : _items)
         {
             Item item;
-            item.id = nextItemId++;
+            item.instanceId = nextItemId++;
             item.typeName = typeName;
             item.slot = ItemSlot::WEAPON;
             p.getInventory().addItem(std::move(item));

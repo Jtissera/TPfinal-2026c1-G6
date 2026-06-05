@@ -26,39 +26,39 @@
 #include "leaveEvent.h"
 #include "playerRepository.h"
 
-class LobbyHandler : public Thread
-{
+class LobbyHandler : public Thread {
 public:
-  LobbyHandler(Queue<ClientMessage> &lobbyQueue,
-               Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
-               Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
-               Monitor &lobbyMonitor, GameManager &gameManager,
-               ReceiverRegistry &receiverRegistry, PlayerRepository &playerRepo,
-               PlayerFactory &playerFactory);
+    LobbyHandler(Queue<ClientMessage> &lobbyQueue,
+                 Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
+                 Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
+                 Monitor &lobbyMonitor, GameManager &gameManager,
+                 ReceiverRegistry &receiverRegistry, PlayerRepository &playerRepo,
+                 PlayerFactory &playerFactory);
 
-  void run() override;
-  void stop() override;
+    void run() override;
+    void stop() override;
 
 private:
-  Queue<ClientMessage> &lobbyQueue;
-  Queue<std::shared_ptr<LeaveEvent>> &leaveQueue;
-  Monitor &lobbyMonitor;
-  GameManager &gameManager;
-  ReceiverRegistry &receiverRegistry;
-  PlayerRepository &playerRepo;
-  PlayerFactory &playerFactory;
-  Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue;
-  void handleInstanceTransition(InstanceTransitionEvent &event);
+    Queue<ClientMessage> &lobbyQueue;
+    Queue<std::shared_ptr<LeaveEvent>> &leaveQueue;
+    Monitor &lobbyMonitor;
+    GameManager &gameManager;
+    ReceiverRegistry &receiverRegistry;
+    PlayerRepository &playerRepo;
+    PlayerFactory &playerFactory;
+    Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue;
+    void handleInstanceTransition(InstanceTransitionEvent &event);
 
-  using Handler = std::function<void(uint32_t, const Message &)>;
-  std::unordered_map<uint8_t, Handler> handlers;
+    using Handler = std::function<void(uint32_t, const Message &)>;
+    std::unordered_map<uint8_t, Handler> handlers;
 
-  void initHandlers();
+    void initHandlers();
 
-  void handleConnect(uint32_t clientId, const Message &message);
-  void handleCreateChar(uint32_t clientId, const Message &message);
-  void handleListGames(uint32_t clientId, const Message &message);
-  void handleCreateGame(uint32_t clientId, const Message &message);
-  void handleJoinGame(uint32_t clientId, const Message &message);
-  void handleLeaveGame(LeaveEvent &leaveEvent);
+    void handleConnect(uint32_t clientId, const Message &message);
+    void handleCreateChar(uint32_t clientId, const Message &message);
+    void handleListGames(uint32_t clientId, const Message &message);
+    void handleCreateGame(uint32_t clientId, const Message &message);
+    void handleJoinGame(uint32_t clientId, const Message &message);
+    void handleLeaveGame(LeaveEvent &leaveEvent);
+    PlayerDto buildPlayerDto(const Player& player) const;
 };
