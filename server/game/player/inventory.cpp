@@ -60,44 +60,46 @@ void Inventory::removeFromInventorySlots(uint32_t itemId)
   }
 }
 
-bool Inventory::equipItem(uint32_t itemId) {
+bool Inventory::equipItem(uint32_t itemId)
+{
+  // Buscamos el item por instanceId.
   Item* item = findItem(itemId);
 
   if (!item) {
     return false;
   }
 
+  // Convertimos el slot lógico del item al slot de equipamiento.
   const auto slot = toEquipSlot(item->slot);
 
   if (!slot.has_value()) {
     return false;
   }
 
-  const auto idx = static_cast<std::size_t>(slot.value());
+  const auto equipIdx = static_cast<std::size_t>(slot.value());
 
-  if (idx >= equipped.size()) {
+  if (equipIdx >= equipped.size()) {
     return false;
   }
 
-  if (equipped[idx] == itemId) {
-    return true;
-  }
+  // Si ya había algo equipado en ese slot, lo devolvemos al inventario.
+  const uint32_t previousItemId = equipped[equipIdx];
 
-  const uint32_t previousEquippedId = equipped[idx];
-
-  if (previousEquippedId != EMPTY_SLOT) {
+  if (previousItemId != EMPTY_SLOT) {
     const auto freeSlot = findFirstFreeInventorySlot();
 
     if (!freeSlot.has_value()) {
       return false;
     }
 
-    inventorySlots[freeSlot.value()] = previousEquippedId;
+    inventorySlots[freeSlot.value()] = previousItemId;
   }
 
-  removeFromInventorySlots(itemId);
+  // Equipamos el nuevo item.
+  equipped[equipIdx] = itemId;
 
-  equipped[idx] = itemId;
+  // Muy importante: sacamos el item equipado del inventario visual.
+  removeFromInventorySlots(itemId);
 
   return true;
 }
