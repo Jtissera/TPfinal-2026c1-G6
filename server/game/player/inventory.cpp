@@ -53,9 +53,11 @@ std::optional<std::size_t> Inventory::findFirstFreeInventorySlot() const
 
 void Inventory::removeFromInventorySlots(uint32_t itemId)
 {
-  for (auto &slot : inventorySlots)
-    if (slot == itemId)
+  for (auto &slot : inventorySlots) {
+    if (slot == itemId) {
       slot = EMPTY_SLOT;
+    }
+  }
 }
 
 bool Inventory::equipItem(uint32_t itemId) {
