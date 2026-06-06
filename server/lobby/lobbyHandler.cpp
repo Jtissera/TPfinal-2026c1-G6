@@ -104,7 +104,7 @@ void LobbyHandler::handleCreateChar(uint32_t clientId, const Message &message)
   try
   {
     Player player = playerFactory.create(clientId, msg.getName(), msg.getRaza(),
-                                         msg.getClase(), 6, 7);
+                                         msg.getClase(), 2, 2);
     playerRepo.save(clientId, std::move(player));
     lobbyMonitor.sendTo(clientId, std::make_shared<const CreateOkMessage>());
   }

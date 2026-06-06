@@ -70,7 +70,7 @@ void Game::init(SDL_Window* existingWindow,
     refreshPlayerEquipmentVisuals();
 
     map = new Map(manager, *assets, "terrain", 3, 32);
-    map->LoadMap("assets/sprites/MapAssets/mapa.argmap");
+    map->LoadMap("assets/sprites/MapAssets/mapatest.argmap");
 
 }
 
@@ -163,8 +163,6 @@ void Game::update() {
     if (isLocalPlayerDead()) {
         applyLocalPlayerGhostState();
     } else {
-        attackSystem.updateEnemyChase(enemies, player, playerState.hp);
-
         if (hasReceivedValidPlayerStats && playerState.hp <= 0) {
             applyLocalPlayerGhostState();
         }
@@ -790,46 +788,47 @@ void Game::renderHUD() {
 }
 void Game::loadAssets() {
     assets->LoadManifest("assets/manifest.json");
-    // HUD - fondos
-    assets->AddTexture("hud_top",      "assets/Recursos/BabelUI/static/media/main_top..png");
-    assets->AddTexture("hud_chat",     "assets/Recursos/BabelUI/static/media/main_chat..png");
-    assets->AddTexture("hud_pj_info",  "assets/Recursos/BabelUI/static/media/main_pj_info..png");
-    assets->AddTexture("hud_inv",      "assets/Recursos/BabelUI/static/media/inventory-bg..png");
-    assets->AddTexture("hud_stats",    "assets/Recursos/BabelUI/static/media/stats-bg..png");
-    assets->AddTexture("hud_logo",     "assets/Recursos/BabelUI/static/media/ao20_logo_med..png");
-    assets->AddTexture("hud_pergamino","assets/Recursos/BabelUI/static/media/titulo_pergamino..png");
 
-    //Textos
+    // HUD - fondos locales del proyecto.
+    assets->AddTexture("hud_top",       "assets/sprites/ui/hud/main_top.png");
+    assets->AddTexture("hud_chat",      "assets/sprites/ui/hud/main_chat.png");
+    assets->AddTexture("hud_pj_info",   "assets/sprites/ui/hud/main_pj_info.png");
+    assets->AddTexture("hud_inv",       "assets/sprites/ui/hud/inventory_bg.png");
+    assets->AddTexture("hud_stats",     "assets/sprites/ui/hud/stats_bg.png");
+    assets->AddTexture("hud_logo",      "assets/sprites/ui/hud/ao20_logo_med.png");
+    assets->AddTexture("hud_pergamino", "assets/sprites/ui/hud/titulo_pergamino.png");
+    assets->AddTexture("hud_frame",     "assets/sprites/ui/hud/frame.png");
 
-    assets->AddFont("ao_bold",    "assets/Recursos/BabelUI/static/media/Alegreya-Sans-AO-Bold..ttf",    18);
-    assets->AddFont("ao_regular", "assets/Recursos/BabelUI/static/media/Alegreya-Sans-AO-Regular..ttf", 14);
-    assets->AddFont("cardo",      "assets/Recursos/BabelUI/static/media/Cardo-Regular..ttf",            14);
+    // Fuentes locales del proyecto.
+    assets->AddFont("ao_bold",    "assets/sprites/ui/fonts/Alegreya-Sans-AO-Bold.ttf",    18);
+    assets->AddFont("ao_regular", "assets/sprites/ui/fonts/Alegreya-Sans-AO-Regular.ttf", 14);
+    assets->AddFont("cardo",      "assets/sprites/ui/fonts/Cardo-Regular.ttf",            14);
 
     statusFont = assets->GetFont("ao_bold");
+
     if (!statusFont) {
         statusFont = TTF_OpenFont(
-            "assets/Recursos/BabelUI/static/media/Alegreya-Sans-AO-Bold..ttf", 24
+            "assets/sprites/ui/fonts/Alegreya-Sans-AO-Bold.ttf",
+            24
         );
     }
+
     if (!statusFont) {
         statusFont = TTF_OpenFont("assets/sprites/MapAssets/arial.ttf", 24);
     }
 
+    // Barras HUD.
+    assets->AddTexture("barra_vida", "assets/sprites/ui/bars/es_barradevida.bmp");
+    assets->AddTexture("barra_mana", "assets/sprites/ui/bars/es_barrademana.bmp");
+    assets->AddTexture("barra_exp",  "assets/sprites/ui/bars/es_barraexperiencia.bmp");
 
-    // HUD
-    assets->AddTexture("barra_vida", "assets/Recursos/interface/es_barradevida.bmp");
-    assets->AddTexture("barra_mana", "assets/Recursos/interface/es_barrademana.bmp");
-    assets->AddTexture("barra_exp",  "assets/Recursos/interface/es_barraexperiencia.bmp");
-    assets->AddTexture("hud_frame", "assets/Recursos/BabelUI/static/media/frame..png");
-
-    // Fuentes
+    // Fuente fallback.
     assets->AddFont("arial", "assets/sprites/MapAssets/arial.ttf", 16);
 
+    // Terreno.
     assets->AddTexture("tile_grass", "assets/sprites/MapAssets/tile_grass.png");
     assets->AddTexture("tile_water", "assets/sprites/MapAssets/tile_water.png");
     assets->AddTexture("tile_floor", "assets/sprites/MapAssets/tile_floor.png");
-
-
 }
 
 int Game::getInventorySlotIndexAt(int mouseX, int mouseY) const {
@@ -1480,7 +1479,7 @@ void Game::applyLocalPlayerGhostState() {
     assets->applyGhostAppearance(*player);
 
     // Cortamos persecución de enemigos.
-    attackSystem.clearEnemyAggro();
+   // attackSystem.clearEnemyAggro();
 
     // Mensaje temporal para confirmar el estado.
     showStatusMessage("Has muerto");

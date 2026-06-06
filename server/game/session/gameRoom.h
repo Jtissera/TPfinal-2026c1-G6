@@ -77,5 +77,5 @@ private:
     void broadcastPlayerSpawn(uint32_t playerId);
     void sendInventoryTo(uint32_t playerId);
     PlayerDto buildPlayerDto(const Player& player) const;
-
+    void sendExistingNpcsTo(uint32_t clientId);
 };

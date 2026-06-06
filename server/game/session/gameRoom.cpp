@@ -1,5 +1,7 @@
 #include "gameRoom.h"
 
+#include "common/network/messages/server/npc/npcSpawnMessage.h"
+
 GameRoom::GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers,
                    NpcFactory &npcFactory, ItemRepository &itemRepo,
                    Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
@@ -7,7 +9,8 @@ GameRoom::GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers,
                    const toml::table &config)
     : gameId(gameId), gameName(std::move(gameName)), maxPlayers(maxPlayers),
       monitor(), gameQueue(), leaveQueue(leaveQueue),
-      world("assets/sprites/MapAssets/mapa.argmap", npcFactory, itemRepo,
+world( config["world"]["map_path"].value_or(
+  std::string("assets/sprites/MapAssets/mapa.argmap")), npcFactory, itemRepo,
             config),
       gameLoop(gameQueue, monitor, world, leaveQueue, transitionQueue, gameId, config) {}
 
@@ -134,6 +137,7 @@ void GameRoom::syncPlayerJoin(uint32_t newPlayerId) {
 
     sendInventoryTo(newPlayerId);
     sendExistingPlayersTo(newPlayerId);
+    sendExistingNpcsTo(newPlayerId);
     broadcastPlayerSpawn(newPlayerId);
 }
 
@@ -204,4 +208,34 @@ PlayerDto GameRoom::buildPlayerDto(const Player& player) const {
     dto.constitucion = 10;
 
     return dto;
+}
+
+void GameRoom::sendExistingNpcsTo(uint32_t clientId) {
+    std::cout << "[GameRoom] sendExistingNpcsTo clientId="
+              << clientId
+              << " npcCount="
+              << world.getNpcs().size()
+              << std::endl;
+
+    for (const auto& [npcId, npc] : world.getNpcs()) {
+        monitor.sendTo(
+            clientId,
+            std::make_shared<const NpcSpawnMessage>(
+                npcId,
+                npc.getType(),
+                npc.getName(),
+                static_cast<uint16_t>(npc.getTileX() * 96),
+                static_cast<uint16_t>(npc.getTileY() * 96),
+                npc.getHp(),
+                npc.getMaxHp(),
+                npc.isHostile()
+            )
+        );
+
+        std::cout << "[GameRoom] enviado NPC id="
+                  << npcId
+                  << " a clientId="
+                  << clientId
+                  << std::endl;
+    }
 }

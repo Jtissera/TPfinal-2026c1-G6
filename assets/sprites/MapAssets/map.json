@@ -2,35 +2,35 @@
   "textures": [
     {
       "id": "tile_floor",
-      "path": "assets/sprites2/MapAssets/basic_floor.png"
+      "path": "assets/sprites/MapAssets/basic_floor.png"
     },
     {
       "id": "tile_rocks",
-      "path": "assets/sprites2/MapAssets/rocks.png"
+      "path": "assets/sprites/MapAssets/rocks.png"
     },
     {
       "id": "tile_tree",
-      "path": "assets/sprites2/MapAssets/tree.png"
+      "path": "assets/sprites/MapAssets/tree.png"
     },
     {
       "id": "tile_house",
-      "path": "assets/sprites2/MapAssets/house.png"
+      "path": "assets/sprites/MapAssets/house.png"
     },
     {
       "id": "tile_church",
-      "path": "assets/sprites2/MapAssets/church.png"
+      "path": "assets/sprites/MapAssets/church.png"
     },
     {
       "id": "tile_deco",
-      "path": "assets/sprites2/MapAssets/city_decoration.png"
+      "path": "assets/sprites/MapAssets/city_decoration.png"
     },
     {
       "id": "dungeon_entrance",
-      "path": "assets/sprites2/MapAssets/dungeon_entrance.png"
+      "path": "assets/sprites/MapAssets/dungeon_entrance.png"
     },
     {
       "id": "cavern_entrance",
-      "path": "assets/sprites2/MapAssets/cavern_entrance.png"
+      "path": "assets/sprites/MapAssets/cavern_entrance.png"
     }
   ],
   "_sprite_info": {

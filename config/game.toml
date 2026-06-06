@@ -337,7 +337,7 @@ damage_max = 0
 
 [world]
 tile_size = 96
-
+map_path = "assets/sprites/MapAssets/mapatest.argmap"
 
 [cavern]
 gold_multiplier = 1.5
@@ -505,6 +505,18 @@ attack_cooldown_ms = 1700
 move_cooldown_ms   = 950
 zones              = ["COMBAT"]
 
+[npcs.guard]
+name = "Guardia"
+level = 5
+max_hp = 100
+damage_min = 8
+damage_max = 15
+defense_min = 2
+defense_max = 5
+attack_range = 1
+hostile = false
+exp = 0
+gold = 0
 
 [city]
 ms_per_tile_resurrection = 500
