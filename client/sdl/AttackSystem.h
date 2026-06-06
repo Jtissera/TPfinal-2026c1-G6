@@ -79,6 +79,8 @@ public:
     // Se usa cuando el jugador muere o pasa a estado fantasma.
     void clearEnemyAggro();
 
+    void setEnemyHealth(uint32_t enemyId, int hp, int maxHp);
+
 private:
     std::vector<AttackEffect> attackEffects;
 

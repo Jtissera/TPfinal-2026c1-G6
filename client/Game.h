@@ -30,7 +30,7 @@
 #include "common/network/messages/server/player/levelUpMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
-
+#include "common/network/messages/server/npc/npcSpawnMessage.h"
 class Game {
 public:
     Game();
@@ -165,6 +165,7 @@ private:
     void applyInventoryUpdate(const InventoryUpdateMessage& msg);
     void handlePlayerEquipmentUpdate(const PlayerEquipmentUpdateMessage& msg);
     void handleLevelUp(const LevelUpMessage& msg);
+    void handleNpcSpawn(const NpcSpawnMessage& msg);
 
 };
 

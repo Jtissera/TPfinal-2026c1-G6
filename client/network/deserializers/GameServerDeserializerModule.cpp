@@ -8,6 +8,8 @@
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
 #include "common/network/messages/server/player/levelUpMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
+#include "common/network/messages/server/npc/npcSpawnMessage.h"
+#include "common/network/messages/server/npc/npcHealthMessage.h"
 #include "common/network/protocol/clientOpCode.h"
 
 
@@ -161,4 +163,44 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
         const uint16_t tileY   = reader.readUint16();
         return std::make_unique<PlayerResurrectedMessage>(playerId, tileX, tileY);
     });
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ServerOpCode::MSG_NPC_SPAWN),
+        [](PacketReader& reader) -> std::unique_ptr<Message> {
+            const uint32_t npcId = reader.readUint32();
+            const auto type = static_cast<NpcType>(reader.readUint8());
+            const std::string name = reader.readString();
+
+            const uint16_t x = reader.readUint16();
+            const uint16_t y = reader.readUint16();
+
+            const uint16_t hp = reader.readUint16();
+            const uint16_t hpMax = reader.readUint16();
+
+            const bool hostile = reader.readUint8() != 0;
+
+            return std::make_unique<NpcSpawnMessage>(
+                npcId,
+                type,
+                name,
+                x,
+                y,
+                hp,
+                hpMax,
+                hostile
+            );
+        });
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ServerOpCode::MSG_NPC_HEALTH),
+    [](PacketReader& reader) -> std::unique_ptr<Message> {
+        const uint32_t npcId = reader.readUint32();
+        const uint16_t hp = reader.readUint16();
+        const uint16_t maxHp = reader.readUint16();
+
+        return std::make_unique<NpcHealthMessage>(
+            npcId,
+            hp,
+            maxHp
+        );
+    });
+
 }

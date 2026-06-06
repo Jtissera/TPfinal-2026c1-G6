@@ -18,6 +18,7 @@
 #include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"
 #include "common/network/messages/client/cheat/cheatMessage.h"
+#include "common/network/messages/server/npc/npcSpawnMessage.h"
 
 
 Game::Game() {
@@ -1769,28 +1770,27 @@ void Game::handleEntityMove(const EntityMoveMessage& moveMsg) {
     const Direction direction = moveMsg.getDirection();
     const bool moving = moveMsg.isMoving();
 
-    auto enemyIt = enemies.find(entityId);
-    if (enemyIt != enemies.end() && enemyIt->second != nullptr) {
-        auto& enemyTransform = enemyIt->second->getComponent<TransformComponent>();
-
-        enemyTransform.position.x = serverX;
-        enemyTransform.position.y = serverY;
-
-        std::cout << "[sync enemy] id="
-                  << entityId
-                  << " server=(" << serverX << ", " << serverY << ")"
-                  << std::endl;
-
-        return;
-    }
-
+    // EntityMoveMessage actualmente representa movimiento de jugadores.
+    // Los NPCs no se actualizan por este mensaje.
     if (clientWorld != nullptr) {
-        clientWorld->updatePlayerPosition(entityId, serverX, serverY,direction,moving);
+        clientWorld->updatePlayerPosition(
+            entityId,
+            serverX,
+            serverY,
+            direction,
+            moving
+        );
     }
 
-    // Log opcional para verificar que llegan posiciones pequeñas.
-    std::cout << "[sync] server=("<< serverX << ", " << serverY<< ")" << std::endl;
-
+    std::cout << "[sync player] id="
+              << entityId
+              << " server=("
+              << serverX
+              << ", "
+              << serverY
+              << ") moving="
+              << moving
+              << std::endl;
 }
 void Game::handlePlayerDied(const PlayerDiedMessage& diedMsg) {
 
@@ -1889,6 +1889,10 @@ void Game::processServerMessage(const Message& msg) {
         case ServerOpCode::MSG_LEVEL_UP:
             handleLevelUp(static_cast<const LevelUpMessage&>(msg));
             return;
+        case ServerOpCode::MSG_NPC_SPAWN:
+            std::cout << "[CLIENT] MSG_NPC_SPAWN recibido" << std::endl;
+            handleNpcSpawn(static_cast<const NpcSpawnMessage&>(msg));
+            return;
 
 
         default:
@@ -1961,4 +1965,71 @@ void Game::handleLevelUp(const LevelUpMessage& msg) {
               << std::endl;
 
     showStatusMessage("Subiste de nivel");
+}
+void Game::handleNpcSpawn(const NpcSpawnMessage& msg) {
+    const uint32_t npcId = msg.getNpcId();
+
+    // Evitamos crear dos veces el mismo NPC.
+    if (enemies.find(npcId) != enemies.end()) {
+        std::cout << "[CLIENT NPC] spawn ignorado, ya existe npcId="
+                  << npcId
+                  << std::endl;
+        return;
+    }
+
+    NPCData npcData{};
+
+    // Adaptamos desde el mensaje de red al DTO visual del cliente.
+    npcData.npcID = npcId;
+    npcData.type = msg.getType();
+    npcData.nombre = msg.getName();
+
+    npcData.x = msg.getX();
+    npcData.y = msg.getY();
+
+    npcData.hp = static_cast<int>(msg.getHp());
+    npcData.hpMax = static_cast<int>(msg.getHpMax());
+
+    npcData.estaVivo = msg.getHp() > 0;
+    npcData.estaMoviendo = false;
+    npcData.hostile = msg.isHostile();
+
+    Entity* npcEntity = assets->CreateEnemy(npcData);
+
+    if (npcEntity == nullptr) {
+        std::cout << "[CLIENT NPC] no se pudo crear npcId="
+                  << npcId
+                  << " nombre="
+                  << npcData.nombre
+                  << std::endl;
+        return;
+    }
+
+    // Reutilizamos el mapa enemies para que AttackSystem pueda clickearlo.
+    enemies[npcId] = npcEntity;
+
+    // Registramos vida visual inicial.
+    attackSystem.setEnemyHealth(
+        npcId,
+        npcData.hp,
+        npcData.hpMax
+    );
+
+    std::cout << "[CLIENT NPC] spawn npcId="
+              << npcId
+              << " nombre="
+              << npcData.nombre
+              << " type="
+              << static_cast<int>(npcData.type)
+              << " pos=("
+              << npcData.x
+              << ", "
+              << npcData.y
+              << ") hp="
+              << npcData.hp
+              << "/"
+              << npcData.hpMax
+              << " hostile="
+              << npcData.hostile
+              << std::endl;
 }

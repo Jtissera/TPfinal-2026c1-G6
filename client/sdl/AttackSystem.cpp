@@ -486,3 +486,35 @@ void AttackSystem::clearEnemyAggro() {
 
     std::cout << "[ENEMY] Aggro limpiado. Los enemigos dejan de perseguir." << std::endl;
 }
+
+void AttackSystem::setEnemyHealth(uint32_t enemyId, int hp, int maxHp) {
+    // Normalizamos valores para evitar vida negativa o máximo inválido.
+    if (maxHp < 0) {
+        maxHp = 0;
+    }
+
+    if (hp < 0) {
+        hp = 0;
+    }
+
+    if (hp > maxHp) {
+        hp = maxHp;
+    }
+
+    enemyHealth[enemyId] = hp;
+    enemyMaxHealth[enemyId] = maxHp;
+
+    if (hp <= 0) {
+        deadEnemies.insert(enemyId);
+    } else {
+        deadEnemies.erase(enemyId);
+    }
+
+    std::cout << "[ATTACK SYSTEM] vida NPC actualizada id="
+              << enemyId
+              << " hp="
+              << hp
+              << "/"
+              << maxHp
+              << std::endl;
+}

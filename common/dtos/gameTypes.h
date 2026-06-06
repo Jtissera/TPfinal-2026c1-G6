@@ -54,6 +54,7 @@ struct NPCData {
     int      hpMax;
     bool estaVivo;
     bool estaMoviendo;
+    bool hostile;
 };
 
 enum class Direction : uint8_t {

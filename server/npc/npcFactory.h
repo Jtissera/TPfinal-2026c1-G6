@@ -9,5 +9,6 @@ public:
 
 private:
     const NpcRepository& repo;
-    uint32_t nextId = 1;
+    static constexpr uint32_t FIRST_NPC_ID = 10000;
+    uint32_t nextId = FIRST_NPC_ID;
 };
