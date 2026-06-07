@@ -44,6 +44,46 @@ void AssetManager::CreateProjectile(Vector2D pos, Vector2D vel, int range, int s
     projectile.addComponent<ColliderComponent>("projectile");
     projectile.addGroup(groupProjectiles);
 }
+
+// Devuelve la config de spritesheet correcta según el tipo de NPC/enemigo.
+// 1024x1024, frame 128x128, escala 1: skeleton, zombie, guard, desert_spider.
+// 1024x1024, frame 64x64,  escala 2: goblin y variantes de zona.
+// 512x512,   frame 64x64,  escala 2: arañas, golems y skeletons de variante.
+// Ciudad 256x256, frame 64x64, escala 2: priest, merchant, banker.
+static SpriteSheetConfig configForNPC(NpcType type) {
+    switch (type) {
+        case NpcType::SKELETON:
+        case NpcType::ZOMBIE:
+        case NpcType::GUARD:
+        case NpcType::SPIDER_DESERT:
+            return SpriteSheetConfig{128, 128, 1, 0, 0};
+
+        case NpcType::GOBLIN:
+        case NpcType::GOBLIN_CAVE:
+        case NpcType::GOBLIN_DUNGEON:
+        case NpcType::GOBLIN_DESERT:
+            return SpriteSheetConfig{64, 64, 2, 0, 0};
+
+        case NpcType::SKELETON_CAVE:
+        case NpcType::SKELETON_DUNGEON:
+        case NpcType::SKELETON_DESERT:
+        case NpcType::SPIDER_CAVE:
+        case NpcType::SPIDER_DUNGEON:
+        case NpcType::GOLEM_CAVE:
+        case NpcType::GOLEM_DUNGEON:
+        case NpcType::GOLEM_DESERT:
+            return SpriteSheetConfig{64, 64, 2, 0, 0};
+
+        case NpcType::PRIEST:
+        case NpcType::MERCHANT:
+        case NpcType::BANKER:
+            return SpriteSheetConfig{64, 64, 2, 0, 0};
+
+        default:
+            return SpriteSheetConfig{64, 64, 2, 0, 0};
+    }
+}
+
 Entity* AssetManager::CreateNpc(const NPCData& data) {
     auto& npc = manager->addEntity();
 
@@ -52,11 +92,7 @@ Entity* AssetManager::CreateNpc(const NPCData& data) {
     std::map<std::string, Animation> npcAnims;
     npcAnims.emplace("IdleDown", Animation(0, 1, 200));
 
-    SpriteSheetConfig npcConfig{
-        32, // frameWidth
-        64, // frameHeight
-        2   // scale
-    };
+    SpriteSheetConfig npcConfig = configForNPC(data.type);
     npc.addComponent<SpriteComponent>(
         *this,
         textureForNPC(data.type),
@@ -71,20 +107,14 @@ Entity* AssetManager::CreateNpc(const NPCData& data) {
 }
 
 Entity* AssetManager::CreateEnemy(const NPCData& data) {
-    SpriteSheetConfig skeletonConfig {
-        32,  // frameWidth
-        64,  // frameHeight
-        2    // scale
-    };
+    SpriteSheetConfig cfg = configForNPC(data.type);
+
     std::map<std::string, Animation> enemyAnims;
-    enemyAnims.emplace("Idle",Animation(0,1,200));
-    // enemyAnims.emplace("Walk",   Animation(0, 6,  100));
-    // enemyAnims.emplace("Attack", Animation(0, 12, 80));
-    // enemyAnims.emplace("Hurt",   Animation(0, 4,  100));
+    enemyAnims.emplace("Idle", Animation(0, 1, 200));
 
     auto& enemy = manager->addEntity();
-    enemy.addComponent<TransformComponent>(data.x,data.y);
-    enemy.addComponent<SpriteComponent>(*this,textureForNPC(data.type),true,enemyAnims,skeletonConfig);
+    enemy.addComponent<TransformComponent>(data.x, data.y);
+    enemy.addComponent<SpriteComponent>(*this, textureForNPC(data.type), true, enemyAnims, cfg);
     enemy.addComponent<ColliderComponent>("enemy");
     enemy.addGroup(groupEnemies);
     return &enemy;
@@ -175,14 +205,36 @@ TTF_Font* AssetManager::GetFont(std::string id)
 
 std::string AssetManager::textureForNPC(NpcType type) {
     switch (type) {
-        case NpcType::PRIEST:   return "priest";
-        case NpcType::MERCHANT: return "merchant";
-        case NpcType::BANKER:   return "banker";
-        case NpcType::GOBLIN:   return "goblin";
-        case NpcType::SKELETON: return "skeleton";
-        case NpcType::ZOMBIE:   return "zombie";
-        case NpcType::GUARD:    return "guard";
-        default:                return "goblin";
+        // Ciudad
+        case NpcType::PRIEST:           return "npc_priest";
+        case NpcType::MERCHANT:         return "npc_shop";
+        case NpcType::BANKER:           return "npc_bank";
+
+        // Zona principal
+        case NpcType::GOBLIN:           return "goblin";
+        case NpcType::SKELETON:         return "skeleton";
+        case NpcType::ZOMBIE:           return "zombie";
+        case NpcType::GUARD:            return "skeleton";  // fallback hasta tener sprite propio
+
+        // Caverna
+        case NpcType::GOBLIN_CAVE:      return "goblin";
+        case NpcType::SKELETON_CAVE:    return "dungeon_skeleton";
+        case NpcType::SPIDER_CAVE:      return "cavern_spider";
+        case NpcType::GOLEM_CAVE:       return "cavern_golem";
+
+        // Mazmorra
+        case NpcType::GOBLIN_DUNGEON:   return "goblin";
+        case NpcType::SKELETON_DUNGEON: return "dungeon_skeleton";
+        case NpcType::SPIDER_DUNGEON:   return "dungeon_spider";
+        case NpcType::GOLEM_DUNGEON:    return "dungeon_golem";
+
+        // Desierto
+        case NpcType::GOBLIN_DESERT:    return "goblin";
+        case NpcType::SKELETON_DESERT:  return "dungeon_skeleton";
+        case NpcType::SPIDER_DESERT:    return "desert_spider";
+        case NpcType::GOLEM_DESERT:     return "desert_golem";
+
+        default:                        return "goblin";
     }
 }
 

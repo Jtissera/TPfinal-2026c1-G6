@@ -1994,26 +1994,41 @@ void Game::handleNpcSpawn(const NpcSpawnMessage& msg) {
     npcData.estaMoviendo = false;
     npcData.hostile = msg.isHostile();
 
-    Entity* npcEntity = assets->CreateEnemy(npcData);
+    Entity* npcEntity = nullptr;
 
-    if (npcEntity == nullptr) {
-        std::cout << "[CLIENT NPC] no se pudo crear npcId="
-                  << npcId
-                  << " nombre="
-                  << npcData.nombre
-                  << std::endl;
-        return;
+    if (npcData.hostile) {
+        // Enemigo de combate: va al grupo enemies y tiene barra de vida.
+        npcEntity = assets->CreateEnemy(npcData);
+
+        if (npcEntity == nullptr) {
+            std::cout << "[CLIENT NPC] no se pudo crear npcId="
+                      << npcId
+                      << " nombre="
+                      << npcData.nombre
+                      << std::endl;
+            return;
+        }
+
+        enemies[npcId] = npcEntity;
+
+        attackSystem.setEnemyHealth(
+            npcId,
+            npcData.hp,
+            npcData.hpMax
+        );
+    } else {
+        // NPC de ciudad (priest, merchant, banker): va al grupo NPC, sin barra de vida.
+        npcEntity = assets->CreateNpc(npcData);
+
+        if (npcEntity == nullptr) {
+            std::cout << "[CLIENT NPC] no se pudo crear NPC ciudad npcId="
+                      << npcId
+                      << " nombre="
+                      << npcData.nombre
+                      << std::endl;
+            return;
+        }
     }
-
-    // Reutilizamos el mapa enemies para que AttackSystem pueda clickearlo.
-    enemies[npcId] = npcEntity;
-
-    // Registramos vida visual inicial.
-    attackSystem.setEnemyHealth(
-        npcId,
-        npcData.hp,
-        npcData.hpMax
-    );
 
     std::cout << "[CLIENT NPC] spawn npcId="
               << npcId
