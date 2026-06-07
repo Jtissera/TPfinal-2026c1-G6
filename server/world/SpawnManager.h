@@ -9,15 +9,17 @@
 #include <string>
 #include <toml++/toml.hpp>
 #include <vector>
+#include <optional>
 
 class SpawnManager {
 public:
   SpawnManager(const toml::table &config, NpcManager &npcManager,
                const CollisionSystem &collision, OccupancySystem &occupancy);
 
+  std::optional<uint32_t> spawnNpc(const std::string& typeName, int tileX, int tileY);
+  std::vector<uint32_t> tick();
+  std::optional<uint32_t> trySpawnAround(const std::string& typeName, int x, int y);
   void loadSpawnPoints(const MapData &mapData);
-  void spawnNpc(const std::string &typeName, int tileX, int tileY);
-  void tick();
 
 private:
   NpcManager &npcManager;
@@ -35,5 +37,4 @@ private:
   };
   std::vector<SpawnPoint> spawnPoints;
 
-  void trySpawnAround(const std::string &typeName, int x, int y);
 };

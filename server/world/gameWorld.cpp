@@ -1,39 +1,43 @@
 #include "gameWorld.h"
 
-GameWorld::GameWorld(const std::string &mapPath, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config)
+GameWorld::GameWorld(const std::string &mapPath,
+                     NpcFactory &npcFactory,
+                     ItemRepository &itemRepo,
+                     const toml::table &config)
     : mapData(MapSerializer::load(mapPath)),
-      collision(mapData),
-      npcManager(npcFactory, collision, mapData),
-      itemRepo(itemRepo),
+        collision(mapData),
+        occupancy(),
+        npcManager(npcFactory, collision, mapData),
+        itemRepo(itemRepo),
         formulas(config),
-      spawnManager(config, npcManager, collision, occupancy),
-      tileSize(config["world"]["tile_size"].value_or(96)),
-      bankRepo(),
-      resurrectionSystem(),
-      priestHandler(itemRepo, resurrectionSystem, mapData, config),
-      merchantHandler(itemRepo, config),
-      bankerHandler(bankRepo),
-      cityDispatcher(priestHandler, merchantHandler, bankerHandler)
-{
-  spawnManager.loadSpawnPoints(mapData);
+        spawnManager(config, npcManager, collision, occupancy),
+        tileSize(config["world"]["tile_size"].value_or(96)),
+        bankRepo(),
+        resurrectionSystem(),
+        priestHandler(itemRepo, resurrectionSystem, mapData, config),
+        merchantHandler(itemRepo, config),
+        bankerHandler(bankRepo),
+        cityDispatcher(priestHandler, merchantHandler, bankerHandler)
+        {
+  spawnManager.loadSpawnPoints(this->mapData);
 }
 
 GameWorld::GameWorld(MapData mapData, NpcFactory &npcFactory,
                      ItemRepository &itemRepo, const toml::table &config)
     : mapData(std::move(mapData)),
-      collision(this->mapData),
-      npcManager(npcFactory, collision, this->mapData),
-      itemRepo(itemRepo),
-    formulas(config),
-      spawnManager(config, npcManager, collision, occupancy),
-      tileSize(config["world"]["tile_size"].value_or(96)),
-      bankRepo(),
-      resurrectionSystem(),
-      priestHandler(itemRepo, resurrectionSystem, this->mapData, config),
-      merchantHandler(itemRepo, config),
-      bankerHandler(bankRepo),
-      cityDispatcher(priestHandler, merchantHandler, bankerHandler)
+        collision(this->mapData),
+        occupancy(),
+        npcManager(npcFactory, collision, this->mapData),
+        itemRepo(itemRepo),
+        formulas(config),
+        spawnManager(config, npcManager, collision, occupancy),
+        tileSize(config["world"]["tile_size"].value_or(96)),
+        bankRepo(),
+        resurrectionSystem(),
+        priestHandler(itemRepo, resurrectionSystem, this->mapData, config),
+        merchantHandler(itemRepo, config),
+        bankerHandler(bankRepo),
+        cityDispatcher(priestHandler, merchantHandler, bankerHandler)
 {
   spawnManager.loadSpawnPoints(this->mapData);
 }
@@ -374,9 +378,26 @@ GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds)
 
   tickPlayers(deltaSeconds, result);
   tickNpcs(result);
-  spawnManager.tick();
 
-  return result;
+  const auto spawnedNpcIds = spawnManager.tick();
+
+  for (uint32_t npcId : spawnedNpcIds) {
+        const Npc* npc = npcManager.findNpc(npcId);
+
+        if (npc == nullptr) {
+            continue;
+        }
+        result.spawnedNpcs.push_back({
+        npc->getId(),
+        npc->getType(),
+        npc->getName(),
+        static_cast<uint16_t>(npc->getTileX() * tileSize),
+        static_cast<uint16_t>(npc->getTileY() * tileSize),
+        static_cast<uint16_t>(npc->getHp()),
+        static_cast<uint16_t>(npc->getMaxHp()),
+        npc->isHostile()});
+    }
+return result;
 }
 
 void GameWorld::tickPlayers(float deltaSeconds, WorldTickResult &result)
@@ -586,3 +607,4 @@ std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const
                          static_cast<uint16_t>(tileY)).npc;
   return t != NpcType::NONE ? std::optional<NpcType>(t) : std::nullopt;
 }
+

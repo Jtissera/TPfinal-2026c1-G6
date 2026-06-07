@@ -24,11 +24,14 @@ public:
   int count() const { return static_cast<int>(npcs.size()); }
   bool isSameZone(int tileX, int tileY, ZoneType zone) const;
 
-    bool hasNpc(uint32_t npcId) const;
+  bool hasNpc(uint32_t npcId) const;
 
-    bool damageNpc(uint32_t npcId,int16_t damage,uint32_t attackerPlayerId);
-    Npc& getNpc(uint32_t npcId);
-    const Npc& getNpc(uint32_t npcId) const;
+  bool damageNpc(uint32_t npcId,int16_t damage,uint32_t attackerPlayerId);
+  Npc& getNpc(uint32_t npcId);
+  const Npc& getNpc(uint32_t npcId) const;
+  
+  Npc* findNpc(uint32_t npcId);
+  const Npc* findNpc(uint32_t npcId) const;
 
 private:
   NpcFactory &factory;

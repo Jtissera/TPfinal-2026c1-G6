@@ -109,6 +109,7 @@ public:
   bool hasNpc(uint32_t npcId) const;
   bool damageNpc(uint32_t npcId, int16_t damage, uint32_t attackerPlayerId);
   bool hasPlayer(uint32_t playerId) const;
+
   Npc& getNpc(uint32_t npcId);
   const Npc& getNpc(uint32_t npcId) const;
 

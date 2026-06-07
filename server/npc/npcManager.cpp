@@ -149,11 +149,31 @@ bool NpcManager::hasNpc(uint32_t npcId) const {
     return npcs.find(npcId) != npcs.end();
 }
 
+Npc* NpcManager::findNpc(uint32_t npcId) {
+    auto it = npcs.find(npcId);
+
+    if (it == npcs.end()) {
+        return nullptr;
+    }
+
+    return &it->second;
+}
+
+const Npc* NpcManager::findNpc(uint32_t npcId) const {
+    auto it = npcs.find(npcId);
+
+    if (it == npcs.end()) {
+        return nullptr;
+    }
+
+    return &it->second;
+}
+
 Npc& NpcManager::getNpc(uint32_t npcId) {
     auto it = npcs.find(npcId);
 
     if (it == npcs.end()) {
-        throw std::runtime_error("NPC not found");
+        throw std::runtime_error("NpcManager::getNpc: NPC inexistente");
     }
 
     return it->second;
@@ -163,7 +183,7 @@ const Npc& NpcManager::getNpc(uint32_t npcId) const {
     auto it = npcs.find(npcId);
 
     if (it == npcs.end()) {
-        throw std::runtime_error("NPC not found");
+        throw std::runtime_error("NpcManager::getNpc const: NPC inexistente");
     }
 
     return it->second;
