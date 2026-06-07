@@ -6,8 +6,10 @@
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "server/game/equipmentDtoFactory.h"
 
-ActionDispatcher::ActionDispatcher(const toml::table &config)
-    : combat(config), combatHandler(combat, effects, formulas)
+ActionDispatcher::ActionDispatcher(const toml::table& config)
+    : combat(config),
+      formulas(config),
+      combatHandler(combat, effects, formulas)
 {
   handlers[static_cast<uint8_t>(ClientOpCode::MSG_MOVE)] = &ActionDispatcher::handleMove;
 

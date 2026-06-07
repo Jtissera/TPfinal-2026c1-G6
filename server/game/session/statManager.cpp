@@ -1,5 +1,10 @@
 #include "statManager.h"
+#include "statManager.h"
 
+StatManager::StatManager(const toml::table& config)
+    : formulas(config)
+{
+}
 void StatManager::sendPlayerStats(uint32_t clientId, GameWorld &world,
                                   Monitor &monitor) {
   try {

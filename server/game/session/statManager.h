@@ -13,5 +13,6 @@ private:
   GameFormulas formulas;
 
 public:
+  explicit StatManager(const toml::table& config);
   void sendPlayerStats(uint32_t clientId, GameWorld &world, Monitor &monitor);
 };

@@ -19,6 +19,9 @@ public:
     uint8_t opCode() const override;
 
     void serializeBody(PacketWriter& writer) const override;
+    uint32_t getNpcId() const;
+    uint16_t getHp() const;
+    uint16_t getMaxHp()const;
 
 private:
     uint32_t npcId;

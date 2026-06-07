@@ -41,6 +41,16 @@ public:
     int returnTileX;
     int returnTileY;
   };
+  struct NpcSpawnEvent {
+    uint32_t npcId;
+    NpcType type;
+    std::string name;
+    uint16_t x;
+    uint16_t y;
+    uint16_t hp;
+    uint16_t maxHp;
+    bool hostile;
+  };
 
   struct WorldTickResult
   {
@@ -54,6 +64,7 @@ public:
     };
     std::vector<PlayerHit> playerHits;
     std::vector<InstanceEntry> instanceTransitions;
+    std::vector<NpcSpawnEvent> spawnedNpcs;
   };
 
   void addPlayer(Player player);

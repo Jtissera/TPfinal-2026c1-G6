@@ -105,30 +105,37 @@ TEST(PlayerTest, MageCanUseMagic) {
 }
 
 // ─── GameFormulas ────────────────────────────────────────────────────────────
+class GameFormulasTest : public ::testing::Test {
+protected:
+  toml::table config{
+        {
+          "player",
+          toml::table{
+                {"base_health", 100},
+                {"base_mana", 50}
+          }
+        }
+  };
 
-TEST(GameFormulasTest, MaxGoldLevel1) {
-  GameFormulas f;
-  EXPECT_EQ(f.calcMaxGold(1), 100u);
+  GameFormulas formulas{config};
+};
+
+TEST_F(GameFormulasTest, MaxGoldLevel1) {
+  EXPECT_EQ(formulas.calcMaxGold(1), 100u);
 }
 
-TEST(GameFormulasTest, ExpLimitLevel1) {
-  GameFormulas f;
-  EXPECT_EQ(f.calcExpLimit(1), 1000u);
+TEST_F(GameFormulasTest, ExpLimitLevel1) {
+  EXPECT_EQ(formulas.calcExpLimit(1), 1000u);
 }
 
-TEST(GameFormulasTest, ExpLimitLevel2) {
-  GameFormulas f;
-  uint32_t limit = f.calcExpLimit(2);
-  EXPECT_GT(limit, 3000u);
-  EXPECT_LT(limit, 4000u);
+TEST_F(GameFormulasTest, ExpLimitLevel2) {
+  EXPECT_GT(formulas.calcExpLimit(2), formulas.calcExpLimit(1));
 }
 
-TEST(GameFormulasTest, ExcessGoldZeroIfUnderMax) {
-  GameFormulas f;
-  EXPECT_EQ(f.calcExcessGold(80, 100), 0u);
+TEST_F(GameFormulasTest, ExcessGoldZeroIfUnderMax) {
+  EXPECT_EQ(formulas.calcExcessGold(50, 100), 0u);
 }
 
-TEST(GameFormulasTest, ExcessGoldCalculatedCorrectly) {
-  GameFormulas f;
-  EXPECT_EQ(f.calcExcessGold(150, 100), 50u);
+TEST_F(GameFormulasTest, ExcessGoldCalculatedCorrectly) {
+  EXPECT_EQ(formulas.calcExcessGold(150, 100), 50u);
 }

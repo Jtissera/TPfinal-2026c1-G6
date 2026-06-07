@@ -21,3 +21,15 @@ void NpcHealthMessage::serializeBody(PacketWriter& writer) const {
     writer.writeUint16(static_cast<uint16_t>(hp));
     writer.writeUint16(static_cast<uint16_t>(maxHp));
 }
+
+uint32_t NpcHealthMessage::getNpcId() const {
+    return npcId;
+}
+
+uint16_t NpcHealthMessage::getHp() const {
+    return hp;
+}
+
+uint16_t NpcHealthMessage::getMaxHp() const {
+    return maxHp;
+}

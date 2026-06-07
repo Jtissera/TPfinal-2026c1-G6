@@ -5,6 +5,7 @@ GameLoop::GameLoop(Queue<ClientMessage> &q, Monitor &m, GameWorld &w,
                    const toml::table &config)
     : gameQueue(q), monitor(m), world(w), leaveQueue(leaveQ), transitionQueue(transitionQ), gameId(gameId),
       dispatcher(config),
+      statManager(config),
       tickRateMs(config["server"]["tick_rate_ms"].value_or(33)) {}
 
 void GameLoop::run()

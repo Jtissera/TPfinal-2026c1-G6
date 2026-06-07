@@ -18,6 +18,7 @@
 #include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"
 #include "common/network/messages/client/cheat/cheatMessage.h"
+#include "common/network/messages/server/npc/npcHealthMessage.h"
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
 
 
@@ -1893,6 +1894,10 @@ void Game::processServerMessage(const Message& msg) {
             std::cout << "[CLIENT] MSG_NPC_SPAWN recibido" << std::endl;
             handleNpcSpawn(static_cast<const NpcSpawnMessage&>(msg));
             return;
+        case ServerOpCode::MSG_NPC_HEALTH:
+            std::cout << "[CLIENT] MSG_NPC_HEALTH recibido" << std::endl;
+            handleNpcHealth(static_cast<const NpcHealthMessage&>(msg));
+            return;
 
 
         default:
@@ -2047,4 +2052,34 @@ void Game::handleNpcSpawn(const NpcSpawnMessage& msg) {
               << " hostile="
               << npcData.hostile
               << std::endl;
+}
+
+void Game::handleNpcHealth(const NpcHealthMessage& msg) {
+    const uint32_t npcId = msg.getNpcId();
+
+    attackSystem.setEnemyHealth(
+        npcId,
+        msg.getHp(),
+        msg.getMaxHp()
+    );
+
+    std::cout << "[CLIENT NPC] health npcId="
+              << npcId
+              << " hp="
+              << msg.getHp()
+              << "/"
+              << msg.getMaxHp()
+              << std::endl;
+
+    if (msg.getHp() <= 0) {
+        auto it = enemies.find(npcId);
+
+        if (it != enemies.end()) {
+            enemies.erase(it);
+        }
+
+        std::cout << "[CLIENT NPC] removido npcId="
+                  << npcId
+                  << std::endl;
+    }
 }

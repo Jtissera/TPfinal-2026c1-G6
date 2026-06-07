@@ -13,7 +13,7 @@ max_clients = 50
 
 [player]
 # Stats base (antes de aplicar modificadores de raza/clase)
-base_health     = 100
+base_health     = 1000
 base_mana       = 50
 base_agility    = 10
 base_strength   = 10
