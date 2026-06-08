@@ -24,6 +24,8 @@ private:
     AssetManager& assets;
     std::map<uint32_t, RemotePlayer> remotePlayers;
 
+    bool canAttackByFairPlay(uint32_t myLevel, uint32_t targetLevel);
+
 public:
     // Constructor del mundo cliente.
     ClientGameWorld(
@@ -57,7 +59,7 @@ public:
 
     void updateRemotePlayerEquipment(uint32_t entityId, const EquipmentDto &equipment, const ItemCatalog &itemCatalog);
 
-    void appendRemoteAttackTargets(std::vector<AttackTarget>& targets);
+    void appendRemoteAttackTargets(std::vector<AttackTarget>& targets,uint8_t localPlayerLevel);
 
     // Aplica visualmente el estado fantasma a un jugador remoto.
     // No toca inventario real; solo cambia sprite y oculta equipamiento visual.
@@ -66,6 +68,8 @@ public:
     bool isRemotePlayerGhost(uint32_t playerId) const;
 
     void applyRemotePlayerAliveState(uint32_t playerId);
+
+    void updateRemotePlayerLevel(uint32_t playerId, uint8_t newLevel);
 };
 
 

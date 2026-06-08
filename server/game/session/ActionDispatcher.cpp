@@ -511,14 +511,12 @@ void ActionDispatcher::handleAttackNpc(uint32_t attackerId,uint32_t npcId,GameWo
 }
 
 void ActionDispatcher::sendLevelUpIfNeeded(uint32_t playerId,Player& player,Monitor& monitor) {
+
     if (!player.checkAndClearLevelUp()) {
         return;
     }
 
-    monitor.sendTo(
-        playerId,
-        std::make_shared<const LevelUpMessage>(player.getLevel())
-    );
+    monitor.broadcast(std::make_shared<const LevelUpMessage>(playerId,static_cast<uint8_t>(player.getLevel())));
 }
 
 
@@ -560,8 +558,19 @@ void ActionDispatcher::handleCheat(uint32_t id, const Message &msg,
     }
     world.handlePlayerDeath(id,0);
     sendDeath(id, p, monitor);
-          
     break;
+
+  case CheatType::ADD_GOLD:
+          p.addGold(1000);
+          sendInventory(id,p,monitor);
+          sendStats(id,p,monitor);
+
+      break;
+  case CheatType::LEVEL_UP:
+          world.giveExperience(id,10000);
+          sendStats(id,p,monitor);
+          sendLevelUpIfNeeded(id,p,monitor);
+      break;
   }
 }
 

@@ -55,8 +55,10 @@ public:
     void setGhost(bool value);
 
     const PlayerDto& getDto() const;
-    
+
     void updateDto(const PlayerDto& newDto);
+    uint8_t getLevel() const;
+    void setLevel(uint8_t newLevel);
 };
 
 

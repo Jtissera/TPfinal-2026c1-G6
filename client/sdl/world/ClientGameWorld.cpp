@@ -191,10 +191,18 @@ void ClientGameWorld::updateRemotePlayerEquipment(uint32_t entityId,const Equipm
               << std::endl;
 }
 
-void ClientGameWorld::appendRemoteAttackTargets(std::vector<AttackTarget>& targets) {
+void ClientGameWorld::appendRemoteAttackTargets(
+    std::vector<AttackTarget>& targets,
+    uint8_t localPlayerLevel
+) {
     for (auto& [remotePlayerId, remotePlayer] : remotePlayers) {
-        // Si el remoto es fantasma, no debe ser targeteable desde el cliente.
         if (remotePlayer.isGhost()) {
+            continue;
+        }
+
+        const uint8_t remoteLevel = remotePlayer.getLevel();
+
+        if (!canAttackByFairPlay(localPlayerLevel, remoteLevel)) {
             continue;
         }
 
@@ -204,12 +212,7 @@ void ClientGameWorld::appendRemoteAttackTargets(std::vector<AttackTarget>& targe
             continue;
         }
 
-        targets.push_back(
-            AttackTarget{
-                remotePlayerId,
-                entity
-            }
-        );
+        targets.push_back(AttackTarget{remotePlayerId, entity});
     }
 }
 
@@ -295,5 +298,47 @@ void ClientGameWorld::applyRemotePlayerAliveState(uint32_t playerId) {
     std::cout << "[REMOTE_PLAYER] playerId="
               << playerId
               << " volvió a cuerpo normal"
+              << std::endl;
+}
+
+
+bool ClientGameWorld::canAttackByFairPlay(uint32_t myLevel, uint32_t targetLevel) {
+    constexpr uint32_t newbieMaxLevel = 12;
+    constexpr uint32_t maxLevelDiff = 10;
+
+    // Newbies no atacan ni son atacados.
+    if (myLevel <= newbieMaxLevel || targetLevel <= newbieMaxLevel) {
+        return false;
+    }
+
+    const int diff = std::abs(
+        static_cast<int>(myLevel) - static_cast<int>(targetLevel)
+    );
+
+    // Diferencia mayor a 10 niveles: no se permite PvP.
+    return diff <= static_cast<int>(maxLevelDiff);
+}
+
+void ClientGameWorld::updateRemotePlayerLevel(
+    uint32_t playerId,
+    uint8_t newLevel
+) {
+    auto it = remotePlayers.find(playerId);
+
+    if (it == remotePlayers.end()) {
+        std::cout << "[REMOTE_LEVEL] ignorado, no existe id="
+                  << playerId
+                  << " level="
+                  << newLevel
+                  << std::endl;
+        return;
+    }
+
+    it->second.setLevel(newLevel);
+
+    std::cout << "[REMOTE_LEVEL] playerId="
+              << playerId
+              << " newLevel="
+              << newLevel
               << std::endl;
 }

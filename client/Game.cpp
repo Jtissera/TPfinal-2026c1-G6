@@ -119,7 +119,7 @@ void Game::handleEvents() {
 
             // Jugadores remotos.
             if (clientWorld != nullptr) {
-                clientWorld->appendRemoteAttackTargets(attackTargets);
+                clientWorld->appendRemoteAttackTargets(attackTargets,static_cast<uint8_t>(playerState.level));
             }
 
             attackSystem.handleMouseClick(mouseX,mouseY,camera,attackTargets,sendQueue,player,equippedWeapon);
@@ -279,7 +279,7 @@ void Game::handleCheatKeys() {
 
     switch (event.key.keysym.sym) {
 
-        // Ctrl+H — God mode (vida + mana infinitos)
+        // Ctrl+h — God mode (vida infinita)
         case SDLK_h:
             cheatGodMode = !cheatGodMode;
             if (cheatGodMode) cheatInfMana = false;
@@ -291,7 +291,7 @@ void Game::handleCheatKeys() {
                 std::make_shared<const CheatMessage>(CheatType::INFINITE_HP));
             break;
 
-        // Ctrl+M — Mana infinito (solo mana)
+        // Ctrl+m — Mana infinito (solo mana)
         case SDLK_m:
             if (!cheatGodMode) {
                 cheatInfMana = !cheatInfMana;
@@ -304,32 +304,34 @@ void Game::handleCheatKeys() {
             }
             break;
 
-        // Ctrl+K — Morir instantáneamente (servidor aplica la muerte)
+        // Ctrl+k — Morir instantáneamente (servidor aplica la muerte)
         case SDLK_k:
             if (!playerState.isDead) {
                 showStatusMessage("[CHEAT] Muriendo...");
                 cheatGodMode = false;
                 cheatInfMana = false;
-                playerState.hp = 0;
-                playerState.mana = 0;
-                applyLocalPlayerGhostState();
                 sendQueue->try_push(
                     std::make_shared<const CheatMessage>(CheatType::DIE));
             }
             break;
 
-        // Ctrl+L — Subir nivel local (solo visual, para testear HUD)
+        // Ctrl+l — Subir nivel local (solo visual, para testear HUD)
         case SDLK_l:
-            playerState.level = std::min(playerState.level + 1, 99);
-            showStatusMessage("[CHEAT] Nivel: " + std::to_string(playerState.level));
+            showStatusMessage("[CHEAT]Solicitando Exp... ");
+            sendQueue->try_push(std::make_shared<const CheatMessage>(CheatType::LEVEL_UP));
             break;
 
-        // Ctrl+R — Resucitar (ya conectado al servidor)
+        // Ctrl+r — Resucitar (ya conectado al servidor)
         case SDLK_r:
             if (isLocalPlayerDead()) {
                 sendQueue->try_push(std::make_shared<const ResurrectMessage>());
                 showStatusMessage("Solicitando resurrección...");
             }
+            break;
+        // Ctrl+g — añade oro (ya conectado al servidor)
+        case SDLK_g:
+            showStatusMessage("[CHEAT] Solicitando oro...");
+            sendQueue->try_push(std::make_shared<const CheatMessage>(CheatType::ADD_GOLD));
             break;
 
         default: break;
@@ -1970,14 +1972,25 @@ void Game::handlePlayerEquipmentUpdate(const PlayerEquipmentUpdateMessage& msg) 
 
 
 void Game::handleLevelUp(const LevelUpMessage& msg) {
-    playerState.level = msg.newLevel_get();
+    const uint32_t updatedPlayerId = msg.getPlayerId();
+    const uint32_t newLevel = msg.getLevel();
 
-    std::cout << "[CLIENT] LEVEL UP recibido. level="
-              << playerState.level
+    std::cout << "[CLIENT LEVEL_UP] playerId="
+              << updatedPlayerId
+              << " level="
+              << newLevel
               << std::endl;
 
-    showStatusMessage("Subiste de nivel");
+    if (updatedPlayerId == static_cast<uint32_t>(playerDto.playerID)) {
+        playerState.level = newLevel;
+        return;
+    }
+
+    if (clientWorld != nullptr) {
+        clientWorld->updateRemotePlayerLevel(updatedPlayerId, newLevel);
+    }
 }
+
 void Game::handleNpcSpawn(const NpcSpawnMessage& msg) {
     auto existing = enemies.find(msg.getNpcId());
 

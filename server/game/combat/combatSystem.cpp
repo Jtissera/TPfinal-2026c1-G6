@@ -76,16 +76,15 @@ bool CombatSystem::canAttack(const Combatant &attacker,const Combatant &target) 
   return true;
 }
 
-bool CombatSystem::canAttackPlayer(const Player &attacker,
-                                   const Player &target) const {
+bool CombatSystem::canAttackPlayer(const Player &attacker,const Player &target) const {
   if (!canAttack(attacker, target))
     return false;
-  // if (attacker.getLevel() <= newbieMaxLevel ||
-  //     target.getLevel() <= newbieMaxLevel)
-  //   return false;
-  // int levelDiff = std::abs((int)attacker.getLevel() - (int)target.getLevel());
-  // if (levelDiff > maxLevelDiff)
-  //   return false;
+  if (attacker.getLevel() <= newbieMaxLevel || target.getLevel() <= newbieMaxLevel)
+    return false;
+  int levelDiff = std::abs((int)attacker.getLevel() - (int)target.getLevel());
+
+  if (levelDiff > maxLevelDiff)
+    return false;
   return true;
 }
 

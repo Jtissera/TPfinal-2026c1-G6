@@ -123,3 +123,11 @@ const PlayerDto& RemotePlayer::getDto() const {
 void RemotePlayer::updateDto(const PlayerDto& newDto) {
     dto = newDto;
 }
+
+uint8_t RemotePlayer::getLevel() const {
+    return dto.level;
+}
+
+void RemotePlayer::setLevel(uint8_t newLevel) {
+    dto.level = newLevel;
+}

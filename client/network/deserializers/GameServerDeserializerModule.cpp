@@ -147,14 +147,18 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
             playerId,
             equipment
         );
-    });registry.registerDeserializer(
+    });
+    registry.registerDeserializer(
     static_cast<uint8_t>(ServerOpCode::MSG_LEVEL_UP),
     [](PacketReader& reader) -> std::unique_ptr<Message> {
-        std::cout << "[DESERIALIZER] MSG_LEVEL_UP leyendo uint8"
-          << std::endl;
+        std::cout << "[DESERIALIZER] MSG_LEVEL_UP leyendo playerId + level"
+                  << std::endl;
+
+        // Debe coincidir con serializeBody().
+        const uint32_t playerId = reader.readUint32();
         const uint8_t newLevel = reader.readUint8();
 
-        return std::make_unique<LevelUpMessage>(newLevel);
+        return std::make_unique<LevelUpMessage>(playerId,newLevel);
     });
     registry.registerDeserializer(
     static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_RESURRECTED),
