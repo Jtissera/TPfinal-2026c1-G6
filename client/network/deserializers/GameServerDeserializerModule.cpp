@@ -10,6 +10,7 @@
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
 #include "common/network/messages/server/npc/npcHealthMessage.h"
+#include "common/network/messages/server/npc/npcMoveMessage.h"
 #include "common/network/protocol/clientOpCode.h"
 
 
@@ -202,5 +203,16 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
             maxHp
         );
     });
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ServerOpCode::MSG_NPC_MOVE),
+    [](PacketReader& reader) -> std::unique_ptr<Message> {
+        // Leemos en el mismo orden en que serializa NpcMoveMessage.
+        const uint32_t npcId = reader.readUint32();
+        const uint16_t x = reader.readUint16();
+        const uint16_t y = reader.readUint16();
+
+        return std::make_unique<NpcMoveMessage>(npcId, x, y);
+    }
+);
 
 }

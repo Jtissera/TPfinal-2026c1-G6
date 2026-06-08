@@ -28,6 +28,7 @@
 #include "common/network/messages/server/world/EntitySpawnMessage.h"
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
 #include "common/network/messages/server/npc/npcHealthMessage.h"
+#include "common/network/messages/server/npc/npcMoveMessage.h"
 #include "common/network/messages/server/player/levelUpMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
@@ -168,6 +169,7 @@ private:
     void handleLevelUp(const LevelUpMessage& msg);
     void handleNpcSpawn(const NpcSpawnMessage& msg);
     void handleNpcHealth(const NpcHealthMessage& msg);
+    void handleNpcMove(const NpcMoveMessage& msg);
 
 };
 

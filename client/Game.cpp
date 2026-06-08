@@ -1898,8 +1898,10 @@ void Game::processServerMessage(const Message& msg) {
             std::cout << "[CLIENT] MSG_NPC_HEALTH recibido" << std::endl;
             handleNpcHealth(static_cast<const NpcHealthMessage&>(msg));
             return;
-
-
+        case ServerOpCode::MSG_NPC_MOVE:
+            std::cout << "[CLIENT] MSG_NPC_MOVE recibido" << std::endl;
+            handleNpcMove(static_cast<const NpcMoveMessage &>(msg));
+            return;
         default:
             std::cout << "[CLIENT] opcode no manejado: 0x"
                       << std::hex << static_cast<int>(msg.opCode())
@@ -1972,20 +1974,47 @@ void Game::handleLevelUp(const LevelUpMessage& msg) {
     showStatusMessage("Subiste de nivel");
 }
 void Game::handleNpcSpawn(const NpcSpawnMessage& msg) {
-    const uint32_t npcId = msg.getNpcId();
+    auto existing = enemies.find(msg.getNpcId());
 
-    // Evitamos crear dos veces el mismo NPC.
-    if (enemies.find(npcId) != enemies.end()) {
-        std::cout << "[CLIENT NPC] spawn ignorado, ya existe npcId="
-                  << npcId
-                  << std::endl;
-        return;
+    if (existing != enemies.end()) {
+        Entity* enemyEntity = existing->second;
+
+        if (enemyEntity != nullptr) {
+            // Respawn de NPC existente:
+            // actualizamos posición y vida, sin crear una entidad duplicada.
+            auto& transform = enemyEntity->getComponent<TransformComponent>();
+
+            transform.position.x = static_cast<float>(msg.getX());
+            transform.position.y = static_cast<float>(msg.getY());
+
+            attackSystem.setEnemyHealth(
+                msg.getNpcId(),
+                static_cast<int>(msg.getHp()),
+                static_cast<int>(msg.getHpMax())
+            );
+
+            std::cout << "[CLIENT NPC] respawn/update npcId="
+                      << msg.getNpcId()
+                      << " pos=("
+                      << msg.getX()
+                      << ", "
+                      << msg.getY()
+                      << ") hp="
+                      << msg.getHp()
+                      << "/"
+                      << msg.getHpMax()
+                      << std::endl;
+
+            return;
+        }
+
+        enemies.erase(existing);
     }
 
     NPCData npcData{};
 
     // Adaptamos desde el mensaje de red al DTO visual del cliente.
-    npcData.npcID = npcId;
+    npcData.npcID = msg.getNpcId();
     npcData.type = msg.getType();
     npcData.nombre = msg.getName();
 
@@ -2007,17 +2036,17 @@ void Game::handleNpcSpawn(const NpcSpawnMessage& msg) {
 
         if (npcEntity == nullptr) {
             std::cout << "[CLIENT NPC] no se pudo crear npcId="
-                      << npcId
+                      << npcData.npcID
                       << " nombre="
                       << npcData.nombre
                       << std::endl;
             return;
         }
 
-        enemies[npcId] = npcEntity;
+        enemies[msg.getNpcId()] = npcEntity;
 
         attackSystem.setEnemyHealth(
-            npcId,
+            msg.getNpcId(),
             npcData.hp,
             npcData.hpMax
         );
@@ -2027,7 +2056,7 @@ void Game::handleNpcSpawn(const NpcSpawnMessage& msg) {
 
         if (npcEntity == nullptr) {
             std::cout << "[CLIENT NPC] no se pudo crear NPC ciudad npcId="
-                      << npcId
+                      << msg.getNpcId()
                       << " nombre="
                       << npcData.nombre
                       << std::endl;
@@ -2036,7 +2065,7 @@ void Game::handleNpcSpawn(const NpcSpawnMessage& msg) {
     }
 
     std::cout << "[CLIENT NPC] spawn npcId="
-              << npcId
+              << msg.getNpcId()
               << " nombre="
               << npcData.nombre
               << " type="
@@ -2082,4 +2111,54 @@ void Game::handleNpcHealth(const NpcHealthMessage& msg) {
                   << npcId
                   << std::endl;
     }
+}
+
+void Game::handleNpcMove(const NpcMoveMessage& msg) {
+    const uint32_t npcId = msg.getNpcId();
+
+    // Buscamos el enemigo en el mapa visual.
+    auto it = enemies.find(npcId);
+
+    // Si no existe en cliente, no podemos moverlo.
+    // En ese caso debería llegar primero un NpcSpawnMessage.
+    if (it == enemies.end()) {
+        std::cout << "[CLIENT NPC] move ignorado, npc no existe npcId="
+                  << npcId
+                  << std::endl;
+        return;
+    }
+
+    Entity* enemyEntity = it->second;
+
+    if (enemyEntity == nullptr) {
+        std::cout << "[CLIENT NPC] move ignorado, entity null npcId="
+                  << npcId
+                  << std::endl;
+        return;
+    }
+
+    auto& transform = enemyEntity->getComponent<TransformComponent>();
+
+    const float oldX = transform.position.x;
+    const float oldY = transform.position.y;
+
+    const float newX = static_cast<float>(msg.getX());
+    const float newY = static_cast<float>(msg.getY());
+
+    // Actualizamos posición visual.
+    transform.position.x = newX;
+    transform.position.y = newY;
+
+    std::cout << "[CLIENT NPC] move npcId="
+              << npcId
+              << " old=("
+              << oldX
+              << ", "
+              << oldY
+              << ") new=("
+              << newX
+              << ", "
+              << newY
+              << ")"
+              << std::endl;
 }

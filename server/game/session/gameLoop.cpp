@@ -1,6 +1,7 @@
 #include "gameLoop.h"
 
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
+#include "common/network/messages/server/npc/npcMoveMessage.h"
 
 GameLoop::GameLoop(Queue<ClientMessage> &q, Monitor &m, GameWorld &w,
                    Queue<std::shared_ptr<LeaveEvent>> &leaveQ, Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQ, uint32_t gameId,
@@ -66,33 +67,63 @@ void GameLoop::processMessage(const ClientMessage &incoming)
   dispatcher.dispatch(incoming, world, monitor);
 }
 
-void GameLoop::worldUpdate(float deltaSeconds){
+void GameLoop::worldUpdate(float deltaSeconds) {
 
   auto result = world.tick(deltaSeconds);
 
-  for (uint32_t id : result.playersChanged)
+  // Si cambiaron stats de jugadores, mandamos stats actualizadas.
+  for (uint32_t id : result.playersChanged) {
     statManager.sendPlayerStats(id, world, monitor);
+  }
+
+  // Si algún NPC se movió, avisamos al cliente con un mensaje específico.
+  // Esto NO crea NPCs. Solo actualiza su posición visual.
+  for (uint32_t npcId : result.npcsMoved) {
+    const Npc& npc = world.getNpc(npcId);
+
+    monitor.broadcast(
+        std::make_shared<const NpcMoveMessage>(
+            npc.getId(),
+            static_cast<uint16_t>(npc.getTileX() * 96),
+            static_cast<uint16_t>(npc.getTileY() * 96)
+        )
+    );
+
+    std::cout << "[GameLoop] broadcast NPC move id="
+              << npc.getId()
+              << " pos=("
+              << npc.getTileX()
+              << ", "
+              << npc.getTileY()
+              << ")"
+              << std::endl;
+  }
 
   for (const auto& npcSpawn : result.spawnedNpcs) {
-    monitor.broadcast( std::make_shared<const NpcSpawnMessage>(
-      npcSpawn.npcId,
-      npcSpawn.type,
-      npcSpawn.name,
-      npcSpawn.x,
-      npcSpawn.y,
-      npcSpawn.hp,
-      npcSpawn.maxHp,
-      npcSpawn.hostile));
+    monitor.broadcast(
+        std::make_shared<const NpcSpawnMessage>(
+            npcSpawn.npcId,
+            npcSpawn.type,
+            npcSpawn.name,
+            npcSpawn.x,
+            npcSpawn.y,
+            npcSpawn.hp,
+            npcSpawn.maxHp,
+            npcSpawn.hostile
+        )
+    );
+
     std::cout << "[GameLoop] broadcast NPC respawn id="
-        << npcSpawn.npcId
-        << " name="
-        << npcSpawn.name
-        << std::endl;
-  }
-  for (auto &entry : result.instanceTransitions) {
-    handleInstanceTransition(entry);
+              << npcSpawn.npcId
+              << " name="
+              << npcSpawn.name
+              << std::endl;
   }
 
+  // Transiciones de instancia.
+  for (auto& entry : result.instanceTransitions) {
+    handleInstanceTransition(entry);
+  }
 }
 
 void GameLoop::handleLeaveGame(uint32_t clientId)
