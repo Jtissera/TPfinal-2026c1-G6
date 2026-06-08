@@ -4,6 +4,5 @@
 PORT=8080
 
 cd /var/argentum
-export ARGENTUM_CONFIG_FILE=""
 
 /usr/bin/argentum_server $PORT
