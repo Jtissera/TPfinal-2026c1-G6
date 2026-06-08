@@ -22,7 +22,7 @@ public:
     uint8_t  getAgility()     const override { return stats.agility;   }
     uint8_t  getStrength()    const override { return stats.strength;  }
     int      getAttackRange() const override { return 1;               }
-    bool     isAlive()        const override { return hp > 0;          }
+    bool isAlive() const override {return lifeState == NpcLifeState::ALIVE && hp > 0;}
     NpcType getType() const {return stats.type;}
     const std::string& getName() const {return stats.name;}
     const std::string& getTypeName() const {return stats.typeName;}
@@ -38,38 +38,50 @@ public:
 
   void takeDamage(int16_t dmg) override;
 
-    int      getSpawnTileX()     const { return spawnTileX;           }
-    int      getSpawnTileY()     const { return spawnTileY;           }
-    int      getDetectionRange() const { return stats.detectionRange; }
-    int      getHomeRange()      const { return stats.homeRange;      }
-    const NpcStats& getStats()   const { return stats;                }
-    NpcState getState()          const { return state;                }
-    uint32_t getTargetId()       const { return targetId;             }
-    bool isHostile() const { return stats.hostile; }
+  int      getSpawnTileX()     const { return spawnTileX;           }
+  int      getSpawnTileY()     const { return spawnTileY;           }
+  int      getDetectionRange() const { return stats.detectionRange; }
+  int      getHomeRange()      const { return stats.homeRange;      }
+  const NpcStats& getStats()   const { return stats;                }
+  NpcState getState()          const { return state;                }
+  uint32_t getTargetId()       const { return targetId;             }
+  bool isHostile() const { return stats.hostile; }
 
 
-    void setTilePos(int tx, int ty) { tileX = tx; tileY = ty; }
-    void setState(NpcState s)       { state = s;               }
-    void setTargetId(uint32_t id)   { targetId = id;           }
-    void clearTarget() { targetId = 0; state = NpcState::IDLE; }
+  void setTilePos(int tx, int ty) { tileX = tx; tileY = ty; }
+  void setState(NpcState s)       { state = s;               }
+  void setTargetId(uint32_t id)   { targetId = id;           }
+  void clearTarget() { targetId = 0; state = NpcState::IDLE; }
 
   bool canAttack() const;
   bool canMove() const;
   void resetAttackCooldown();
   void resetMoveCooldown();
 
-    Npc(const Npc&)            = delete;
-    Npc& operator=(const Npc&) = delete;
-    Npc(Npc&&)                 = default;
-    Npc& operator=(Npc&&)      = default;
+  bool isRespawning() const;
+  NpcLifeState getLifeState() const;
+
+  void startRespawn(float respawnMs);
+  bool tickRespawn(float deltaMs);
+  void respawn();
+
+
+  Npc(const Npc&)            = delete;
+  Npc& operator=(const Npc&) = delete;
+  Npc(Npc&&)                 = default;
+  Npc& operator=(Npc&&)      = default;
 
 private:
   uint32_t id;
-  const NpcStats &stats;
+  NpcStats stats;
   int tileX, tileY;
   int spawnTileX, spawnTileY;
   int16_t hp;
+  // Estado de comportamiento/IA.
   NpcState state = NpcState::IDLE;
+  // Estado de vida/respawn.
+  NpcLifeState lifeState = NpcLifeState::ALIVE;
+  float respawnRemainingMs = 0.0f;
   uint32_t targetId = 0;
 
     using Clock = std::chrono::steady_clock;

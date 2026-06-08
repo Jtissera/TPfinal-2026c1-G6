@@ -108,6 +108,7 @@ public:
   void resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY);
   bool hasNpc(uint32_t npcId) const;
   bool damageNpc(uint32_t npcId, int16_t damage, uint32_t attackerPlayerId);
+  void handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId);
   bool hasPlayer(uint32_t playerId) const;
 
   Npc& getNpc(uint32_t npcId);
@@ -124,17 +125,16 @@ public:
   std::optional<NpcType> getNpcTypeAtTile(int tileX, int tileY) const;
 
 private:
-  static constexpr int TILE_SIZE = 96; //toml
-  static constexpr float PLAYER_MOVE_STEP = 8.0f;
-  int tileSize;
-  void tickPlayers(float deltaSeconds, WorldTickResult &result);
-  void tickNpcs(WorldTickResult &result);
+  static constexpr int TILE_SIZE = 96; // a toml
+  static constexpr float PLAYER_MOVE_STEP = 8.0f; // a toml
+
   MapData mapData;
   CollisionSystem collision;
   OccupancySystem occupancy;
   GameFormulas formulas;
   NpcManager npcManager;
   ItemRepository &itemRepo;
+
   BankRepository bankRepo;
   ResurrectionSystem resurrectionSystem;
   PriestHandler priestHandler;
@@ -142,29 +142,36 @@ private:
   BankerHandler bankerHandler;
   CityNpcDispatcher cityDispatcher;
 
-
   std::unordered_map<uint32_t, Player> players;
   GroundManager groundManager;
   SpawnManager spawnManager;
-    struct GroundItem {
-        Item item;
-        int tileX, tileY;
-    };
-    struct GroundGold {
-        uint32_t amount;
-        int tileX, tileY;
-    };
 
-    std::vector<GroundItem> groundItems;
-    std::vector<GroundGold> groundGold;
+  int tileSize;
+  float npcRespawnDelayMs = 5000.0f; // toml
 
-    void spawnMapNpcs();
-    void loadInitialInventoryForPlayer(Player& player);
+  struct GroundItem {
+    Item item;
+    int tileX, tileY;
+  };
 
-    int spawnTickCounter = 0;
-    static constexpr int SPAWN_EVERY_N_TICKS = 200;
-    static constexpr int MAX_NPCS            = 20;  // a TOML
-    static constexpr int SPAWN_BATCH_SIZE    = 4;   // a TOML
+  struct GroundGold {
+    uint32_t amount;
+    int tileX, tileY;
+  };
 
-    std::vector<std::pair<std::string, std::pair<int,int>>> spawnPoints;
+  std::vector<GroundItem> groundItems;
+  std::vector<GroundGold> groundGold;
+
+  void tickPlayers(float deltaSeconds, WorldTickResult &result);
+  void tickNpcs(WorldTickResult &result);
+
+  void spawnMapNpcs();
+  void loadInitialInventoryForPlayer(Player& player);
+
+  int spawnTickCounter = 0;
+  static constexpr int SPAWN_EVERY_N_TICKS = 200; // toml
+  static constexpr int MAX_NPCS = 20; // toml
+  static constexpr int SPAWN_BATCH_SIZE = 4; // toml
+
+  std::vector<std::pair<std::string, std::pair<int,int>>> spawnPoints;
 };

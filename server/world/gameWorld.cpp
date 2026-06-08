@@ -5,41 +5,49 @@ GameWorld::GameWorld(const std::string &mapPath,
                      ItemRepository &itemRepo,
                      const toml::table &config)
     : mapData(MapSerializer::load(mapPath)),
-        collision(mapData),
-        occupancy(),
-        npcManager(npcFactory, collision, mapData),
-        itemRepo(itemRepo),
-        formulas(config),
-        spawnManager(config, npcManager, collision, occupancy),
-        tileSize(config["world"]["tile_size"].value_or(96)),
-        bankRepo(),
-        resurrectionSystem(),
-        priestHandler(itemRepo, resurrectionSystem, mapData, config),
-        merchantHandler(itemRepo, config),
-        bankerHandler(bankRepo),
-        cityDispatcher(priestHandler, merchantHandler, bankerHandler)
-        {
-  spawnManager.loadSpawnPoints(this->mapData);
+      collision(mapData),
+      occupancy(),
+      formulas(config),
+      npcManager(npcFactory, collision, mapData),
+      itemRepo(itemRepo),
+      bankRepo(),
+      resurrectionSystem(),
+      priestHandler(itemRepo, resurrectionSystem, mapData, config),
+      merchantHandler(itemRepo, config),
+      bankerHandler(bankRepo),
+      cityDispatcher(priestHandler, merchantHandler, bankerHandler),
+      players(),
+      groundManager(),
+      spawnManager(config, npcManager, collision, occupancy),
+      tileSize(config["world"]["tile_size"].value_or(96)),
+      npcRespawnDelayMs(config["npcs"]["respawn_ms"].value_or(5000.0f))
+{
+    spawnManager.loadSpawnPoints(this->mapData);
 }
 
-GameWorld::GameWorld(MapData mapData, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config)
+GameWorld::GameWorld(MapData mapData,
+                     NpcFactory &npcFactory,
+                     ItemRepository &itemRepo,
+                     const toml::table &config)
     : mapData(std::move(mapData)),
-        collision(this->mapData),
-        occupancy(),
-        npcManager(npcFactory, collision, this->mapData),
-        itemRepo(itemRepo),
-        formulas(config),
-        spawnManager(config, npcManager, collision, occupancy),
-        tileSize(config["world"]["tile_size"].value_or(96)),
-        bankRepo(),
-        resurrectionSystem(),
-        priestHandler(itemRepo, resurrectionSystem, this->mapData, config),
-        merchantHandler(itemRepo, config),
-        bankerHandler(bankRepo),
-        cityDispatcher(priestHandler, merchantHandler, bankerHandler)
+      collision(this->mapData),
+      occupancy(),
+      formulas(config),
+      npcManager(npcFactory, collision, this->mapData),
+      itemRepo(itemRepo),
+      bankRepo(),
+      resurrectionSystem(),
+      priestHandler(itemRepo, resurrectionSystem, this->mapData, config),
+      merchantHandler(itemRepo, config),
+      bankerHandler(bankRepo),
+      cityDispatcher(priestHandler, merchantHandler, bankerHandler),
+      players(),
+      groundManager(),
+      spawnManager(config, npcManager, collision, occupancy),
+      tileSize(config["world"]["tile_size"].value_or(96)),
+      npcRespawnDelayMs(config["npcs"]["respawn_ms"].value_or(5000.0f))
 {
-  spawnManager.loadSpawnPoints(this->mapData);
+    spawnManager.loadSpawnPoints(this->mapData);
 }
 
 void GameWorld::addPlayer(Player player) {
@@ -365,41 +373,96 @@ const std::unordered_map<uint32_t, Npc> &GameWorld::getNpcs() const
   return npcManager.getNpcs();
 }
 
-GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds)
-{
-  WorldTickResult result;
+GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds) {
+    WorldTickResult result;
 
-  float deltaMs = deltaSeconds * 1000.0f;
-  resurrectionSystem.tick(deltaMs, [this](uint32_t pid, int tx, int ty) {
+    float deltaMs = deltaSeconds * 1000.0f;
+    resurrectionSystem.tick(deltaMs, [this](uint32_t pid, int tx, int ty) {
         Player &p = getPlayer(pid);
         p.stopResurrection();
         resurrectPlayer(pid, tx, ty);
-  });
+    });
 
-  tickPlayers(deltaSeconds, result);
-  tickNpcs(result);
+    tickPlayers(deltaSeconds, result);
+    tickNpcs(result);
 
-  const auto spawnedNpcIds = spawnManager.tick();
+    const auto respawnedNpcIds = npcManager.tickRespawns(deltaMs);
+    if (!respawnedNpcIds.empty()) {
+        std::cout << "[GameWorld] respawnedNpcIds="
+                  << respawnedNpcIds.size()
+                  << std::endl;
+    }
 
-  for (uint32_t npcId : spawnedNpcIds) {
-        const Npc* npc = npcManager.findNpc(npcId);
+    for (uint32_t npcId : respawnedNpcIds) {
+
+
+        Npc* npc = npcManager.findNpc(npcId);
 
         if (npc == nullptr) {
             continue;
         }
-        result.spawnedNpcs.push_back({
-        npc->getId(),
-        npc->getType(),
-        npc->getName(),
-        static_cast<uint16_t>(npc->getTileX() * tileSize),
-        static_cast<uint16_t>(npc->getTileY() * tileSize),
-        static_cast<uint16_t>(npc->getHp()),
-        static_cast<uint16_t>(npc->getMaxHp()),
-        npc->isHostile()});
-    }
-return result;
-}
 
+        const int tx = npc->getSpawnTileX();
+        const int ty = npc->getSpawnTileY();
+
+        // Si el spawn original está bloqueado, intentamos alrededor.
+        bool placed = false;
+
+        if (collision.isWalkable(tx, ty) && !occupancy.isOccupied(tx, ty)) {
+            occupancy.occupy(tx, ty, npcId);
+            npc->respawn();
+            placed = true;
+        } else {
+            for (int dx = -1; dx <= 1 && !placed; ++dx) {
+                for (int dy = -1; dy <= 1 && !placed; ++dy) {
+                    if (dx == 0 && dy == 0) {
+                        continue;
+                    }
+
+                    const int altX = tx + dx;
+                    const int altY = ty + dy;
+
+                    if (!collision.isWalkable(altX, altY)) {
+                        continue;
+                    }
+
+                    if (occupancy.isOccupied(altX, altY)) {
+                        continue;
+                    }
+
+                    occupancy.occupy(altX, altY, npcId);
+                    npc->respawn();
+                    npc->setTilePos(altX, altY);
+                    placed = true;
+                }
+            }
+        }
+
+        if (!placed) {
+            // Si no encontró lugar, lo mandamos otra vez a respawn corto.
+            npcManager.startRespawn(npcId, npcRespawnDelayMs);
+            continue;
+        }
+
+        result.spawnedNpcs.push_back({
+            npc->getId(),
+            npc->getType(),
+            npc->getName(),
+            static_cast<uint16_t>(npc->getTileX() * tileSize),
+            static_cast<uint16_t>(npc->getTileY() * tileSize),
+            static_cast<uint16_t>(npc->getHp()),
+            static_cast<uint16_t>(npc->getMaxHp()),
+            npc->isHostile()
+        });
+
+        std::cout << "[GameWorld] NPC respawn mismo id="
+                  << npc->getId()
+                  << " name="
+                  << npc->getName()
+                  << std::endl;
+    }
+    return result;
+}
 void GameWorld::tickPlayers(float deltaSeconds, WorldTickResult &result)
 {
   for (auto &[id, player] : players) {
@@ -468,23 +531,36 @@ void GameWorld::tickNpcs(WorldTickResult &result)
       handlePlayerDeath(attack.targetPlayerId, 0);
   }
 
-  for (auto &death : npcResult.deaths) {
-    occupancy.free(death.tileX, death.tileY);
+    for (auto &death : npcResult.deaths) {
+        // El NPC muerto libera el tile.
+        occupancy.free(death.tileX, death.tileY);
 
-    if (death.goldDrop > 0)
-      groundManager.addGold(death.goldDrop, death.tileX, death.tileY);
+        if (death.goldDrop > 0) {
+            groundManager.addGold(death.goldDrop, death.tileX, death.tileY);
+        }
 
-    if (!death.itemDrop.empty()) {
-      try {
-        groundManager.addItem(itemRepo.createItem(death.itemDrop),
-                              death.tileX, death.tileY);
-      } catch (const std::exception &e) {
-        std::cerr << "[GameWorld] item drop failed: " << e.what() << std::endl;
-      }
+        if (!death.itemDrop.empty()) {
+            try {
+                groundManager.addItem(itemRepo.createItem(death.itemDrop),
+                                      death.tileX, death.tileY);
+            } catch (const std::exception &e) {
+                std::cerr << "[GameWorld] item drop failed: " << e.what() << std::endl;
+            }
+        }
+
+        // Se informa la muerte para que GameLoop mande vida 0 al cliente.
+        result.npcDeaths.push_back(death);
+
+        // El mismo NPC entra en estado RESPAWNING.
+        npcManager.startRespawn(death.npcId, npcRespawnDelayMs);
+
+        std::cout << "[GameWorld] NPC pasa a RESPAWNING id="
+                  << death.npcId
+                  << " respawnMs="
+                  << npcRespawnDelayMs
+                  << std::endl;
     }
 
-    result.npcDeaths.push_back(death);
-  }
 }
 
 void GameWorld::resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY)
@@ -513,7 +589,61 @@ bool GameWorld::hasNpc(uint32_t npcId) const { return npcManager.hasNpc(npcId); 
 bool GameWorld::hasPlayer(uint32_t playerId) const { return players.find(playerId) != players.end(); }
 
 bool GameWorld::damageNpc(uint32_t npcId, int16_t damage, uint32_t attackerPlayerId) {
-    return npcManager.damageNpc(npcId, damage, attackerPlayerId);
+
+    Npc* npc = npcManager.findNpc(npcId);
+    if (npc == nullptr) {
+        std::cout << "[GameWorld] damageNpc: NPC inexistente id="
+          << npcId
+          << std::endl;
+        return false;
+    }
+    if (!npc->isAlive()) {
+        std::cout << "[GameWorld] damageNpc: NPC no activo id="
+          << npcId
+          << std::endl;
+        return false;
+    }
+
+    // Guardamos la posición antes de aplicar daño.
+    // Si muere, hay que liberar este tile.
+    const int tileX = npc->getTileX();
+    const int tileY = npc->getTileY();
+    const int16_t hpBefore = npc->getHp();
+
+    const bool damaged = npcManager.damageNpc(npcId, damage, attackerPlayerId);
+
+    if (!damaged) {
+        std::cout << "[GameWorld] damageNpc: npcManager.damageNpc devolvió false id="
+          << npcId
+          << std::endl;
+        return false;
+    }
+
+    std::cout << "[GameWorld] damageNpc id="
+              << npcId
+              << " damage="
+              << damage
+              << " hp="
+              << hpBefore
+              << " -> "
+              << npc->getHp()
+              << std::endl;
+
+    // Si murió, no lo borramos del NpcManager.
+    // Lo dejamos en RESPAWNING y liberamos su tile.
+    if (!npc->isAlive()) {
+        occupancy.free(tileX, tileY);
+
+        npcManager.startRespawn(npcId, npcRespawnDelayMs);
+
+        std::cout << "[GameWorld] NPC pasa a RESPAWNING id="
+                  << npcId
+                  << " respawnMs="
+                  << npcRespawnDelayMs
+                  << std::endl;
+    }
+
+    return true;
 }
 
 Npc& GameWorld::getNpc(uint32_t npcId) { return npcManager.getNpc(npcId); }
@@ -608,3 +738,33 @@ std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const
   return t != NpcType::NONE ? std::optional<NpcType>(t) : std::nullopt;
 }
 
+void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
+
+    (void)killerPlayerId;
+
+    Npc* npc = npcManager.findNpc(npcId);
+
+    if (npc == nullptr) {
+        return;
+    }
+
+    // Si ya está en respawn, evitamos procesar la muerte dos veces.
+    if (npc->isRespawning()) {
+        return;
+    }
+
+    const int tileX = npc->getTileX();
+    const int tileY = npc->getTileY();
+
+    // Liberamos el tile ocupado por el NPC muerto.
+    occupancy.free(tileX, tileY);
+
+    // el NPC NO se borra, conserva su ID y entra en RESPAWNING.
+    npcManager.startRespawn(npcId, npcRespawnDelayMs);
+
+    std::cout << "[GameWorld] NPC pasa a RESPAWNING id="
+              << npcId
+              << " respawnMs="
+              << npcRespawnDelayMs
+              << std::endl;
+}

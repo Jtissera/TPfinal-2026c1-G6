@@ -1,5 +1,5 @@
 #pragma once
-enum class NpcState { IDLE, CHASING, ATTACKING, RETURNING };
+enum class NpcState { IDLE, CHASING, ATTACKING, RETURNING};
 
 enum class NpcKind {
     Passive,
@@ -12,3 +12,4 @@ enum class NpcRole {
     Banker,
     Creature
 };
+enum class NpcLifeState { ALIVE, RESPAWNING };

@@ -1,5 +1,6 @@
 #include "SpawnManager.h"
 #include <cstdlib>
+#include <iostream>
 
 SpawnManager::SpawnManager(const toml::table &config, NpcManager &npcManager,
                            const CollisionSystem &collision,
@@ -43,8 +44,8 @@ std::optional<uint32_t> SpawnManager::trySpawnAround(const std::string& typeName
 }
 
 std::vector<uint32_t> SpawnManager::tick() {
-
   std::vector<uint32_t> spawnedNpcIds;
+
   spawnTickCounter++;
 
   if (spawnTickCounter < spawnEveryNTicks) {
@@ -53,10 +54,22 @@ std::vector<uint32_t> SpawnManager::tick() {
 
   spawnTickCounter = 0;
 
-  const int remainingCapacity =
-      maxNpcs - static_cast<int>(npcManager.count());
+  const int currentNpcs = static_cast<int>(npcManager.count());
+  const int remainingCapacity = maxNpcs - currentNpcs;
+
+  std::cout << "[SPAWN MANAGER] tick currentNpcs="
+            << currentNpcs
+            << " maxNpcs="
+            << maxNpcs
+            << " remainingCapacity="
+            << remainingCapacity
+            << " spawnPoints="
+            << spawnPoints.size()
+            << std::endl;
 
   if (remainingCapacity <= 0) {
+    std::cout << "[SPAWN MANAGER] no spawnea: capacidad llena"
+              << std::endl;
     return spawnedNpcIds;
   }
 
@@ -68,7 +81,22 @@ std::vector<uint32_t> SpawnManager::tick() {
     auto npcId = trySpawnAround(point.typeName, point.x, point.y);
 
     if (npcId.has_value()) {
+      std::cout << "[SPAWN MANAGER] spawned npcId="
+                << npcId.value()
+                << " type="
+                << point.typeName
+                << std::endl;
+
       spawnedNpcIds.push_back(npcId.value());
+    } else {
+      std::cout << "[SPAWN MANAGER] fallo spawn type="
+                << point.typeName
+                << " base=("
+                << point.x
+                << ", "
+                << point.y
+                << ")"
+                << std::endl;
     }
   }
 

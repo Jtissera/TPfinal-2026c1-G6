@@ -23,5 +23,5 @@ Npc NpcFactory::create(const std::string& typeName, int tileX, int tileY) {
               << ")"
               << std::endl;
 
-    return Npc(nextId++, repo.get(typeName), tileX, tileY);
+    return Npc(nextId++, stats, tileX, tileY);
 }

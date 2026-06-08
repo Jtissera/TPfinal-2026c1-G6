@@ -54,13 +54,14 @@ mana_per_tick = 5           # mana recuperado por tick al meditar
 
 [npc]
 spawn_interval_ticks = 200
-max_population       = 20
+max_population       = 200
 spawn_batch_size     = 4
 aggro_range        = 5       # tiles de distancia para que el NPC ataque
 drop_chance_nothing  = 0.80
 drop_chance_gold     = 0.08
 drop_chance_potion   = 0.01
 drop_chance_item     = 0.01
+respawn_ms           = 1000
 
 [clans]
 max_members     = 16

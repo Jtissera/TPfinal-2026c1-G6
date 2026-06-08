@@ -1,5 +1,6 @@
 #include "npcManager.h"
 #include <cstdlib>
+#include <iostream>
 
 NpcManager::NpcManager(NpcFactory &factory, const CollisionSystem &collision,
                        const MapData &mapData)
@@ -12,6 +13,10 @@ uint32_t NpcManager::spawnNpc(const std::string &typeName, int tileX,
   uint32_t id = npc.getId();
   npcs.emplace(id, std::move(npc));
   return id;
+}
+
+void NpcManager::removeNpc(uint32_t npcId) {
+    npcs.erase(npcId);
 }
 
 void NpcManager::applyMove(uint32_t npcId, int toX, int toY)
@@ -27,46 +32,48 @@ void NpcManager::applyMove(uint32_t npcId, int toX, int toY)
 NpcTickResult
 NpcManager::tick(const std::unordered_map<uint32_t, Player> &players)
 {
-  NpcTickResult result;
+    NpcTickResult result;
 
-  for (auto &[id, npc] : npcs)
-  {
-    if (!npc.isAlive()) continue;
-    if (!npc.isHostile()) continue;
-
-    NpcIntent intent = ai.decide(npc, players);
-
-    npc.setState(intent.nextState);
-    npc.setTargetId(intent.targetId);
-
-    if (intent.type == NpcIntent::Type::MOVE && npc.canMove())
+    for (auto &[id, npc] : npcs)
     {
-      result.moveIntents.push_back(
-          {id, npc.getTileX(), npc.getTileY(), intent.tileX, intent.tileY});
-    }
-    else if (intent.type == NpcIntent::Type::ATTACK && npc.canAttack())
-    {
-      result.attacks.push_back({intent.targetId, rollDamage(npc.getStats()), npc.getStats().xpMultiplier});
-      npc.resetAttackCooldown();
-    }
-  }
-
-  std::vector<uint32_t> toErase;
-
-    for (auto& [id, npc] : npcs) {
+        // Si el NPC está muerto o respawneando, no ataca.
         if (!npc.isAlive()) {
-            // Solo las criaturas hostiles generan muerte/drop.
-            // Un NPC pasivo no debería pasar por combate normal.
-            if (npc.isHostile()) {
-                result.deaths.push_back(buildDeathResult(npc));
-            }
+            continue;
+        }
 
-            toErase.push_back(id);
+        // Los NPCs no hostiles no persiguen ni atacan.
+        if (!npc.isHostile()) {
+            continue;
+        }
+
+        // La IA decide qué quiere hacer este NPC.
+        NpcIntent intent = ai.decide(npc, players);
+
+        // Guardamos el estado visual/lógico de IA.
+        npc.setState(intent.nextState);
+        npc.setTargetId(intent.targetId);
+
+        // Si quiere moverse y el cooldown se lo permite,
+        // devolvemos una intención de movimiento para que GameWorld valide colisiones.
+        if (intent.type == NpcIntent::Type::MOVE && npc.canMove())
+        {
+            result.moveIntents.push_back(
+                {id, npc.getTileX(), npc.getTileY(), intent.tileX, intent.tileY});
+        }
+        // Si quiere atacar y el cooldown se lo permite,
+        // devolvemos una intención de ataque para que GameWorld aplique daño.
+        else if (intent.type == NpcIntent::Type::ATTACK && npc.canAttack())
+        {
+            result.attacks.push_back({
+                intent.targetId,
+                rollDamage(npc.getStats()),
+                npc.getStats().xpMultiplier
+            });
+
+            npc.resetAttackCooldown();
         }
     }
-    for (uint32_t id : toErase)
-        npcs.erase(id);
- 
+
     return result;
 }
 
@@ -187,4 +194,39 @@ const Npc& NpcManager::getNpc(uint32_t npcId) const {
     }
 
     return it->second;
+}
+
+void NpcManager::startRespawn(uint32_t npcId, float respawnMs) {
+    auto it = npcs.find(npcId);
+
+    if (it == npcs.end()) {
+        std::cout << "[NPC MANAGER] startRespawn falló, npc inexistente id="
+                  << npcId
+                  << std::endl;
+        return;
+    }
+
+    it->second.startRespawn(respawnMs);
+
+    std::cout << "[NPC MANAGER] start respawn npcId="
+              << npcId
+              << " respawnMs="
+              << respawnMs
+              << std::endl;
+}
+
+std::vector<uint32_t> NpcManager::tickRespawns(float deltaMs) {
+    std::vector<uint32_t> readyToRespawn;
+
+    for (auto& [npcId, npc] : npcs) {
+        if (!npc.isRespawning()) {
+            continue;
+        }
+
+        if (npc.tickRespawn(deltaMs)) {
+            readyToRespawn.push_back(npcId);
+        }
+    }
+
+    return readyToRespawn;
 }

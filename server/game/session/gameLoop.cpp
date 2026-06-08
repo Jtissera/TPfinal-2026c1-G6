@@ -1,5 +1,7 @@
 #include "gameLoop.h"
 
+#include "common/network/messages/server/npc/npcSpawnMessage.h"
+
 GameLoop::GameLoop(Queue<ClientMessage> &q, Monitor &m, GameWorld &w,
                    Queue<std::shared_ptr<LeaveEvent>> &leaveQ, Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQ, uint32_t gameId,
                    const toml::table &config)
@@ -64,15 +66,33 @@ void GameLoop::processMessage(const ClientMessage &incoming)
   dispatcher.dispatch(incoming, world, monitor);
 }
 
-void GameLoop::worldUpdate(float deltaSeconds)
-{
+void GameLoop::worldUpdate(float deltaSeconds){
+
   auto result = world.tick(deltaSeconds);
 
   for (uint32_t id : result.playersChanged)
     statManager.sendPlayerStats(id, world, monitor);
 
-  for (auto &entry : result.instanceTransitions)
+  for (const auto& npcSpawn : result.spawnedNpcs) {
+    monitor.broadcast( std::make_shared<const NpcSpawnMessage>(
+      npcSpawn.npcId,
+      npcSpawn.type,
+      npcSpawn.name,
+      npcSpawn.x,
+      npcSpawn.y,
+      npcSpawn.hp,
+      npcSpawn.maxHp,
+      npcSpawn.hostile));
+    std::cout << "[GameLoop] broadcast NPC respawn id="
+        << npcSpawn.npcId
+        << " name="
+        << npcSpawn.name
+        << std::endl;
+  }
+  for (auto &entry : result.instanceTransitions) {
     handleInstanceTransition(entry);
+  }
+
 }
 
 void GameLoop::handleLeaveGame(uint32_t clientId)

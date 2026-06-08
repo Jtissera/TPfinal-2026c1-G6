@@ -438,7 +438,9 @@ void ActionDispatcher::handleAttackNpc(uint32_t attackerId,uint32_t npcId,GameWo
         sendStats(attackerId, attacker, monitor);
         return;
     }
-
+    if (result.killed) {
+        world.handleNpcDeath(npcId, attackerId);
+    }
     monitor.broadcast(std::make_shared<const NpcHealthMessage>(npcId,npc.getHp(),npc.getMaxHp()));
 
     sendStats(attackerId, attacker, monitor);
@@ -454,13 +456,10 @@ void ActionDispatcher::handleAttackNpc(uint32_t attackerId,uint32_t npcId,GameWo
         npc.setState(NpcState::CHASING);
     }
 
+    // Actualizamos stats y posible level up.
     sendStats(attackerId, attacker, monitor);
     sendLevelUpIfNeeded(attackerId, attacker, monitor);
 
-    if (result.killed) {
-        sendStats(attackerId, attacker, monitor);
-        sendLevelUpIfNeeded(attackerId, attacker, monitor);
-    }
 }
 
 void ActionDispatcher::sendLevelUpIfNeeded(uint32_t playerId,Player& player,Monitor& monitor) {
