@@ -383,15 +383,22 @@ std::string AssetManager::bodyTextureForRace([[maybe_unused]] const std::string&
 std::string AssetManager::ghostTextureId() const {
     return "ghost";
 }
+
 void AssetManager::applyGhostAppearance(Entity& entity) {
     auto& sprite = entity.getComponent<SpriteComponent>();
 
+    // Configuración del sprite fantasma cargada desde bodies.json.
     SpriteSheetConfig ghostConfig = bodyConfigForRace("ghost");
-    sprite.clearHelmet();
 
-    sprite.setBody(ghostTextureId(), ghostConfig);
+    std::cout << "[GHOST] applyGhostAppearance texture="<< ghostTextureId()<< " frameW="<< ghostConfig.frameWidth<< " frameH="
+              << ghostConfig.frameHeight<< " scale=" << ghostConfig.scale << std::endl;
+
+    // Cambia textura, tamaño de frame, escala, offsets y srcRect.
+    sprite.setSpriteTextureAndConfig(ghostTextureId(), ghostConfig);
+
     sprite.clearHead();
     sprite.clearHelmet();
+    sprite.Play("IdleDown");
 }
 
 void AssetManager::applyPlayerAppearance(Entity& entity, const PlayerViewState& playerState) {
@@ -456,4 +463,33 @@ Entity* AssetManager::CreateRemotePlayer(const PlayerDto& data) {
               << std::endl;
 
     return &remotePlayer;
+}
+
+void AssetManager::applyRemotePlayerAppearance(Entity& entity, const PlayerDto& dto) {
+    auto& sprite = entity.getComponent<SpriteComponent>();
+
+    // Restauramos cuerpo normal según raza.
+    SpriteSheetConfig bodyConfig = bodyConfigForRace(dto.raza);
+
+    sprite.setSpriteTextureAndConfig(
+        bodyTextureForRace(dto.raza),
+        bodyConfig
+    );
+
+    // Restauramos cabeza normal.
+    sprite.setHeadTexture(
+        headTextureForRace(dto.raza),
+        dto.headId
+    );
+
+    // Estado inicial razonable. Luego los EntityMoveMessage corrigen dirección.
+    sprite.Play("IdleDown");
+
+    std::cout << "[REMOTE_PLAYER] apply normal appearance id="
+              << static_cast<int>(dto.playerID)
+              << " race="
+              << dto.raza
+              << " headId="
+              << dto.headId
+              << std::endl;
 }

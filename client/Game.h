@@ -23,6 +23,7 @@
 #include "common/network/messages/client/combat/resurrectMessage.h"
 #include "common/network/messages/client/inventory/equipItemMessage.h"
 
+#include "common/network/messages/client/cheat/cheatMessage.h"
 #include "common/network/messages/server/player/EntityMoveMessage.h"
 #include "common/network/messages/server/player/playerDiedMessage.h"
 #include "common/network/messages/server/world/EntitySpawnMessage.h"
@@ -33,6 +34,13 @@
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
+#include "common/network/messages/server/player/playerResurrectedMessage.h"
+#include "common/network/messages/client/inventory/unequipSlotMessage.h"
+#include "common/network/messages/client/inventory/useItemMessage.h"
+#include "common/network/protocol/serverOpCode.h"
+#include "sdl/state/PlayerViewStateMapper.h"
+#include "sdl/GroupLabels.h"
+
 class Game {
 public:
     Game();
@@ -157,7 +165,7 @@ private:
     std::optional<ClientEquipmentSlot> toClientEquipmentSlot(int index) const;
     EquipSlot toServerEquipSlot(ClientEquipmentSlot slot) const;
 
-
+    // esto debe pasar a otra clase que maneje estos mensajes.
     void processServerMessage(const Message& msg);
     void handleEntityMove(const EntityMoveMessage& msg);
     void handlePlayerDied(const PlayerDiedMessage& msg);
@@ -170,6 +178,7 @@ private:
     void handleNpcSpawn(const NpcSpawnMessage& msg);
     void handleNpcHealth(const NpcHealthMessage& msg);
     void handleNpcMove(const NpcMoveMessage& msg);
+    void handlePlayerResurrected(const PlayerResurrectedMessage& msg);
 
 };
 

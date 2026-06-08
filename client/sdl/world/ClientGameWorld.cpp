@@ -43,17 +43,58 @@ void ClientGameWorld::spawnRemotePlayer(const PlayerDto& remotePlayerDto) {
 
     Entity* remoteEntity = assets.CreateRemotePlayer(remotePlayerDto);
 
+    if (remoteEntity == nullptr) {
+        std::cout << "[CLIENT_WORLD][ERROR] No se pudo crear RemotePlayer. id="
+                  << entityId
+                  << std::endl;
+        return;
+    }
+
     // Guardamos el remoto en el mapa.
     // RemotePlayer no es dueño de la entidad; solo la referencia.
-    remotePlayers.emplace(entityId,RemotePlayer(entityId, remoteEntity));
+    remotePlayers.emplace(entityId,RemotePlayer(entityId, remoteEntity,remotePlayerDto));
+
     std::cout << "[CLIENT_WORLD] RemotePlayer spawneado. id="
               << entityId
               << " pos=("
               << remotePlayerDto.xpos
               << ", "
               << remotePlayerDto.ypos
-              << ")"
+              << ") esFantasma="
+              << remotePlayerDto.esFantasma
               << std::endl;
+
+    if (hasRemotePlayer(entityId)) {
+        auto it = remotePlayers.find(entityId);
+
+        if (it != remotePlayers.end()) {
+            RemotePlayer& remotePlayer = it->second;
+
+            // Actualizamos el DTO guardado.
+            remotePlayer.updateDto(remotePlayerDto);
+
+            std::cout << "[CLIENT_WORLD] RemotePlayer ya existe. id="
+                      << entityId
+                      << " esFantasma="
+                      << remotePlayerDto.esFantasma
+                      << std::endl;
+
+            // Si el server informa que ahora es fantasma, aplicamos ghost.
+            if (remotePlayerDto.esFantasma) {
+                applyRemotePlayerGhostState(entityId);
+                return;
+            }
+
+            // Si antes estaba ghost y ahora el DTO dice vivo,
+            // restauramos apariencia normal.
+            if (remotePlayer.isGhost()) {
+                applyRemotePlayerAliveState(entityId);
+                return;
+            }
+        }
+
+        return;
+    }
 }
 
 void ClientGameWorld::removeRemotePlayer(uint32_t entityId) {
@@ -122,7 +163,7 @@ void ClientGameWorld::updatePlayerPosition( uint32_t entityId,float x,float y,Di
 
     updateRemotePlayerPosition(entityId, x, y, direction, moving);
 }
-void ClientGameWorld::updateRemotePlayerEquipment( uint32_t entityId,const EquipmentDto& equipment,const ItemCatalog& itemCatalog) {
+void ClientGameWorld::updateRemotePlayerEquipment(uint32_t entityId,const EquipmentDto& equipment,const ItemCatalog& itemCatalog) {
     auto it = remotePlayers.find(entityId);
 
     if (it == remotePlayers.end()) {
@@ -132,17 +173,31 @@ void ClientGameWorld::updateRemotePlayerEquipment( uint32_t entityId,const Equip
         return;
     }
 
-    it->second.setEquipment(equipment,itemCatalog);
+    RemotePlayer& remotePlayer = it->second;
+
+    // Si el remoto está en ghost, ignoramos updates visuales de equipamiento.
+    // Esto evita que EquipmentComponent vuelva a aplicar body_sheet encima del ghost.
+    if (remotePlayer.isGhost()) {
+        std::cout << "[CLIENT_WORLD] Equipment remoto ignorado porque es ghost. id="
+                  << entityId
+                  << std::endl;
+        return;
+    }
+
+    remotePlayer.setEquipment(equipment, itemCatalog);
 
     std::cout << "[CLIENT_WORLD] Equipment remoto actualizado. id="
               << entityId
               << std::endl;
 }
 
-void ClientGameWorld::appendRemoteAttackTargets(
-    std::vector<AttackTarget>& targets
-) {
+void ClientGameWorld::appendRemoteAttackTargets(std::vector<AttackTarget>& targets) {
     for (auto& [remotePlayerId, remotePlayer] : remotePlayers) {
+        // Si el remoto es fantasma, no debe ser targeteable desde el cliente.
+        if (remotePlayer.isGhost()) {
+            continue;
+        }
+
         Entity* entity = remotePlayer.getEntity();
 
         if (entity == nullptr) {
@@ -156,4 +211,89 @@ void ClientGameWorld::appendRemoteAttackTargets(
             }
         );
     }
+}
+
+void ClientGameWorld::applyRemotePlayerGhostState(uint32_t playerId) {
+    auto it = remotePlayers.find(playerId);
+
+    if (it == remotePlayers.end()) {
+        std::cout << "[REMOTE_PLAYER] ghost ignorado, no existe id="
+                  << playerId
+                  << std::endl;
+        return;
+    }
+
+    RemotePlayer& remotePlayer = it->second;
+    Entity* remote = remotePlayer.getEntity();
+
+    if (remote == nullptr) {
+        std::cout << "[REMOTE_PLAYER] ghost ignorado, entity null id="
+                  << playerId
+                  << std::endl;
+        return;
+    }
+
+    // Estado lógico local del remoto.
+    remotePlayer.setGhost(true);
+
+    // Primero limpiamos equipamiento visual.
+    // No usar clear(), porque puede restaurar body_sheet.
+    if (remote->hasComponent<EquipmentComponent>()) {
+        auto& equipment = remote->getComponent<EquipmentComponent>();
+
+        equipment.setWeapon(std::nullopt);
+        equipment.setShield(std::nullopt);
+        equipment.setArmor(std::nullopt);
+        equipment.setHelmet(std::nullopt);
+    }
+
+    // Ghost al final para que nada lo pise.
+    assets.applyGhostAppearance(*remote);
+
+    std::cout << "[REMOTE_PLAYER] playerId="
+              << playerId
+              << " pasó a fantasma"
+              << std::endl;
+}
+
+bool ClientGameWorld::isRemotePlayerGhost(uint32_t playerId) const {
+    auto it = remotePlayers.find(playerId);
+
+    if (it == remotePlayers.end()) {
+        return false;
+    }
+
+    return it->second.isGhost();
+}
+
+void ClientGameWorld::applyRemotePlayerAliveState(uint32_t playerId) {
+    auto it = remotePlayers.find(playerId);
+
+    if (it == remotePlayers.end()) {
+        std::cout << "[REMOTE_PLAYER] alive ignorado, no existe id="
+                  << playerId
+                  << std::endl;
+        return;
+    }
+
+    RemotePlayer& remotePlayer = it->second;
+    Entity* remote = remotePlayer.getEntity();
+
+    if (remote == nullptr) {
+        std::cout << "[REMOTE_PLAYER] alive ignorado, entity null id="
+                  << playerId
+                  << std::endl;
+        return;
+    }
+
+    // Desde ahora vuelve a ser targeteable y acepta equipment updates.
+    remotePlayer.setGhost(false);
+
+    // Restauramos apariencia normal usando el DTO guardado.
+    assets.applyRemotePlayerAppearance(*remote, remotePlayer.getDto());
+
+    std::cout << "[REMOTE_PLAYER] playerId="
+              << playerId
+              << " volvió a cuerpo normal"
+              << std::endl;
 }

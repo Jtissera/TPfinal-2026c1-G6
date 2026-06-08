@@ -54,6 +54,7 @@ public:
 
   struct WorldTickResult
   {
+    std::vector<uint32_t> playersDied;
     std::vector<uint32_t> playersChanged;
     std::vector<uint32_t> npcsMoved;
     std::vector<NpcDeathResult> npcDeaths;

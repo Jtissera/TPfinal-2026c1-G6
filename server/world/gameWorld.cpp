@@ -520,16 +520,38 @@ void GameWorld::tickNpcs(WorldTickResult &result)
     result.npcsMoved.push_back(intent.npcId);
   }
 
-  for (auto &attack : npcResult.attacks) {
-    auto it = players.find(attack.targetPlayerId);
-    if (it == players.end()) continue;
+    for (auto &attack : npcResult.attacks) {
+        // Buscamos al jugador atacado por el NPC.
+        auto it = players.find(attack.targetPlayerId);
 
-    it->second.takeDamage(attack.damage);
-    result.playerHits.push_back({attack.targetPlayerId, attack.damage});
+        // Si no existe, ignoramos el ataque.
+        if (it == players.end()) {
+            continue;
+        }
 
-    if (!it->second.isAlive())
-      handlePlayerDeath(attack.targetPlayerId, 0);
-  }
+        Player& target = it->second;
+
+        // Un NPC no debe seguir atacando a un jugador muerto/fantasma.
+        if (!target.isAlive() || target.isGhost()) {
+            continue;
+        }
+
+        target.takeDamage(attack.damage);
+
+        // Registramos hit y cambio de stats para que GameLoop mande HUD actualizado.
+        result.playerHits.push_back({attack.targetPlayerId, attack.damage});
+        result.playersChanged.push_back(attack.targetPlayerId);
+
+        // Si murió con este golpe, avisamos que murio
+        if (!target.isAlive()) {
+            handlePlayerDeath(attack.targetPlayerId, 0);
+
+            result.playersDied.push_back(attack.targetPlayerId);
+
+            // Marcamos stats cambiadas después de la muerte.
+            result.playersChanged.push_back(attack.targetPlayerId);
+        }
+    }
 
     for (auto &death : npcResult.deaths) {
         // El NPC muerto libera el tile.

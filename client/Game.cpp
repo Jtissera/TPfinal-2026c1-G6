@@ -9,17 +9,7 @@
 #include <unordered_set>
 
 
-#include "common/network/messages/client/inventory/unequipSlotMessage.h"
-#include "common/network/messages/client/inventory/useItemMessage.h"
-#include "common/network/messages/server/player/levelUpMessage.h"
-#include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
-#include "common/network/protocol/serverOpCode.h"
 
-#include "sdl/state/PlayerViewStateMapper.h"
-#include "sdl/GroupLabels.h"
-#include "common/network/messages/client/cheat/cheatMessage.h"
-#include "common/network/messages/server/npc/npcHealthMessage.h"
-#include "common/network/messages/server/npc/npcSpawnMessage.h"
 
 
 Game::Game() {
@@ -321,6 +311,7 @@ void Game::handleCheatKeys() {
                 cheatGodMode = false;
                 cheatInfMana = false;
                 playerState.hp = 0;
+                playerState.mana = 0;
                 applyLocalPlayerGhostState();
                 sendQueue->try_push(
                     std::make_shared<const CheatMessage>(CheatType::DIE));
@@ -1471,26 +1462,24 @@ void Game::applyLocalPlayerGhostState() {
     }
 
     localGhostStateApplied = true;
-
-    // Marcamos el estado visual del jugador como muerto/fantasma.
     playerState.isDead = true;
-
-    // La vida visual queda en cero.
     playerState.hp = 0;
 
+    if (player != nullptr && player->hasComponent<EquipmentComponent>()) {
+        auto& equipment = player->getComponent<EquipmentComponent>();
+
+        equipment.setWeapon(std::nullopt);
+        equipment.setShield(std::nullopt);
+        equipment.setArmor(std::nullopt);
+        equipment.setHelmet(std::nullopt);
+    }
+
     assets->applyGhostAppearance(*player);
-
-    // Cortamos persecución de enemigos.
-   // attackSystem.clearEnemyAggro();
-
     // Mensaje temporal para confirmar el estado.
     showStatusMessage("Has muerto");
 
     std::cout << "[PLAYER] Jugador pasó a fantasma. HP=0, ataque bloqueado."
               << std::endl;
-
-    // Próximo paso:
-    // cambiar sprite/animación a fantasma.
 }
 
 void Game::reviveLocalPlayer(int newHp) {
@@ -1794,20 +1783,25 @@ void Game::handleEntityMove(const EntityMoveMessage& moveMsg) {
               << std::endl;
 }
 void Game::handlePlayerDied(const PlayerDiedMessage& diedMsg) {
-
-    // Leemos el id del jugador muerto enviado por el server.
+    // ID del jugador muerto enviado por el server.
     const uint32_t deadPlayerId = diedMsg.getId();
 
     std::cout << "[SERVER] MSG_PLAYER_DIED recibido. playerId="
               << deadPlayerId
               << std::endl;
 
-    // mas adelante varios players visibles, acá deberías comparar:
-    // if (deadPlayerId == playerDto.id) { ... }
-    playerState.hp = 0;
+    // Si el muerto soy yo, aplico estado fantasma local.
+    if (deadPlayerId == static_cast<uint32_t>(playerDto.playerID)) {
+        localGhostStateApplied = false;
+        playerState.hp = 0;
+        applyLocalPlayerGhostState();
+        return;
+    }
 
-    // Aplica el estado muerto/fantasma en el cliente.
-    applyLocalPlayerGhostState();
+    // Si murió otro jugador, hay que actualizar su entidad remota.
+    if (clientWorld != nullptr) {
+        clientWorld->applyRemotePlayerGhostState(deadPlayerId);
+    }
 }
 void Game::handlePlayerStats(const PlayerStatsMessage& stats) {
 
@@ -1851,6 +1845,13 @@ void Game::handleEntitySpawn(const EntitySpawnMessage& spawnMsg) {
     if (clientWorld != nullptr) {
         clientWorld->spawnRemotePlayer(dto);
     }
+    std::cout << "[CLIENT] MSG_ENTITY_SPAWN recibido. playerID="
+          << static_cast<int>(dto.playerID)
+          << " localID="
+          << static_cast<int>(playerDto.playerID)
+          << " pos=(" << dto.xpos << ", " << dto.ypos << ")"
+          << " esFantasma=" << dto.esFantasma
+          << std::endl;
 }
 void Game::handleInventoryUpdate(const InventoryUpdateMessage& inventoryMsg) {
 
@@ -1883,9 +1884,7 @@ void Game::processServerMessage(const Message& msg) {
             handleInventoryUpdate(static_cast<const InventoryUpdateMessage&>(msg));
             return;
         case ServerOpCode::MSG_PLAYER_EQUIPMENT_UPDATE:
-            handlePlayerEquipmentUpdate(
-                static_cast<const PlayerEquipmentUpdateMessage&>(msg)
-            );
+            handlePlayerEquipmentUpdate(static_cast<const PlayerEquipmentUpdateMessage&>(msg));
             return;
         case ServerOpCode::MSG_LEVEL_UP:
             handleLevelUp(static_cast<const LevelUpMessage&>(msg));
@@ -1902,6 +1901,11 @@ void Game::processServerMessage(const Message& msg) {
             std::cout << "[CLIENT] MSG_NPC_MOVE recibido" << std::endl;
             handleNpcMove(static_cast<const NpcMoveMessage &>(msg));
             return;
+        case ServerOpCode::MSG_PLAYER_RESURRECTED:
+            std::cout << "[CLIENT] MSG_PLAYER_RESURRECTED recibido" << std::endl;
+            handlePlayerResurrected(static_cast<const PlayerResurrectedMessage&>(msg));
+            return;
+
         default:
             std::cout << "[CLIENT] opcode no manejado: 0x"
                       << std::hex << static_cast<int>(msg.opCode())
@@ -1959,6 +1963,7 @@ void Game::handlePlayerEquipmentUpdate(const PlayerEquipmentUpdateMessage& msg) 
     if (clientWorld == nullptr) {
         return;
     }
+
 
     clientWorld->updateRemotePlayerEquipment(updatedPlayerId,msg.getEquipment(),itemCatalog);
 }
@@ -2161,4 +2166,32 @@ void Game::handleNpcMove(const NpcMoveMessage& msg) {
               << newY
               << ")"
               << std::endl;
+}
+
+void Game::handlePlayerResurrected(const PlayerResurrectedMessage& msg) {
+    const uint32_t resurrectedId = msg.getPlayerId();
+
+    std::cout << "[CLIENT] Player resurrected id="
+              << resurrectedId
+              << " tile=("
+              << msg.getTileX()
+              << ", "
+              << msg.getTileY()
+              << ")"
+              << std::endl;
+
+    // Si el revivido soy yo, restauro mi jugador local.
+    if (resurrectedId == static_cast<uint32_t>(playerDto.playerID)) {
+        localGhostStateApplied = false;
+
+        // Si tu reviveLocalPlayer espera HP, usá el HP actual del playerState
+        // o un valor mínimo. Después PlayerStatsMessage va a corregirlo.
+        reviveLocalPlayer(playerState.hp > 0 ? playerState.hp : 1);
+        return;
+    }
+
+    // Si revivió otro jugador, restauro su sprite remoto.
+    if (clientWorld != nullptr) {
+        clientWorld->applyRemotePlayerAliveState(resurrectedId);
+    }
 }

@@ -2,9 +2,9 @@
 
 #include "common/dtos/gameTypes.h"
 
-RemotePlayer::RemotePlayer(uint32_t id, Entity* entity)
+RemotePlayer::RemotePlayer(uint32_t id, Entity* entity,const PlayerDto& dto)
     : id(id),
-      entity(entity) {
+      entity(entity),dto(dto){
 }
 
 uint32_t RemotePlayer::getId() const {
@@ -19,75 +19,35 @@ const Entity* RemotePlayer::getEntity() const {
     return entity;
 }
 
-void RemotePlayer::setPositionAndAnimation(float x,float y,Direction direction,bool moving) {
-    // Si por algún error no hay entidad, no intentamos acceder a componentes.
+void RemotePlayer::setPositionAndAnimation(
+    float x,
+    float y,
+    Direction direction,
+    bool moving
+) {
+    // Si no hay entidad asociada, no podemos actualizar nada.
     if (entity == nullptr) {
         return;
     }
-    std::cout << "[REMOTE SYNC] id="
-          << id
-          << " pos=(" << x << ", " << y << ")"
-          << std::endl;
 
-    // Obtenemos el TransformComponent de la entidad remota.
+    std::cout << "[REMOTE SYNC] id="<< id<< " pos=(" << x << ", " << y << ")"<< " ghost=" << ghost<< " moving=" << moving<< std::endl;
+
+    // Actualizamos la posición visual del jugador remoto.
     auto& transform = entity->getComponent<TransformComponent>();
-
-    // Aplicamos posición enviada por el servidor.
     transform.position.x = x;
     transform.position.y = y;
 
+    // Si no tiene sprite, no hay animación que actualizar.
     if (!entity->hasComponent<SpriteComponent>()) {
         return;
     }
 
+    // Elegimos una animación según dirección y movimiento.
+    // Funciona para vivos y fantasmas mientras compartan nombres:
+    // IdleDown, IdleUp, WalkDown, etc.
     auto& sprite = entity->getComponent<SpriteComponent>();
-
-    if (moving) {
-        switch (direction) {
-            case Direction::UP:
-                sprite.Play("WalkUp");
-                break;
-
-            case Direction::DOWN:
-                sprite.Play("WalkDown");
-                break;
-
-            case Direction::LEFT:
-                sprite.Play("WalkLeft");
-                break;
-
-            case Direction::RIGHT:
-                sprite.Play("WalkRight");
-                break;
-            case Direction::NONE:
-                sprite.Play("WalkDown");
-                break;
-        }
-
-
-        return;
-    }
-
-    switch (direction) {
-        case Direction::UP:
-            sprite.Play("IdleUp");
-            break;
-
-        case Direction::DOWN:
-            sprite.Play("IdleDown");
-            break;
-
-        case Direction::LEFT:
-            sprite.Play("IdleLeft");
-            break;
-
-        case Direction::RIGHT:
-            sprite.Play("IdleRight");
-            break;
-        case Direction::NONE:
-            sprite.Play("WalkDown");
-            break;
-    }
+    const std::string animationName = animationNameFor(direction, moving);
+    sprite.Play(animationName.c_str());
 }
 
 void RemotePlayer::setEquipment(
@@ -115,4 +75,51 @@ void RemotePlayer::setEquipment(
               << " helmetCatalogId=" << equipment.helmetCatalogId
               << " shieldCatalogId=" << equipment.shieldCatalogId
               << std::endl;
+}
+
+bool RemotePlayer::isGhost() const {
+    return ghost;
+}
+
+void RemotePlayer::setGhost(bool value) {
+    ghost = value;
+}
+
+const char* RemotePlayer::directionSuffix(Direction direction) const {
+    // Traducimos la dirección del protocolo al nombre usado por las animaciones.
+    switch (direction) {
+        case Direction::UP:
+            return "Up";
+
+        case Direction::DOWN:
+            return "Down";
+
+        case Direction::LEFT:
+            return "Left";
+
+        case Direction::RIGHT:
+            return "Right";
+
+        case Direction::NONE:
+        default:
+            // Por convención, si no hay dirección miramos hacia abajo.
+            return "Down";
+    }
+}
+
+std::string RemotePlayer::animationNameFor(Direction direction, bool moving) const {
+    // Si el fantasma no tiene animación de caminata, podés cambiar esto a:
+    // const char* prefix = ghost ? "Idle" : (moving ? "Walk" : "Idle");
+    const char* prefix = moving ? "Walk" : "Idle";
+
+    // Armamos nombres como "WalkDown", "IdleLeft", etc.
+    return std::string(prefix) + directionSuffix(direction);
+}
+
+const PlayerDto& RemotePlayer::getDto() const {
+    return dto;
+}
+
+void RemotePlayer::updateDto(const PlayerDto& newDto) {
+    dto = newDto;
 }

@@ -58,6 +58,14 @@ public:
     void updateRemotePlayerEquipment(uint32_t entityId, const EquipmentDto &equipment, const ItemCatalog &itemCatalog);
 
     void appendRemoteAttackTargets(std::vector<AttackTarget>& targets);
+
+    // Aplica visualmente el estado fantasma a un jugador remoto.
+    // No toca inventario real; solo cambia sprite y oculta equipamiento visual.
+    void applyRemotePlayerGhostState(uint32_t playerId);
+
+    bool isRemotePlayerGhost(uint32_t playerId) const;
+
+    void applyRemotePlayerAliveState(uint32_t playerId);
 };
 
 

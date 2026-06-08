@@ -99,6 +99,7 @@ uint32_t Player::die(uint32_t safeGold)
     return 0;
   state = PlayerState::DEAD;
   hp = 0;
+  mana = 0;
 
   if (gold > safeGold)
   {
@@ -115,7 +116,7 @@ void Player::resurrect(int tx, int ty)
   tileX = tx;
   tileY = ty;
   hp = maxHp / 2;
-  mana = 0;
+  mana = maxMana/2;
 }
 
 void Player::tick(float hpGained, float manaGained)

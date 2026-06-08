@@ -75,6 +75,11 @@ void GameLoop::worldUpdate(float deltaSeconds) {
   for (uint32_t id : result.playersChanged) {
     statManager.sendPlayerStats(id, world, monitor);
   }
+  for (uint32_t deadPlayerId : result.playersDied) {
+    monitor.broadcast(std::make_shared<const PlayerDiedMessage>(deadPlayerId));
+
+    std::cout << "[GameLoop] broadcast PLAYER_DIED id="<< deadPlayerId << std::endl;
+  }
 
   // Si algún NPC se movió, avisamos al cliente con un mensaje específico.
   // Esto NO crea NPCs. Solo actualiza su posición visual.

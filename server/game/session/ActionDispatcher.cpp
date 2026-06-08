@@ -4,6 +4,7 @@
 #include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/npc/npcHealthMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
+#include "common/network/messages/server/player/playerResurrectedMessage.h"
 #include "server/game/equipmentDtoFactory.h"
 
 ActionDispatcher::ActionDispatcher(const toml::table& config)
@@ -68,11 +69,11 @@ void ActionDispatcher::sendInventory(uint32_t id, Player &p, Monitor &monitor)
                          p.getInventory().getEquippedArray()));
 }
 
-void ActionDispatcher::sendDeath(uint32_t id, Player &dead, Monitor &monitor)
-{
-  monitor.sendTo(id, std::make_shared<const PlayerDiedMessage>(id));
-  sendInventory(id, dead, monitor);
-  sendStats(id, dead, monitor);
+void ActionDispatcher::sendDeath(uint32_t id, Player &dead, Monitor &monitor){
+    sendInventory(id, dead, monitor);
+    sendStats(id, dead, monitor);
+    monitor.broadcast(std::make_shared<const PlayerDiedMessage>(id));
+    monitor.sendTo(id,std::make_shared<const PlayerDiedMessage>(id));
 }
 
 void ActionDispatcher::handleMove(uint32_t id, const Message& msg,GameWorld& world, Monitor& monitor) {
@@ -126,30 +127,77 @@ void ActionDispatcher::handleMeditate(uint32_t id, const Message& msg,GameWorld&
     sendStats(id, p, monitor);
 }
 
-void ActionDispatcher::handleResurrect(uint32_t id, const Message& msg,GameWorld& world, Monitor& monitor) {
+void ActionDispatcher::handleResurrect( uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor) {
+    // El mensaje de resurrect no trae datos adicionales.
+    (void)msg;
+
     std::cout << "[SERVER RESURRECT] client=" << id << std::endl;
 
     Player& p = world.getPlayer(id);
 
-    std::cout << "[SERVER RESURRECT] isGhost=" << p.isGhost()
-              << " hp=" << p.getHp()
-              << std::endl;
-
-    world.resurrectPlayer(id, 6, 7);
-
-    std::cout << "[SERVER RESURRECT] after resurrect hp="
+    std::cout << "[SERVER RESURRECT] before isGhost="
+              << p.isGhost()
+              << " hp="
               << p.getHp()
               << std::endl;
 
-    monitor.sendTo(id, std::make_shared<const EntityMoveMessage>(
-        static_cast<uint8_t>(id),
-        world.getPixelX(id),
-        world.getPixelY(id),
-        Direction::DOWN,
-        false
-    ));
+    // Si no está muerto/fantasma, no hacemos nada.
+    if (!p.isGhost()) {
+        std::cout << "[SERVER RESURRECT] ignorado: player no es ghost id="
+                  << id
+                  << std::endl;
+        return;
+    }
 
+    // Cheat de revive: tile fijo.
+    const uint16_t reviveTileX = static_cast<uint16_t>(p.getTileX());
+    const uint16_t reviveTileY = static_cast<uint16_t>(p.getTileY());
+
+
+    world.resurrectPlayer(id, reviveTileX, reviveTileY);
+
+    std::cout << "[SERVER RESURRECT] after isGhost="
+              << p.isGhost()
+              << " hp="
+              << p.getHp()
+              << " pos=("
+              << world.getPixelX(id)
+              << ", "
+              << world.getPixelY(id)
+              << ")"
+              << std::endl;
+
+    monitor.broadcast(
+        std::make_shared<const PlayerResurrectedMessage>(
+            id,
+            reviveTileX,
+            reviveTileY
+        )
+    );
+
+    // Avisamos a TODOS la posición actual.
+    // Antes era sendTo(id), pero los remotos también tienen que moverlo.
+    monitor.broadcast(
+        std::make_shared<const EntityMoveMessage>(
+            static_cast<uint8_t>(id),
+            world.getPixelX(id),
+            world.getPixelY(id),
+            Direction::DOWN,
+            false
+        )
+    );
+
+    // Stats solo al dueño para actualizar HUD.
     sendStats(id, p, monitor);
+
+    std::cout << "[SERVER RESURRECT] broadcast resurrect id="
+              << id
+              << " tile=("
+              << reviveTileX
+              << ", "
+              << reviveTileY
+              << ")"
+              << std::endl;
 }
 
 void ActionDispatcher::handleEquipItem(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor) {
@@ -507,11 +555,12 @@ void ActionDispatcher::handleCheat(uint32_t id, const Message &msg,
     break;
 
   case CheatType::DIE:
-    if (p.isAlive())
-    {
-      world.handlePlayerDeath(id, 0);
-      sendDeath(id, p, monitor);
+    if (!p.isAlive() || p.isGhost()) {
+        return;
     }
+    world.handlePlayerDeath(id,0);
+    sendDeath(id, p, monitor);
+          
     break;
   }
 }

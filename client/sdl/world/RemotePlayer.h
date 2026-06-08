@@ -10,6 +10,7 @@
 #include "../ECS/ECS.h"
 #include "../ECS/Components.h"
 #include "common/dtos/equipmentDto.h"
+#include "common/dtos/gameTypes.h"
 
 class RemotePlayer {
 private:
@@ -20,9 +21,20 @@ private:
     // La entidad la administra Manager, no RemotePlayer.
     Entity* entity;
 
+    bool ghost = false;
+
+    // Convierte una dirección en el sufijo usado por las animaciones.
+    // Ejemplo: Direction::LEFT -> "Left".
+    const char* directionSuffix(Direction direction) const;
+
+    // Arma el nombre completo de la animación.
+    std::string animationNameFor(Direction direction, bool moving) const;
+
+    PlayerDto dto;
+
 public:
     // Constructor: asocia un id remoto con una entidad visual.
-    RemotePlayer(uint32_t id, Entity* entity);
+    RemotePlayer(uint32_t id, Entity* entity, const PlayerDto& dto);
 
 
     uint32_t getId() const;
@@ -38,6 +50,13 @@ public:
     void setPositionAndAnimation(float x, float y, Direction direction, bool moving);
 
     void setEquipment(const EquipmentDto& equipment, const ItemCatalog& itemCatalog);
+
+    bool isGhost() const;
+    void setGhost(bool value);
+
+    const PlayerDto& getDto() const;
+    
+    void updateDto(const PlayerDto& newDto);
 };
 
 

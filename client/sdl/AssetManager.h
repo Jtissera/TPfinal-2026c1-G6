@@ -54,6 +54,7 @@ public:
 
     void applyPlayerAppearance(Entity& entity, const PlayerViewState& playerState);
 
+    void applyRemotePlayerAppearance(Entity& entity, const PlayerDto& dto);
 private:
 
     Manager* manager;
