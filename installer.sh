@@ -12,7 +12,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 REPO_URL="https://github.com/Jtissera/TPfinal-2026c1-G6.git"
-BRANCH="main"
+BRANCH="dev"
 GAME_NAME="argentum"
 SRC_DIR="/tmp/${GAME_NAME}_src"
 INSTALL_DIR="/var/$GAME_NAME"
