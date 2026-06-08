@@ -1,4 +1,3 @@
-
 #include "TileComponent.h"
 #include "../TextureManager.h"
 #include "../../Game.h"
@@ -17,6 +16,11 @@ TileComponent::~TileComponent() {
 }
 
 void TileComponent::update(UpdateContext& context) {
+    // los tiles son estáticos, solo necesitan recalcular destRect
+    // cuando la cámara se movió. En frames donde el jugador no se mueve,
+    // esto evita 300 operaciones aritméticas innecesarias.
+    if (!context.cameraMoved) return;
+
     destRect.x = static_cast<int>(position.x - context.camera.x);
     destRect.y = static_cast<int>(position.y - context.camera.y);
 }

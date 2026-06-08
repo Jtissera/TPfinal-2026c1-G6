@@ -1,4 +1,3 @@
-
 #ifndef TALLER_TP_UPDATECONTEXT_H
 #define TALLER_TP_UPDATECONTEXT_H
 
@@ -14,6 +13,10 @@ struct UpdateContext {
     const Uint8* keyboardState = nullptr;
     Queue<std::shared_ptr<const Message>>* sendQueue = nullptr;
     SDL_Rect camera;
+    // indica si la camara se movio este frame.
+    // TileComponent::update() lo usa para saltear el recalculo de destRect
+    // cuando la cámara no cambió, evita 300 operaciones aritméticas por frame.
+    bool cameraMoved = true;
 };
 
 #endif //TALLER_TP_UPDATECONTEXT_H

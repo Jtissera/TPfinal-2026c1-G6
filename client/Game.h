@@ -80,6 +80,10 @@ private:
     Entity* label = nullptr;
     SDL_Rect camera{0, 0, 0, 0};
 
+    // PERF: cámara del frame anterior — detecta si se movió para evitar
+    // 300 recálculos de TileComponent cuando el jugador está quieto.
+    SDL_Rect prevCamera{-1, -1, 0, 0};
+
     PlayerDto playerDto;
 
     std::map<uint32_t, Entity*> enemies;
@@ -94,6 +98,13 @@ private:
     Uint32 statusMessageTimer = 0;
     static constexpr Uint32 STATUS_MESSAGE_DURATION_MS = 2500;
     TTF_Font* statusFont = nullptr;  // se asigna en loadAssets()
+
+    // PERF: textura cacheada del statusMessage.
+    // Se crea una vez en showStatusMessage() y se reutiliza con SetTextureAlphaMod.
+    SDL_Texture* statusMessageTexture = nullptr;
+    int statusMessageTexW = 0;
+    int statusMessageTexH = 0;
+
     bool localGhostStateApplied = false;
     bool hasReceivedValidPlayerStats = false;
 

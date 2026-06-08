@@ -142,10 +142,17 @@ void Game::update() {
     if (camera.x > 20 * 96 - 900) camera.x = 20 * 96 - 900;
     if (camera.y > 15 * 96 - 687) camera.y = 15 * 96 - 687;
 
+    // PERF: detecta si la cámara se movió este frame.
+    // TileComponent::update() usa este flag para saltear 300 recálculos
+    // cuando el jugador está quieto.
+    const bool cameraMoved = (camera.x != prevCamera.x || camera.y != prevCamera.y);
+    prevCamera = camera;
+
     UpdateContext updateContext{
         SDL_GetKeyboardState(nullptr),
         sendQueue,
-        camera
+        camera,
+        cameraMoved
     };
     manager.refresh();
     manager.update(updateContext);
@@ -212,8 +219,9 @@ void Game::render() {
     attackSystem.render(renderer, *assets, camera);
     SDL_RenderSetClipRect(renderer, nullptr);
 
-    // Mensaje de estado temporal — se dibuja sobre el mapa, antes del HUD, para que nada lo tape
-    if (!statusMessage.empty()) {
+    // PERF: statusMessage usa textura cacheada (creada en showStatusMessage).
+    // Solo SDL_SetTextureAlphaMod() por frame para el fade — sin alloc.
+    if (!statusMessage.empty() && statusMessageTexture != nullptr) {
         const Uint32 elapsed = SDL_GetTicks() - statusMessageTimer;
         if (elapsed < STATUS_MESSAGE_DURATION_MS) {
             Uint8 alpha = 255;
@@ -223,22 +231,13 @@ void Game::render() {
                     255 * (1.0f - static_cast<float>(elapsed - fadeStart) / 500.0f)
                 );
             }
-            if (statusFont) {
-                int tw = 0, th = 0;
-                TTF_SizeText(statusFont, statusMessage.c_str(), &tw, &th);
-                SDL_Color red = {255, 50, 50, alpha};
-                SDL_Surface* surf = TTF_RenderText_Blended(statusFont, statusMessage.c_str(), red);
-                if (surf) {
-                    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
-                    SDL_SetTextureAlphaMod(tex, alpha);
-                    SDL_Rect dest = {(900 - tw) / 2, 350, tw, th};
-                    SDL_RenderCopy(renderer, tex, nullptr, &dest);
-                    SDL_FreeSurface(surf);
-                    SDL_DestroyTexture(tex);
-                }
-            }
+            SDL_SetTextureAlphaMod(statusMessageTexture, alpha);
+            SDL_Rect dest = {(900 - statusMessageTexW) / 2, 350, statusMessageTexW, statusMessageTexH};
+            SDL_RenderCopy(renderer, statusMessageTexture, nullptr, &dest);
         } else {
             statusMessage.clear();
+            SDL_DestroyTexture(statusMessageTexture);
+            statusMessageTexture = nullptr;
         }
     }
 
@@ -248,6 +247,13 @@ void Game::render() {
 
 void Game::clean() {
     clearTextCache();
+
+    // PERF: destruir textura cacheada del statusMessage si quedó activa.
+    if (statusMessageTexture != nullptr) {
+        SDL_DestroyTexture(statusMessageTexture);
+        statusMessageTexture = nullptr;
+    }
+
     assets.reset();
     textureManager.reset();
 
@@ -265,8 +271,29 @@ void Game::clean() {
 }
 
 void Game::showStatusMessage(const std::string& msg) {
+    // PERF: destruir textura anterior si existe.
+    if (statusMessageTexture != nullptr) {
+        SDL_DestroyTexture(statusMessageTexture);
+        statusMessageTexture = nullptr;
+    }
+
     statusMessage      = msg;
     statusMessageTimer = SDL_GetTicks();
+
+    // Crear la textura una sola vez — render() solo aplica alpha cada frame.
+    if (statusFont != nullptr && !msg.empty()) {
+        SDL_Color red = {255, 50, 50, 255};
+        SDL_Surface* surf = TTF_RenderText_Blended(statusFont, msg.c_str(), red);
+        if (surf != nullptr) {
+            statusMessageTexture = SDL_CreateTextureFromSurface(renderer, surf);
+            if (statusMessageTexture != nullptr) {
+                SDL_SetTextureBlendMode(statusMessageTexture, SDL_BLENDMODE_BLEND);
+                statusMessageTexW = surf->w;
+                statusMessageTexH = surf->h;
+            }
+            SDL_FreeSurface(surf);
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1395,6 +1422,16 @@ void Game::renderEnemyHealthBars() {
 
         if (maxHp <= 0) {
             continue;
+        }
+
+        // PERF: culling — no dibujar barras de NPCs fuera de pantalla.
+        {
+            int screenXCheck = static_cast<int>(transform.position.x) - camera.x;
+            int screenYCheck = static_cast<int>(transform.position.y) - camera.y + 133;
+            if (screenXCheck < -64 || screenXCheck > 964 ||
+                screenYCheck < -16 || screenYCheck > 736) {
+                continue;
+            }
         }
 
         float hpRatio = static_cast<float>(currentHp) / static_cast<float>(maxHp);
