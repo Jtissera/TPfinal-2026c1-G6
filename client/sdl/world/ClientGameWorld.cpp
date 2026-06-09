@@ -122,13 +122,8 @@ void ClientGameWorld::removeRemotePlayer(uint32_t entityId) {
 void ClientGameWorld::updateLocalPlayerPosition(const float x, const float y) {
     // Si por algún error el local todavía no existe, cortamos.
     if (localPlayer == nullptr) {
-        std::cout << "[CLIENT_WORLD][WARN] localPlayer es nullptr."
-                  << std::endl;
         return;
     }
-    std::cout << "[LOCAL SYNC] pos=("
-      << x << ", " << y << ")"
-      << std::endl;
 
     // Obtenemos el TransformComponent del jugador local.
     auto& transform = localPlayer->getComponent<TransformComponent>();
@@ -136,9 +131,6 @@ void ClientGameWorld::updateLocalPlayerPosition(const float x, const float y) {
     // Aplicamos la posición enviada por el servidor.
     transform.position.x = x;
     transform.position.y = y;
-    std::cout << "[LOCAL SYNC] pos=("
-          << x << ", " << y << ")"
-          << std::endl;
 }
 
 void ClientGameWorld::updateRemotePlayerPosition( uint32_t entityId, float x, float y, Direction direction, bool moving) {

@@ -13,6 +13,8 @@ TileComponent::TileComponent(AssetManager &assets, int srcX, int srcY, int xpos,
   position.x = static_cast<float>(xpos);
   position.y = static_cast<float>(ypos);
 
+  destRect.x = xpos;
+  destRect.y = ypos;
   // Escalamos el ancho y el alto respetando sus proporciones
   destRect.w = srcW * tscale;
   destRect.h = srcH * tscale;
