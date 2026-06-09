@@ -32,15 +32,6 @@ QColor MapCanvas::tileColor(const Tile &tile) const
     case TileType::WATER:
         base = QColor(60, 120, 200);
         break;
-    case TileType::WALL:
-        base = QColor(80, 80, 80);
-        break;
-    case TileType::FLOOR:
-        base = QColor(180, 150, 100);
-        break;
-    case TileType::DOOR:
-        base = QColor(160, 100, 50);
-        break;
     case TileType::FOREST:
         base = QColor(34, 90, 34);
         break;
@@ -70,6 +61,20 @@ QColor MapCanvas::tileColor(const Tile &tile) const
         break;
     case TileType::EXIT:
         base = QColor(50, 180, 80);
+        break;
+    case TileType::CAVERN_FLOOR:
+        base = QColor(85, 65, 50);
+        break;
+    case TileType::CAVERN_WALL_H:
+    case TileType::CAVERN_WALL_V:
+        base = QColor(55, 40, 30);
+        break;
+    case TileType::DUNGEON_FLOOR:
+        base = QColor(65, 75, 80);
+        break;
+    case TileType::DUNGEON_WALL_H:
+    case TileType::DUNGEON_WALL_V:
+        base = QColor(40, 45, 50);
         break;
 
     default:
@@ -269,7 +274,8 @@ void MapCanvas::paintEvent(QPaintEvent *)
             }
 
             if ((tile.type == TileType::DUNGEON_ENTRANCE ||
-                 tile.type == TileType::CAVERN_ENTRANCE) &&
+                 tile.type == TileType::CAVERN_ENTRANCE ||
+                 tile.type == TileType::EXIT) &&
                 !tile.targetMap.empty())
             {
                 painter.save();
@@ -322,10 +328,26 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.restore();
             }
 
+            if (tile.type == TileType::CAVERN_WALL_H || tile.type == TileType::DUNGEON_WALL_H)
+            {
+                painter.save();
+                painter.setPen(QPen(QColor(255, 255, 255, 40), 2));
+                painter.drawLine(r.left(), r.center().y(), r.right(), r.center().y());
+                painter.restore();
+            }
+            if (tile.type == TileType::CAVERN_WALL_V || tile.type == TileType::DUNGEON_WALL_V)
+            {
+                painter.save();
+                painter.setPen(QPen(QColor(255, 255, 255, 40), 2));
+                painter.drawLine(r.center().x(), r.top(), r.center().x(), r.bottom());
+                painter.restore();
+            }
+
             // Hatching para no caminable (X encima del color oscurecido)
-            if (!tile.walkable && tile.type != TileType::FOREST &&
-                tile.type != TileType::WALL && tile.type != TileType::WATER &&
-                tile.type != TileType::CACTUS && tile.type != TileType::STONE)
+            if (!tile.walkable && tile.type != TileType::FOREST && tile.type != TileType::WATER &&
+                tile.type != TileType::CACTUS && tile.type != TileType::STONE &&
+                tile.type != TileType::CAVERN_WALL_H && tile.type != TileType::CAVERN_WALL_V &&
+                tile.type != TileType::DUNGEON_WALL_H && tile.type != TileType::DUNGEON_WALL_V)
             {
                 painter.save();
                 painter.setPen(QPen(QColor(200, 60, 60, 120), 1));
@@ -400,7 +422,10 @@ void MapCanvas::applyToTile(uint16_t tx, uint16_t ty)
         case TileType::HOUSE:
         case TileType::CHURCH:
         case TileType::MILL:
-        case TileType::WALL:
+        case TileType::CAVERN_WALL_H:
+        case TileType::CAVERN_WALL_V:
+        case TileType::DUNGEON_WALL_H:
+        case TileType::DUNGEON_WALL_V:
             t.walkable = false;
             break;
         default:

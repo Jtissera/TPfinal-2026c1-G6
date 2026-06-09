@@ -15,6 +15,7 @@
 #include "../common/network/messages/server/lobby/leaveOkMessage.h"
 #include "../common/network/messages/server/world/EntitySpawnMessage.h"
 #include "../common/network/messages/server/player/EntityMoveMessage.h"
+#include "../common/network/messages/server/system/mapChangedMessage.h"
 #include "../common/network/protocol/clientOpCode.h"
 #include "../common/queue.h"
 #include "../common/thread.h"
@@ -26,7 +27,8 @@
 #include "leaveEvent.h"
 #include "playerRepository.h"
 
-class LobbyHandler : public Thread {
+class LobbyHandler : public Thread
+{
 public:
     LobbyHandler(Queue<ClientMessage> &lobbyQueue,
                  Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
@@ -60,5 +62,5 @@ private:
     void handleCreateGame(uint32_t clientId, const Message &message);
     void handleJoinGame(uint32_t clientId, const Message &message);
     void handleLeaveGame(LeaveEvent &leaveEvent);
-    PlayerDto buildPlayerDto(const Player& player) const;
+    PlayerDto buildPlayerDto(const Player &player) const;
 };

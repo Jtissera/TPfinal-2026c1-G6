@@ -28,7 +28,6 @@ private:
     QRadioButton *_rbGrass;
     QRadioButton *_rbSand;
     QRadioButton *_rbWater;
-    QRadioButton *_rbFloor;
 
     // --- Estructuras ---
     QRadioButton *_rbForest;
@@ -52,4 +51,11 @@ private:
 
     // --- Propiedades ---
     QCheckBox *_cbWalkable;
+
+    QRadioButton *_rbCavernFloor;
+    QRadioButton *_rbCavernWallH;
+    QRadioButton *_rbCavernWallV;
+    QRadioButton *_rbDungeonFloor;
+    QRadioButton *_rbDungeonWallH;
+    QRadioButton *_rbDungeonWallV;
 };

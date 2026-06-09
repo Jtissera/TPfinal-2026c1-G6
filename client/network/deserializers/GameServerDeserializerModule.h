@@ -7,12 +7,15 @@
 #include "common/network/messages/server/player/EntityMoveMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
 #include "common/network/messages/server/player/playerDiedMessage.h"
+#include "common/network/messages/server/system/mapChangedMessage.h"
+
 #include "common/network/protocol/serverOpCode.h"
 #include "common/npcType.h"
 
-class GameServerDeserializersModule {
+class GameServerDeserializersModule
+{
 public:
-    void registerDeserializers(Registry& registry) const;
+    void registerDeserializers(Registry &registry) const;
 };
 
-#endif //TALLER_TP_GAMESERVERDESERIALIZERMODULE_H
+#endif // TALLER_TP_GAMESERVERDESERIALIZERMODULE_H

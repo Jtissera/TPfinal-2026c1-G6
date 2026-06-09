@@ -13,7 +13,8 @@ Game::Game() {}
 void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
                 Queue<std::shared_ptr<const Message>> &sendQ,
                 Queue<std::shared_ptr<const Message>> &receiveQ,
-                const PlayerDto &pDto) {
+                const PlayerDto &pDto)
+{
 
   this->sendQueue = &sendQ;
   this->receiveQueue = &receiveQ;
@@ -23,7 +24,8 @@ void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
   this->window = existingWindow;
   this->renderer = existingRenderer;
 
-  if (this->window == nullptr || this->renderer == nullptr) {
+  if (this->window == nullptr || this->renderer == nullptr)
+  {
     std::cerr << "[Game::init] window o renderer inválidos" << std::endl;
     isRunning = false;
     return;
@@ -38,9 +40,12 @@ void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
 
   loadAssets();
 
-  try {
+  try
+  {
     itemCatalog.loadFromJson("assets/items/items.json");
-  } catch (const std::exception &e) {
+  }
+  catch (const std::exception &e)
+  {
     std::cerr << "Error cargando catálogo de ítems: " << e.what() << std::endl;
     isRunning = false;
     return;
@@ -57,23 +62,30 @@ void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
   map->LoadMap("assets/sprites/MapAssets/map.argmap");
 }
 
-void Game::handleEvents() {
-  while (SDL_PollEvent(&event)) {
-    if (event.type == SDL_QUIT) {
+void Game::handleEvents()
+{
+  while (SDL_PollEvent(&event))
+  {
+    if (event.type == SDL_QUIT)
+    {
       isRunning = false;
     }
 
-    if (event.type == SDL_KEYDOWN && event.key.repeat != 0) {
+    if (event.type == SDL_KEYDOWN && event.key.repeat != 0)
+    {
       event.type = SDL_USEREVENT;
     }
-    if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
+    if (event.type == SDL_KEYDOWN && event.key.repeat == 0)
+    {
       handleCheatKeys();
     }
 
     if (event.type == SDL_MOUSEBUTTONDOWN &&
-        event.button.button == SDL_BUTTON_LEFT) {
+        event.button.button == SDL_BUTTON_LEFT)
+    {
 
-      if (isLocalPlayerDead()) {
+      if (isLocalPlayerDead())
+      {
         continue;
       }
 
@@ -82,23 +94,27 @@ void Game::handleEvents() {
 
       const int equipmentSlot = getEquipmentSlotIndexAt(mouseX, mouseY);
 
-      if (equipmentSlot != -1) {
+      if (equipmentSlot != -1)
+      {
         handleEquipmentSlotClick(equipmentSlot);
         return;
       }
 
       const int inventorySlot = getInventorySlotIndexAt(mouseX, mouseY);
 
-      if (inventorySlot != -1) {
+      if (inventorySlot != -1)
+      {
         handleInventorySlotClick(inventorySlot);
         return;
       }
       const ItemView *equippedWeapon = nullptr;
-      if (equipmentState.weapon.has_value()) {
+      if (equipmentState.weapon.has_value())
+      {
         equippedWeapon = &equipmentState.weapon.value();
       }
 
-      if (isLocalPlayerDead()) {
+      if (isLocalPlayerDead())
+      {
         std::cout << "[PLAYER] No puede atacar porque está muerto/fantasma."
                   << std::endl;
         return;
@@ -106,8 +122,10 @@ void Game::handleEvents() {
 
       std::vector<AttackTarget> attackTargets;
 
-      for (auto &[enemyId, enemyEntity] : enemies) {
-        if (enemyEntity == nullptr) {
+      for (auto &[enemyId, enemyEntity] : enemies)
+      {
+        if (enemyEntity == nullptr)
+        {
           continue;
         }
 
@@ -115,7 +133,8 @@ void Game::handleEvents() {
       }
 
       // Jugadores remotos.
-      if (clientWorld != nullptr) {
+      if (clientWorld != nullptr)
+      {
         clientWorld->appendRemoteAttackTargets(
             attackTargets, static_cast<uint8_t>(playerState.level));
       }
@@ -126,14 +145,19 @@ void Game::handleEvents() {
   }
 }
 
-void Game::update() {
+void Game::update()
+{
 
   std::shared_ptr<const Message> msg;
-  try {
-    while (receiveQueue->try_pop(msg)) {
+  try
+  {
+    while (receiveQueue->try_pop(msg))
+    {
       processServerMessage(*msg);
     }
-  } catch (const ClosedQueue &) {
+  }
+  catch (const ClosedQueue &)
+  {
     std::cerr << "[Game] receiveQueue cerrada, el server se desconectó."
               << std::endl;
     isRunning = false;
@@ -165,16 +189,21 @@ void Game::update() {
 
   attackSystem.update();
   attackSystem.updateRespawns(enemies);
-  if (isLocalPlayerDead()) {
+  if (isLocalPlayerDead())
+  {
     applyLocalPlayerGhostState();
-  } else {
-    if (hasReceivedValidPlayerStats && playerState.hp <= 0) {
+  }
+  else
+  {
+    if (hasReceivedValidPlayerStats && playerState.hp <= 0)
+    {
       applyLocalPlayerGhostState();
     }
   }
 }
 
-void Game::render() {
+void Game::render()
+{
 
   // Limpia la pantalla antes de dibujar el nuevo frame.
   SDL_RenderClear(renderer);
@@ -188,11 +217,13 @@ void Game::render() {
   for (auto &t : manager.getGroup(groupMap))
     t->draw(renderContext);
 
-  for (auto &p : manager.getGroup(groupPlayers)) {
+  for (auto &p : manager.getGroup(groupPlayers))
+  {
     drawEquippedEntity(p, renderContext);
   }
 
-  for (const auto &[enemyId, enemy] : enemies) {
+  for (const auto &[enemyId, enemy] : enemies)
+  {
     if (enemy == nullptr || attackSystem.isEnemyDead(enemyId))
       continue;
     enemy->draw(renderContext);
@@ -201,7 +232,8 @@ void Game::render() {
   for (auto &t : manager.getGroup(groupMapTop))
     t->draw(renderContext);
 
-  for (auto &n : manager.getGroup(groupNPC)) {
+  for (auto &n : manager.getGroup(groupNPC))
+  {
     n->draw(renderContext);
   }
 
@@ -212,12 +244,15 @@ void Game::render() {
 
   // PERF: statusMessage usa textura cacheada (creada en showStatusMessage).
   // Solo SDL_SetTextureAlphaMod() por frame para el fade — sin alloc.
-  if (!statusMessage.empty() && statusMessageTexture != nullptr) {
+  if (!statusMessage.empty() && statusMessageTexture != nullptr)
+  {
     const Uint32 elapsed = SDL_GetTicks() - statusMessageTimer;
-    if (elapsed < STATUS_MESSAGE_DURATION_MS) {
+    if (elapsed < STATUS_MESSAGE_DURATION_MS)
+    {
       Uint8 alpha = 255;
       const Uint32 fadeStart = STATUS_MESSAGE_DURATION_MS - 500;
-      if (elapsed > fadeStart) {
+      if (elapsed > fadeStart)
+      {
         alpha = static_cast<Uint8>(
             255 * (1.0f - static_cast<float>(elapsed - fadeStart) / 500.0f));
       }
@@ -225,7 +260,9 @@ void Game::render() {
       SDL_Rect dest = {(900 - statusMessageTexW) / 2, 350, statusMessageTexW,
                        statusMessageTexH};
       SDL_RenderCopy(renderer, statusMessageTexture, nullptr, &dest);
-    } else {
+    }
+    else
+    {
       statusMessage.clear();
       SDL_DestroyTexture(statusMessageTexture);
       statusMessageTexture = nullptr;
@@ -236,11 +273,13 @@ void Game::render() {
   SDL_RenderPresent(renderer);
 }
 
-void Game::clean() {
+void Game::clean()
+{
   clearTextCache();
 
   // PERF: destruir textura cacheada del statusMessage si quedó activa.
-  if (statusMessageTexture != nullptr) {
+  if (statusMessageTexture != nullptr)
+  {
     SDL_DestroyTexture(statusMessageTexture);
     statusMessageTexture = nullptr;
   }
@@ -248,7 +287,8 @@ void Game::clean() {
   assets.reset();
   textureManager.reset();
 
-  if (map != nullptr) {
+  if (map != nullptr)
+  {
     delete map;
     map = nullptr;
   }
@@ -261,9 +301,11 @@ void Game::clean() {
   std::cout << "Game cleaned." << std::endl;
 }
 
-void Game::showStatusMessage(const std::string &msg) {
+void Game::showStatusMessage(const std::string &msg)
+{
   // PERF: destruir textura anterior si existe.
-  if (statusMessageTexture != nullptr) {
+  if (statusMessageTexture != nullptr)
+  {
     SDL_DestroyTexture(statusMessageTexture);
     statusMessageTexture = nullptr;
   }
@@ -272,12 +314,15 @@ void Game::showStatusMessage(const std::string &msg) {
   statusMessageTimer = SDL_GetTicks();
 
   // Crear la textura una sola vez — render() solo aplica alpha cada frame.
-  if (statusFont != nullptr && !msg.empty()) {
+  if (statusFont != nullptr && !msg.empty())
+  {
     SDL_Color red = {255, 50, 50, 255};
     SDL_Surface *surf = TTF_RenderText_Blended(statusFont, msg.c_str(), red);
-    if (surf != nullptr) {
+    if (surf != nullptr)
+    {
       statusMessageTexture = SDL_CreateTextureFromSurface(renderer, surf);
-      if (statusMessageTexture != nullptr) {
+      if (statusMessageTexture != nullptr)
+      {
         SDL_SetTextureBlendMode(statusMessageTexture, SDL_BLENDMODE_BLEND);
         statusMessageTexW = surf->w;
         statusMessageTexH = surf->h;
@@ -290,13 +335,15 @@ void Game::showStatusMessage(const std::string &msg) {
 // ---------------------------------------------------------------------------
 // Cheats — combinaciones Ctrl+tecla, sin repeat
 // ---------------------------------------------------------------------------
-void Game::handleCheatKeys() {
+void Game::handleCheatKeys()
+{
   const Uint8 *keys = SDL_GetKeyboardState(nullptr);
   const bool ctrl = keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL];
   if (!ctrl)
     return;
 
-  switch (event.key.keysym.sym) {
+  switch (event.key.keysym.sym)
+  {
 
   // Ctrl+h — God mode (vida infinita)
   case SDLK_h:
@@ -312,7 +359,8 @@ void Game::handleCheatKeys() {
 
   // Ctrl+m — Mana infinito (solo mana)
   case SDLK_m:
-    if (!cheatGodMode) {
+    if (!cheatGodMode)
+    {
       cheatInfMana = !cheatInfMana;
       showStatusMessage(cheatInfMana ? "[CHEAT] Mana infinito ON"
                                      : "[CHEAT] Mana infinito OFF");
@@ -324,7 +372,8 @@ void Game::handleCheatKeys() {
 
   // Ctrl+k — Morir instantáneamente (servidor aplica la muerte)
   case SDLK_k:
-    if (!playerState.isDead) {
+    if (!playerState.isDead)
+    {
       showStatusMessage("[CHEAT] Muriendo...");
       cheatGodMode = false;
       cheatInfMana = false;
@@ -341,7 +390,8 @@ void Game::handleCheatKeys() {
 
   // Ctrl+r — Resucitar (ya conectado al servidor)
   case SDLK_r:
-    if (isLocalPlayerDead()) {
+    if (isLocalPlayerDead())
+    {
       sendQueue->try_push(std::make_shared<const ResurrectMessage>());
       showStatusMessage("Solicitando resurrección...");
     }
@@ -360,7 +410,8 @@ void Game::handleCheatKeys() {
 
 bool Game::running() const { return isRunning; }
 
-void Game::renderHUD() {
+void Game::renderHUD()
+{
   // === FONDOS ===
   SDL_Texture *texTop = assets->GetTexture("hud_top");
   SDL_Texture *texLogo = assets->GetTexture("hud_logo");
@@ -406,7 +457,8 @@ void Game::renderHUD() {
   TTF_Font *fontBold = assets->GetFont("ao_bold");
   TTF_Font *fontRegular = assets->GetFont("ao_regular");
 
-  if (fontBold == nullptr || fontRegular == nullptr) {
+  if (fontBold == nullptr || fontRegular == nullptr)
+  {
     return;
   }
 
@@ -416,14 +468,16 @@ void Game::renderHUD() {
   // === HELPERS DE TEXTO CACHEADO ===
   auto drawTextCentered = [&](const std::string &key, const std::string &text,
                               TTF_Font *font, int x, int y, int w, int h,
-                              SDL_Color color) {
+                              SDL_Color color)
+  {
     int textW = 0;
     int textH = 0;
 
     SDL_Texture *texture =
         getOrCreateTextTexture(key, text, font, color, textW, textH);
 
-    if (texture == nullptr) {
+    if (texture == nullptr)
+    {
       return;
     }
 
@@ -433,14 +487,16 @@ void Game::renderHUD() {
   };
 
   auto drawTextAt = [&](const std::string &key, const std::string &text,
-                        TTF_Font *font, int x, int y, SDL_Color color) {
+                        TTF_Font *font, int x, int y, SDL_Color color)
+  {
     int textW = 0;
     int textH = 0;
 
     SDL_Texture *texture =
         getOrCreateTextTexture(key, text, font, color, textW, textH);
 
-    if (texture == nullptr) {
+    if (texture == nullptr)
+    {
       return;
     }
 
@@ -478,30 +534,41 @@ void Game::renderHUD() {
 
   std::string eqLabels[] = {"Arma", "Casco", "Armadura", "Escudo"};
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++)
+  {
     SDL_Rect slot = {eqStartX + i * (eqSlotSize + eqGap), eqY, eqSlotSize,
                      eqSlotSize};
 
-    if (texFrame != nullptr) {
+    if (texFrame != nullptr)
+    {
       SDL_RenderCopy(renderer, texFrame, nullptr, &slot);
     }
 
     const ItemView *equippedItem = nullptr;
 
-    if (i == 0 && equipmentState.weapon.has_value()) {
+    if (i == 0 && equipmentState.weapon.has_value())
+    {
       equippedItem = &equipmentState.weapon.value();
-    } else if (i == 1 && equipmentState.helmet.has_value()) {
+    }
+    else if (i == 1 && equipmentState.helmet.has_value())
+    {
       equippedItem = &equipmentState.helmet.value();
-    } else if (i == 2 && equipmentState.armor.has_value()) {
+    }
+    else if (i == 2 && equipmentState.armor.has_value())
+    {
       equippedItem = &equipmentState.armor.value();
-    } else if (i == 3 && equipmentState.shield.has_value()) {
+    }
+    else if (i == 3 && equipmentState.shield.has_value())
+    {
       equippedItem = &equipmentState.shield.value();
     }
 
-    if (equippedItem != nullptr) {
+    if (equippedItem != nullptr)
+    {
       SDL_Texture *itemTexture = assets->GetTexture(equippedItem->textureId);
 
-      if (itemTexture != nullptr) {
+      if (itemTexture != nullptr)
+      {
         SDL_Rect itemSrc = {equippedItem->iconSrcX, equippedItem->iconSrcY,
                             equippedItem->iconSrcW, equippedItem->iconSrcH};
 
@@ -531,8 +598,10 @@ void Game::renderHUD() {
   const int invCols = 5;
   const int invRows = 4;
 
-  for (int fila = 0; fila < invRows; fila++) {
-    for (int col = 0; col < invCols; col++) {
+  for (int fila = 0; fila < invRows; fila++)
+  {
+    for (int col = 0; col < invCols; col++)
+    {
       const int index = fila * invCols + col;
 
       SDL_Rect slot = {invStartX + col * (invSlotSize + invGapX),
@@ -546,12 +615,14 @@ void Game::renderHUD() {
       SDL_RenderDrawRect(renderer, &slot);
 
       if (index < static_cast<int>(inventoryState.slots.size()) &&
-          inventoryState.slots[index].has_value()) {
+          inventoryState.slots[index].has_value())
+      {
 
         const ItemView &item = inventoryState.slots[index].value();
         SDL_Texture *itemTexture = assets->GetTexture(item.textureId);
 
-        if (itemTexture != nullptr) {
+        if (itemTexture != nullptr)
+        {
           SDL_Rect itemDest = {slot.x + 5, slot.y + 5, slot.w - 10,
                                slot.h - 10};
 
@@ -561,7 +632,8 @@ void Game::renderHUD() {
           SDL_RenderCopy(renderer, itemTexture, &itemSrc, &itemDest);
         }
 
-        if (item.quantity > 1) {
+        if (item.quantity > 1)
+        {
           drawTextAt("hud_item_qty_" + std::to_string(index),
                      std::to_string(item.quantity), fontRegular,
                      slot.x + slot.w - 14, slot.y + slot.h - 16, white);
@@ -581,7 +653,8 @@ void Game::renderHUD() {
   const int expMax = playerState.expToNextLevel;
 
   auto drawBar = [&](const std::string &key, SDL_Texture *tex, int x, int y,
-                     int w, int h, int actual, int max, TTF_Font *font) {
+                     int w, int h, int actual, int max, TTF_Font *font)
+  {
     SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
 
     SDL_Rect bgRect = {x, y, w, h};
@@ -589,7 +662,8 @@ void Game::renderHUD() {
 
     const int fillW = max > 0 ? (w * actual) / max : 0;
 
-    if (tex != nullptr && fillW > 0) {
+    if (tex != nullptr && fillW > 0)
+    {
       SDL_Rect srcR = {0, 0, fillW, h};
       SDL_Rect fillR = {x, y, fillW, h};
       SDL_RenderCopy(renderer, tex, &srcR, &fillR);
@@ -633,7 +707,8 @@ void Game::renderHUD() {
   drawBar("hud_mana_bar_text", texMana, statsX, 685, statsBarW, statsBarH,
           manaActual, manaMax, fontRegular);
 }
-void Game::loadAssets() {
+void Game::loadAssets()
+{
   assets->LoadManifest("assets/manifest.json");
 
   // HUD - fondos locales del proyecto.
@@ -656,12 +731,14 @@ void Game::loadAssets() {
 
   statusFont = assets->GetFont("ao_bold");
 
-  if (!statusFont) {
+  if (!statusFont)
+  {
     statusFont =
         TTF_OpenFont("assets/sprites/ui/fonts/Alegreya-Sans-AO-Bold.ttf", 24);
   }
 
-  if (!statusFont) {
+  if (!statusFont)
+  {
     statusFont = TTF_OpenFont("assets/sprites/MapAssets/arial.ttf", 24);
   }
 
@@ -692,18 +769,22 @@ void Game::loadAssets() {
                      "assets/sprites/MapAssets/dungeon_entrance.png");
   assets->AddTexture("tile_cavern_entrance",
                      "assets/sprites/MapAssets/cavern_entrance.png");
-  assets->AddTexture("tile_city_floor",
-                     "assets/sprites/MapAssets/city_floor.png");
+  assets->AddTexture("tile_city_floor", "assets/sprites/MapAssets/city_floor.png");
   assets->AddTexture("tile_house", "assets/sprites/MapAssets/house.png");
   assets->AddTexture("tile_church", "assets/sprites/MapAssets/church.png");
   assets->AddTexture("tile_mill", "assets/sprites/MapAssets/mill.png");
+  assets->AddTexture("tile_cavern_floor", "assets/sprites/MapAssets/cavern_floor.png");
+  assets->AddTexture("tile_cavern_vertical_wall", "assets/sprites/MapAssets/cavern_vertical_wall.png");
+  assets->AddTexture("tile_cavern_horizontal_wall", "assets/sprites/MapAssets/cavern_horizontal_wall.png");
+  assets->AddTexture("tile_exit", "assets/sprites/MapAssets/exit.png");
 
   assets->AddTexture("npc_priest", "assets/sprites/npcs/priest.png");
   assets->AddTexture("npc_shop", "assets/sprites/npcs/shop.png");
   assets->AddTexture("npc_bank", "assets/sprites/npcs/bank.png");
 }
 
-int Game::getInventorySlotIndexAt(int mouseX, int mouseY) const {
+int Game::getInventorySlotIndexAt(int mouseX, int mouseY) const
+{
   // deben ir los mismos valores que el inventario del renderhud.
   const int invSlotSize = 44;
   const int invGapX = 8;
@@ -713,8 +794,10 @@ int Game::getInventorySlotIndexAt(int mouseX, int mouseY) const {
   const int invCols = 5;
   const int invRows = 4;
 
-  for (int fila = 0; fila < invRows; fila++) {
-    for (int col = 0; col < invCols; col++) {
+  for (int fila = 0; fila < invRows; fila++)
+  {
+    for (int col = 0; col < invCols; col++)
+    {
       SDL_Rect slot = {invStartX + col * (invSlotSize + invGapX),
                        invStartY + fila * (invSlotSize + invGapY), invSlotSize,
                        invSlotSize};
@@ -722,7 +805,8 @@ int Game::getInventorySlotIndexAt(int mouseX, int mouseY) const {
       const bool inside = mouseX >= slot.x && mouseX < slot.x + slot.w &&
                           mouseY >= slot.y && mouseY < slot.y + slot.h;
 
-      if (inside) {
+      if (inside)
+      {
         return fila * invCols + col;
       }
     }
@@ -730,15 +814,18 @@ int Game::getInventorySlotIndexAt(int mouseX, int mouseY) const {
 
   return -1;
 }
-void Game::handleInventorySlotClick(int slotIndex) {
+void Game::handleInventorySlotClick(int slotIndex)
+{
   // Valida que el índice sea válido.
   if (slotIndex < 0 ||
-      slotIndex >= static_cast<int>(inventoryState.slots.size())) {
+      slotIndex >= static_cast<int>(inventoryState.slots.size()))
+  {
     return;
   }
 
   // Si el slot está vacío, no hacemos nada.
-  if (!inventoryState.slots[slotIndex].has_value()) {
+  if (!inventoryState.slots[slotIndex].has_value())
+  {
     std::cout << "[INVENTORY] slot vacío: " << slotIndex << std::endl;
     return;
   }
@@ -751,7 +838,8 @@ void Game::handleInventorySlotClick(int slotIndex) {
             << std::endl;
 
   if (item.type == ClientItemType::HealthPotion ||
-      item.type == ClientItemType::ManaPotion) {
+      item.type == ClientItemType::ManaPotion)
+  {
 
     std::cout << "[INVENTORY] pedido usar poción item=" << item.itemName
               << " instanceId=" << item.instanceId << std::endl;
@@ -760,12 +848,14 @@ void Game::handleInventorySlotClick(int slotIndex) {
         std::make_shared<const UseItemMessage>(item.instanceId));
     return;
   }
-  if (isLocalPlayerDead()) {
+  if (isLocalPlayerDead())
+  {
     showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
 
-  if (sendQueue == nullptr) {
+  if (sendQueue == nullptr)
+  {
     std::cerr << "[INVENTORY] sendQueue nullptr. No se puede enviar acción."
               << std::endl;
     return;
@@ -777,20 +867,23 @@ void Game::handleInventorySlotClick(int slotIndex) {
       std::make_shared<const EquipItemMessage>(item.instanceId));
 }
 
-int Game::getEquipmentSlotIndexAt(int mouseX, int mouseY) const {
+int Game::getEquipmentSlotIndexAt(int mouseX, int mouseY) const
+{
   const int eqSlotSize = 58;
   const int eqGap = 12;
   const int eqY = 168;
   const int eqStartX = 956;
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++)
+  {
     SDL_Rect slot = {eqStartX + i * (eqSlotSize + eqGap), eqY, eqSlotSize,
                      eqSlotSize};
 
     const bool inside = mouseX >= slot.x && mouseX < slot.x + slot.w &&
                         mouseY >= slot.y && mouseY < slot.y + slot.h;
 
-    if (inside) {
+    if (inside)
+    {
       return i;
     }
   }
@@ -798,9 +891,12 @@ int Game::getEquipmentSlotIndexAt(int mouseX, int mouseY) const {
   return -1;
 }
 
-bool Game::addItemToFirstFreeInventorySlot(const ItemView &item) {
-  for (auto &slot : inventoryState.slots) {
-    if (!slot.has_value()) {
+bool Game::addItemToFirstFreeInventorySlot(const ItemView &item)
+{
+  for (auto &slot : inventoryState.slots)
+  {
+    if (!slot.has_value())
+    {
       slot = item;
       return true;
     }
@@ -809,13 +905,16 @@ bool Game::addItemToFirstFreeInventorySlot(const ItemView &item) {
   return false;
 }
 
-void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
-  if (isLocalPlayerDead()) {
+void Game::handleEquipmentSlotClick(int equipmentSlotIndex)
+{
+  if (isLocalPlayerDead())
+  {
     showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
 
-  if (sendQueue == nullptr) {
+  if (sendQueue == nullptr)
+  {
     std::cerr << "[EQUIPMENT] sendQueue nullptr. No se puede desequipar."
               << std::endl;
     return;
@@ -823,7 +922,8 @@ void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
 
   const auto maybeSlot = toClientEquipmentSlot(equipmentSlotIndex);
 
-  if (!maybeSlot.has_value()) {
+  if (!maybeSlot.has_value())
+  {
     return;
   }
 
@@ -831,7 +931,8 @@ void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
 
   const std::optional<ItemView> *selectedSlot = nullptr;
 
-  switch (visualSlot) {
+  switch (visualSlot)
+  {
   case ClientEquipmentSlot::Weapon:
     selectedSlot = &equipmentState.weapon;
     break;
@@ -849,7 +950,8 @@ void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
     break;
   }
 
-  if (selectedSlot == nullptr || !selectedSlot->has_value()) {
+  if (selectedSlot == nullptr || !selectedSlot->has_value())
+  {
     std::cout << "[EQUIPMENT] slot vacío visual=" << equipmentSlotIndex
               << std::endl;
     return;
@@ -864,48 +966,59 @@ void Game::handleEquipmentSlotClick(int equipmentSlotIndex) {
   sendQueue->try_push(std::make_shared<const UnequipSlotMessage>(serverSlot));
 }
 
-void Game::consumePotion(int slotIndex) {
-  if (isLocalPlayerDead()) {
+void Game::consumePotion(int slotIndex)
+{
+  if (isLocalPlayerDead())
+  {
     showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
   // Validamos que el índice sea válido.
   if (slotIndex < 0 ||
-      slotIndex >= static_cast<int>(inventoryState.slots.size())) {
+      slotIndex >= static_cast<int>(inventoryState.slots.size()))
+  {
     return;
   }
 
   // Si el slot está vacío, no hay nada para consumir.
-  if (!inventoryState.slots[slotIndex].has_value()) {
+  if (!inventoryState.slots[slotIndex].has_value())
+  {
     return;
   }
 
   // Tomamos una copia modificable del ítem.
   ItemView item = inventoryState.slots[slotIndex].value();
 
-  if (item.type == ClientItemType::HealthPotion) {
+  if (item.type == ClientItemType::HealthPotion)
+  {
     // Calculamos nueva vida sin superar el máximo.
     playerState.hp += item.healAmount;
 
-    if (playerState.hp > playerState.maxHp) {
+    if (playerState.hp > playerState.maxHp)
+    {
       playerState.hp = playerState.maxHp;
     }
 
     std::cout << "[POTION] consumida vida: " << item.itemName
               << " hp=" << playerState.hp << "/" << playerState.maxHp
               << std::endl;
-  } else if (item.type == ClientItemType::ManaPotion) {
+  }
+  else if (item.type == ClientItemType::ManaPotion)
+  {
     // Calculamos nuevo maná sin superar el máximo.
     playerState.mana += item.manaAmount;
 
-    if (playerState.mana > playerState.maxMana) {
+    if (playerState.mana > playerState.maxMana)
+    {
       playerState.mana = playerState.maxMana;
     }
 
     std::cout << "[POTION] consumida maná: " << item.itemName
               << " mana=" << playerState.mana << "/" << playerState.maxMana
               << std::endl;
-  } else {
+  }
+  else
+  {
     // Si no era poción, no hacemos nada.
     return;
   }
@@ -914,34 +1027,44 @@ void Game::consumePotion(int slotIndex) {
   item.quantity--;
 
   // Si se terminó, vaciamos el slot.
-  if (item.quantity <= 0) {
+  if (item.quantity <= 0)
+  {
     inventoryState.slots[slotIndex] = std::nullopt;
-  } else {
+  }
+  else
+  {
     inventoryState.slots[slotIndex] = item;
   }
 }
 
-std::string Game::visualTextureForCurrentRace(const ItemView &item) const {
-  if (playerState.race == "Dwarf" || playerState.race == "Gnome") {
-    if (!item.visualTextureIdShort.empty()) {
+std::string Game::visualTextureForCurrentRace(const ItemView &item) const
+{
+  if (playerState.race == "Dwarf" || playerState.race == "Gnome")
+  {
+    if (!item.visualTextureIdShort.empty())
+    {
       return item.visualTextureIdShort;
     }
   }
 
-  if (!item.visualTextureIdTall.empty()) {
+  if (!item.visualTextureIdTall.empty())
+  {
     return item.visualTextureIdTall;
   }
 
   return item.visualTextureId;
 }
 
-void Game::renderEquippedArmor() {
-  if (isLocalPlayerDead()) {
+void Game::renderEquippedArmor()
+{
+  if (isLocalPlayerDead())
+  {
     showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
   // Si no hay armadura equipada, no dibujamos nada.
-  if (!equipmentState.armor.has_value()) {
+  if (!equipmentState.armor.has_value())
+  {
     return;
   }
 
@@ -955,7 +1078,8 @@ void Game::renderEquippedArmor() {
 
   SDL_Texture *armorTexture = assets->GetTexture(visualTextureId);
 
-  if (armorTexture == nullptr) {
+  if (armorTexture == nullptr)
+  {
     std::cout << "[EQUIPMENT RENDER] No existe textura: " << visualTextureId
               << std::endl;
     return;
@@ -981,11 +1105,13 @@ void Game::renderEquippedArmor() {
   SDL_RenderCopy(renderer, armorTexture, &armorSrc, &armorDest);
 }
 
-SpriteSheetConfig Game::armorSpriteConfigForCurrentRace() const {
+SpriteSheetConfig Game::armorSpriteConfigForCurrentRace() const
+{
   // Si no hay armadura equipada, devolvemos una config neutra.
   // En la práctica casi no debería entrar acá, porque este método
   // se llama cuando ya hay armadura.
-  if (!equipmentState.armor.has_value()) {
+  if (!equipmentState.armor.has_value())
+  {
     return SpriteSheetConfig{
         27, // ancho de cada frame
         47, // alto de cada frame
@@ -1021,8 +1147,10 @@ SpriteSheetConfig Game::armorSpriteConfigForCurrentRace() const {
       isShortRace ? armor.visualShortOffsetY : armor.visualTallOffsetY};
 }
 
-void Game::refreshPlayerBodySprite() {
-  if (isLocalPlayerDead()) {
+void Game::refreshPlayerBodySprite()
+{
+  if (isLocalPlayerDead())
+  {
     showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
@@ -1031,7 +1159,8 @@ void Game::refreshPlayerBodySprite() {
 
   // Si hay armadura equipada, reemplazamos el cuerpo desnudo
   // por la textura visual de la armadura.
-  if (equipmentState.armor.has_value()) {
+  if (equipmentState.armor.has_value())
+  {
     const ItemView &armor = equipmentState.armor.value();
 
     // Elige armor_iron_tall para human/elf
@@ -1049,16 +1178,20 @@ void Game::refreshPlayerBodySprite() {
 }
 
 // helpér
-SDL_Point Game::visualOffsetForCurrentRace(const ItemView &item) const {
-  if (playerState.race == "Dwarf" || playerState.race == "Gnome") {
+SDL_Point Game::visualOffsetForCurrentRace(const ItemView &item) const
+{
+  if (playerState.race == "Dwarf" || playerState.race == "Gnome")
+  {
     return SDL_Point{item.visualShortOffsetX, item.visualShortOffsetY};
   }
 
   return SDL_Point{item.visualTallOffsetX, item.visualTallOffsetY};
 }
 
-void Game::refreshPlayerEquipmentVisuals() {
-  if (isLocalPlayerDead()) {
+void Game::refreshPlayerEquipmentVisuals()
+{
+  if (isLocalPlayerDead())
+  {
     showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
@@ -1067,7 +1200,8 @@ void Game::refreshPlayerEquipmentVisuals() {
 
   // Casco / capucha.
   // Si hay casco equipado, usamos su textura visual y sus offsets.
-  if (equipmentState.helmet.has_value()) {
+  if (equipmentState.helmet.has_value())
+  {
     const ItemView &helmet = equipmentState.helmet.value();
 
     sprite.setHelmetTexture(
@@ -1076,7 +1210,9 @@ void Game::refreshPlayerEquipmentVisuals() {
         helmet.visualDownSrcY, helmet.visualLeftSrcX, helmet.visualLeftSrcY,
         helmet.visualRightSrcX, helmet.visualRightSrcY, helmet.visualUpSrcX,
         helmet.visualUpSrcY);
-  } else {
+  }
+  else
+  {
     // Si no hay casco equipado, limpiamos el visual.
     sprite.clearHelmet();
   }
@@ -1085,25 +1221,30 @@ void Game::refreshPlayerEquipmentVisuals() {
   // Con que el slot esté vacío alcanza para que no se dibujen.
 }
 
-void Game::renderEquippedWeapon() {
-  if (isLocalPlayerDead()) {
+void Game::renderEquippedWeapon()
+{
+  if (isLocalPlayerDead())
+  {
     showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
 
-  if (!equipmentState.weapon.has_value()) {
+  if (!equipmentState.weapon.has_value())
+  {
     return;
   }
 
   const ItemView &weapon = equipmentState.weapon.value();
 
   const std::string &textureId = weapon.visualTextureId;
-  if (textureId.empty()) {
+  if (textureId.empty())
+  {
     return;
   }
 
   SDL_Texture *weaponTexture = assets->GetTexture(textureId);
-  if (weaponTexture == nullptr) {
+  if (weaponTexture == nullptr)
+  {
     std::cout << "[EQUIPMENT RENDER] No existe textura de arma: " << textureId
               << std::endl;
     return;
@@ -1133,24 +1274,29 @@ void Game::renderEquippedWeapon() {
                    sprite.spriteFlip);
 }
 
-void Game::renderEquippedShield() {
-  if (isLocalPlayerDead()) {
+void Game::renderEquippedShield()
+{
+  if (isLocalPlayerDead())
+  {
     showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
-  if (!equipmentState.shield.has_value()) {
+  if (!equipmentState.shield.has_value())
+  {
     return;
   }
 
   const ItemView &shield = equipmentState.shield.value();
 
   const std::string &textureId = shield.visualTextureId;
-  if (textureId.empty()) {
+  if (textureId.empty())
+  {
     return;
   }
 
   SDL_Texture *shieldTexture = assets->GetTexture(textureId);
-  if (shieldTexture == nullptr) {
+  if (shieldTexture == nullptr)
+  {
     std::cout << "[EQUIPMENT RENDER] No existe textura de escudo: " << textureId
               << std::endl;
     return;
@@ -1175,13 +1321,17 @@ void Game::renderEquippedShield() {
                    sprite.spriteFlip);
 }
 
-void Game::renderEnemyHealthBars() {
-  for (const auto &[enemyId, enemy] : enemies) {
-    if (enemy == nullptr) {
+void Game::renderEnemyHealthBars()
+{
+  for (const auto &[enemyId, enemy] : enemies)
+  {
+    if (enemy == nullptr)
+    {
       continue;
     }
 
-    if (attackSystem.isEnemyDead(enemyId)) {
+    if (attackSystem.isEnemyDead(enemyId))
+    {
       continue;
     }
 
@@ -1190,7 +1340,8 @@ void Game::renderEnemyHealthBars() {
     int currentHp = attackSystem.getEnemyHealth(enemyId);
     int maxHp = attackSystem.getEnemyMaxHealth(enemyId);
 
-    if (maxHp <= 0) {
+    if (maxHp <= 0)
+    {
       continue;
     }
 
@@ -1200,18 +1351,21 @@ void Game::renderEnemyHealthBars() {
       int screenYCheck =
           static_cast<int>(transform.position.y) - camera.y + 133;
       if (screenXCheck < -64 || screenXCheck > 964 || screenYCheck < -16 ||
-          screenYCheck > 736) {
+          screenYCheck > 736)
+      {
         continue;
       }
     }
 
     float hpRatio = static_cast<float>(currentHp) / static_cast<float>(maxHp);
 
-    if (hpRatio < 0.0f) {
+    if (hpRatio < 0.0f)
+    {
       hpRatio = 0.0f;
     }
 
-    if (hpRatio > 1.0f) {
+    if (hpRatio > 1.0f)
+    {
       hpRatio = 1.0f;
     }
 
@@ -1240,15 +1394,18 @@ void Game::renderEnemyHealthBars() {
     SDL_RenderDrawRect(renderer, &backgroundBar);
   }
 }
-bool Game::isLocalPlayerDead() const {
+bool Game::isLocalPlayerDead() const
+{
   // Si el servidor ya marcó al jugador como fantasma, está muerto.
-  if (playerState.isDead) {
+  if (playerState.isDead)
+  {
     return true;
   }
 
   // Si todavía no recibimos una vida válida, no podemos asumir muerte
   // solo porque hp sea 0.
-  if (!hasReceivedValidPlayerStats) {
+  if (!hasReceivedValidPlayerStats)
+  {
     return false;
   }
 
@@ -1256,9 +1413,11 @@ bool Game::isLocalPlayerDead() const {
   return playerState.hp <= 0;
 }
 
-void Game::applyLocalPlayerGhostState() {
+void Game::applyLocalPlayerGhostState()
+{
   // Evita repetir esta lógica todos los frames.
-  if (localGhostStateApplied) {
+  if (localGhostStateApplied)
+  {
     return;
   }
 
@@ -1267,7 +1426,8 @@ void Game::applyLocalPlayerGhostState() {
   playerState.hp = 0;
   playerState.mana = 0;
 
-  if (player != nullptr && player->hasComponent<EquipmentComponent>()) {
+  if (player != nullptr && player->hasComponent<EquipmentComponent>())
+  {
     auto &equipment = player->getComponent<EquipmentComponent>();
 
     equipment.setWeapon(std::nullopt);
@@ -1284,7 +1444,8 @@ void Game::applyLocalPlayerGhostState() {
             << std::endl;
 }
 
-void Game::reviveLocalPlayer(int newHp) {
+void Game::reviveLocalPlayer(int newHp)
+{
   // El jugador vuelve a estar vivo.
   playerState.isDead = false;
 
@@ -1301,7 +1462,8 @@ void Game::reviveLocalPlayer(int newHp) {
   refreshPlayerEquipmentVisuals();
 }
 
-bool Game::sameColor(SDL_Color a, SDL_Color b) const {
+bool Game::sameColor(SDL_Color a, SDL_Color b) const
+{
   // Compara color completo, incluido alpha.
   return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
 }
@@ -1309,30 +1471,35 @@ bool Game::sameColor(SDL_Color a, SDL_Color b) const {
 SDL_Texture *Game::getOrCreateTextTexture(const std::string &key,
                                           const std::string &text,
                                           TTF_Font *font, SDL_Color color,
-                                          int &outW, int &outH) {
+                                          int &outW, int &outH)
+{
   // Buscamos si ya existe una textura cacheada para esta key lógica.
   auto it = textCache.find(key);
 
-  if (it != textCache.end()) {
+  if (it != textCache.end())
+  {
     CachedText &cached = it->second;
 
     // Si texto, fuente y color siguen iguales, reutilizamos la textura.
     if (cached.texture != nullptr && cached.text == text &&
-        cached.font == font && sameColor(cached.color, color)) {
+        cached.font == font && sameColor(cached.color, color))
+    {
       outW = cached.w;
       outH = cached.h;
       return cached.texture;
     }
 
     // Si cambió algo, destruimos la textura anterior.
-    if (cached.texture != nullptr) {
+    if (cached.texture != nullptr)
+    {
       SDL_DestroyTexture(cached.texture);
       cached.texture = nullptr;
     }
   }
 
   // Si el texto está vacío, no generamos textura.
-  if (text.empty() || font == nullptr) {
+  if (text.empty() || font == nullptr)
+  {
     outW = 0;
     outH = 0;
     return nullptr;
@@ -1340,7 +1507,8 @@ SDL_Texture *Game::getOrCreateTextTexture(const std::string &key,
 
   // Creamos surface nueva solo cuando el texto realmente cambió.
   SDL_Surface *surface = TTF_RenderText_Blended(font, text.c_str(), color);
-  if (surface == nullptr) {
+  if (surface == nullptr)
+  {
     outW = 0;
     outH = 0;
     return nullptr;
@@ -1348,7 +1516,8 @@ SDL_Texture *Game::getOrCreateTextTexture(const std::string &key,
 
   // Convertimos surface a texture.
   SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-  if (texture == nullptr) {
+  if (texture == nullptr)
+  {
     SDL_FreeSurface(surface);
     outW = 0;
     outH = 0;
@@ -1374,10 +1543,13 @@ SDL_Texture *Game::getOrCreateTextTexture(const std::string &key,
   return texture;
 }
 
-void Game::clearTextCache() {
+void Game::clearTextCache()
+{
   // Destruimos todas las texturas cacheadas.
-  for (auto &[key, cached] : textCache) {
-    if (cached.texture != nullptr) {
+  for (auto &[key, cached] : textCache)
+  {
+    if (cached.texture != nullptr)
+    {
       SDL_DestroyTexture(cached.texture);
       cached.texture = nullptr;
     }
@@ -1386,10 +1558,12 @@ void Game::clearTextCache() {
   textCache.clear();
 }
 
-void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
+void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg)
+{
   // Limpiamos el inventario visual actual.
   // El server manda el estado completo, así que reconstruimos todo desde cero.
-  for (auto &slot : inventoryState.slots) {
+  for (auto &slot : inventoryState.slots)
+  {
     slot.reset();
   }
 
@@ -1416,14 +1590,17 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
   // Así podemos buscar cada item por id sin recorrer el vector muchas veces.
   std::unordered_map<uint32_t, const Item *> itemByInstanceId;
 
-  for (const Item &item : serverItems) {
+  for (const Item &item : serverItems)
+  {
     itemByInstanceId[item.instanceId] = &item;
   }
 
   // Función auxiliar:
   // Convierte un Item del server en un ItemView del cliente.
-  auto makeItemView = [&](const Item &serverItem) -> std::optional<ItemView> {
-    try {
+  auto makeItemView = [&](const Item &serverItem) -> std::optional<ItemView>
+  {
+    try
+    {
       // catalogId permite buscar la metadata visual en items.json.
       ItemView view =
           itemCatalog.requireById(static_cast<int>(serverItem.catalogId));
@@ -1432,7 +1609,9 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
       view.instanceId = serverItem.instanceId;
 
       return view;
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception &e)
+    {
       std::cerr << "[CLIENT][INV] catalogId desconocido="
                 << serverItem.catalogId
                 << " instanceId=" << serverItem.instanceId
@@ -1446,12 +1625,14 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
   // 1. Aplicamos los slots de inventario EXACTAMENTE como los manda el server.
   for (std::size_t slotIndex = 0; slotIndex < inventorySlots.size() &&
                                   slotIndex < inventoryState.slots.size();
-       ++slotIndex) {
+       ++slotIndex)
+  {
 
     const uint32_t itemInstanceId = inventorySlots[slotIndex];
 
     // 0 significa slot vacío.
-    if (itemInstanceId == 0) {
+    if (itemInstanceId == 0)
+    {
       inventoryState.slots[slotIndex].reset();
       continue;
     }
@@ -1459,7 +1640,8 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
     // Buscamos ese instanceId en los items enviados por el server.
     auto it = itemByInstanceId.find(itemInstanceId);
 
-    if (it == itemByInstanceId.end()) {
+    if (it == itemByInstanceId.end())
+    {
       inventoryState.slots[slotIndex].reset();
 
       std::cerr << "[CLIENT][INV] slot=" << slotIndex
@@ -1471,7 +1653,8 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
     // Convertimos Item server -> ItemView cliente.
     std::optional<ItemView> view = makeItemView(*it->second);
 
-    if (!view.has_value()) {
+    if (!view.has_value())
+    {
       inventoryState.slots[slotIndex].reset();
       continue;
     }
@@ -1481,10 +1664,12 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
   }
 
   // 2. Aplicamos equipamiento.
-  auto applyEquipped = [&](EquipSlot slot, std::optional<ItemView> &target) {
+  auto applyEquipped = [&](EquipSlot slot, std::optional<ItemView> &target)
+  {
     const auto index = static_cast<std::size_t>(slot);
 
-    if (index >= equipped.size()) {
+    if (index >= equipped.size())
+    {
       target.reset();
       return;
     }
@@ -1492,7 +1677,8 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
     const uint32_t equippedInstanceId = equipped[index];
 
     // 0 significa slot de equipo vacío.
-    if (equippedInstanceId == 0) {
+    if (equippedInstanceId == 0)
+    {
       target.reset();
       return;
     }
@@ -1500,7 +1686,8 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
     // Buscamos el item equipado en la lista completa del server.
     auto it = itemByInstanceId.find(equippedInstanceId);
 
-    if (it == itemByInstanceId.end()) {
+    if (it == itemByInstanceId.end())
+    {
       target.reset();
 
       std::cerr << "[CLIENT][EQUIP] instanceId equipado no vino en items. id="
@@ -1510,7 +1697,8 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
 
     std::optional<ItemView> view = makeItemView(*it->second);
 
-    if (!view.has_value()) {
+    if (!view.has_value())
+    {
       target.reset();
       return;
     }
@@ -1523,7 +1711,8 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
   applyEquipped(EquipSlot::ARMOR, equipmentState.armor);
   applyEquipped(EquipSlot::SHIELD, equipmentState.shield);
 
-  if (player != nullptr && player->hasComponent<EquipmentComponent>()) {
+  if (player != nullptr && player->hasComponent<EquipmentComponent>())
+  {
     auto &equipment = player->getComponent<EquipmentComponent>();
 
     equipment.setWeapon(equipmentState.weapon);
@@ -1536,20 +1725,22 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg) {
   // refreshPlayerBodySprite();
 }
 
-void Game::handleEntityMove(const EntityMoveMessage &moveMsg) {
+void Game::handleEntityMove(const EntityMoveMessage &moveMsg)
+{
   const uint32_t entityId = static_cast<uint32_t>(moveMsg.getId());
   const float serverX = static_cast<float>(moveMsg.getX());
   const float serverY = static_cast<float>(moveMsg.getY());
   const Direction direction = moveMsg.getDirection();
   const bool moving = moveMsg.isMoving();
 
-
-  if (clientWorld != nullptr) {
+  if (clientWorld != nullptr)
+  {
     clientWorld->updatePlayerPosition(entityId, serverX, serverY, direction,
                                       moving);
   }
 }
-void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg) {
+void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg)
+{
   // ID del jugador muerto enviado por el server.
   const uint32_t deadPlayerId = diedMsg.getId();
 
@@ -1557,7 +1748,8 @@ void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg) {
             << std::endl;
 
   // Si el muerto soy yo, aplico estado fantasma local.
-  if (deadPlayerId == static_cast<uint32_t>(playerDto.playerID)) {
+  if (deadPlayerId == static_cast<uint32_t>(playerDto.playerID))
+  {
     playerState.isDead = true;
     playerState.hp = 0;
     playerState.mana = 0;
@@ -1566,14 +1758,17 @@ void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg) {
   }
 
   // Si murió otro jugador, hay que actualizar su entidad remota.
-  if (clientWorld != nullptr) {
+  if (clientWorld != nullptr)
+  {
     clientWorld->applyRemotePlayerGhostState(deadPlayerId);
   }
 }
-void Game::handlePlayerStats(const PlayerStatsMessage &stats) {
+void Game::handlePlayerStats(const PlayerStatsMessage &stats)
+{
   const int serverHp = stats.getHp();
 
-  if (serverHp > 0) {
+  if (serverHp > 0)
+  {
     hasReceivedValidPlayerStats = true;
   }
 
@@ -1587,7 +1782,8 @@ void Game::handlePlayerStats(const PlayerStatsMessage &stats) {
 
   // Si el server dice HP 0, el jugador local debe quedar fantasma,
   // aunque todavía no haya llegado o ya haya llegado MSG_PLAYER_DIED.
-  if (serverHp <= 0) {
+  if (serverHp <= 0)
+  {
     playerState.isDead = true;
     playerState.hp = 0;
     playerState.mana = 0;
@@ -1596,14 +1792,16 @@ void Game::handlePlayerStats(const PlayerStatsMessage &stats) {
   }
 
   // Si estaba muerto y ahora viene HP positivo, es resurrección.
-  if (playerState.isDead && serverHp > 0) {
+  if (playerState.isDead && serverHp > 0)
+  {
     reviveLocalPlayer(serverHp);
     return;
   }
 
   playerState.hp = serverHp;
 }
-void Game::handleEntitySpawn(const EntitySpawnMessage &spawnMsg) {
+void Game::handleEntitySpawn(const EntitySpawnMessage &spawnMsg)
+{
 
   const PlayerDto &dto = spawnMsg.getPlayerDto();
 
@@ -1612,7 +1810,8 @@ void Game::handleEntitySpawn(const EntitySpawnMessage &spawnMsg) {
             << " localID=" << static_cast<int>(playerDto.playerID) << " pos=("
             << dto.xpos << ", " << dto.ypos << ")" << std::endl;
 
-  if (clientWorld != nullptr) {
+  if (clientWorld != nullptr)
+  {
     clientWorld->spawnRemotePlayer(dto);
   }
   std::cout << "[CLIENT] MSG_ENTITY_SPAWN recibido. playerID="
@@ -1621,19 +1820,23 @@ void Game::handleEntitySpawn(const EntitySpawnMessage &spawnMsg) {
             << dto.xpos << ", " << dto.ypos << ")"
             << " esFantasma=" << dto.esFantasma << std::endl;
 }
-void Game::handleInventoryUpdate(const InventoryUpdateMessage &inventoryMsg) {
+void Game::handleInventoryUpdate(const InventoryUpdateMessage &inventoryMsg)
+{
 
   applyInventoryUpdate(inventoryMsg);
 
   std::cout << "[CLIENT] MSG_INVENTORY_UPDATE recibido. items="
             << inventoryMsg.getItems().size() << std::endl;
-  if (playerState.isDead || playerState.hp <= 0) {
+  if (playerState.isDead || playerState.hp <= 0)
+  {
     applyLocalPlayerGhostState();
   }
 }
 
-void Game::processServerMessage(const Message &msg) {
-  switch (static_cast<ServerOpCode>(msg.opCode())) {
+void Game::processServerMessage(const Message &msg)
+{
+  switch (static_cast<ServerOpCode>(msg.opCode()))
+  {
   case ServerOpCode::MSG_ENTITY_MOVE:
     handleEntityMove(static_cast<const EntityMoveMessage &>(msg));
     return;
@@ -1649,10 +1852,10 @@ void Game::processServerMessage(const Message &msg) {
   case ServerOpCode::MSG_ENTITY_SPAWN:
     handleEntitySpawn(static_cast<const EntitySpawnMessage &>(msg));
     return;
-  
+
   case ServerOpCode::MSG_ENTITY_DESPAWN:
-      handleEntityDespawn(static_cast<const EntityDespawnMessage&>(msg));
-      return;
+    handleEntityDespawn(static_cast<const EntityDespawnMessage &>(msg));
+    return;
 
   case ServerOpCode::MSG_INVENTORY_UPDATE:
     handleInventoryUpdate(static_cast<const InventoryUpdateMessage &>(msg));
@@ -1665,17 +1868,26 @@ void Game::processServerMessage(const Message &msg) {
     handleLevelUp(static_cast<const LevelUpMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_SPAWN:
-
+    std::cout << "[CLIENT] MSG_NPC_SPAWN recibido" << std::endl;
     handleNpcSpawn(static_cast<const NpcSpawnMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_HEALTH:
+    std::cout << "[CLIENT] MSG_NPC_HEALTH recibido" << std::endl;
     handleNpcHealth(static_cast<const NpcHealthMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_MOVE:
+    std::cout << "[CLIENT] MSG_NPC_MOVE recibido" << std::endl;
     handleNpcMove(static_cast<const NpcMoveMessage &>(msg));
     return;
   case ServerOpCode::MSG_PLAYER_RESURRECTED:
+    std::cout << "[CLIENT] MSG_PLAYER_RESURRECTED recibido" << std::endl;
     handlePlayerResurrected(static_cast<const PlayerResurrectedMessage &>(msg));
+    return;
+  case ServerOpCode::MSG_MAP_CHANGED:
+    std::cout << "[CLIENT] MSG_MAP_CHANGED recibido" << std::endl;
+    handleMapChanged(static_cast<const MapChangedMessage &>(msg));
+    return;
+    handleNpcSpawn(static_cast<const NpcSpawnMessage &>(msg));
     return;
 
   default:
@@ -1684,8 +1896,10 @@ void Game::processServerMessage(const Message &msg) {
 }
 
 std::optional<ClientEquipmentSlot>
-Game::toClientEquipmentSlot(int index) const {
-  switch (index) {
+Game::toClientEquipmentSlot(int index) const
+{
+  switch (index)
+  {
   case static_cast<int>(ClientEquipmentSlot::Weapon):
     return ClientEquipmentSlot::Weapon;
 
@@ -1703,8 +1917,10 @@ Game::toClientEquipmentSlot(int index) const {
   }
 }
 
-EquipSlot Game::toServerEquipSlot(ClientEquipmentSlot slot) const {
-  switch (slot) {
+EquipSlot Game::toServerEquipSlot(ClientEquipmentSlot slot) const
+{
+  switch (slot)
+  {
   case ClientEquipmentSlot::Weapon:
     return EquipSlot::HAND;
 
@@ -1722,16 +1938,19 @@ EquipSlot Game::toServerEquipSlot(ClientEquipmentSlot slot) const {
 }
 
 void Game::handlePlayerEquipmentUpdate(
-    const PlayerEquipmentUpdateMessage &msg) {
+    const PlayerEquipmentUpdateMessage &msg)
+{
   const uint32_t updatedPlayerId = msg.getPlayerId();
 
   // El jugador local ya se actualiza mediante InventoryUpdateMessage.
   // Este mensaje se usa para actualizar jugadores remotos.
-  if (updatedPlayerId == static_cast<uint32_t>(playerDto.playerID)) {
+  if (updatedPlayerId == static_cast<uint32_t>(playerDto.playerID))
+  {
     return;
   }
 
-  if (clientWorld == nullptr) {
+  if (clientWorld == nullptr)
+  {
     return;
   }
 
@@ -1739,28 +1958,33 @@ void Game::handlePlayerEquipmentUpdate(
                                            itemCatalog);
 }
 
-void Game::handleLevelUp(const LevelUpMessage &msg) {
+void Game::handleLevelUp(const LevelUpMessage &msg)
+{
   const uint32_t updatedPlayerId = msg.getPlayerId();
   const uint32_t newLevel = msg.getLevel();
 
-
-  if (updatedPlayerId == static_cast<uint32_t>(playerDto.playerID)) {
+  if (updatedPlayerId == static_cast<uint32_t>(playerDto.playerID))
+  {
     playerState.level = newLevel;
     return;
   }
 
-  if (clientWorld != nullptr) {
+  if (clientWorld != nullptr)
+  {
     clientWorld->updateRemotePlayerLevel(updatedPlayerId, newLevel);
   }
 }
 
-void Game::handleNpcSpawn(const NpcSpawnMessage &msg) {
+void Game::handleNpcSpawn(const NpcSpawnMessage &msg)
+{
   auto existing = enemies.find(msg.getNpcId());
 
-  if (existing != enemies.end()) {
+  if (existing != enemies.end())
+  {
     Entity *enemyEntity = existing->second;
 
-    if (enemyEntity != nullptr) {
+    if (enemyEntity != nullptr)
+    {
       // Respawn de NPC existente:
       // actualizamos posición y vida, sin crear una entidad duplicada.
       auto &transform = enemyEntity->getComponent<TransformComponent>();
@@ -1800,11 +2024,13 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg) {
 
   Entity *npcEntity = nullptr;
 
-  if (npcData.hostile) {
+  if (npcData.hostile)
+  {
     // Enemigo de combate: va al grupo enemies y tiene barra de vida.
     npcEntity = assets->CreateEnemy(npcData);
 
-    if (npcEntity == nullptr) {
+    if (npcEntity == nullptr)
+    {
       std::cout << "[CLIENT NPC] no se pudo crear npcId=" << npcData.npcID
                 << " nombre=" << npcData.nombre << std::endl;
       return;
@@ -1813,37 +2039,40 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg) {
     enemies[msg.getNpcId()] = npcEntity;
 
     attackSystem.setEnemyHealth(msg.getNpcId(), npcData.hp, npcData.hpMax);
-  } else {
+  }
+  else
+  {
     // NPC de ciudad (priest, merchant, banker): va al grupo NPC, sin barra de
     // vida.
     npcEntity = assets->CreateNpc(npcData);
 
-    if (npcEntity == nullptr) {
+    if (npcEntity == nullptr)
+    {
 
       return;
     }
   }
-
 }
 
-void Game::handleNpcHealth(const NpcHealthMessage &msg) {
+void Game::handleNpcHealth(const NpcHealthMessage &msg)
+{
   const uint32_t npcId = msg.getNpcId();
 
   attackSystem.setEnemyHealth(npcId, msg.getHp(), msg.getMaxHp());
 
-
-  if (msg.getHp() <= 0) {
+  if (msg.getHp() <= 0)
+  {
     auto it = enemies.find(npcId);
 
-    if (it != enemies.end()) {
+    if (it != enemies.end())
+    {
       enemies.erase(it);
     }
-
-
   }
 }
 
-void Game::handleNpcMove(const NpcMoveMessage &msg) {
+void Game::handleNpcMove(const NpcMoveMessage &msg)
+{
   const uint32_t npcId = msg.getNpcId();
 
   // Buscamos el enemigo en el mapa visual.
@@ -1851,14 +2080,16 @@ void Game::handleNpcMove(const NpcMoveMessage &msg) {
 
   // Si no existe en cliente, no podemos moverlo.
   // En ese caso debería llegar primero un NpcSpawnMessage.
-  if (it == enemies.end()) {
+  if (it == enemies.end())
+  {
 
     return;
   }
 
   Entity *enemyEntity = it->second;
 
-  if (enemyEntity == nullptr) {
+  if (enemyEntity == nullptr)
+  {
 
     return;
   }
@@ -1871,14 +2102,15 @@ void Game::handleNpcMove(const NpcMoveMessage &msg) {
   // Actualizamos posición visual.
   transform.position.x = newX;
   transform.position.y = newY;
-
 }
 
-void Game::handlePlayerResurrected(const PlayerResurrectedMessage &msg) {
+void Game::handlePlayerResurrected(const PlayerResurrectedMessage &msg)
+{
   const uint32_t resurrectedId = msg.getPlayerId();
 
   // Si el revivido soy yo, restauro mi jugador local.
-  if (resurrectedId == static_cast<uint32_t>(playerDto.playerID)) {
+  if (resurrectedId == static_cast<uint32_t>(playerDto.playerID))
+  {
     localGhostStateApplied = false;
 
     // Si tu reviveLocalPlayer espera HP, usá el HP actual del playerState
@@ -1888,52 +2120,135 @@ void Game::handlePlayerResurrected(const PlayerResurrectedMessage &msg) {
   }
 
   // Si revivió otro jugador, restauro su sprite remoto.
-  if (clientWorld != nullptr) {
+  if (clientWorld != nullptr)
+  {
     clientWorld->applyRemotePlayerAliveState(resurrectedId);
   }
 }
 
-void Game::drawEquippedEntity(Entity *entity, RenderContext &context) {
+void Game::drawEquippedEntity(Entity *entity, RenderContext &context)
+{
   // Si la entidad no existe, no dibujamos nada.
-  if (entity == nullptr) {
+  if (entity == nullptr)
+  {
     return;
   }
 
   // Primera capa:
   // arma/escudo que deben quedar detrás del cuerpo.
-  if (entity->hasComponent<EquipmentComponent>()) {
+  if (entity->hasComponent<EquipmentComponent>())
+  {
     entity->getComponent<EquipmentComponent>().drawBehind(context);
   }
 
   // Segunda capa:
   // sprite principal del personaje: cuerpo, cabeza, casco.
-  if (entity->hasComponent<SpriteComponent>()) {
+  if (entity->hasComponent<SpriteComponent>())
+  {
     entity->getComponent<SpriteComponent>().draw(context);
   }
 
   // Tercera capa:
   // arma/escudo que deben quedar delante del cuerpo.
-  if (entity->hasComponent<EquipmentComponent>()) {
+  if (entity->hasComponent<EquipmentComponent>())
+  {
     entity->getComponent<EquipmentComponent>().drawFront(context);
   }
-
-
 }
 
-void Game::handleEntityDespawn(const EntityDespawnMessage& msg) {
-    uint32_t idToRemove = msg.getEntityId(); 
+void Game::handleEntityDespawn(const EntityDespawnMessage &msg)
+{
+  uint32_t idToRemove = msg.getEntityId();
 
-    auto itEnemy = enemies.find(idToRemove);
-    if (itEnemy != enemies.end()) {
-        if (itEnemy->second != nullptr) {
-            itEnemy->second->destroy(); 
-        }
-        enemies.erase(itEnemy); 
-        std::cout << "[CLIENT] Enemigo despawneado ID: " << idToRemove << std::endl;
-        return;
+  auto itEnemy = enemies.find(idToRemove);
+  if (itEnemy != enemies.end())
+  {
+    if (itEnemy->second != nullptr)
+    {
+      itEnemy->second->destroy();
     }
+    enemies.erase(itEnemy);
+    std::cout << "[CLIENT] Enemigo despawneado ID: " << idToRemove << std::endl;
+    return;
+  }
 
-    if (clientWorld != nullptr) {
-        clientWorld->removeRemotePlayer(idToRemove); 
+  if (clientWorld != nullptr)
+  {
+    clientWorld->removeRemotePlayer(idToRemove);
+  }
+}
+
+void Game::clearCurrentScene()
+{
+  for (auto &t : manager.getGroup(groupMap))
+  {
+    t->destroy();
+  }
+  for (auto &t : manager.getGroup(groupMapTop))
+  {
+    t->destroy();
+  }
+
+  for (auto &n : manager.getGroup(groupNPC))
+  {
+    n->destroy();
+  }
+
+  for (auto &ui : manager.getGroup(groupUI))
+  {
+    ui->destroy();
+  }
+
+  for (auto &[enemyId, enemyEntity] : enemies)
+  {
+    if (enemyEntity != nullptr)
+    {
+      enemyEntity->destroy();
     }
+  }
+  enemies.clear();
+
+  for (auto &p : manager.getGroup(groupPlayers))
+  {
+    if (p != player)
+    {
+      p->destroy();
+    }
+  }
+
+  for (auto &slot : inventoryState.slots)
+  {
+    slot = std::nullopt;
+  }
+
+  equipmentState.weapon = std::nullopt;
+  equipmentState.helmet = std::nullopt;
+  equipmentState.armor = std::nullopt;
+  equipmentState.shield = std::nullopt;
+
+  manager.refresh();
+
+  if (clientWorld != nullptr)
+  {
+    clientWorld = std::make_unique<ClientGameWorld>(
+        static_cast<uint32_t>(playerDto.playerID), player, *assets);
+  }
+}
+
+void Game::handleMapChanged(const MapChangedMessage &msg)
+{
+  std::cout << "[Game] Cambiando al mapa: " << msg.getMapPath() << std::endl;
+
+  clearCurrentScene();
+
+  if (map != nullptr)
+  {
+    delete map;
+    map = nullptr;
+  }
+
+  map = new Map(manager, *assets, "terrain", 3, 32);
+  map->LoadMap(msg.getMapPath());
+
+  std::cout << "[Game] ¡Nuevo mapa cargado exitosamente!" << std::endl;
 }

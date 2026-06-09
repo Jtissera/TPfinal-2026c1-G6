@@ -44,9 +44,9 @@ void LobbyHandler::initHandlers()
 
 void LobbyHandler::run()
 {
-  try
+  while (true)
   {
-    while (true)
+    try
     {
       ClientMessage incoming;
       while (lobbyQueue.try_pop(incoming))
@@ -55,10 +55,6 @@ void LobbyHandler::run()
         auto it = handlers.find(opcode);
         if (it != handlers.end())
           it->second(incoming.clientId, *incoming.message);
-        else
-          lobbyMonitor.sendTo(
-              incoming.clientId,
-              std::make_shared<const ErrorMessage>("Not in a game"));
       }
 
       std::shared_ptr<LeaveEvent> leaveEvent;
@@ -67,17 +63,28 @@ void LobbyHandler::run()
 
       std::shared_ptr<InstanceTransitionEvent> transition;
       while (transitionQueue.try_pop(transition))
-        handleInstanceTransition(*transition);
+      {
+        try
+        {
+          handleInstanceTransition(*transition);
+        }
+        catch (const std::exception &e)
+        {
+          std::cerr << "[LobbyHandler] Error en transicion de cliente "
+                    << transition->clientId << ": " << e.what() << std::endl;
+        }
+      }
 
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
-  }
-  catch (const ClosedQueue &)
-  {
-  }
-  catch (const std::exception &e)
-  {
-    std::cerr << "[LobbyHandler] error: " << e.what() << std::endl;
+    catch (const ClosedQueue &)
+    {
+      break;
+    }
+    catch (const std::exception &e)
+    {
+      std::cerr << "[LobbyHandler] Error crítico en el loop: " << e.what() << std::endl;
+    }
   }
 }
 
@@ -132,81 +139,81 @@ void LobbyHandler::handleCreateGame(uint32_t clientId, const Message &message)
                                     createMsg.getMaxPlayers()));
 }
 
-void LobbyHandler::handleJoinGame(uint32_t clientId, const Message& message) {
-    const auto& joinMsg = static_cast<const JoinGameMessage&>(message);
-    const uint32_t gameId = joinMsg.getGameId();
+void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message)
+{
+  const auto &joinMsg = static_cast<const JoinGameMessage &>(message);
+  const uint32_t gameId = joinMsg.getGameId();
 
-    Queue<std::shared_ptr<const Message>>* clientQueue =
-        lobbyMonitor.getQueue(clientId);
+  Queue<std::shared_ptr<const Message>> *clientQueue =
+      lobbyMonitor.getQueue(clientId);
 
-    if (!clientQueue) {
-        lobbyMonitor.sendTo(
-            clientId,
-            std::make_shared<const ErrorMessage>(
-                "Internal error: client queue not found"
-            )
-        );
-        return;
+  if (!clientQueue)
+  {
+    lobbyMonitor.sendTo(
+        clientId,
+        std::make_shared<const ErrorMessage>(
+            "Internal error: client queue not found"));
+    return;
+  }
+
+  Player *player = playerRepo.get(clientId);
+
+  if (!player)
+  {
+    lobbyMonitor.sendTo(
+        clientId,
+        std::make_shared<const ErrorMessage>(
+            "Must create a character before joining"));
+    return;
+  }
+
+  if (!gameManager.joinGame(gameId, clientId, *clientQueue))
+  {
+    lobbyMonitor.sendTo(
+        clientId,
+        std::make_shared<const ErrorMessage>("Game not found or full"));
+    return;
+  }
+
+  // Armamos DTO antes de mover el Player.
+  PlayerDto playerDto = buildPlayerDto(*player);
+
+  // Ahora sí, el jugador entra al GameWorld.
+  gameManager.addPlayerToGame(gameId, std::move(*player));
+  playerRepo.remove(clientId);
+
+  std::string gameName;
+
+  for (const auto &info : gameManager.listGames())
+  {
+    if (info.gameId == gameId)
+    {
+      gameName = info.gameName;
+      break;
     }
+  }
 
-    Player* player = playerRepo.get(clientId);
+  // Primero avisamos al cliente que ya entró.
+  // Esto evita que siga operando como lobby mientras el server ya lo trata como game.
+  clientQueue->try_push(
+      std::make_shared<const JoinOkMessage>(
+          gameId,
+          gameName,
+          std::move(playerDto)));
 
-    if (!player) {
-        lobbyMonitor.sendTo(
-            clientId,
-            std::make_shared<const ErrorMessage>(
-                "Must create a character before joining"
-            )
-        );
-        return;
-    }
+  // Después redirigimos los mensajes entrantes del cliente a la cola del juego.
+  auto *receiver = receiverRegistry.get(clientId);
 
-    if (!gameManager.joinGame(gameId, clientId, *clientQueue)) {
-        lobbyMonitor.sendTo(
-            clientId,
-            std::make_shared<const ErrorMessage>("Game not found or full")
-        );
-        return;
-    }
+  if (receiver)
+  {
+    receiver->setQueue(gameManager.getGameQueue(gameId));
+  }
 
-    // Armamos DTO antes de mover el Player.
-    PlayerDto playerDto = buildPlayerDto(*player);
+  // Ya no debe recibir mensajes desde el monitor del lobby.
+  lobbyMonitor.removeQueue(clientId);
 
-    // Ahora sí, el jugador entra al GameWorld.
-    gameManager.addPlayerToGame(gameId, std::move(*player));
-    playerRepo.remove(clientId);
-
-    std::string gameName;
-
-    for (const auto& info : gameManager.listGames()) {
-        if (info.gameId == gameId) {
-            gameName = info.gameName;
-            break;
-        }
-    }
-
-    // Primero avisamos al cliente que ya entró.
-    // Esto evita que siga operando como lobby mientras el server ya lo trata como game.
-    clientQueue->try_push(
-        std::make_shared<const JoinOkMessage>(
-            gameId,
-            gameName,
-            std::move(playerDto)
-        )
-    );
-
-    // Después redirigimos los mensajes entrantes del cliente a la cola del juego.
-    auto* receiver = receiverRegistry.get(clientId);
-
-    if (receiver) {
-        receiver->setQueue(gameManager.getGameQueue(gameId));
-    }
-
-    // Ya no debe recibir mensajes desde el monitor del lobby.
-    lobbyMonitor.removeQueue(clientId);
-
-    // Finalmente sincronizamos inventario, jugadores existentes y spawn.
-    gameManager.syncPlayerJoin(gameId, clientId);
+  // Finalmente sincronizamos inventario, jugadores existentes y spawn.
+  gameManager.syncPlayerJoin(gameId, clientId);
 }
 void LobbyHandler::handleLeaveGame(LeaveEvent &event)
 {
@@ -225,35 +232,53 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
 {
   if (event.targetMap.empty())
   {
-    // EXIT tile: volver al room de origen
     uint32_t originId = gameManager.getOriginRoomId(event.fromRoomId);
     if (originId == 0)
       return;
 
+    std::string originMapPath = gameManager.getRoomMapPath(originId);
+
+    event.clientQueue->try_push(std::make_shared<const MapChangedMessage>(originMapPath));
+
     gameManager.joinGame(originId, event.clientId, *event.clientQueue);
+
     event.player.setTilePos(event.spawnTileX, event.spawnTileY);
     gameManager.addPlayerToGame(originId, std::move(event.player));
 
     auto *receiver = receiverRegistry.get(event.clientId);
     if (receiver)
       receiver->setQueue(gameManager.getGameQueue(originId));
+
+    gameManager.syncPlayerJoin(originId, event.clientId);
   }
   else
   {
-    // Entrada: ir al room de instancia (crearlo si no existe)
-    uint32_t instanceId = gameManager.getOrCreateInstance(
-        event.targetMap, event.fromRoomId);
+    std::string fullMapPath = event.targetMap;
+    if (fullMapPath.find("assets/") == std::string::npos)
+    {
+      fullMapPath = "assets/sprites/MapAssets/" + fullMapPath + ".argmap";
+    }
+
+    uint32_t instanceId = gameManager.getOrCreateInstance(fullMapPath, event.fromRoomId);
+
+    std::cout << "[SERVER] Enviando MSG_MAP_CHANGED al cliente para el mapa: " << fullMapPath << std::endl;
+    event.clientQueue->try_push(std::make_shared<const MapChangedMessage>(fullMapPath));
 
     gameManager.joinGame(instanceId, event.clientId, *event.clientQueue);
+
+    event.player.setTilePos(event.spawnTileX, event.spawnTileY);
     gameManager.addPlayerToGame(instanceId, std::move(event.player));
 
     auto *receiver = receiverRegistry.get(event.clientId);
     if (receiver)
       receiver->setQueue(gameManager.getGameQueue(instanceId));
+
+    gameManager.syncPlayerJoin(instanceId, event.clientId);
   }
 }
 
-PlayerDto LobbyHandler::buildPlayerDto(const Player& player) const {
+PlayerDto LobbyHandler::buildPlayerDto(const Player &player) const
+{
   PlayerDto dto{};
 
   // Identidad del jugador.

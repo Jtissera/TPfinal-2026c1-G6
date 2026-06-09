@@ -67,39 +67,34 @@ void GameLoop::processMessage(const ClientMessage &incoming)
   dispatcher.dispatch(incoming, world, monitor);
 }
 
-void GameLoop::worldUpdate(float deltaSeconds) {
+void GameLoop::worldUpdate(float deltaSeconds)
+{
 
   auto result = world.tick(deltaSeconds);
 
   // Si cambiaron stats de jugadores, mandamos stats actualizadas.
-  for (uint32_t id : result.playersChanged) {
+  for (uint32_t id : result.playersChanged)
+  {
     statManager.sendPlayerStats(id, world, monitor);
   }
-  for (uint32_t deadPlayerId : result.playersDied) {
+  for (uint32_t deadPlayerId : result.playersDied)
+  {
     monitor.broadcast(std::make_shared<const PlayerDiedMessage>(deadPlayerId));
 
-    std::cout << "[GameLoop] broadcast PLAYER_DIED id="<< deadPlayerId << std::endl;
-  }
-
-  for (const auto& death : result.npcDeaths) {
-    monitor.broadcast(std::make_shared<const EntityDespawnMessage>(death.npcId));
-
-    std::cout << "[GameLoop] broadcast NPC despawn por muerte. id=" 
-              << death.npcId << std::endl;
+    std::cout << "[GameLoop] broadcast PLAYER_DIED id=" << deadPlayerId << std::endl;
   }
 
   // Si algún NPC se movió, avisamos al cliente con un mensaje específico.
   // Esto NO crea NPCs. Solo actualiza su posición visual.
-  for (uint32_t npcId : result.npcsMoved) {
-    const Npc& npc = world.getNpc(npcId);
+  for (uint32_t npcId : result.npcsMoved)
+  {
+    const Npc &npc = world.getNpc(npcId);
 
     monitor.broadcast(
         std::make_shared<const NpcMoveMessage>(
             npc.getId(),
             static_cast<uint16_t>(npc.getTileX() * 96),
-            static_cast<uint16_t>(npc.getTileY() * 96)
-        )
-    );
+            static_cast<uint16_t>(npc.getTileY() * 96)));
 
     std::cout << "[GameLoop] broadcast NPC move id="
               << npc.getId()
@@ -111,7 +106,8 @@ void GameLoop::worldUpdate(float deltaSeconds) {
               << std::endl;
   }
 
-  for (const auto& npcSpawn : result.spawnedNpcs) {
+  for (const auto &npcSpawn : result.spawnedNpcs)
+  {
     monitor.broadcast(
         std::make_shared<const NpcSpawnMessage>(
             npcSpawn.npcId,
@@ -121,9 +117,7 @@ void GameLoop::worldUpdate(float deltaSeconds) {
             npcSpawn.y,
             npcSpawn.hp,
             npcSpawn.maxHp,
-            npcSpawn.hostile
-        )
-    );
+            npcSpawn.hostile));
 
     std::cout << "[GameLoop] broadcast NPC respawn id="
               << npcSpawn.npcId
@@ -133,15 +127,14 @@ void GameLoop::worldUpdate(float deltaSeconds) {
   }
 
   // Transiciones de instancia.
-  for (auto& entry : result.instanceTransitions) {
+  for (auto &entry : result.instanceTransitions)
+  {
     handleInstanceTransition(entry);
   }
 }
 
 void GameLoop::handleLeaveGame(uint32_t clientId)
 {
-  monitor.broadcast(std::make_shared<const EntityDespawnMessage>(clientId));
-
   auto player = world.removePlayer(clientId);
   if (!player)
     return;
@@ -156,9 +149,6 @@ void GameLoop::handleLeaveGame(uint32_t clientId)
 
 void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry)
 {
-
-  monitor.broadcast(std::make_shared<const EntityDespawnMessage>(entry.playerId));
-  
   auto player = world.removePlayer(entry.playerId);
   if (!player)
     return;

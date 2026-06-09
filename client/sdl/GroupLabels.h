@@ -5,7 +5,8 @@
 
 #include <cstddef>
 
-enum GroupLabels : std::size_t {
+enum GroupLabels : std::size_t
+{
   groupMap,
   groupMapTop,
   groupPlayers,
@@ -13,5 +14,6 @@ enum GroupLabels : std::size_t {
   groupProjectiles,
   groupNPC,
   groupEnemies,
+  groupUI
 };
 #endif // TALLER_TP_GROUPLABELS_H
