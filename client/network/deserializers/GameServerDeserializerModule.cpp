@@ -11,6 +11,7 @@
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
 #include "common/network/messages/server/npc/npcHealthMessage.h"
 #include "common/network/messages/server/npc/npcMoveMessage.h"
+#include "common/network/messages/server/player/EntityDespawnMessage.h"
 #include "common/network/protocol/clientOpCode.h"
 
 
@@ -217,6 +218,15 @@ void GameServerDeserializersModule::registerDeserializers(Registry& registry) co
 
         return std::make_unique<NpcMoveMessage>(npcId, x, y);
     }
-);
+    );
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_DESPAWN),
+        [](PacketReader& reader) -> std::unique_ptr<Message> {
+            const uint32_t id = reader.readUint32();
+
+            return std::make_unique<EntityDespawnMessage>(id);
+        }
+    );
+
 
 }

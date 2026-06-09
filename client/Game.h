@@ -25,6 +25,7 @@
 
 #include "common/network/messages/client/cheat/cheatMessage.h"
 #include "common/network/messages/server/player/EntityMoveMessage.h"
+#include "common/network/messages/server/player/EntityDespawnMessage.h"
 #include "common/network/messages/server/player/playerDiedMessage.h"
 #include "common/network/messages/server/world/EntitySpawnMessage.h"
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
@@ -190,7 +191,7 @@ private:
     void handleNpcHealth(const NpcHealthMessage& msg);
     void handleNpcMove(const NpcMoveMessage& msg);
     void handlePlayerResurrected(const PlayerResurrectedMessage& msg);
-
+    void handleEntityDespawn(const EntityDespawnMessage& msg);
 };
 
 #endif //PRUEBA_SDL_GAME_H

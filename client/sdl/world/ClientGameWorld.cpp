@@ -98,10 +98,8 @@ void ClientGameWorld::spawnRemotePlayer(const PlayerDto& remotePlayerDto) {
 }
 
 void ClientGameWorld::removeRemotePlayer(uint32_t entityId) {
-    // Buscamos el jugador remoto.
     auto it = remotePlayers.find(entityId);
 
-    // Si no existe, no hay nada que eliminar.
     if (it == remotePlayers.end()) {
         std::cout << "[CLIENT_WORLD] removeRemotePlayer ignorado. No existe id="
                   << entityId
@@ -109,12 +107,14 @@ void ClientGameWorld::removeRemotePlayer(uint32_t entityId) {
         return;
     }
 
-    // Sacamos el wrapper RemotePlayer del mapa.
-    // Nota: esto NO destruye la Entity del ECS.
-    // Si tu ECS necesita destruir/desactivar entidades, luego hay que agregarlo.
+    Entity* entity = it->second.getEntity();
+    if (entity != nullptr) {
+        entity->destroy(); 
+    }
+
     remotePlayers.erase(it);
 
-    std::cout << "[CLIENT_WORLD] RemotePlayer removido. id="
+    std::cout << "[CLIENT_WORLD] RemotePlayer removido de la lista y destruido del ECS. id="
               << entityId
               << std::endl;
 }

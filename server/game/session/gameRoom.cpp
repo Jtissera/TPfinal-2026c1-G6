@@ -36,8 +36,14 @@ void GameRoom::addClient(uint32_t clientId,
 void GameRoom::addPlayer(Player player) { world.addPlayer(std::move(player)); }
 
 void GameRoom::removeClient(uint32_t clientId) {
+  auto despawnMsg = std::make_shared<EntityDespawnMessage>(clientId);
+
+  broadcastExcept(clientId, despawnMsg);
+
   monitor.removeQueue(clientId);
   world.removePlayer(clientId);
+
+  std::cout << "[SERVER] Broadcast despawn por desconexión de playerId=" << clientId << std::endl;
 }
 
 Queue<ClientMessage> &GameRoom::getGameQueue() { return gameQueue; }

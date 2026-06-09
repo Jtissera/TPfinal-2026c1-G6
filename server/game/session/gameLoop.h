@@ -4,6 +4,7 @@
 #include "../../lobby/instanceTransitionEvent.h"
 #include "../common/network/messages/client/movement/moveMessage.h"
 #include "../common/network/messages/server/player/EntityMoveMessage.h"
+#include "../common/network/messages/server/player/EntityDespawnMessage.h"
 #include "../common/network/protocol/clientOpCode.h"
 #include "../session/statManager.h"
 

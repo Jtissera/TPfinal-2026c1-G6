@@ -1655,6 +1655,10 @@ void Game::processServerMessage(const Message &msg) {
   case ServerOpCode::MSG_ENTITY_SPAWN:
     handleEntitySpawn(static_cast<const EntitySpawnMessage &>(msg));
     return;
+  
+  case ServerOpCode::MSG_ENTITY_DESPAWN:
+      handleEntityDespawn(static_cast<const EntityDespawnMessage&>(msg));
+      return;
 
   case ServerOpCode::MSG_INVENTORY_UPDATE:
     handleInventoryUpdate(static_cast<const InventoryUpdateMessage &>(msg));
@@ -1943,4 +1947,24 @@ void Game::drawEquippedEntity(Entity *entity, RenderContext &context) {
   if (entity->hasComponent<EquipmentComponent>()) {
     entity->getComponent<EquipmentComponent>().drawFront(context);
   }
+
+
+}
+
+void Game::handleEntityDespawn(const EntityDespawnMessage& msg) {
+    uint32_t idToRemove = msg.getEntityId(); 
+
+    auto itEnemy = enemies.find(idToRemove);
+    if (itEnemy != enemies.end()) {
+        if (itEnemy->second != nullptr) {
+            itEnemy->second->destroy(); 
+        }
+        enemies.erase(itEnemy); 
+        std::cout << "[CLIENT] Enemigo despawneado ID: " << idToRemove << std::endl;
+        return;
+    }
+
+    if (clientWorld != nullptr) {
+        clientWorld->removeRemotePlayer(idToRemove); 
+    }
 }
