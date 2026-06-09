@@ -9,47 +9,47 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-class TilePalette : public QWidget {
-  Q_OBJECT
+class TilePalette : public QWidget
+{
+    Q_OBJECT
 
 public:
-  explicit TilePalette(QWidget *parent = nullptr);
+    explicit TilePalette(QWidget *parent = nullptr);
 
-  TileType selectedTileType() const;
-  ZoneType selectedZoneType() const;
-  bool selectedWalkable() const;
+    TileType selectedTileType() const;
+    ZoneType selectedZoneType() const;
+    bool selectedWalkable() const;
 
 signals:
-  void selectionChanged();
+    void selectionChanged();
 
 private:
-  // --- Terreno ---
-  QRadioButton *_rbGrass;
-  QRadioButton *_rbSand;
-  QRadioButton *_rbWater;
-  QRadioButton *_rbFloor;
+    // --- Terreno ---
+    QRadioButton *_rbGrass;
+    QRadioButton *_rbSand;
+    QRadioButton *_rbWater;
+    QRadioButton *_rbFloor;
 
-  // --- Estructuras ---
-  QRadioButton *_rbWall;
-  QRadioButton *_rbDoor;
-  QRadioButton *_rbForest;
-  QRadioButton *_rbCactus;
-  QRadioButton *_rbStone;
+    // --- Estructuras ---
+    QRadioButton *_rbForest;
+    QRadioButton *_rbCactus;
+    QRadioButton *_rbStone;
 
-  // --- Especiales ---
-  QRadioButton *_rbDungeonEntrance;
-  QRadioButton *_rbCavernEntrance;
-  QRadioButton *_rbExit;
+    // ── Ciudad ──────
+    QRadioButton *_rbCityFloor;
+    QRadioButton *_rbHouse;
+    QRadioButton *_rbChurch;
+    QRadioButton *_rbMill;
 
-  // --- Zona ---
-  QRadioButton *_rbZoneSafe;
-  QRadioButton *_rbZoneCity;
-  QRadioButton *_rbZoneCombat;
-  QRadioButton *_rbZoneDesert;
-  QRadioButton *_rbZoneForest;
-  QRadioButton *_rbZoneCavern;
-  QRadioButton *_rbZoneDungeon;
+    // --- Especiales ---
+    QRadioButton *_rbDungeonEntrance;
+    QRadioButton *_rbCavernEntrance;
+    QRadioButton *_rbExit;
 
-  // --- Propiedades ---
-  QCheckBox *_cbWalkable;
+    // --- Zona ---
+    QRadioButton *_rbZoneSafe;
+    QRadioButton *_rbZoneCombat;
+
+    // --- Propiedades ---
+    QCheckBox *_cbWalkable;
 };

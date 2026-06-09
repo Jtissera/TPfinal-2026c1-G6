@@ -31,31 +31,33 @@ bool NpcRepository::exists(const std::string &typeName) const
     return npcs.count(typeName) > 0;
 }
 
-NpcStats NpcRepository::parse(const std::string& typeName, const toml::table& entry) const {
+NpcStats NpcRepository::parse(const std::string &typeName, const toml::table &entry) const
+{
 
     NpcStats stats;
     stats.typeName = typeName;
     stats.type = npcTypeFromKey(typeName);
 
-    if (stats.type == NpcType::NONE) {
+    if (stats.type == NpcType::NONE)
+    {
         throw std::runtime_error(
-            "NpcRepository: unknown npc typeName: " + typeName
-        );
+            "NpcRepository: unknown npc typeName: " + typeName);
     }
 
     // Nombre visible por defecto.
     stats.name = npcTypeName(stats.type);
 
     // Si el TOML trae name, pisa el default.
-    if (auto value = entry["name"].value<std::string>()) {
+    if (auto value = entry["name"].value<std::string>())
+    {
         stats.name = *value;
     }
 
-    stats.maxHp            = entry["hp"].value_or<int16_t>(50);
-    stats.damageMin        = entry["damage_min"].value_or<uint16_t>(1);
-    stats.damageMax        = entry["damage_max"].value_or<uint16_t>(3);
-    stats.level            = entry["level"].value_or<uint8_t>(1);
-    stats.agility          = entry["agility"].value_or<uint8_t>(5);
+    stats.maxHp = entry["hp"].value_or<int16_t>(50);
+    stats.damageMin = entry["damage_min"].value_or<uint16_t>(1);
+    stats.damageMax = entry["damage_max"].value_or<uint16_t>(3);
+    stats.level = entry["level"].value_or<uint8_t>(1);
+    stats.agility = entry["agility"].value_or<uint8_t>(5);
     stats.strength = entry["strength"].value_or<uint8_t>(5);
     stats.detectionRange = entry["detection_range"].value_or<int>(5);
     stats.homeRange = entry["home_range"].value_or<int>(10);
@@ -89,6 +91,7 @@ NpcStats NpcRepository::parse(const std::string& typeName, const toml::table& en
         }
     }
 
+    stats.hostile = entry["hostile"].value_or<bool>(true);
     stats.homeZone = homeZone;
     stats.goldMultiplier = goldMult;
     stats.xpMultiplier = xpMult;
@@ -96,4 +99,3 @@ NpcStats NpcRepository::parse(const std::string& typeName, const toml::table& en
 
     return stats;
 }
-
