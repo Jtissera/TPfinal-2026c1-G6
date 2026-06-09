@@ -1543,15 +1543,11 @@ void Game::handleEntityMove(const EntityMoveMessage &moveMsg) {
   const Direction direction = moveMsg.getDirection();
   const bool moving = moveMsg.isMoving();
 
-  // EntityMoveMessage actualmente representa movimiento de jugadores.
-  // Los NPCs no se actualizan por este mensaje.
+
   if (clientWorld != nullptr) {
     clientWorld->updatePlayerPosition(entityId, serverX, serverY, direction,
                                       moving);
   }
-
-  std::cout << "[sync player] id=" << entityId << " server=(" << serverX << ", "
-            << serverY << ") moving=" << moving << std::endl;
 }
 void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg) {
   // ID del jugador muerto enviado por el server.
@@ -1562,8 +1558,7 @@ void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg) {
 
   // Si el muerto soy yo, aplico estado fantasma local.
   if (deadPlayerId == static_cast<uint32_t>(playerDto.playerID)) {
-    // localGhostStateApplied = false;
-    // playerState.isDead = true;
+    playerState.isDead = true;
     playerState.hp = 0;
     playerState.mana = 0;
     applyLocalPlayerGhostState();
@@ -1593,7 +1588,7 @@ void Game::handlePlayerStats(const PlayerStatsMessage &stats) {
   // Si el server dice HP 0, el jugador local debe quedar fantasma,
   // aunque todavía no haya llegado o ya haya llegado MSG_PLAYER_DIED.
   if (serverHp <= 0) {
-    localGhostStateApplied = false;
+    playerState.isDead = true;
     playerState.hp = 0;
     playerState.mana = 0;
     applyLocalPlayerGhostState();
@@ -1633,7 +1628,6 @@ void Game::handleInventoryUpdate(const InventoryUpdateMessage &inventoryMsg) {
   std::cout << "[CLIENT] MSG_INVENTORY_UPDATE recibido. items="
             << inventoryMsg.getItems().size() << std::endl;
   if (playerState.isDead || playerState.hp <= 0) {
-    localGhostStateApplied = false;
     applyLocalPlayerGhostState();
   }
 }
@@ -1667,25 +1661,20 @@ void Game::processServerMessage(const Message &msg) {
     handleLevelUp(static_cast<const LevelUpMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_SPAWN:
-    std::cout << "[CLIENT] MSG_NPC_SPAWN recibido" << std::endl;
+
     handleNpcSpawn(static_cast<const NpcSpawnMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_HEALTH:
-    std::cout << "[CLIENT] MSG_NPC_HEALTH recibido" << std::endl;
     handleNpcHealth(static_cast<const NpcHealthMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_MOVE:
-    std::cout << "[CLIENT] MSG_NPC_MOVE recibido" << std::endl;
     handleNpcMove(static_cast<const NpcMoveMessage &>(msg));
     return;
   case ServerOpCode::MSG_PLAYER_RESURRECTED:
-    std::cout << "[CLIENT] MSG_PLAYER_RESURRECTED recibido" << std::endl;
     handlePlayerResurrected(static_cast<const PlayerResurrectedMessage &>(msg));
     return;
 
   default:
-    std::cout << "[CLIENT] opcode no manejado: 0x" << std::hex
-              << static_cast<int>(msg.opCode()) << std::dec << std::endl;
     return;
   }
 }
@@ -1750,8 +1739,6 @@ void Game::handleLevelUp(const LevelUpMessage &msg) {
   const uint32_t updatedPlayerId = msg.getPlayerId();
   const uint32_t newLevel = msg.getLevel();
 
-  std::cout << "[CLIENT LEVEL_UP] playerId=" << updatedPlayerId
-            << " level=" << newLevel << std::endl;
 
   if (updatedPlayerId == static_cast<uint32_t>(playerDto.playerID)) {
     playerState.level = newLevel;
@@ -1828,17 +1815,11 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg) {
     npcEntity = assets->CreateNpc(npcData);
 
     if (npcEntity == nullptr) {
-      std::cout << "[CLIENT NPC] no se pudo crear NPC ciudad npcId="
-                << msg.getNpcId() << " nombre=" << npcData.nombre << std::endl;
+
       return;
     }
   }
 
-  std::cout << "[CLIENT NPC] spawn npcId=" << msg.getNpcId()
-            << " nombre=" << npcData.nombre
-            << " type=" << static_cast<int>(npcData.type) << " pos=("
-            << npcData.x << ", " << npcData.y << ") hp=" << npcData.hp << "/"
-            << npcData.hpMax << " hostile=" << npcData.hostile << std::endl;
 }
 
 void Game::handleNpcHealth(const NpcHealthMessage &msg) {
@@ -1846,8 +1827,6 @@ void Game::handleNpcHealth(const NpcHealthMessage &msg) {
 
   attackSystem.setEnemyHealth(npcId, msg.getHp(), msg.getMaxHp());
 
-  std::cout << "[CLIENT NPC] health npcId=" << npcId << " hp=" << msg.getHp()
-            << "/" << msg.getMaxHp() << std::endl;
 
   if (msg.getHp() <= 0) {
     auto it = enemies.find(npcId);
@@ -1856,7 +1835,7 @@ void Game::handleNpcHealth(const NpcHealthMessage &msg) {
       enemies.erase(it);
     }
 
-    std::cout << "[CLIENT NPC] removido npcId=" << npcId << std::endl;
+
   }
 }
 
@@ -1869,23 +1848,18 @@ void Game::handleNpcMove(const NpcMoveMessage &msg) {
   // Si no existe en cliente, no podemos moverlo.
   // En ese caso debería llegar primero un NpcSpawnMessage.
   if (it == enemies.end()) {
-    std::cout << "[CLIENT NPC] move ignorado, npc no existe npcId=" << npcId
-              << std::endl;
+
     return;
   }
 
   Entity *enemyEntity = it->second;
 
   if (enemyEntity == nullptr) {
-    std::cout << "[CLIENT NPC] move ignorado, entity null npcId=" << npcId
-              << std::endl;
+
     return;
   }
 
   auto &transform = enemyEntity->getComponent<TransformComponent>();
-
-  const float oldX = transform.position.x;
-  const float oldY = transform.position.y;
 
   const float newX = static_cast<float>(msg.getX());
   const float newY = static_cast<float>(msg.getY());
@@ -1894,15 +1868,10 @@ void Game::handleNpcMove(const NpcMoveMessage &msg) {
   transform.position.x = newX;
   transform.position.y = newY;
 
-  std::cout << "[CLIENT NPC] move npcId=" << npcId << " old=(" << oldX << ", "
-            << oldY << ") new=(" << newX << ", " << newY << ")" << std::endl;
 }
 
 void Game::handlePlayerResurrected(const PlayerResurrectedMessage &msg) {
   const uint32_t resurrectedId = msg.getPlayerId();
-
-  std::cout << "[CLIENT] Player resurrected id=" << resurrectedId << " tile=("
-            << msg.getTileX() << ", " << msg.getTileY() << ")" << std::endl;
 
   // Si el revivido soy yo, restauro mi jugador local.
   if (resurrectedId == static_cast<uint32_t>(playerDto.playerID)) {

@@ -587,9 +587,10 @@ void GameWorld::tickPlayers(float deltaSeconds, WorldTickResult &result)
 
     for (auto &[id, player] : players)
     {
-        if (!player.isAlive())
+        if (!player.isAlive() || player.isGhost() || player.getHp() == 0)
+        {
             continue;
-
+        }
         const Tile &tile = mapData.at(
             static_cast<uint16_t>(player.getTileX()),
             static_cast<uint16_t>(player.getTileY()));
@@ -650,7 +651,7 @@ void GameWorld::tickNpcs(WorldTickResult &result)
         Player &target = it->second;
 
         // Un NPC no debe seguir atacando a un jugador muerto/fantasma.
-        if (!target.isAlive() || target.isGhost())
+        if (!target.isAlive() || target.isGhost() || target.getHp() == 0)
         {
             continue;
         }
@@ -662,7 +663,7 @@ void GameWorld::tickNpcs(WorldTickResult &result)
         result.playersChanged.push_back(attack.targetPlayerId);
 
         // Si murió con este golpe, avisamos que murio
-        if (!target.isAlive())
+        if (target.getHp() == 0)
         {
             handlePlayerDeath(attack.targetPlayerId, 0);
 
