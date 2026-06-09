@@ -224,22 +224,30 @@ GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t a
         giveExperience(attackerId, killExp);
     }
 
-    // Oro seguro según nivel.
-    // El muerto conserva hasta safeGold.
+    // Guardamos el oro antes de morir para saber cuánto tenía realmente.
+    const uint32_t victimGoldBefore = target.getGold();
+
+    // Calculamos cuánto oro puede conservar el muerto según su nivel.
     const uint32_t safeGold = formulas.calcMaxGold(target.getLevel());
+
+    // Procesamos la muerte.
+    // Esta función deja al muerto con safeGold como máximo
+    // y devuelve el oro excedente.
     const uint32_t excessGold = target.die(safeGold);
 
-    std::cout << "[PVP GOLD DEBUG] victimId="
-          << targetId
-          << " killerId="
-          << attackerId
-          << " safeGold="
-          << safeGold
-          << " excessGold="
-          << excessGold
-          << " victimGoldAfter="
-          << target.getGold()
-          << std::endl;
+    std::cout << "[PVP GOLD BEFORE DIE] victimId="
+              << targetId
+              << " killerId="
+              << attackerId
+              << " victimGoldBefore="
+              << victimGoldBefore
+              << " safeGold="
+              << safeGold
+              << " excessGold="
+              << excessGold
+              << " victimGoldAfter="
+              << target.getGold()
+              << std::endl;
 
     // Según alcance actual, el oro en exceso va directo al killer.
     if (excessGold > 0 && attackerId != 0) {
@@ -259,7 +267,7 @@ GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t a
                   << std::endl;
     }
 
-    std::vector<Item> items{};
+    std::vector<Item> items = target.purgeInventoryOnDeath();
 
     occupancy.free(target.getTileX(), target.getTileY());
 

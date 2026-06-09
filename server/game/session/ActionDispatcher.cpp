@@ -456,7 +456,7 @@ void ActionDispatcher::handleAttackPlayer(
     // - oro seguro del muerto
     // - oro en exceso al attacker
     // - experiencia por kill si está dentro de handlePlayerDeath
-    if (result.killed) {
+    if (result.killed || target.getHp() <= 0) {
         world.handlePlayerDeath(targetId, attackerId);
 
         // El atacante pudo recibir oro, exp y level up.
