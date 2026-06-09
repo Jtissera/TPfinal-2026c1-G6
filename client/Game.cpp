@@ -141,12 +141,18 @@ void Game::handleEvents()
 
 void Game::update()
 {
+    
     std::shared_ptr<const Message> msg;
-    while (receiveQueue->try_pop(msg))
-    {
-        processServerMessage(*msg);
+    try {
+        while (receiveQueue->try_pop(msg)) {
+            processServerMessage(*msg);
+        }
     }
-
+    catch (const ClosedQueue&) {
+        std::cerr << "[Game] receiveQueue cerrada, el server se desconectó." << std::endl;
+        isRunning = false;
+        return;
+    }
     Vector2D playerPos = player->getComponent<TransformComponent>().position;
     camera.x = static_cast<int>(playerPos.x) - 450;
     camera.y = static_cast<int>(playerPos.y) - 343;

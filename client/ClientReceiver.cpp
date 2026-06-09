@@ -17,8 +17,13 @@ void ClientReceiver::run() {
             clientQueue.push(std::shared_ptr<const Message>(std::move(msg)));
         }
     }
-    catch (const ClosedSocket&) {}
+
+    catch (const ClosedSocket&) {
+        std::cerr << "[ClientReceiver] server cierra conexión." << std::endl;
+    }
     catch (const std::exception& e) {
         std::cerr << "[ClientReceiver] error: " << e.what() << std::endl;
     }
+    clientQueue.close();
 }
+
