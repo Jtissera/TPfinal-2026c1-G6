@@ -1257,9 +1257,10 @@ void Game::applyLocalPlayerGhostState() {
     return;
   }
 
-  localGhostStateApplied = true;
-  playerState.isDead = true;
-  playerState.hp = 0;
+    localGhostStateApplied = true;
+    playerState.isDead = true;
+    playerState.hp = 0;
+    playerState.mana = 0;
 
   if (player != nullptr && player->hasComponent<EquipmentComponent>()) {
     auto &equipment = player->getComponent<EquipmentComponent>();
@@ -1554,44 +1555,54 @@ void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg) {
   std::cout << "[SERVER] MSG_PLAYER_DIED recibido. playerId=" << deadPlayerId
             << std::endl;
 
-  // Si el muerto soy yo, aplico estado fantasma local.
-  if (deadPlayerId == static_cast<uint32_t>(playerDto.playerID)) {
-    localGhostStateApplied = false;
-    playerState.hp = 0;
-    applyLocalPlayerGhostState();
-    return;
-  }
+    // Si el muerto soy yo, aplico estado fantasma local.
+    if (deadPlayerId == static_cast<uint32_t>(playerDto.playerID))
+    {
+        localGhostStateApplied = false;
+        playerState.isDead = true;
+        playerState.hp = 0;
+        playerState.mana = 0;
+        applyLocalPlayerGhostState();
+        return;
+    }
 
   // Si murió otro jugador, hay que actualizar su entidad remota.
   if (clientWorld != nullptr) {
     clientWorld->applyRemotePlayerGhostState(deadPlayerId);
   }
 }
-void Game::handlePlayerStats(const PlayerStatsMessage &stats) {
+void Game::handlePlayerStats(const PlayerStatsMessage& stats) {
+    const int serverHp = stats.getHp();
 
-  const int serverHp = stats.getHp();
+    if (serverHp > 0) {
+        hasReceivedValidPlayerStats = true;
+    }
 
-  if (serverHp > 0) {
-    hasReceivedValidPlayerStats = true;
-  }
+    playerState.maxHp = stats.getMaxHp();
+    playerState.mana = stats.getMana();
+    playerState.maxMana = stats.getMaxMana();
+    playerState.exp = stats.getExp();
+    playerState.expToNextLevel = stats.getExpLimit();
+    playerState.level = stats.getLevel();
+    playerState.gold = stats.getGold();
 
-  // Si estoy muerto y el server manda HP positivo,
-  // significa que el server aceptó la resurrección.
-  if (playerState.isDead && serverHp > 0) {
-    reviveLocalPlayer(serverHp);
-  } else if (!playerState.isDead) {
+    // Si el server dice HP 0, el jugador local debe quedar fantasma,
+    // aunque todavía no haya llegado o ya haya llegado MSG_PLAYER_DIED.
+    if (serverHp <= 0) {
+        localGhostStateApplied = false;
+        playerState.hp = 0;
+        playerState.mana = 0;
+        applyLocalPlayerGhostState();
+        return;
+    }
+
+    // Si estaba muerto y ahora viene HP positivo, es resurrección.
+    if (playerState.isDead && serverHp > 0) {
+        reviveLocalPlayer(serverHp);
+        return;
+    }
+
     playerState.hp = serverHp;
-  } else {
-    playerState.hp = 0;
-  }
-
-  playerState.maxHp = stats.getMaxHp();
-  playerState.mana = stats.getMana();
-  playerState.maxMana = stats.getMaxMana();
-  playerState.exp = stats.getExp();
-  playerState.expToNextLevel = stats.getExpLimit();
-  playerState.level = stats.getLevel();
-  playerState.gold = stats.getGold();
 }
 void Game::handleEntitySpawn(const EntitySpawnMessage &spawnMsg) {
 
@@ -1615,8 +1626,12 @@ void Game::handleInventoryUpdate(const InventoryUpdateMessage &inventoryMsg) {
 
   applyInventoryUpdate(inventoryMsg);
 
-  std::cout << "[CLIENT] MSG_INVENTORY_UPDATE recibido. items="
-            << inventoryMsg.getItems().size() << std::endl;
+    std::cout << "[CLIENT] MSG_INVENTORY_UPDATE recibido. items="
+              << inventoryMsg.getItems().size() << std::endl;
+    if (playerState.isDead || playerState.hp <= 0) {
+        localGhostStateApplied = false;
+        applyLocalPlayerGhostState();
+    }
 }
 
 void Game::processServerMessage(const Message &msg) {
