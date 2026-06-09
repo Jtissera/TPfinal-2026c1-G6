@@ -72,6 +72,13 @@ void Game::handleEvents() {
 
     if (event.type == SDL_MOUSEBUTTONDOWN &&
         event.button.button == SDL_BUTTON_LEFT) {
+
+        if (isLocalPlayerDead())
+        {
+            continue;
+        }
+     
+    
       const int mouseX = event.button.x;
       const int mouseY = event.button.y;
 
@@ -1558,8 +1565,8 @@ void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg) {
     // Si el muerto soy yo, aplico estado fantasma local.
     if (deadPlayerId == static_cast<uint32_t>(playerDto.playerID))
     {
-        localGhostStateApplied = false;
-        playerState.isDead = true;
+        //localGhostStateApplied = false;
+        //playerState.isDead = true;
         playerState.hp = 0;
         playerState.mana = 0;
         applyLocalPlayerGhostState();

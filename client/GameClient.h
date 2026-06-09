@@ -10,6 +10,7 @@
 #include "common/network/messages/message.h"
 #include "common/dtos/gameTypes.h"
 #include "network/clientProtocolFactory.h"
+#include "../common/network/sockets.h"
 #include "Game.h"
 
 class GameClient {
@@ -19,6 +20,7 @@ public:
     void run();
 
 private:
+    Socket& socket;
     const uint32_t idPlayer;
     const PlayerDto playerDto;
 

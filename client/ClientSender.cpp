@@ -14,6 +14,7 @@ void ClientSender::run() {
         }
     }
     catch (const ClosedQueue&) {}
+    catch (const ClosedSocket&) {}
     catch (const std::exception& e) {
         std::cerr << "[ClientSender] error: " << e.what() << std::endl;
     }

@@ -5,7 +5,8 @@ GameClient::GameClient(Socket& socket,
                        const PlayerDto& playerDto,
                        SDL_Window* window,
                        SDL_Renderer* renderer)
-    : idPlayer(idPlayer),
+    : socket(socket),
+      idPlayer(idPlayer),
       playerDto(playerDto),
       window(window),
       renderer(renderer),
@@ -72,6 +73,7 @@ void GameClient::run() {
 
        gameLoop.clean();
 
+       socket.shutdown(SHUT_RDWR); 
        sendQueue.close();
        receiveQueue.close();
 
