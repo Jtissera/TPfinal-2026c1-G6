@@ -116,7 +116,7 @@ void Player::resurrect(int tx, int ty)
   tileX = tx;
   tileY = ty;
   hp = maxHp / 2;
-  mana = maxMana/2;
+  mana = cls.canUseMagic ? maxMana / 2 : 0;
 }
 
 void Player::tick(float hpGained, float manaGained)

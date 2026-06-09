@@ -12,15 +12,23 @@ TEST(InventoryTest, AddItemSucceeds) {
 
 TEST(InventoryTest, EquipWeaponSucceeds) {
   Inventory inv = makeInventory();
-  inv.addItem(makeWeapon(5, 10));
-  EXPECT_TRUE(inv.equipItem(1));
+  
+  Item weapon = makeWeapon(5, 10);
+  weapon.instanceId = 1;
+  inv.addItem(weapon);
+  
+  ASSERT_TRUE(inv.equipItem(1));
   EXPECT_NE(inv.getEquipped(EquipSlot::HAND), nullptr);
 }
 
 TEST(InventoryTest, RemoveItemClearsEquip) {
   Inventory inv = makeInventory();
-  inv.addItem(makeWeapon(5, 10));
-  inv.equipItem(1);
+  
+  Item weapon = makeWeapon(5, 10);
+  weapon.instanceId = 1;
+  inv.addItem(weapon);
+  
+  ASSERT_TRUE(inv.equipItem(1));
   inv.removeItem(1);
   EXPECT_EQ(inv.getEquipped(EquipSlot::HAND), nullptr);
   EXPECT_TRUE(inv.getItems().empty());
@@ -52,29 +60,33 @@ TEST(InventoryTest, StaffReplacesWeaponInHand) {
   Inventory inv = makeInventory();
   Item weapon = makeWeapon(5, 10);
   weapon.instanceId = 1;
+  
   Item staff = makeStaff(2, ItemEffect::DAMAGE, 2, 4, 0, 5);
+  staff.instanceId = 2; 
 
   inv.addItem(weapon);
   inv.addItem(staff);
 
-  EXPECT_TRUE(inv.equipItem(1));
-  EXPECT_TRUE(inv.equipItem(2));
+  ASSERT_TRUE(inv.equipItem(1));
+  ASSERT_TRUE(inv.equipItem(2));
   EXPECT_EQ(inv.getEquipped(EquipSlot::HAND)->instanceId, 2u);
 }
 
 TEST(InventoryTest, StaffReplacesStaff) {
   Inventory inv = makeInventory();
   Item staff1 = makeStaff(1, ItemEffect::DAMAGE, 2, 4, 0, 5);
+  staff1.instanceId = 1;
+  
   Item staff2 = makeStaff(2, ItemEffect::HEAL, 0, 0, 100, 100);
+  staff2.instanceId = 2; 
 
   inv.addItem(staff1);
   inv.addItem(staff2);
 
-  EXPECT_TRUE(inv.equipItem(1));
-  EXPECT_TRUE(inv.equipItem(2));
+  ASSERT_TRUE(inv.equipItem(1));
+  ASSERT_TRUE(inv.equipItem(2));
   EXPECT_EQ(inv.getEquipped(EquipSlot::HAND)->instanceId, 2u);
 }
-
 // ─── Efectos de items ────────────────────────────────────────────────────────
 
 TEST(ItemEffectTest, HealthPotionHealsPlayer) {

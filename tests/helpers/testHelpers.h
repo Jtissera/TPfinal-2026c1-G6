@@ -57,6 +57,7 @@
         move_cooldown_ms   = 0
 
         [items.espada]
+        catalog_id = 1
         slot       = "WEAPON"
         is_ranged  = false
         damage_min = 10
@@ -185,6 +186,7 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
                                         bool ranged = false) {
   Item item;
   item.catalogId = 1;
+  item.instanceId = 1;  
   item.typeName = "sword";
   item.slot = ItemSlot::WEAPON;
   item.effect = ItemEffect::NONE;
@@ -197,6 +199,7 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 [[maybe_unused]] static Item makeArmor(uint16_t defMin, uint16_t defMax) {
   Item item;
   item.catalogId = 2;
+  item.instanceId = 2;
   item.typeName = "armor";
   item.slot = ItemSlot::ARMOR;
   item.stats.defenseMin = defMin;

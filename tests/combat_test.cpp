@@ -47,7 +47,7 @@ TEST(CombatSystemTest, DeadAttackerCannotAttack) {
   Player attacker = makePlayer(1, 0, 0, 1);
   Player target = makePlayer(2, 0, 1);
 
-  attacker.takeDamage(100);
+  attacker.die(0);
   auto result = combat.attack(attacker, target);
   EXPECT_FALSE(result.valid);
 }
@@ -57,7 +57,7 @@ TEST(CombatSystemTest, DeadTargetCannotBeAttacked) {
   Player attacker = makePlayer(1, 0, 0);
   Player target = makePlayer(2, 0, 1, 1);
 
-  target.takeDamage(100);
+  target.die(0); 
   auto result = combat.attack(attacker, target);
   EXPECT_FALSE(result.valid);
 }
