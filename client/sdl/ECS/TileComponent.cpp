@@ -2,31 +2,41 @@
 #include "../TextureManager.h"
 #include "../../Game.h"
 
-TileComponent::TileComponent(AssetManager& assets ,int srcX, int srcY, int xpos, int ypos,
-                             int tsize, int tscale, const std::string& id) {
-    texture    = assets.GetTexture(id);
-    srcRect    = {srcX, srcY, tsize, tsize};
+TileComponent::TileComponent(AssetManager &assets, int srcX, int srcY, int xpos, int ypos,
+                             int srcW, int srcH, int tscale, const std::string &id)
+{
+    texture = assets.GetTexture(id);
+
+    // Ahora guardamos el ancho y alto real del recorte de origen
+    srcRect = {srcX, srcY, srcW, srcH};
+
     position.x = static_cast<float>(xpos);
     position.y = static_cast<float>(ypos);
-    destRect.w = destRect.h = tsize * tscale;
+
+    // Escalamos el ancho y el alto respetando sus proporciones
+    destRect.w = srcW * tscale;
+    destRect.h = srcH * tscale;
 }
 
-TileComponent::~TileComponent() {
+TileComponent::~TileComponent()
+{
     // La textura la administra AssetManager, no la destruimos acá
 }
 
-void TileComponent::update(UpdateContext& context) {
+void TileComponent::update(UpdateContext &context)
+{
     // los tiles son estáticos, solo necesitan recalcular destRect
     // cuando la cámara se movió. En frames donde el jugador no se mueve,
     // esto evita 300 operaciones aritméticas innecesarias.
-    if (!context.cameraMoved) return;
+    if (!context.cameraMoved)
+        return;
 
     destRect.x = static_cast<int>(position.x - context.camera.x);
-    destRect.y = static_cast<int>(position.y - context.camera.y);
+    destRect.y = static_cast<int>(position.y - context.camera.y) + 133;
 }
 
-
-void TileComponent::draw(RenderContext& context) {
+void TileComponent::draw(RenderContext &context)
+{
     const int visibleLeft = context.viewport.x;
     const int visibleRight = context.viewport.x + context.viewport.w;
     const int visibleTop = context.viewport.y;
@@ -38,7 +48,8 @@ void TileComponent::draw(RenderContext& context) {
         destRect.y + destRect.h < visibleTop ||
         destRect.y > visibleBottom;
 
-    if (outsideScreen) {
+    if (outsideScreen)
+    {
         return;
     }
 

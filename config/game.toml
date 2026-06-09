@@ -338,7 +338,7 @@ damage_max = 0
 
 [world]
 tile_size = 96
-map_path = "assets/sprites/MapAssets/mapatest.argmap"
+map_path = "assets/sprites/MapAssets/map.argmap"
 
 [cavern]
 gold_multiplier = 1.5

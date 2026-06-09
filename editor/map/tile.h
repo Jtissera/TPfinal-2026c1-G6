@@ -16,6 +16,8 @@ enum class TileType : uint8_t
     EXIT = 7,
     SAND = 8,
     FOREST = 9,
+    CACTUS = 10,
+    STONE = 11
 };
 
 enum class ZoneType : uint8_t

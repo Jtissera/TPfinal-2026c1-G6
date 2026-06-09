@@ -32,9 +32,11 @@ TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
     _rbWall = new QRadioButton("🧱 Pared", structGroup);
     _rbDoor = new QRadioButton("🚪 Puerta", structGroup);
     _rbForest = new QRadioButton("🌲 Bosque", structGroup);
+    _rbCactus = new QRadioButton("🌵 Cactus", structGroup);
+    _rbStone = new QRadioButton("🪨 Piedra", structGroup);
 
     auto *structBtns = new QButtonGroup(this);
-    for (auto *rb : {_rbWall, _rbDoor, _rbForest})
+    for (auto *rb : {_rbWall, _rbDoor, _rbForest, _rbCactus, _rbStone})
     {
         structBtns->addButton(rb);
         structLayout->addWidget(rb);
@@ -129,6 +131,10 @@ TileType TilePalette::selectedTileType() const
         return TileType::CAVERN_ENTRANCE;
     if (_rbExit->isChecked())
         return TileType::EXIT;
+    if (_rbCactus->isChecked())
+        return TileType::CACTUS;
+    if (_rbStone->isChecked())
+        return TileType::STONE;
     return TileType::GRASS;
 }
 

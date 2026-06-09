@@ -1,10 +1,6 @@
 {
   "textures": [
     {
-      "id": "tile_floor",
-      "path": "assets/sprites/MapAssets/basic_floor.png"
-    },
-    {
       "id": "tile_rocks",
       "path": "assets/sprites/MapAssets/rocks.png"
     },
@@ -25,37 +21,30 @@
       "path": "assets/sprites/MapAssets/city_decoration.png"
     },
     {
-      "id": "dungeon_entrance",
+      "id": "tile_dungeon_entrance",
       "path": "assets/sprites/MapAssets/dungeon_entrance.png"
     },
     {
-      "id": "cavern_entrance",
+      "id": "tile_cavern_entrance",
       "path": "assets/sprites/MapAssets/cavern_entrance.png"
+    },
+    {
+      "id": "tile_sand",
+      "path": "assets/sprites/MapAssets/tile_sand.png"
     }
   ],
   "_sprite_info": {
-    "tile_floor": {
+    "tile_sand": {
       "sheet_width": 512,
       "sheet_height": 512,
       "tile_size": 128,
       "tiles": [
         {
-          "name": "water",
+          "name": "sand",
           "src_x": 0,
           "src_y": 0
-        },
-        {
-          "name": "water_green",
-          "src_x": 128,
-          "src_y": 0
-        },
-        {
-          "name": "grass",
-          "src_x": 256,
-          "src_y": 0
         }
-      ],
-      "note": "Solo se usa la primera fila (y=0..127). El resto del sheet es negro."
+      ]
     }
   }
-}
+} 

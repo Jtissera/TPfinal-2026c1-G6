@@ -7,23 +7,24 @@
 #include "ECS/ECS.h"
 #include "editor/map/tile.h"
 
-class Map {
+class Map
+{
 public:
-    Map(Manager& manager,AssetManager& assets ,const std::string& textID, int mapScale, int tileSize);
+    Map(Manager &manager, AssetManager &assets, const std::string &textID, int mapScale, int tileSize);
     ~Map() = default;
 
-    void LoadMap(const std::string& path);
+    void LoadMap(const std::string &path);
 
 private:
-    const char* tileTypeToTexture(TileType type) const;
-    void AddTile(const char* texId, int xpos, int ypos);
+    std::string GetRandomTextureForType(TileType type);
+    void AddTile(const std::string &texId, int x, int y, TileType type);
 
-    Manager&    manager;
-    AssetManager& assets;
+    Manager &manager;
+    AssetManager &assets;
     std::string textID;
-    int         mapScale;
-    int         tileSize;
-    int         scaledSize;
+    int mapScale;
+    int tileSize;
+    int scaledSize;
 };
 
-#endif //PRUEBA_SDL_MAP_H
+#endif // PRUEBA_SDL_MAP_H

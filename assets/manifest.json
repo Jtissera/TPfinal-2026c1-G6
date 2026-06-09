@@ -4,7 +4,9 @@
     "assets/sprites/enemies/enemies.json",
     "assets/sprites/npcs/npcs.json",
     "assets/sprites/equipment/equipment.json",
-    "assets/sprites/effects/effects.json"
+    "assets/sprites/effects/effects.json",
+    "assets/sprites/MapAssets/map.json"
+
   ],
   "fontFiles": [
     "assets/fonts/fonts.json"

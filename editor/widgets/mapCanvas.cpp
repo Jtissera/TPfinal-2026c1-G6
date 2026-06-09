@@ -46,6 +46,12 @@ QColor MapCanvas::tileColor(const Tile &tile) const
     case TileType::FOREST:
         base = QColor(34, 90, 34);
         break;
+    case TileType::CACTUS:
+        base = QColor(100, 160, 50);
+        break;
+    case TileType::STONE:
+        base = QColor(130, 130, 130);
+        break;
     case TileType::DUNGEON_ENTRANCE:
         base = QColor(80, 20, 120);
         break;
@@ -55,6 +61,7 @@ QColor MapCanvas::tileColor(const Tile &tile) const
     case TileType::EXIT:
         base = QColor(50, 180, 80);
         break;
+
     default:
         base = QColor(200, 200, 200);
         break;
@@ -284,8 +291,30 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.restore();
             }
 
+            if (tile.type == TileType::CACTUS)
+            {
+                painter.save();
+                painter.setPen(QColor(40, 100, 40));
+                QFont f = painter.font();
+                f.setPixelSize(14);
+                painter.setFont(f);
+                painter.drawText(r, Qt::AlignCenter, "🌵");
+                painter.restore();
+            }
+
+            if (tile.type == TileType::STONE)
+            {
+                painter.save();
+                painter.setPen(QColor(80, 80, 80));
+                QFont f = painter.font();
+                f.setPixelSize(14);
+                painter.setFont(f);
+                painter.drawText(r, Qt::AlignCenter, "●");
+                painter.restore();
+            }
+
             // Hatching para no caminable (X encima del color oscurecido)
-            if (!tile.walkable && tile.type != TileType::FOREST && tile.type != TileType::WALL && tile.type != TileType::WATER)
+            if (!tile.walkable && tile.type != TileType::FOREST && tile.type != TileType::WALL && tile.type != TileType::WATER && tile.type != TileType::CACTUS && tile.type != TileType::STONE)
             {
                 painter.save();
                 painter.setPen(QPen(QColor(200, 60, 60, 120), 1));
@@ -353,19 +382,11 @@ void MapCanvas::applyToTile(uint16_t tx, uint16_t ty)
         switch (_activeTileType)
         {
         case TileType::FOREST:
-            // Bosque siempre no caminable
+        case TileType::CACTUS:
+        case TileType::STONE:
+        case TileType::WATER:
+        case TileType::WALL:
             t.walkable = false;
-            break;
-        case TileType::CAVERN_ENTRANCE:
-            t.zone = ZoneType::CAVERN;
-            t.walkable = true;
-            break;
-        case TileType::DUNGEON_ENTRANCE:
-            t.zone = ZoneType::DUNGEON;
-            t.walkable = true;
-            break;
-        case TileType::EXIT:
-            t.walkable = true;
             break;
         default:
             break;

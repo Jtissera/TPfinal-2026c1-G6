@@ -34,6 +34,8 @@ private:
     QRadioButton *_rbWall;
     QRadioButton *_rbDoor;
     QRadioButton *_rbForest;
+    QRadioButton *_rbCactus;
+    QRadioButton *_rbStone;
 
     // --- Especiales ---
     QRadioButton *_rbDungeonEntrance;
