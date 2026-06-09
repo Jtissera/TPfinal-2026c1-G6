@@ -51,7 +51,15 @@ sudo apt-get install -y \
     libpng-dev \
     nlohmann-json3-dev \
     xdg-user-dirs\
-    libfluidsynth-dev 
+    libfluidsynth-dev \
+    libfluidsynth-dev \
+    libmikmod-dev \       
+    libmpg123-dev \       
+    libvorbis-dev \
+    libsdl2-ttf-dev \
+    libsdl2-image-dev \
+    libsdl2-mixer-dev \       
+    libogg-dev
 
 # FIX: detectar desktop DESPUÉS de instalar xdg-user-dirs
 DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || echo "$HOME/Desktop")"
@@ -92,7 +100,8 @@ cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DTALLER_EDITOR=OFF \
     -DTALLER_TESTS=OFF \
-    -DTALLER_MAKE_WARNINGS_AS_ERRORS=OFF
+    -DTALLER_MAKE_WARNINGS_AS_ERRORS=OFF \
+    -DSDL_PIPEWIRE=OFF
 cmake --build . -- -j"$(nproc)"
 cd "$SRC_DIR"
 
