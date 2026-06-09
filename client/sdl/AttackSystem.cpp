@@ -1,6 +1,3 @@
-//
-// Created by mauro on 26/5/26.
-//
 
 #include "AttackSystem.h"
 #include <algorithm>
@@ -9,6 +6,8 @@
 
 #include "common/network/messages/client/combat/attackMessage.h"
 #include "world/RemotePlayer.h"
+
+
 
 void AttackSystem::handleMouseClick(
     int screenX,
@@ -19,30 +18,42 @@ void AttackSystem::handleMouseClick(
     Entity* player,
     const ItemView* equippedWeapon
 ) {
-
-    const int worldX = screenX + camera.x;
-    const int worldY = screenY - 133 + camera.y;
-
     for (const AttackTarget& target : targets) {
         if (target.entity == nullptr) {
             continue;
         }
 
-        auto& tf = target.entity->getComponent<TransformComponent>();
+        SDL_Rect clickableRect{};
 
-        const int targetX = static_cast<int>(tf.position.x);
-        const int targetY = static_cast<int>(tf.position.y);
+        if (target.entity->hasComponent<SpriteComponent>()) {
+            const auto& sprite = target.entity->getComponent<SpriteComponent>();
 
-        // Bounding box aproximado.
-        // Sirve para enemigos y jugadores. Luego se puede ajustar por tipo.
-        const int targetW = 128;
-        const int targetH = 128;
+            // getDestRect() representa dónde se ve realmente el sprite en pantalla.
+            clickableRect = sprite.getDestRect();
+
+            // Margen para que no sea tan difícil clickear enemigos chicos
+            // o sprites con offsets visuales.
+            clickableRect.x -= 10;
+            clickableRect.y -= 10;
+            clickableRect.w += 20;
+            clickableRect.h += 20;
+        } else {
+            auto& tf = target.entity->getComponent<TransformComponent>();
+
+            // Fallback por si alguna entidad atacable no tiene SpriteComponent.
+            clickableRect = SDL_Rect{
+                static_cast<int>(tf.position.x - camera.x),
+                static_cast<int>(tf.position.y - camera.y + 133),
+                96,
+                96
+            };
+        }
 
         const bool clickedTarget =
-            worldX >= targetX &&
-            worldX <= targetX + targetW &&
-            worldY >= targetY &&
-            worldY <= targetY + targetH;
+            screenX >= clickableRect.x &&
+            screenX <= clickableRect.x + clickableRect.w &&
+            screenY >= clickableRect.y &&
+            screenY <= clickableRect.y + clickableRect.h;
 
         if (!clickedTarget) {
             continue;
@@ -50,23 +61,21 @@ void AttackSystem::handleMouseClick(
 
         const int attackRange = attackRangeForWeapon(equippedWeapon);
 
-        // Esto es solo validación visual del cliente.
-        // La validación real la hace el server.
+        // Validación visual solamente.
+        // No cortamos el ataque porque el server es la autoridad real.
         if (!isTargetInRange(player, *target.entity, attackRange)) {
-            std::cout << "[ATTACK] Objetivo fuera de rango. Rango="
+            std::cout << "[ATTACK] Cliente detecta fuera de rango. "
+                      << "Se manda igual; server valida. Rango="
                       << attackRange
                       << std::endl;
-            return;
         }
 
         // El cliente solo manda intención de ataque.
-        // El server decide si el target es player o NPC, calcula daño,
-        // consume maná, mata, da exp/oro, etc.
         sendAttackMessage(target.id, sendQueue);
 
-        // Efecto visual local opcional.
+        // Efecto visual local para bastón/hechizo.
         if (shouldCreateVisualEffect(equippedWeapon)) {
-            createLocalAttackEffect(target.id, *target.entity);
+            createLocalAttackEffect(target.id, *target.entity, camera);
         }
 
         return;
@@ -99,24 +108,42 @@ bool AttackSystem::applyDamage(uint32_t targetId, int damage) {
     return enemyHealth[targetId] <= 0;
 }
 
-void AttackSystem::createLocalAttackEffect(uint32_t targetId, Entity& target) {
-    // Obtenemos la posición del objetivo.
-    auto& tf = target.getComponent<TransformComponent>();
+void AttackSystem::createLocalAttackEffect(
+    uint32_t targetId,
+    Entity& target,
+    const SDL_Rect& camera
+) {
+    if (!target.hasComponent<SpriteComponent>()) {
+        return;
+    }
 
-    // Guardamos coordenadas de mundo.
-    // Sumamos offset para que el efecto no quede en la esquina superior.
-    int worldX = static_cast<int>(tf.position.x);
-    int worldY = static_cast<int>(tf.position.y) + 20;
+    const auto& sprite = target.getComponent<SpriteComponent>();
+    const SDL_Rect& targetRect = sprite.getDestRect();
 
-    // Creamos el efecto visual local.
-    attackEffects.push_back({
-        worldX,
-        worldY,
-        SDL_GetTicks(),
-        500
-    });
+    constexpr int effectSize = 64;
 
-    std::cout << "[ATTACK EFFECT] efecto local sobre targetId="<< targetId<< std::endl;
+    const int screenCenterX = targetRect.x + targetRect.w / 2;
+    const int screenCenterY = targetRect.y + targetRect.h / 2;
+
+    AttackEffect effect{};
+
+    effect.x = screenCenterX + camera.x - effectSize / 2;
+    effect.y = screenCenterY + camera.y - 133 - effectSize / 2;
+
+    effect.createdAt = SDL_GetTicks();
+    effect.durationMs = 500;
+
+    attackEffects.push_back(effect);
+
+    std::cout << "[ATTACK EFFECT CREATE] targetId="
+              << targetId
+              << " world=("
+              << effect.x
+              << ", "
+              << effect.y
+              << ") total="
+              << attackEffects.size()
+              << std::endl;
 }
 
 void AttackSystem::sendAttackMessage(uint32_t targetId,Queue<std::shared_ptr<const Message>>* sendQueue) {
@@ -156,37 +183,51 @@ void AttackSystem::render(
 
     if (texAtk == nullptr) {
         std::cout << "[ATTACK EFFECT] No se encontró textura: "
-          << "effect_attack_magic_01"
-          << std::endl;
+                  << "effect_attack_magic_01"
+                  << std::endl;
         return;
     }
 
     Uint32 now = SDL_GetTicks();
 
+    const int frameWidth = 64;
+    const int frameHeight = 64;
+
+    // Frames visibles del spritesheet.
+    // Fila 0: primeros 5 frames.
+    // Fila 1: primeros 6 frames.
+    const int totalFrames = 11;
+
     for (auto& ef : attackEffects) {
         Uint32 elapsed = now - ef.createdAt;
 
-        int totalFrames = 5;
-        int frameWidth = 64;
-        int frameHeight = 64;
-
-        // Calcula el frame según el tiempo transcurrido.
         int frame = static_cast<int>((elapsed * totalFrames) / ef.durationMs);
 
-        // Evita pasarse del último frame.
         if (frame >= totalFrames) {
             frame = totalFrames - 1;
         }
 
-        // Recorte del spritesheet de ataque mágico.
+        int srcX = 0;
+        int srcY = 0;
+
+        if (frame < 5) {
+            // Primera fila: columnas 0 a 4.
+            srcX = frame * frameWidth;
+            srcY = 0;
+        } else {
+            // Segunda fila: columnas 0 a 5.
+            const int secondRowFrame = frame - 5;
+            srcX = secondRowFrame * frameWidth;
+            srcY = 64;
+        }
+
         SDL_Rect src = {
-            frame * frameWidth,
-            64,
+            srcX,
+            srcY,
             frameWidth,
             frameHeight
         };
 
-        // Convertimos mundo a pantalla restando cámara.
         SDL_Rect dst = {
             ef.x - camera.x,
             ef.y - camera.y + 133,

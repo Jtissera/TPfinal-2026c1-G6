@@ -20,6 +20,7 @@ struct NpcAttack
 struct NpcDeathResult
 {
     uint32_t npcId;
+    uint32_t killerPlayerId;
     int tileX;
     int tileY;
     uint32_t goldDrop;

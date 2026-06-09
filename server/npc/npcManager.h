@@ -46,5 +46,5 @@ private:
   std::unordered_map<uint32_t, Npc> npcs;
 
   int16_t rollDamage(const NpcStats &stats) const;
-  NpcDeathResult buildDeathResult(const Npc &npc) const;
+  NpcDeathResult buildDeathResult(const Npc &npc,const uint32_t killerPlayerId) const;
 };

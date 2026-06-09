@@ -82,13 +82,16 @@ int16_t NpcManager::rollDamage(const NpcStats& stats) const {
     return static_cast<int16_t>(stats.damageMin + (range > 0 ? std::rand() % range : 0));
 }
 
-NpcDeathResult NpcManager::buildDeathResult(const Npc &npc) const
+NpcDeathResult NpcManager::buildDeathResult(const Npc &npc,const uint32_t killerPlayerId) const
 {
-  NpcDeathResult d;
-  d.npcId = npc.getId();
-  d.tileX = npc.getTileX();
-  d.tileY = npc.getTileY();
-  d.goldDrop = 0;
+    NpcDeathResult d{};
+
+    d.npcId = npc.getId();
+    d.killerPlayerId = killerPlayerId;
+    d.tileX = npc.getTileX();
+    d.tileY = npc.getTileY();
+    d.goldDrop = 0;
+    d.itemDrop = "";
 
   const NpcStats &stats = npc.getStats();
   int roll = std::rand() % 100;

@@ -47,11 +47,7 @@ public:
     AttackSystem() = default;
 
     // Detecta si el click cayó sobre algún enemigo.
-    void handleMouseClick(int screenX,int screenY,const SDL_Rect& camera,const std::vector<AttackTarget>& targets,
-        Queue<std::shared_ptr<const Message>>* sendQueue,
-        Entity* player,
-        const ItemView* equippedWeapon
-    );
+    void createLocalAttackEffect(uint32_t targetId,Entity& target,const SDL_Rect& camera);
 
     // Borra efectos vencidos.
     void update();
@@ -80,6 +76,9 @@ public:
     void clearEnemyAggro();
 
     void setEnemyHealth(uint32_t enemyId, int hp, int maxHp);
+
+    void handleMouseClick(int screenX,int screenY,const SDL_Rect& camera,const std::vector<AttackTarget>& targets,Queue<std::shared_ptr<const Message>>* sendQueue,Entity* player,const ItemView* equippedWeapon);
+
 
 private:
     std::vector<AttackEffect> attackEffects;

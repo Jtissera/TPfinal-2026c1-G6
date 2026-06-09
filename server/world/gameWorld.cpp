@@ -204,28 +204,51 @@ void GameWorld::giveExperience(uint32_t playerId, uint32_t exp, float xpMultipli
     p.addExperience(finalExp, limit, newMaxHp, newMaxMana);
 }
 
-GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,
-                                                    uint32_t attackerId)
-{
-    Player &target = getPlayer(targetId);
+GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t attackerId) {
+    Player& target = getPlayer(targetId);
 
-    if (attackerId != 0)
-    {
-        Player &attacker = getPlayer(attackerId);
+    if (target.isGhost()) {
+        return {0, {}};
+    }
+
+    if (attackerId != 0) {
+        Player& attacker = getPlayer(attackerId);
+
         uint32_t killExp = formulas.calcExpOnKill(
-            target.getMaxHp(), attacker.getLevel(), target.getLevel());
+            target.getMaxHp(),
+            attacker.getLevel(),
+            target.getLevel()
+        );
+
         giveExperience(attackerId, killExp);
     }
 
-    uint32_t safeGold = formulas.calcMaxGold(target.getLevel());
-    uint32_t excessGold = target.die(safeGold);
-    std::vector<Item> items = target.purgeInventoryOnDeath();
+    // Oro seguro según nivel.
+    // El muerto conserva hasta safeGold.
+    const uint32_t safeGold = formulas.calcMaxGold(target.getLevel());
 
-    if (excessGold > 0)
-        addGoldOnGround(excessGold, target.getTileX(), target.getTileY());
 
-    for (auto &item : items)
-        addItemOnGround(std::move(item), target.getTileX(), target.getTileY());
+    const uint32_t excessGold = target.die(safeGold);
+
+    // Según alcance actual, el oro en exceso va directo al killer.
+    if (excessGold > 0 && attackerId != 0) {
+        Player& attacker = getPlayer(attackerId);
+        attacker.addGold(excessGold);
+
+        std::cout << "[PVP GOLD] killerId="
+                  << attackerId
+                  << " victimId="
+                  << targetId
+                  << " excessGold="
+                  << excessGold
+                  << " killerGold="
+                  << attacker.getGold()
+                  << " victimGold="
+                  << target.getGold()
+                  << std::endl;
+    }
+
+    std::vector<Item> items{};
 
     occupancy.free(target.getTileX(), target.getTileY());
 
@@ -866,21 +889,15 @@ std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const
     return t != NpcType::NONE ? std::optional<NpcType>(t) : std::nullopt;
 }
 
-void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
-{
+void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
+    // Buscamos el NPC muerto.
+    Npc* npc = npcManager.findNpc(npcId);
 
-    (void)killerPlayerId;
-
-    Npc *npc = npcManager.findNpc(npcId);
-
-    if (npc == nullptr)
-    {
+    if (npc == nullptr) {
         return;
     }
 
-    // Si ya está en respawn, evitamos procesar la muerte dos veces.
-    if (npc->isRespawning())
-    {
+    if (npc->isRespawning()) {
         return;
     }
 
@@ -890,7 +907,49 @@ void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
     // Liberamos el tile ocupado por el NPC muerto.
     occupancy.free(tileX, tileY);
 
-    // el NPC NO se borra, conserva su ID y entra en RESPAWNING.
+    // Si hay killer válido, calculamos drop directo.
+    if (killerPlayerId != 0) {
+        auto killerIt = players.find(killerPlayerId);
+
+        if (killerIt != players.end()) {
+            Player& killer = killerIt->second;
+
+
+            // Por ahora implementamos solo oro.
+            const int roll = std::rand() % 100;
+
+            if (roll >= 80 && roll < 88) {
+                const double minFactor = 0.01;
+                const double maxFactor = 0.20;
+
+                const double random01 =
+                    static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
+
+                const double factor =
+                    minFactor + random01 * (maxFactor - minFactor);
+
+                const uint32_t goldDrop = static_cast<uint32_t>(
+                    factor * static_cast<double>(npc->getMaxHp())
+                );
+
+                if (goldDrop > 0) {
+                    killer.addGold(goldDrop);
+
+                    std::cout << "[NPC GOLD] killerId="
+                              << killerPlayerId
+                              << " npcId="
+                              << npcId
+                              << " goldDrop="
+                              << goldDrop
+                              << " killerGold="
+                              << killer.getGold()
+                              << std::endl;
+                }
+            }
+        }
+    }
+
+    // El NPC NO se borra, conserva su ID y entra en RESPAWNING.
     npcManager.startRespawn(npcId, npcRespawnDelayMs);
 
     std::cout << "[GameWorld] NPC pasa a RESPAWNING id="

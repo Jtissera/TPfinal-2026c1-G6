@@ -451,14 +451,26 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
 
         sendDeath(targetId, target, monitor);
 
+        // El killer pudo recibir exp, level up y oro en exceso.
         sendStats(attackerId, attacker, monitor);
+        sendInventory(attackerId, attacker, monitor);
         sendLevelUpIfNeeded(attackerId, attacker, monitor);
+
+        // El muerto conserva solo oro seguro.
+        sendStats(targetId, target, monitor);
+        sendInventory(targetId, target, monitor);
     }
 }
 
-void ActionDispatcher::handleAttackNpc(uint32_t attackerId,uint32_t npcId,GameWorld& world,Monitor& monitor) {
+void ActionDispatcher::handleAttackNpc(
+    uint32_t attackerId,
+    uint32_t npcId,
+    GameWorld& world,
+    Monitor& monitor
+) {
     Player& attacker = world.getPlayer(attackerId);
 
+    // Jugador muerto/fantasma no puede atacar.
     if (!attacker.isAlive() || attacker.isGhost()) {
         return;
     }
@@ -472,42 +484,61 @@ void ActionDispatcher::handleAttackNpc(uint32_t attackerId,uint32_t npcId,GameWo
 
     Npc& npc = world.getNpc(npcId);
 
+    // NPC muerto o en respawn no puede recibir ataque.
     if (!npc.isAlive()) {
         return;
     }
 
+    // NPC no hostil no recibe ataque PvE.
     if (!npc.isHostile()) {
         return;
     }
 
     auto result = combat.attackNpc(attacker, npc);
 
+    // Si el ataque no fue válido, reenviamos stats por si se consumió algo antes.
     if (!result.valid) {
         sendStats(attackerId, attacker, monitor);
         return;
     }
+
+    // Siempre informamos vida nueva del NPC después del ataque válido.
+    monitor.broadcast(
+        std::make_shared<const NpcHealthMessage>(
+            npcId,
+            npc.getHp(),
+            npc.getMaxHp()
+        )
+    );
+
+    // Si el NPC murió, procesamos muerte, oro directo y respawn.
     if (result.killed) {
         world.handleNpcDeath(npcId, attackerId);
-    }
-    monitor.broadcast(std::make_shared<const NpcHealthMessage>(npcId,npc.getHp(),npc.getMaxHp()));
 
-    sendStats(attackerId, attacker, monitor);
+        // El killer pudo recibir oro por drop NPC.
+        sendStats(attackerId, attacker, monitor);
+        sendInventory(attackerId, attacker, monitor);
+        sendLevelUpIfNeeded(attackerId, attacker, monitor);
 
-    if (result.dodged) {
         return;
     }
 
+    // Si esquivó, no damos experiencia ni cambiamos target.
+    if (result.dodged) {
+        sendStats(attackerId, attacker, monitor);
+        return;
+    }
+
+    // Experiencia por daño.
     world.giveExperience(attackerId, result.expGained);
 
-    if (!result.killed) {
-        npc.setTargetId(attackerId);
-        npc.setState(NpcState::CHASING);
-    }
+    // El NPC empieza a perseguir al atacante.
+    npc.setTargetId(attackerId);
+    npc.setState(NpcState::CHASING);
 
     // Actualizamos stats y posible level up.
     sendStats(attackerId, attacker, monitor);
     sendLevelUpIfNeeded(attackerId, attacker, monitor);
-
 }
 
 void ActionDispatcher::sendLevelUpIfNeeded(uint32_t playerId,Player& player,Monitor& monitor) {
