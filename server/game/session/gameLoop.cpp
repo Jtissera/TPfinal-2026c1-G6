@@ -153,8 +153,24 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry)
   if (!player)
     return;
 
-  auto [safeX, safeY] = world.findSafeSpawnNear(
-      entry.returnTileX, entry.returnTileY);
+  uint16_t spawnX = entry.returnTileX;
+  uint16_t spawnY = entry.returnTileY;
+
+  if (entry.targetMap.find("mazmorra") != std::string::npos)
+  {
+    spawnX = 35;
+    spawnY = 35;
+  }
+  else if (entry.targetMap.find("caverna") != std::string::npos)
+  {
+    spawnX = 25;
+    spawnY = 5;
+  }
+  else
+  {
+    spawnX = 3;
+    spawnY = 3;
+  }
 
   Queue<std::shared_ptr<const Message>> *clientQueue =
       monitor.getQueue(entry.playerId);
@@ -167,8 +183,8 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry)
           std::move(*player),
           clientQueue,
           entry.targetMap,
-          safeX,
-          safeY}));
+          spawnX,
+          spawnY}));
 }
 
 void GameLoop::stop()

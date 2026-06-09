@@ -776,6 +776,7 @@ void Game::loadAssets()
   assets->AddTexture("tile_cavern_floor", "assets/sprites/MapAssets/cavern_floor.png");
   assets->AddTexture("tile_cavern_vertical_wall", "assets/sprites/MapAssets/cavern_vertical_wall.png");
   assets->AddTexture("tile_cavern_horizontal_wall", "assets/sprites/MapAssets/cavern_horizontal_wall.png");
+  assets->AddTexture("tile_dungeon_floor", "assets/sprites/MapAssets/dungeon_floor.png");
   assets->AddTexture("tile_exit", "assets/sprites/MapAssets/exit.png");
 
   assets->AddTexture("npc_priest", "assets/sprites/npcs/priest.png");

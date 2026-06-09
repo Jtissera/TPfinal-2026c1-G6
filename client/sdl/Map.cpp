@@ -43,6 +43,8 @@ std::string Map::GetRandomTextureForType(TileType type)
         return "tile_cavern_horizontal_wall";
     case TileType::CAVERN_WALL_V:
         return "tile_cavern_vertical_wall";
+    case TileType::DUNGEON_FLOOR:
+        return "tile_dungeon_floor";
     case TileType::EXIT:
         return "tile_exit";
 
@@ -85,7 +87,7 @@ void Map::LoadMap(const std::string &path)
             const Tile &t = mapData.at(x, y);
 
             if (t.type == TileType::GRASS || t.type == TileType::WATER ||
-                t.type == TileType::SAND || t.type == TileType::CITY_FLOOR || t.type == TileType::CAVERN_FLOOR)
+                t.type == TileType::SAND || t.type == TileType::CITY_FLOOR || t.type == TileType::CAVERN_FLOOR || t.type == TileType::DUNGEON_FLOOR)
             {
                 AddTile(GetRandomTextureForType(t.type), x * scaledSize, y * scaledSize, t.type);
             }
