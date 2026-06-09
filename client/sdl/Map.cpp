@@ -10,137 +10,175 @@
 Map::Map(Manager &manager, AssetManager &assets, const std::string &textID,
          int mapScale, int tileSize)
     : manager(manager), assets(assets), textID(textID), mapScale(mapScale),
-      tileSize(tileSize) {
-  scaledSize = mapScale * tileSize;
+      tileSize(tileSize)
+{
+    scaledSize = mapScale * tileSize;
 }
 
-std::string Map::GetRandomTextureForType(TileType type) {
-  switch (type) {
-  case TileType::GRASS:
-    return "tile_grass";
-  case TileType::WATER:
-    return "tile_water";
-  case TileType::SAND:
-    return "tile_sand";
-  case TileType::CAVERN_ENTRANCE:
-    return "tile_cavern_entrance";
-  case TileType::DUNGEON_ENTRANCE:
-    return "tile_dungeon_entrance";
+std::string Map::GetRandomTextureForType(TileType type)
+{
+    switch (type)
+    {
+    case TileType::GRASS:
+        return "tile_grass";
+    case TileType::WATER:
+        return "tile_water";
+    case TileType::SAND:
+        return "tile_sand";
+    case TileType::CAVERN_ENTRANCE:
+        return "tile_cavern_entrance";
+    case TileType::DUNGEON_ENTRANCE:
+        return "tile_dungeon_entrance";
+    case TileType::CITY_FLOOR:
+        return "tile_city_floor";
+    case TileType::HOUSE:
+        return "tile_house";
+    case TileType::CHURCH:
+        return "tile_church";
+    case TileType::MILL:
+        return "tile_mill";
 
-  case TileType::FOREST: {
-    std::vector<std::string> trees = {"tile_tree", "tile_tree2", "tile_tree3"};
-    int randomIndex = rand() % trees.size();
-    return trees[randomIndex];
-  }
-
-  case TileType::CACTUS: {
-    std::vector<std::string> cacti = {"tile_cactus", "tile_cactus2",
-                                      "tile_cactus3"};
-    return cacti[rand() % cacti.size()];
-  }
-
-  case TileType::STONE: {
-    std::vector<std::string> stones = {"tile_stone", "tile_stone2",
-                                       "tile_stone3"};
-    return stones[rand() % stones.size()];
-  }
-
-  default:
-    return "grass";
-  }
-}
-
-void Map::LoadMap(const std::string &path) {
-  MapData mapData = MapSerializer::load(path);
-
-  srand(123456); // esto marca la seed del mapa, siempre que lo generes con la
-                 // misma seed se genera igual
-
-  for (int y = 0; y < mapData.height(); y++) {
-    for (int x = 0; x < mapData.width(); x++) {
-      const Tile &t = mapData.at(x, y);
-
-      // Suelos normales y estructuras planas
-      if (t.type == TileType::GRASS || t.type == TileType::WATER ||
-          t.type == TileType::SAND || t.type == TileType::FLOOR ||
-          t.type == TileType::WALL || t.type == TileType::DOOR ||
-          t.type == TileType::EXIT) {
-        AddTile(GetRandomTextureForType(t.type), x * scaledSize, y * scaledSize,
-                t.type);
-      }
-      // Objetos que van sobre PASTO (Bosques, Piedras, Cavernas)
-      else if (t.type == TileType::FOREST || t.type == TileType::STONE ||
-               t.type == TileType::DUNGEON_ENTRANCE ||
-               t.type == TileType::CAVERN_ENTRANCE) {
-        AddTile(GetRandomTextureForType(TileType::GRASS), x * scaledSize,
-                y * scaledSize, TileType::GRASS);
-      }
-      // Objetos que van sobre ARENA (Cactus)
-      else if (t.type == TileType::CACTUS) {
-        AddTile(GetRandomTextureForType(TileType::SAND), x * scaledSize,
-                y * scaledSize, TileType::SAND);
-      }
+    case TileType::FOREST:
+    {
+        std::vector<std::string> trees = {"tile_tree", "tile_tree2", "tile_tree3"};
+        int randomIndex = rand() % trees.size();
+        return trees[randomIndex];
     }
-  }
 
-  for (int y = 0; y < mapData.height(); y++) {
-    for (int x = 0; x < mapData.width(); x++) {
-      const Tile &t = mapData.at(x, y);
-
-      if (t.type == TileType::FOREST || t.type == TileType::CACTUS ||
-          t.type == TileType::STONE || t.type == TileType::DUNGEON_ENTRANCE ||
-          t.type == TileType::CAVERN_ENTRANCE) {
-        std::string randomTexId = GetRandomTextureForType(t.type);
-
-        AddTile(randomTexId, x * scaledSize, y * scaledSize, t.type);
-      }
+    case TileType::CACTUS:
+    {
+        std::vector<std::string> cacti = {"tile_cactus", "tile_cactus2",
+                                          "tile_cactus3"};
+        return cacti[rand() % cacti.size()];
     }
-  }
+
+    case TileType::STONE:
+    {
+        std::vector<std::string> stones = {"tile_stone", "tile_stone2",
+                                           "tile_stone3"};
+        return stones[rand() % stones.size()];
+    }
+
+    default:
+        return "grass";
+    }
 }
 
-void Map::AddTile(const std::string &texId, int x, int y, TileType type) {
-  SDL_Texture *tex = assets.GetTexture(texId);
-  if (!tex) {
-    std::cerr
-        << "ERROR FATAL: Textura no encontrada en AssetManager para el ID: '"
-        << texId << "'\n";
-    return;
-  }
+void Map::LoadMap(const std::string &path)
+{
+    MapData mapData = MapSerializer::load(path);
 
-  int srcW = 32;
-  int srcH = 32;
+    srand(123456); // esto marca la seed del mapa, siempre que lo generes con la
+                   // misma seed se genera igual
 
-  if (type == TileType::GRASS || type == TileType::WATER ||
-      type == TileType::SAND || type == TileType::FLOOR) {
-    srcW = 32;
-    srcH = 32;
-  } else {
-    SDL_QueryTexture(tex, NULL, NULL, &srcW, &srcH);
-  }
+    for (int y = 0; y < mapData.height(); y++)
+    {
+        for (int x = 0; x < mapData.width(); x++)
+        {
+            const Tile &t = mapData.at(x, y);
 
-  int xpos = x;
-  int ypos = y;
+            // Suelos normales y estructuras planas
+            if (t.type == TileType::GRASS || t.type == TileType::WATER ||
+                t.type == TileType::SAND || t.type == TileType::FLOOR ||
+                t.type == TileType::WALL || t.type == TileType::DOOR ||
+                t.type == TileType::EXIT || t.type == TileType::CITY_FLOOR)
+            {
+                AddTile(GetRandomTextureForType(t.type), x * scaledSize, y * scaledSize,
+                        t.type);
+            }
+            // Objetos que van sobre PASTO (Bosques, Piedras, Cavernas)
+            else if (t.type == TileType::FOREST || t.type == TileType::STONE ||
+                     t.type == TileType::DUNGEON_ENTRANCE ||
+                     t.type == TileType::CAVERN_ENTRANCE)
+            {
+                AddTile(GetRandomTextureForType(TileType::GRASS), x * scaledSize,
+                        y * scaledSize, TileType::GRASS);
+            }
+            // Objetos que van sobre ARENA (Cactus)
+            else if (t.type == TileType::CACTUS)
+            {
+                AddTile(GetRandomTextureForType(TileType::SAND), x * scaledSize,
+                        y * scaledSize, TileType::SAND);
+            }
+            else if (t.type == TileType::HOUSE || t.type == TileType::CHURCH || t.type == TileType::MILL)
+            {
+                AddTile(GetRandomTextureForType(TileType::CITY_FLOOR), x * scaledSize,
+                        y * scaledSize, TileType::CITY_FLOOR);
+            }
+        }
+    }
 
-  // Offset Vertical: Desplaza hacia arriba si el objeto es alto
-  if (srcH > 32) {
-    int pixelDiffY = srcH - 32;
-    ypos -= (pixelDiffY * mapScale);
-  }
+    for (int y = 0; y < mapData.height(); y++)
+    {
+        for (int x = 0; x < mapData.width(); x++)
+        {
+            const Tile &t = mapData.at(x, y);
 
-  if (srcW > 32) {
-    int pixelDiffX = srcW - 32;
-    xpos -= (pixelDiffX * mapScale) / 2;
-  }
+            if (t.type == TileType::FOREST || t.type == TileType::CACTUS ||
+                t.type == TileType::STONE || t.type == TileType::DUNGEON_ENTRANCE ||
+                t.type == TileType::CAVERN_ENTRANCE || t.type == TileType::HOUSE || t.type == TileType::CHURCH || t.type == TileType::MILL)
+            {
+                std::string randomTexId = GetRandomTextureForType(t.type);
 
-  auto &tile(manager.addEntity());
-  tile.addComponent<TileComponent>(assets, 0, 0, xpos, ypos, srcW, srcH,
-                                   mapScale, texId);
+                AddTile(randomTexId, x * scaledSize, y * scaledSize, t.type);
+            }
+        }
+    }
+}
 
-  if (type == TileType::FOREST || type == TileType::STONE ||
-      type == TileType::CACTUS || type == TileType::DUNGEON_ENTRANCE ||
-      type == TileType::CAVERN_ENTRANCE) {
-    tile.addGroup(groupMapTop);
-  } else {
-    tile.addGroup(groupMap);
-  }
+void Map::AddTile(const std::string &texId, int x, int y, TileType type)
+{
+    SDL_Texture *tex = assets.GetTexture(texId);
+    if (!tex)
+    {
+        std::cerr
+            << "ERROR FATAL: Textura no encontrada en AssetManager para el ID: '"
+            << texId << "'\n";
+        return;
+    }
+
+    int srcW = 32;
+    int srcH = 32;
+
+    if (type == TileType::GRASS || type == TileType::WATER ||
+        type == TileType::SAND || type == TileType::FLOOR)
+    {
+        srcW = 32;
+        srcH = 32;
+    }
+    else
+    {
+        SDL_QueryTexture(tex, NULL, NULL, &srcW, &srcH);
+    }
+
+    int xpos = x;
+    int ypos = y;
+
+    // Offset Vertical: Desplaza hacia arriba si el objeto es alto
+    if (srcH > 32)
+    {
+        int pixelDiffY = srcH - 32;
+        ypos -= (pixelDiffY * mapScale);
+    }
+
+    if (srcW > 32)
+    {
+        int pixelDiffX = srcW - 32;
+        xpos -= (pixelDiffX * mapScale) / 2;
+    }
+
+    auto &tile(manager.addEntity());
+    tile.addComponent<TileComponent>(assets, 0, 0, xpos, ypos, srcW, srcH,
+                                     mapScale, texId);
+
+    if (type == TileType::FOREST || type == TileType::STONE ||
+        type == TileType::CACTUS || type == TileType::DUNGEON_ENTRANCE ||
+        type == TileType::CAVERN_ENTRANCE || type == TileType::HOUSE || type == TileType::CHURCH || type == TileType::MILL)
+    {
+        tile.addGroup(groupMapTop);
+    }
+    else
+    {
+        tile.addGroup(groupMap);
+    }
 }
