@@ -15,13 +15,13 @@ bool Player::isMeditating() const { return state == PlayerState::MEDITATING; }
 
 void Player::takeDamage(int16_t dmg)
 {
-  if (!isAlive())
+  if (isGhost())
     return;
+
   if (infiniteHp)
     return;
-  hp = std::max<int16_t>(0, hp - dmg);
-  if (hp == 0)
-    state = PlayerState::DEAD;
+
+  hp = std::max<int16_t>(0, static_cast<int16_t>(hp - dmg));
 }
 
 void Player::heal(int16_t amount)

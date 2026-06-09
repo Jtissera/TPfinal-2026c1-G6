@@ -207,6 +207,7 @@ void GameWorld::giveExperience(uint32_t playerId, uint32_t exp, float xpMultipli
 GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t attackerId) {
     Player& target = getPlayer(targetId);
 
+
     if (target.isGhost()) {
         return {0, {}};
     }
@@ -226,9 +227,19 @@ GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t a
     // Oro seguro según nivel.
     // El muerto conserva hasta safeGold.
     const uint32_t safeGold = formulas.calcMaxGold(target.getLevel());
-
-
     const uint32_t excessGold = target.die(safeGold);
+
+    std::cout << "[PVP GOLD DEBUG] victimId="
+          << targetId
+          << " killerId="
+          << attackerId
+          << " safeGold="
+          << safeGold
+          << " excessGold="
+          << excessGold
+          << " victimGoldAfter="
+          << target.getGold()
+          << std::endl;
 
     // Según alcance actual, el oro en exceso va directo al killer.
     if (excessGold > 0 && attackerId != 0) {
@@ -900,6 +911,13 @@ void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
     if (npc->isRespawning()) {
         return;
     }
+    std::cout << "[NPC GOLD DEBUG] npcId="
+          << npcId
+          << " killerPlayerId="
+          << killerPlayerId
+          << " npcMaxHp="
+          << npc->getMaxHp()
+          << std::endl;
 
     const int tileX = npc->getTileX();
     const int tileY = npc->getTileY();
@@ -933,6 +951,7 @@ void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
                 );
 
                 if (goldDrop > 0) {
+                    const uint32_t goldDrop = 100;
                     killer.addGold(goldDrop);
 
                     std::cout << "[NPC GOLD] killerId="

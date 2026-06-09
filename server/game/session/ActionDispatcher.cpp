@@ -379,12 +379,18 @@ void ActionDispatcher::handleAttack(uint32_t id,const Message& msg,GameWorld& wo
     std::cout << "[SERVER ATTACK] target inexistente targetId="<< targetId<< " attackerId="<< id << std::endl;
 }
 
-void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,GameWorld& world,Monitor& monitor) {
+void ActionDispatcher::handleAttackPlayer(
+    uint32_t attackerId,
+    uint32_t targetId,
+    GameWorld& world,
+    Monitor& monitor
+) {
     std::cout << "[SERVER PVP] attackerId="
-          << attackerId
-          << " targetId="
-          << targetId
-          << std::endl;
+              << attackerId
+              << " targetId="
+              << targetId
+              << std::endl;
+
     if (attackerId == targetId) {
         return;
     }
@@ -392,16 +398,19 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
     Player& attacker = world.getPlayer(attackerId);
     Player& target = world.getPlayer(targetId);
 
+    // El atacante muerto/fantasma no puede atacar.
     if (!attacker.isAlive() || attacker.isGhost()) {
         return;
     }
 
+    // El target muerto/fantasma no puede ser atacado.
     if (!target.isAlive() || target.isGhost()) {
         return;
     }
 
     const Item* weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
 
+    // Si el arma equipada es de curación, no procesamos como daño PvP.
     if (weapon != nullptr && weapon->effect == ItemEffect::HEAL) {
         if (effects.apply(*weapon, attacker, &target)) {
             sendStats(attackerId, attacker, monitor);
@@ -414,52 +423,61 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
     auto result = combat.attackPlayer(attacker, target);
 
     std::cout << "[SERVER PVP RESULT] valid="
-          << result.valid
-          << " dodged="
-          << result.dodged
-          << " killed="
-          << result.killed
-          << " attackerMana="
-          << attacker.getMana()
-          << "/"
-          << attacker.getMaxMana()
-          << " targetHp="
-          << target.getHp()
-          << "/"
-          << target.getMaxHp()
-          << std::endl;
+              << result.valid
+              << " dodged="
+              << result.dodged
+              << " killed="
+              << result.killed
+              << " attackerMana="
+              << attacker.getMana()
+              << "/"
+              << attacker.getMaxMana()
+              << " targetHp="
+              << target.getHp()
+              << "/"
+              << target.getMaxHp()
+              << std::endl;
 
     if (!result.valid) {
         sendStats(attackerId, attacker, monitor);
         return;
     }
 
-    sendStats(attackerId, attacker, monitor);
-    sendStats(targetId, target, monitor);
-
+    // Si esquivó, actualizamos stats y terminamos.
     if (result.dodged) {
+        sendStats(attackerId, attacker, monitor);
+        sendStats(targetId, target, monitor);
         return;
     }
 
-    world.giveExperience(attackerId, result.expGained);
-
-    sendStats(attackerId, attacker, monitor);
-    sendLevelUpIfNeeded(attackerId, attacker, monitor);
-
+    // Si mató, primero procesamos la muerte.
+    // Esto aplica:
+    // - estado DEAD/ghost al target
+    // - oro seguro del muerto
+    // - oro en exceso al attacker
+    // - experiencia por kill si está dentro de handlePlayerDeath
     if (result.killed) {
         world.handlePlayerDeath(targetId, attackerId);
 
-        sendDeath(targetId, target, monitor);
-
-        // El killer pudo recibir exp, level up y oro en exceso.
+        // El atacante pudo recibir oro, exp y level up.
         sendStats(attackerId, attacker, monitor);
         sendInventory(attackerId, attacker, monitor);
         sendLevelUpIfNeeded(attackerId, attacker, monitor);
 
-        // El muerto conserva solo oro seguro.
-        sendStats(targetId, target, monitor);
-        sendInventory(targetId, target, monitor);
+        // IMPORTANTE:
+        // sendDeath debe ser lo último que se le manda al muerto,
+        // porque aplica ghost visual en el cliente.
+        sendDeath(targetId, target, monitor);
+
+        return;
     }
+
+    // Caso normal: golpe válido, no esquivado, no mató.
+    world.giveExperience(attackerId, result.expGained);
+
+    sendStats(attackerId, attacker, monitor);
+    sendStats(targetId, target, monitor);
+    sendLevelUpIfNeeded(attackerId, attacker, monitor);
 }
 
 void ActionDispatcher::handleAttackNpc(
@@ -598,7 +616,7 @@ void ActionDispatcher::handleCheat(uint32_t id, const Message &msg,
 
       break;
   case CheatType::LEVEL_UP:
-          world.giveExperience(id,10000);
+          world.giveExperience(id,100000);
           sendStats(id,p,monitor);
           sendLevelUpIfNeeded(id,p,monitor);
       break;
