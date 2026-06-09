@@ -12,7 +12,8 @@
 #include "inventory.h"
 #include "playerState.h"
 
-class Player : public Combatant {
+class Player : public Combatant
+{
 public:
   Player(uint32_t clientId, std::string name, const RaceStats &race,
          const ClassStats &cls, int16_t maxHp, int16_t maxMana,

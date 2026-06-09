@@ -42,8 +42,9 @@ public:
   uint32_t getOrCreateInstance(const std::string &mapPath, uint32_t originRoomId);
   Queue<ClientMessage> &getGameQueue(uint32_t gameId);
   void broadcastExceptInGame(uint32_t gameId, uint32_t excludeId, const std::shared_ptr<const Message> &msg);
-  const GameWorld* getGameWorld(uint32_t gameId) const;
-    void syncPlayerJoin(uint32_t gameId, uint32_t playerId);
+  const GameWorld *getGameWorld(uint32_t gameId) const;
+  void syncPlayerJoin(uint32_t gameId, uint32_t playerId);
+  std::string getRoomMapPath(uint32_t gameId) const;
 
 private:
   const toml::table &config;

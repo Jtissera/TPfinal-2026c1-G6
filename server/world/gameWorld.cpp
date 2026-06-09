@@ -770,6 +770,12 @@ const std::unordered_map<uint32_t, Player> &GameWorld::getPlayers() const { retu
 
 void GameWorld::loadInitialInventoryForPlayer(Player &player)
 {
+
+    if (!player.getInventory().getItems().empty())
+    {
+        return;
+    }
+
     const std::string &className = player.getCls().name;
 
     if (className == "Cleric")

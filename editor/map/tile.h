@@ -8,9 +8,6 @@ enum class TileType : uint8_t
 {
     GRASS = 0,
     WATER = 1,
-    WALL = 2,
-    FLOOR = 3,
-    DOOR = 4,
     DUNGEON_ENTRANCE = 5,
     CAVERN_ENTRANCE = 6,
     EXIT = 7,
@@ -21,7 +18,13 @@ enum class TileType : uint8_t
     CITY_FLOOR = 12,
     HOUSE = 13,
     CHURCH = 14,
-    MILL = 15
+    MILL = 15,
+    CAVERN_FLOOR = 16,
+    CAVERN_WALL_H = 17,
+    CAVERN_WALL_V = 18,
+    DUNGEON_FLOOR = 19,
+    DUNGEON_WALL_H = 20,
+    DUNGEON_WALL_V = 21
 };
 
 enum class ZoneType : uint8_t

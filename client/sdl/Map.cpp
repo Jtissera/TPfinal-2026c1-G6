@@ -37,6 +37,14 @@ std::string Map::GetRandomTextureForType(TileType type)
         return "tile_church";
     case TileType::MILL:
         return "tile_mill";
+    case TileType::CAVERN_FLOOR:
+        return "tile_cavern_floor";
+    case TileType::CAVERN_WALL_H:
+        return "tile_cavern_horizontal_wall";
+    case TileType::CAVERN_WALL_V:
+        return "tile_cavern_vertical_wall";
+    case TileType::EXIT:
+        return "tile_exit";
 
     case TileType::FOREST:
     {
@@ -68,8 +76,7 @@ void Map::LoadMap(const std::string &path)
 {
     MapData mapData = MapSerializer::load(path);
 
-    srand(123456); // esto marca la seed del mapa, siempre que lo generes con la
-                   // misma seed se genera igual
+    srand(123456);
 
     for (int y = 0; y < mapData.height(); y++)
     {
@@ -77,33 +84,27 @@ void Map::LoadMap(const std::string &path)
         {
             const Tile &t = mapData.at(x, y);
 
-            // Suelos normales y estructuras planas
             if (t.type == TileType::GRASS || t.type == TileType::WATER ||
-                t.type == TileType::SAND || t.type == TileType::FLOOR ||
-                t.type == TileType::WALL || t.type == TileType::DOOR ||
-                t.type == TileType::EXIT || t.type == TileType::CITY_FLOOR)
+                t.type == TileType::SAND || t.type == TileType::CITY_FLOOR || t.type == TileType::CAVERN_FLOOR)
             {
-                AddTile(GetRandomTextureForType(t.type), x * scaledSize, y * scaledSize,
-                        t.type);
+                AddTile(GetRandomTextureForType(t.type), x * scaledSize, y * scaledSize, t.type);
             }
-            // Objetos que van sobre PASTO (Bosques, Piedras, Cavernas)
             else if (t.type == TileType::FOREST || t.type == TileType::STONE ||
-                     t.type == TileType::DUNGEON_ENTRANCE ||
-                     t.type == TileType::CAVERN_ENTRANCE)
+                     t.type == TileType::DUNGEON_ENTRANCE || t.type == TileType::CAVERN_ENTRANCE || t.type == TileType::EXIT)
             {
-                AddTile(GetRandomTextureForType(TileType::GRASS), x * scaledSize,
-                        y * scaledSize, TileType::GRASS);
+                AddTile(GetRandomTextureForType(TileType::GRASS), x * scaledSize, y * scaledSize, TileType::GRASS);
             }
-            // Objetos que van sobre ARENA (Cactus)
             else if (t.type == TileType::CACTUS)
             {
-                AddTile(GetRandomTextureForType(TileType::SAND), x * scaledSize,
-                        y * scaledSize, TileType::SAND);
+                AddTile(GetRandomTextureForType(TileType::SAND), x * scaledSize, y * scaledSize, TileType::SAND);
             }
             else if (t.type == TileType::HOUSE || t.type == TileType::CHURCH || t.type == TileType::MILL)
             {
-                AddTile(GetRandomTextureForType(TileType::CITY_FLOOR), x * scaledSize,
-                        y * scaledSize, TileType::CITY_FLOOR);
+                AddTile(GetRandomTextureForType(TileType::CITY_FLOOR), x * scaledSize, y * scaledSize, TileType::CITY_FLOOR);
+            }
+            else if (t.type == TileType::CAVERN_WALL_H || t.type == TileType::CAVERN_WALL_V)
+            {
+                AddTile(GetRandomTextureForType(TileType::CAVERN_FLOOR), x * scaledSize, y * scaledSize, TileType::CAVERN_FLOOR);
             }
         }
     }
@@ -116,10 +117,12 @@ void Map::LoadMap(const std::string &path)
 
             if (t.type == TileType::FOREST || t.type == TileType::CACTUS ||
                 t.type == TileType::STONE || t.type == TileType::DUNGEON_ENTRANCE ||
-                t.type == TileType::CAVERN_ENTRANCE || t.type == TileType::HOUSE || t.type == TileType::CHURCH || t.type == TileType::MILL)
+                t.type == TileType::CAVERN_ENTRANCE || t.type == TileType::HOUSE ||
+                t.type == TileType::CHURCH || t.type == TileType::MILL ||
+                t.type == TileType::CAVERN_WALL_H || t.type == TileType::CAVERN_WALL_V ||
+                t.type == TileType::EXIT)
             {
                 std::string randomTexId = GetRandomTextureForType(t.type);
-
                 AddTile(randomTexId, x * scaledSize, y * scaledSize, t.type);
             }
         }
@@ -141,7 +144,7 @@ void Map::AddTile(const std::string &texId, int x, int y, TileType type)
     int srcH = 32;
 
     if (type == TileType::GRASS || type == TileType::WATER ||
-        type == TileType::SAND || type == TileType::FLOOR)
+        type == TileType::SAND)
     {
         srcW = 32;
         srcH = 32;
@@ -173,7 +176,8 @@ void Map::AddTile(const std::string &texId, int x, int y, TileType type)
 
     if (type == TileType::FOREST || type == TileType::STONE ||
         type == TileType::CACTUS || type == TileType::DUNGEON_ENTRANCE ||
-        type == TileType::CAVERN_ENTRANCE || type == TileType::HOUSE || type == TileType::CHURCH || type == TileType::MILL)
+        type == TileType::CAVERN_ENTRANCE || type == TileType::HOUSE || type == TileType::CHURCH || type == TileType::MILL ||
+        type == TileType::CAVERN_WALL_H || type == TileType::CAVERN_WALL_V || type == TileType::EXIT)
     {
         tile.addGroup(groupMapTop);
     }

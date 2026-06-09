@@ -42,5 +42,6 @@ enum class ServerOpCode : uint8_t
   MSG_CLAN_NOTIFICATION = 0x71,
   MSG_CLAN_REQUEST_RESULT = 0x72,
 
+  MSG_MAP_CHANGED = 0x7E,
   MSG_ERROR = 0x7F
 };

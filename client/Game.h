@@ -1,8 +1,6 @@
 #ifndef PRUEBA_SDL_GAME_H
 #define PRUEBA_SDL_GAME_H
 
-
-
 #include <SDL2/SDL.h>
 
 #include <SDL2/SDL_ttf.h>
@@ -37,20 +35,22 @@
 #include "common/network/messages/server/player/playerResurrectedMessage.h"
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
 #include "common/network/messages/client/inventory/useItemMessage.h"
+#include "common/network/messages/server/system/mapChangedMessage.h"
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"
 
-class Game {
+class Game
+{
 public:
     Game();
     ~Game() = default;
 
-    void init(SDL_Window* window,
-              SDL_Renderer* renderer,
-              Queue<std::shared_ptr<const Message>>& sendQ,
-              Queue<std::shared_ptr<const Message>>& receiveQ,
-              const PlayerDto& pDto);
+    void init(SDL_Window *window,
+              SDL_Renderer *renderer,
+              Queue<std::shared_ptr<const Message>> &sendQ,
+              Queue<std::shared_ptr<const Message>> &receiveQ,
+              const PlayerDto &pDto);
 
     void handleEvents();
     void update();
@@ -62,22 +62,22 @@ public:
 private:
     bool isRunning = false;
 
-    SDL_Window* window = nullptr;
-    SDL_Renderer* renderer = nullptr;
+    SDL_Window *window = nullptr;
+    SDL_Renderer *renderer = nullptr;
     SDL_Event event{};
     Manager manager;
 
     std::unique_ptr<TextureManager> textureManager;
     std::unique_ptr<AssetManager> assets;
 
-    Queue<std::shared_ptr<const Message>>* sendQueue = nullptr;
-    Queue<std::shared_ptr<const Message>>* receiveQueue = nullptr;
+    Queue<std::shared_ptr<const Message>> *sendQueue = nullptr;
+    Queue<std::shared_ptr<const Message>> *receiveQueue = nullptr;
     // Mundo visual del cliente.
     // Maneja jugador local y jugadores remotos.
     std::unique_ptr<ClientGameWorld> clientWorld;
-    Map* map = nullptr;
-    Entity* player = nullptr;
-    Entity* label = nullptr;
+    Map *map = nullptr;
+    Entity *player = nullptr;
+    Entity *label = nullptr;
     SDL_Rect camera{0, 0, 0, 0};
 
     // PERF: cámara del frame anterior — detecta si se movió para evitar
@@ -86,7 +86,7 @@ private:
 
     PlayerDto playerDto;
 
-    std::map<uint32_t, Entity*> enemies;
+    std::map<uint32_t, Entity *> enemies;
 
     AttackSystem attackSystem;
     PlayerViewState playerState;
@@ -97,18 +97,19 @@ private:
     std::string statusMessage;
     Uint32 statusMessageTimer = 0;
     static constexpr Uint32 STATUS_MESSAGE_DURATION_MS = 2500;
-    TTF_Font* statusFont = nullptr;  // se asigna en loadAssets()
+    TTF_Font *statusFont = nullptr; // se asigna en loadAssets()
 
     // PERF: textura cacheada del statusMessage.
     // Se crea una vez en showStatusMessage() y se reutiliza con SetTextureAlphaMod.
-    SDL_Texture* statusMessageTexture = nullptr;
+    SDL_Texture *statusMessageTexture = nullptr;
     int statusMessageTexW = 0;
     int statusMessageTexH = 0;
 
     bool localGhostStateApplied = false;
     bool hasReceivedValidPlayerStats = false;
 
-    struct CachedText {
+    struct CachedText
+    {
         // Texto actual asociado a esta textura.
         std::string text;
 
@@ -117,10 +118,10 @@ private:
 
         // Font usado para crear la textura.
         // No destruimos la fuente acá, solo guardamos el puntero para comparar.
-        TTF_Font* font = nullptr;
+        TTF_Font *font = nullptr;
 
         // Textura cacheada.
-        SDL_Texture* texture = nullptr;
+        SDL_Texture *texture = nullptr;
 
         // Dimensiones de la textura.
         int w = 0;
@@ -132,25 +133,24 @@ private:
     // "hud_name", "hud_gold", "hud_hp_bar_text".
     std::unordered_map<std::string, CachedText> textCache;
 
-    SDL_Texture* getOrCreateTextTexture(
-        const std::string& key,
-        const std::string& text,
-        TTF_Font* font,
+    SDL_Texture *getOrCreateTextTexture(
+        const std::string &key,
+        const std::string &text,
+        TTF_Font *font,
         SDL_Color color,
-        int& outW,
-        int& outH
-    );
+        int &outW,
+        int &outH);
 
     void clearTextCache();
 
     bool sameColor(SDL_Color a, SDL_Color b) const;
-    void drawEquippedEntity(Entity* entity, RenderContext& context) ;
+    void drawEquippedEntity(Entity *entity, RenderContext &context);
     // --- Cheats ---
-    bool cheatGodMode    = false;  // Ctrl+H: vida y mana siempre al maximo
-    bool cheatInfMana    = false;  // Ctrl+M: mana siempre al maximo
+    bool cheatGodMode = false; // Ctrl+H: vida y mana siempre al maximo
+    bool cheatInfMana = false; // Ctrl+M: mana siempre al maximo
     void handleCheatKeys();
 
-    void showStatusMessage(const std::string& msg);
+    void showStatusMessage(const std::string &msg);
 
     void loadAssets();
     int getInventorySlotIndexAt(int mouseX, int mouseY) const;
@@ -159,15 +159,15 @@ private:
 
     int getEquipmentSlotIndexAt(int mouseX, int mouseY) const;
     void handleEquipmentSlotClick(int equipmentSlotIndex);
-    bool addItemToFirstFreeInventorySlot(const ItemView& item);
+    bool addItemToFirstFreeInventorySlot(const ItemView &item);
     void consumePotion(int slotIndex);
-    std::string visualTextureForCurrentRace(const ItemView& item) const;
+    std::string visualTextureForCurrentRace(const ItemView &item) const;
     void renderEquippedArmor();
     void renderEquippedWeapon();
     void renderEquippedShield();
     void refreshPlayerBodySprite();
     SpriteSheetConfig armorSpriteConfigForCurrentRace() const;
-    SDL_Point visualOffsetForCurrentRace(const ItemView& item) const;
+    SDL_Point visualOffsetForCurrentRace(const ItemView &item) const;
     void refreshPlayerEquipmentVisuals();
     void renderEnemyHealthBars();
     bool isLocalPlayerDead() const;
@@ -177,20 +177,22 @@ private:
     EquipSlot toServerEquipSlot(ClientEquipmentSlot slot) const;
 
     // esto debe pasar a otra clase que maneje estos mensajes.
-    void processServerMessage(const Message& msg);
-    void handleEntityMove(const EntityMoveMessage& msg);
-    void handlePlayerDied(const PlayerDiedMessage& msg);
-    void handlePlayerStats(const PlayerStatsMessage& msg);
-    void handleEntitySpawn(const EntitySpawnMessage& msg);
-    void handleInventoryUpdate(const InventoryUpdateMessage& msg);
-    void applyInventoryUpdate(const InventoryUpdateMessage& msg);
-    void handlePlayerEquipmentUpdate(const PlayerEquipmentUpdateMessage& msg);
-    void handleLevelUp(const LevelUpMessage& msg);
-    void handleNpcSpawn(const NpcSpawnMessage& msg);
-    void handleNpcHealth(const NpcHealthMessage& msg);
-    void handleNpcMove(const NpcMoveMessage& msg);
-    void handlePlayerResurrected(const PlayerResurrectedMessage& msg);
+    void processServerMessage(const Message &msg);
+    void handleEntityMove(const EntityMoveMessage &msg);
+    void handlePlayerDied(const PlayerDiedMessage &msg);
+    void handlePlayerStats(const PlayerStatsMessage &msg);
+    void handleEntitySpawn(const EntitySpawnMessage &msg);
+    void handleInventoryUpdate(const InventoryUpdateMessage &msg);
+    void applyInventoryUpdate(const InventoryUpdateMessage &msg);
+    void handlePlayerEquipmentUpdate(const PlayerEquipmentUpdateMessage &msg);
+    void handleLevelUp(const LevelUpMessage &msg);
+    void handleNpcSpawn(const NpcSpawnMessage &msg);
+    void handleNpcHealth(const NpcHealthMessage &msg);
+    void handleNpcMove(const NpcMoveMessage &msg);
+    void handlePlayerResurrected(const PlayerResurrectedMessage &msg);
 
+    void clearCurrentScene();
+    void handleMapChanged(const MapChangedMessage &msg);
 };
 
-#endif //PRUEBA_SDL_GAME_H
+#endif // PRUEBA_SDL_GAME_H

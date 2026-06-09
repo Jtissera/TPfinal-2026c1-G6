@@ -201,7 +201,8 @@ void Game::render()
     for (auto &t : manager.getGroup(groupMap))
         t->draw(renderContext);
 
-    for (auto& p : manager.getGroup(groupPlayers)) {
+    for (auto &p : manager.getGroup(groupPlayers))
+    {
         drawEquippedEntity(p, renderContext);
     }
 
@@ -756,6 +757,10 @@ void Game::loadAssets()
     assets->AddTexture("tile_house", "assets/sprites/MapAssets/house.png");
     assets->AddTexture("tile_church", "assets/sprites/MapAssets/church.png");
     assets->AddTexture("tile_mill", "assets/sprites/MapAssets/mill.png");
+    assets->AddTexture("tile_cavern_floor", "assets/sprites/MapAssets/cavern_floor.png");
+    assets->AddTexture("tile_cavern_vertical_wall", "assets/sprites/MapAssets/cavern_vertical_wall.png");
+    assets->AddTexture("tile_cavern_horizontal_wall", "assets/sprites/MapAssets/cavern_horizontal_wall.png");
+    assets->AddTexture("tile_exit", "assets/sprites/MapAssets/exit.png");
 
     assets->AddTexture("npc_priest", "assets/sprites/npcs/priest.png");
     assets->AddTexture("npc_shop", "assets/sprites/npcs/shop.png");
@@ -1853,6 +1858,10 @@ void Game::processServerMessage(const Message &msg)
         std::cout << "[CLIENT] MSG_PLAYER_RESURRECTED recibido" << std::endl;
         handlePlayerResurrected(static_cast<const PlayerResurrectedMessage &>(msg));
         return;
+    case ServerOpCode::MSG_MAP_CHANGED:
+        std::cout << "[CLIENT] MSG_MAP_CHANGED recibido" << std::endl;
+        handleMapChanged(static_cast<const MapChangedMessage &>(msg));
+        return;
 
     default:
         std::cout << "[CLIENT] opcode no manejado: 0x" << std::hex
@@ -2118,27 +2127,100 @@ void Game::handlePlayerResurrected(const PlayerResurrectedMessage &msg)
     }
 }
 
-void Game::drawEquippedEntity(Entity* entity, RenderContext& context) {
-    // Si la entidad no existe, no dibujamos nada.
-    if (entity == nullptr) {
+void Game::drawEquippedEntity(Entity *entity, RenderContext &context)
+{
+    if (entity == nullptr)
+    {
         return;
     }
 
-    // Primera capa:
-    // arma/escudo que deben quedar detrás del cuerpo.
-    if (entity->hasComponent<EquipmentComponent>()) {
+    if (entity->hasComponent<EquipmentComponent>())
+    {
         entity->getComponent<EquipmentComponent>().drawBehind(context);
     }
 
-    // Segunda capa:
-    // sprite principal del personaje: cuerpo, cabeza, casco.
-    if (entity->hasComponent<SpriteComponent>()) {
+    if (entity->hasComponent<SpriteComponent>())
+    {
         entity->getComponent<SpriteComponent>().draw(context);
     }
 
-    // Tercera capa:
-    // arma/escudo que deben quedar delante del cuerpo.
-    if (entity->hasComponent<EquipmentComponent>()) {
+    if (entity->hasComponent<EquipmentComponent>())
+    {
         entity->getComponent<EquipmentComponent>().drawFront(context);
     }
+}
+
+void Game::clearCurrentScene()
+{
+    for (auto &t : manager.getGroup(groupMap))
+    {
+        t->destroy();
+    }
+    for (auto &t : manager.getGroup(groupMapTop))
+    {
+        t->destroy();
+    }
+
+    for (auto &n : manager.getGroup(groupNPC))
+    {
+        n->destroy();
+    }
+
+    for (auto &ui : manager.getGroup(groupUI))
+    {
+        ui->destroy();
+    }
+
+    for (auto &[enemyId, enemyEntity] : enemies)
+    {
+        if (enemyEntity != nullptr)
+        {
+            enemyEntity->destroy();
+        }
+    }
+    enemies.clear();
+
+    for (auto &p : manager.getGroup(groupPlayers))
+    {
+        if (p != player)
+        {
+            p->destroy();
+        }
+    }
+
+    for (auto &slot : inventoryState.slots)
+    {
+        slot = std::nullopt;
+    }
+
+    equipmentState.weapon = std::nullopt;
+    equipmentState.helmet = std::nullopt;
+    equipmentState.armor = std::nullopt;
+    equipmentState.shield = std::nullopt;
+
+    manager.refresh();
+
+    if (clientWorld != nullptr)
+    {
+        clientWorld = std::make_unique<ClientGameWorld>(
+            static_cast<uint32_t>(playerDto.playerID), player, *assets);
+    }
+}
+
+void Game::handleMapChanged(const MapChangedMessage &msg)
+{
+    std::cout << "[Game] Cambiando al mapa: " << msg.getMapPath() << std::endl;
+
+    clearCurrentScene();
+
+    if (map != nullptr)
+    {
+        delete map;
+        map = nullptr;
+    }
+
+    map = new Map(manager, *assets, "terrain", 3, 32);
+    map->LoadMap(msg.getMapPath());
+
+    std::cout << "[Game] ¡Nuevo mapa cargado exitosamente!" << std::endl;
 }

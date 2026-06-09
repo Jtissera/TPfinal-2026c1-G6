@@ -14,11 +14,10 @@ TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
     _rbGrass = new QRadioButton("🌿 Pasto", terrainGroup);
     _rbSand = new QRadioButton("🏜 Arena", terrainGroup);
     _rbWater = new QRadioButton("💧 Agua", terrainGroup);
-    _rbFloor = new QRadioButton("🟫 Piso", terrainGroup);
     _rbGrass->setChecked(true);
 
     auto *terrainBtns = new QButtonGroup(this);
-    for (auto *rb : {_rbGrass, _rbSand, _rbWater, _rbFloor})
+    for (auto *rb : {_rbGrass, _rbSand, _rbWater})
     {
         terrainBtns->addButton(rb);
         terrainLayout->addWidget(rb);
@@ -58,6 +57,25 @@ TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
     }
     mainLayout->addWidget(cityGroup);
 
+    // ── Subterráneo (NUEVO) ───────────────────────────────────
+    auto *subGroup = new QGroupBox("Subterráneo", this);
+    auto *subLayout = new QVBoxLayout(subGroup);
+
+    _rbCavernFloor = new QRadioButton("🟫 Piso Caverna", subGroup);
+    _rbCavernWallH = new QRadioButton("➖ Pared Cav H", subGroup);
+    _rbCavernWallV = new QRadioButton("🦺 Pared Cav V", subGroup);
+    _rbDungeonFloor = new QRadioButton("⬛ Piso Mazmo", subGroup);
+    _rbDungeonWallH = new QRadioButton("➖ Pared Maz H", subGroup);
+    _rbDungeonWallV = new QRadioButton("🪵 Pared Maz V", subGroup);
+
+    auto *subBtns = new QButtonGroup(this);
+    for (auto *rb : {_rbCavernFloor, _rbCavernWallH, _rbCavernWallV, _rbDungeonFloor, _rbDungeonWallH, _rbDungeonWallV})
+    {
+        subBtns->addButton(rb);
+        subLayout->addWidget(rb);
+    }
+    mainLayout->addWidget(subGroup);
+
     // ── Especiales ────────────────────────────────────────
     auto *specGroup = new QGroupBox("Especiales", this);
     auto *specLayout = new QVBoxLayout(specGroup);
@@ -77,7 +95,7 @@ TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
     // Un único ButtonGroup para todos los tiles (exclusión global)
     auto *allTileBtns = new QButtonGroup(this);
     allTileBtns->setExclusive(true);
-    for (auto *g : {terrainBtns, structBtns, specBtns, cityBtns})
+    for (auto *g : {terrainBtns, structBtns, specBtns, cityBtns, subBtns})
         for (auto *b : g->buttons())
             allTileBtns->addButton(b);
 
@@ -125,8 +143,6 @@ TileType TilePalette::selectedTileType() const
         return TileType::SAND;
     if (_rbWater->isChecked())
         return TileType::WATER;
-    if (_rbFloor->isChecked())
-        return TileType::FLOOR;
     if (_rbForest->isChecked())
         return TileType::FOREST;
     if (_rbDungeonEntrance->isChecked())
@@ -147,6 +163,18 @@ TileType TilePalette::selectedTileType() const
         return TileType::CHURCH;
     if (_rbMill->isChecked())
         return TileType::MILL;
+    if (_rbCavernFloor->isChecked())
+        return TileType::CAVERN_FLOOR;
+    if (_rbCavernWallH->isChecked())
+        return TileType::CAVERN_WALL_H;
+    if (_rbCavernWallV->isChecked())
+        return TileType::CAVERN_WALL_V;
+    if (_rbDungeonFloor->isChecked())
+        return TileType::DUNGEON_FLOOR;
+    if (_rbDungeonWallH->isChecked())
+        return TileType::DUNGEON_WALL_H;
+    if (_rbDungeonWallV->isChecked())
+        return TileType::DUNGEON_WALL_V;
     return TileType::GRASS;
 }
 

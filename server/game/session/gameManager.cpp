@@ -92,7 +92,8 @@ void GameManager::addPlayerToGame(uint32_t gameId, Player player)
 
   auto it = rooms.find(gameId);
 
-  if (it == rooms.end()) {
+  if (it == rooms.end())
+  {
     std::cerr << "[GameManager] addPlayerToGame fallo. gameId inexistente="
               << gameId
               << std::endl;
@@ -172,26 +173,31 @@ uint32_t GameManager::getOriginRoomId(uint32_t instanceRoomId) const
 }
 void GameManager::broadcastExceptInGame(
     uint32_t gameId, uint32_t excludeId,
-    const std::shared_ptr<const Message> &msg) {
+    const std::shared_ptr<const Message> &msg)
+{
   std::unique_lock<std::mutex> lock(mutex);
   auto it = rooms.find(gameId);
   if (it != rooms.end())
     it->second->broadcastExcept(excludeId, msg);
 }
 
-const GameWorld* GameManager::getGameWorld(uint32_t gameId) const {
+const GameWorld *GameManager::getGameWorld(uint32_t gameId) const
+{
   std::unique_lock<std::mutex> lock(mutex);
   auto it = rooms.find(gameId);
-  if (it == rooms.end()) return nullptr;
+  if (it == rooms.end())
+    return nullptr;
   return &it->second->getWorld();
 }
 
-void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId) {
+void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId)
+{
   std::unique_lock<std::mutex> lock(mutex);
 
   auto it = rooms.find(gameId);
 
-  if (it != rooms.end()) {
+  if (it != rooms.end())
+  {
     std::cout << "[GameManager] syncPlayerJoin gameId="
               << gameId
               << " playerId="
@@ -199,5 +205,23 @@ void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId) {
               << std::endl;
 
     it->second->syncPlayerJoin(playerId);
+  }
+}
+
+std::string GameManager::getRoomMapPath(uint32_t gameId) const
+{
+  std::unique_lock<std::mutex> lock(mutex);
+  auto it = rooms.find(gameId);
+  if (it == rooms.end())
+    return "";
+
+  if (it->second->getIsInstance())
+  {
+    return it->second->getName();
+  }
+  else
+  {
+    return config["world"]["map_path"].value_or(
+        std::string("assets/sprites/MapAssets/map.argmap"));
   }
 }
