@@ -12,8 +12,7 @@
 #include "inventory.h"
 #include "playerState.h"
 
-class Player : public Combatant
-{
+class Player : public Combatant {
 public:
   Player(uint32_t clientId, std::string name, const RaceStats &race,
          const ClassStats &cls, int16_t maxHp, int16_t maxMana,
@@ -50,12 +49,11 @@ public:
   void setTilePos(int tx, int ty);
   void setPixelPos(float tx, float ty);
 
-
   int getTileX() const override { return static_cast<int>(pixelX) / TILE_SIZE; }
-  int getTileY() const override{ return static_cast<int>(pixelY)/ TILE_SIZE; }
+  int getTileY() const override { return static_cast<int>(pixelY) / TILE_SIZE; }
   uint32_t getId() const override;
   uint32_t getClientId() const;
-  const std::string& getName() const;
+  const std::string &getName() const;
   uint8_t getLevel() const override;
   int16_t getHp() const override;
   int16_t getMaxHp() const override;
@@ -66,7 +64,6 @@ public:
   uint8_t getAgility() const override;
   uint8_t getStrength() const override;
   int getAttackRange() const override;
-
 
   // Devuelve la posición X real en píxeles.
   float getPixelX() const;

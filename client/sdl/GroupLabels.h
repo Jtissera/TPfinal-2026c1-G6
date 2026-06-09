@@ -6,11 +6,12 @@
 #include <cstddef>
 
 enum GroupLabels : std::size_t {
-    groupMap,
-    groupPlayers,
-    groupColliders,
-    groupProjectiles,
-    groupNPC,
-    groupEnemies,
+  groupMap,
+  groupMapTop,
+  groupPlayers,
+  groupColliders,
+  groupProjectiles,
+  groupNPC,
+  groupEnemies,
 };
-#endif //TALLER_TP_GROUPLABELS_H
+#endif // TALLER_TP_GROUPLABELS_H
