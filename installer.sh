@@ -50,7 +50,8 @@ sudo apt-get install -y \
     libjpeg-dev \
     libpng-dev \
     nlohmann-json3-dev \
-    xdg-user-dirs
+    xdg-user-dirs\
+    libfluidsynth-dev 
 
 # FIX: detectar desktop DESPUÉS de instalar xdg-user-dirs
 DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || echo "$HOME/Desktop")"
