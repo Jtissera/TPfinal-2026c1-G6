@@ -95,8 +95,7 @@ const std::optional<ItemView> &EquipmentComponent::getShield() const {
   return shield;
 }
 
-std::string
-EquipmentComponent::visualTextureForRace(const ItemView &item) const {
+std::string EquipmentComponent::visualTextureForRace(const ItemView &item) const {
 
   if (isShortRace() && !item.visualTextureIdShort.empty()) {
     return item.visualTextureIdShort;
@@ -170,8 +169,7 @@ void EquipmentComponent::applyHelmetToSprite() {
                           helmetItem.visualUpSrcY);
 }
 
-void EquipmentComponent::drawEquipmentLayer(RenderContext &context,
-                                            const ItemView &item) {
+void EquipmentComponent::drawEquipmentLayer(RenderContext &context, const ItemView &item) {
   if (entity == nullptr || !entity->hasComponent<SpriteComponent>()) {
     return;
   }
@@ -208,7 +206,10 @@ void EquipmentComponent::drawEquipmentLayer(RenderContext &context,
                    sprite.spriteFlip);
 }
 
-void EquipmentComponent::draw(RenderContext &context) { drawFront(context); }
+void EquipmentComponent::draw(RenderContext &context) {
+  drawFront(context);
+
+}
 
 bool EquipmentComponent::isShortRace() const {
   return race == "Dwarf" || race == "Gnome" || race == "Enano" ||

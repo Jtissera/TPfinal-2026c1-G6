@@ -33,7 +33,7 @@ private:
 
     void drawEquipmentLayer(RenderContext& context, const ItemView& item);
 
-    void drawFront(RenderContext& context);
+
 
 
 
@@ -65,6 +65,7 @@ public:
     SpriteSheetConfig armorSpriteConfig() const;
 
     void drawBehind(RenderContext& context);
+    void drawFront(RenderContext& context);
 };
 
 

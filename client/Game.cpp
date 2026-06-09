@@ -201,8 +201,9 @@ void Game::render()
     for (auto &t : manager.getGroup(groupMap))
         t->draw(renderContext);
 
-    for (auto &p : manager.getGroup(groupPlayers))
-        p->draw(renderContext);
+    for (auto& p : manager.getGroup(groupPlayers)) {
+        drawEquippedEntity(p, renderContext);
+    }
 
     for (const auto &[enemyId, enemy] : enemies)
     {
@@ -2114,5 +2115,30 @@ void Game::handlePlayerResurrected(const PlayerResurrectedMessage &msg)
     if (clientWorld != nullptr)
     {
         clientWorld->applyRemotePlayerAliveState(resurrectedId);
+    }
+}
+
+void Game::drawEquippedEntity(Entity* entity, RenderContext& context) {
+    // Si la entidad no existe, no dibujamos nada.
+    if (entity == nullptr) {
+        return;
+    }
+
+    // Primera capa:
+    // arma/escudo que deben quedar detrás del cuerpo.
+    if (entity->hasComponent<EquipmentComponent>()) {
+        entity->getComponent<EquipmentComponent>().drawBehind(context);
+    }
+
+    // Segunda capa:
+    // sprite principal del personaje: cuerpo, cabeza, casco.
+    if (entity->hasComponent<SpriteComponent>()) {
+        entity->getComponent<SpriteComponent>().draw(context);
+    }
+
+    // Tercera capa:
+    // arma/escudo que deben quedar delante del cuerpo.
+    if (entity->hasComponent<EquipmentComponent>()) {
+        entity->getComponent<EquipmentComponent>().drawFront(context);
     }
 }

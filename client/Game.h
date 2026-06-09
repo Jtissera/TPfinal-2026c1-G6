@@ -144,7 +144,7 @@ private:
     void clearTextCache();
 
     bool sameColor(SDL_Color a, SDL_Color b) const;
-
+    void drawEquippedEntity(Entity* entity, RenderContext& context) ;
     // --- Cheats ---
     bool cheatGodMode    = false;  // Ctrl+H: vida y mana siempre al maximo
     bool cheatInfMana    = false;  // Ctrl+M: mana siempre al maximo
