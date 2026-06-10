@@ -30,6 +30,13 @@ echo ""
 # ------------------------------------------------------------------------------
 echo -e "${YELLOW}[1/5] Instalando dependencias del sistema...${NC}"
 
+UBUNTU_VERSION=$(lsb_release -rs 2>/dev/null || echo "0")
+if dpkg --compare-versions "$UBUNTU_VERSION" ge "24.04" 2>/dev/null; then
+    QT_WIDGETS_PKG="libqt5widgets5t64"
+else
+    QT_WIDGETS_PKG="libqt5widgets5"
+fi
+
 sudo apt-get update -qq
 sudo apt-get install -y \
     git \
@@ -40,7 +47,7 @@ sudo apt-get install -y \
     valgrind \
     qtbase5-dev \
     qt5-qmake \
-    libqt5widgets5t64 \
+    "$QT_WIDGETS_PKG" \
     libopus-dev \
     libopusfile-dev \
     libxmp-dev \
@@ -50,16 +57,16 @@ sudo apt-get install -y \
     libjpeg-dev \
     libpng-dev \
     nlohmann-json3-dev \
-    xdg-user-dirs\
-    libfluidsynth-dev \
-    libfluidsynth-dev \
-    libmikmod-dev \       
-    libmpg123-dev \       
+    xdg-user-dirs \
+    libmikmod-dev \
+    libmpg123-dev \
     libvorbis-dev \
+    libogg-dev \
+    libpulse-dev \
+    libasound2-dev \
     libsdl2-ttf-dev \
     libsdl2-image-dev \
-    libsdl2-mixer-dev \       
-    libogg-dev
+    libsdl2-mixer-dev
 
 # FIX: detectar desktop DESPUÉS de instalar xdg-user-dirs
 DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || echo "$HOME/Desktop")"
@@ -94,6 +101,7 @@ echo -e "${GREEN}[2/5] Código fuente listo.${NC}"
 echo -e "${YELLOW}[3/5] Compilando (puede tardar 15-20 minutos, SDL se descarga de GitHub)...${NC}"
 
 cd "$SRC_DIR"
+rm -rf build
 mkdir -p build
 cd build
 cmake .. \
@@ -101,7 +109,8 @@ cmake .. \
     -DTALLER_EDITOR=OFF \
     -DTALLER_TESTS=OFF \
     -DTALLER_MAKE_WARNINGS_AS_ERRORS=OFF \
-    -DSDL_PIPEWIRE=OFF
+    -DSDL_PIPEWIRE=OFF \
+    -DSDL2MIXER_MIDI_FLUIDSYNTH=OFF
 cmake --build . -- -j"$(nproc)"
 cd "$SRC_DIR"
 
