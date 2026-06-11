@@ -230,6 +230,7 @@ void LobbyHandler::handleLeaveGame(LeaveEvent &event)
 
 void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
 {
+
   if (event.targetMap.empty())
   {
     uint32_t originId = gameManager.getOriginRoomId(event.fromRoomId);

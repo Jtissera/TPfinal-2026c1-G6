@@ -12,9 +12,23 @@ SpawnManager::SpawnManager(const toml::table &config, NpcManager &npcManager,
 
 std::optional<uint32_t> SpawnManager::spawnNpc(const std::string &typeName, int tileX, int tileY)
 {
-  if (!collision.isWalkable(tileX, tileY))
+  const bool isFriendlyStatic = (typeName == "priest" ||
+                                 typeName == "merchant" ||
+                                 typeName == "banker");
+
+  if (isFriendlyStatic)
   {
-    return std::nullopt;
+    if (!collision.isInBounds(tileX, tileY))
+    {
+      return std::nullopt;
+    }
+  }
+  else
+  {
+    if (!collision.isWalkable(tileX, tileY))
+    {
+      return std::nullopt;
+    }
   }
 
   if (occupancy.isOccupied(tileX, tileY))

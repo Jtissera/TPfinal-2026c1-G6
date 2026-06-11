@@ -158,13 +158,13 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry)
 
   if (entry.targetMap.find("mazmorra") != std::string::npos)
   {
-    spawnX = 35;
-    spawnY = 35;
+    spawnX = 3;
+    spawnY = 3;
   }
   else if (entry.targetMap.find("caverna") != std::string::npos)
   {
-    spawnX = 25;
-    spawnY = 5;
+    spawnX = 3;
+    spawnY = 3;
   }
   else
   {

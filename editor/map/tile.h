@@ -24,7 +24,7 @@ enum class TileType : uint8_t
     CAVERN_WALL_V = 18,
     DUNGEON_FLOOR = 19,
     DUNGEON_WALL_H = 20,
-    DUNGEON_WALL_V = 21
+    DUNGEON_WALL_V = 21,
 };
 
 enum class ZoneType : uint8_t

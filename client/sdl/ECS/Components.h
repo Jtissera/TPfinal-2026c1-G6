@@ -11,8 +11,4 @@
 #include "ProjectileComponent.h"
 #include "EquipmentComponent.h"
 
-
-
-
-
-#endif //PRUEBA_SDL_COMPONENTS_H_H
+#endif // PRUEBA_SDL_COMPONENTS_H_H

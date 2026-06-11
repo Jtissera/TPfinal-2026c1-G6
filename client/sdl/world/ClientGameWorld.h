@@ -11,17 +11,16 @@
 #include "common/dtos/equipmentDto.h"
 #include "client/sdl/AttackSystem.h"
 
-
-class ClientGameWorld {
+class ClientGameWorld
+{
 private:
-
     uint32_t localPlayerId;
     // Entidad visual del jugador local.
     // No es dueña: la administra Manager.
-    Entity* localPlayer;
+    Entity *localPlayer;
 
     // AssetManager usado para crear entidades visuales.
-    AssetManager& assets;
+    AssetManager &assets;
     std::map<uint32_t, RemotePlayer> remotePlayers;
 
     bool canAttackByFairPlay(uint32_t myLevel, uint32_t targetLevel);
@@ -30,9 +29,8 @@ public:
     // Constructor del mundo cliente.
     ClientGameWorld(
         uint32_t localPlayerId,
-        Entity* localPlayer,
-        AssetManager& assets
-    );
+        Entity *localPlayer,
+        AssetManager &assets);
 
     // Devuelve true si el id pertenece al jugador local.
     bool isLocalPlayer(uint32_t entityId) const;
@@ -40,9 +38,11 @@ public:
     // Devuelve true si ya existe ese jugador remoto.
     bool hasRemotePlayer(uint32_t entityId) const;
 
+    std::vector<Entity *> getRemotePlayerEntities() const;
+
     // Crea un jugador remoto a partir de datos enviados por el server.
     // Esto debe llamarse cuando llegue un PlayerSpawnMessage / PlayerJoinedMessage.
-    void spawnRemotePlayer(const PlayerDto& remotePlayerDto);
+    void spawnRemotePlayer(const PlayerDto &remotePlayerDto);
 
     // Elimina un jugador remoto si el server avisa que se desconectó.
     void removeRemotePlayer(uint32_t entityId);
@@ -52,14 +52,14 @@ public:
 
     // Actualiza la posición de un remoto EXISTENTE.
     // No crea jugadores. Si no existe, loguea warning.
-    void updateRemotePlayerPosition(uint32_t entityId, float x, float y,Direction direction,bool moving);
+    void updateRemotePlayerPosition(uint32_t entityId, float x, float y, Direction direction, bool moving);
 
     // Entrada general para movimientos de jugadores.
-    void updatePlayerPosition(uint32_t entityId, float x, float y,Direction direction,bool moving);
+    void updatePlayerPosition(uint32_t entityId, float x, float y, Direction direction, bool moving);
 
     void updateRemotePlayerEquipment(uint32_t entityId, const EquipmentDto &equipment, const ItemCatalog &itemCatalog);
 
-    void appendRemoteAttackTargets(std::vector<AttackTarget>& targets,uint8_t localPlayerLevel);
+    void appendRemoteAttackTargets(std::vector<AttackTarget> &targets, uint8_t localPlayerLevel);
 
     // Aplica visualmente el estado fantasma a un jugador remoto.
     // No toca inventario real; solo cambia sprite y oculta equipamiento visual.
@@ -72,7 +72,4 @@ public:
     void updateRemotePlayerLevel(uint32_t playerId, uint8_t newLevel);
 };
 
-
-
-
-#endif //TALLER_TP_CLIENTGAMEWORLD_H
+#endif // TALLER_TP_CLIENTGAMEWORLD_H

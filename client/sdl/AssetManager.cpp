@@ -88,7 +88,9 @@ Entity *AssetManager::CreateNpc(const NPCData &data)
 {
     auto &npc = manager->addEntity();
 
-    npc.addComponent<TransformComponent>(data.x, data.y, 48, 48, 2);
+    const float centeredX = data.x + 48.0f;
+    const float centeredY = data.y + 86.0f;
+    npc.addComponent<TransformComponent>(centeredX, centeredY, 48, 48, 2);
 
     std::map<std::string, Animation> npcAnims;
     npcAnims.emplace("IdleDown", Animation(0, 1, 200));

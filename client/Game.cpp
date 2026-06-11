@@ -7,6 +7,8 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_set>
+#include <algorithm>
+#include <functional>
 
 Game::Game() {}
 
@@ -205,10 +207,8 @@ void Game::update()
 void Game::render()
 {
 
-  // Limpia la pantalla antes de dibujar el nuevo frame.
   SDL_RenderClear(renderer);
 
-  // Limita el dibujado al área del mapa, para que no invada el HUD.
   SDL_Rect mapArea = {0, 33, 900, 687};
   SDL_RenderSetClipRect(renderer, &mapArea);
 
@@ -217,24 +217,118 @@ void Game::render()
   for (auto &t : manager.getGroup(groupMap))
     t->draw(renderContext);
 
-  for (auto &p : manager.getGroup(groupPlayers))
+  struct RenderObject
   {
-    drawEquippedEntity(p, renderContext);
-  }
+    int yFootprint;
+    std::function<void()> drawFunc;
+  };
 
-  for (const auto &[enemyId, enemy] : enemies)
+  std::vector<RenderObject> ySorted;
+
+  ySorted.reserve(512);
+
+  for (auto &tileEntity : manager.getGroup(groupMapTop))
   {
-    if (enemy == nullptr || attackSystem.isEnemyDead(enemyId))
+    if (!tileEntity->hasComponent<TileComponent>())
       continue;
-    enemy->draw(renderContext);
+
+    auto &tile = tileEntity->getComponent<TileComponent>();
+
+    const SDL_Rect &dest = tile.getDestRect();
+    if (dest.x + dest.w < 0 || dest.x > 900 ||
+        dest.y + dest.h < 33 || dest.y > 720)
+    {
+      continue;
+    }
+
+    RenderObject obj;
+    obj.yFootprint = tile.getWorldFootprintY();
+    obj.drawFunc = [tileEntity, &renderContext]()
+    {
+      tileEntity->draw(renderContext);
+    };
+    ySorted.push_back(std::move(obj));
   }
 
-  for (auto &t : manager.getGroup(groupMapTop))
-    t->draw(renderContext);
-
-  for (auto &n : manager.getGroup(groupNPC))
   {
-    n->draw(renderContext);
+    auto &transform = player->getComponent<TransformComponent>();
+    RenderObject obj;
+    obj.yFootprint = static_cast<int>(transform.position.y);
+    obj.drawFunc = [this, &renderContext]()
+    {
+      drawEquippedEntity(player, renderContext);
+    };
+    ySorted.push_back(std::move(obj));
+  }
+
+  if (clientWorld != nullptr)
+  {
+    for (Entity *remoteEntity : clientWorld->getRemotePlayerEntities())
+    {
+      if (remoteEntity == nullptr)
+        continue;
+
+      auto &transform = remoteEntity->getComponent<TransformComponent>();
+      RenderObject obj;
+      obj.yFootprint = static_cast<int>(transform.position.y);
+      obj.drawFunc = [remoteEntity, &renderContext]()
+      {
+        if (remoteEntity->hasComponent<EquipmentComponent>())
+        {
+          remoteEntity->getComponent<EquipmentComponent>().drawBehind(renderContext);
+        }
+        if (remoteEntity->hasComponent<SpriteComponent>())
+        {
+          remoteEntity->getComponent<SpriteComponent>().draw(renderContext);
+        }
+        if (remoteEntity->hasComponent<EquipmentComponent>())
+        {
+          remoteEntity->getComponent<EquipmentComponent>().drawFront(renderContext);
+        }
+      };
+      ySorted.push_back(std::move(obj));
+    }
+  }
+
+  for (auto &[enemyId, enemyEntity] : enemies)
+  {
+    if (enemyEntity == nullptr || attackSystem.isEnemyDead(enemyId))
+      continue;
+
+    auto &transform = enemyEntity->getComponent<TransformComponent>();
+    RenderObject obj;
+    obj.yFootprint = static_cast<int>(transform.position.y);
+    obj.drawFunc = [enemyEntity, &renderContext]()
+    {
+      enemyEntity->draw(renderContext);
+    };
+    ySorted.push_back(std::move(obj));
+  }
+
+  for (auto &npcEntity : manager.getGroup(groupNPC))
+  {
+    if (npcEntity == nullptr)
+      continue;
+
+    auto &transform = npcEntity->getComponent<TransformComponent>();
+    RenderObject obj;
+    obj.yFootprint = static_cast<int>(transform.position.y);
+    obj.drawFunc = [npcEntity, &renderContext]()
+    {
+      npcEntity->draw(renderContext);
+    };
+    ySorted.push_back(std::move(obj));
+  }
+
+  std::stable_sort(ySorted.begin(), ySorted.end(),
+                   [](const RenderObject &a, const RenderObject &b)
+                   {
+                     return a.yFootprint < b.yFootprint;
+                   });
+
+  for (const auto &obj : ySorted)
+  {
+    obj.drawFunc();
   }
 
   renderEnemyHealthBars();
@@ -778,6 +872,8 @@ void Game::loadAssets()
   assets->AddTexture("tile_cavern_horizontal_wall", "assets/sprites/MapAssets/cavern_horizontal_wall.png");
   assets->AddTexture("tile_dungeon_floor", "assets/sprites/MapAssets/dungeon_floor.png");
   assets->AddTexture("tile_exit", "assets/sprites/MapAssets/exit.png");
+  assets->AddTexture("tile_dungeon_horizontal_wall", "assets/sprites/MapAssets/dungeon_horizontal_wall.png");
+  assets->AddTexture("tile_dungeon_vertical_wall", "assets/sprites/MapAssets/dungeon_vertical_wall.png");
 
   assets->AddTexture("npc_priest", "assets/sprites/npcs/priest.png");
   assets->AddTexture("npc_shop", "assets/sprites/npcs/shop.png");

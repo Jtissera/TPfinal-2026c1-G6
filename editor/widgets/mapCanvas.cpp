@@ -18,6 +18,119 @@ void MapCanvas::setMap(MapData *map)
     update();
 }
 
+QRect getStructureBounds(int tx, int ty, TileType type)
+{
+    switch (type)
+    {
+    case TileType::FOREST:
+    case TileType::CACTUS:
+        return QRect(tx, ty, 1, 2);
+    case TileType::STONE:
+    case TileType::MILL:
+        return QRect(tx - 1, ty - 1, 3, 3);
+    case TileType::HOUSE:
+    case TileType::CHURCH:
+        return QRect(tx - 2, ty - 3, 5, 5);
+    case TileType::CAVERN_ENTRANCE:
+        return QRect(tx - 3, ty - 3, 6, 4);
+    case TileType::DUNGEON_ENTRANCE:
+        return QRect(tx - 1, ty - 1, 3, 3);
+    case TileType::CAVERN_WALL_V:
+        return QRect(tx - 1, ty - 4, 3, 6);
+    case TileType::CAVERN_WALL_H:
+        return QRect(tx - 3, ty - 1, 7, 3);
+    case TileType::DUNGEON_WALL_H:
+    case TileType::DUNGEON_WALL_V:
+        return QRect(tx, ty, 1, 2);
+    default:
+        return QRect(tx, ty, 1, 1);
+    }
+}
+
+QRect getStructureCollisionBounds(int tx, int ty, TileType type)
+{
+    switch (type)
+    {
+    case TileType::FOREST:
+        return QRect(tx, ty - 1, 1, 2);
+    case TileType::CACTUS:
+
+        return QRect(tx, ty, 1, 1);
+
+    case TileType::STONE:
+        return QRect(tx - 1, ty - 1, 3, 2);
+    case TileType::MILL:
+        return QRect(tx - 1, ty - 2, 3, 3);
+    case TileType::HOUSE:
+    case TileType::CHURCH:
+
+        return QRect(tx - 2, ty - 3, 5, 4);
+
+    case TileType::CAVERN_ENTRANCE:
+        return QRect(tx - 3, ty - 3, 6, 3);
+
+    case TileType::DUNGEON_ENTRANCE:
+        return QRect(tx - 1, ty - 1, 3, 2);
+
+    case TileType::CAVERN_WALL_V:
+        return QRect(tx - 1, ty - 4, 3, 5);
+
+    case TileType::CAVERN_WALL_H:
+        return QRect(tx - 3, ty - 1, 7, 2);
+
+    case TileType::DUNGEON_WALL_H:
+    case TileType::DUNGEON_WALL_V:
+        return QRect(tx, ty, 1, 1);
+
+    default:
+        return QRect(tx, ty, 1, 1);
+    }
+}
+
+bool isTileBlockedByStructure(MapData *map, int targetX, int targetY)
+{
+    if (!map)
+        return false;
+
+    int searchRadius = 5;
+    int startX = std::max(0, targetX - searchRadius);
+    int endX = std::min((int)map->width() - 1, targetX + searchRadius);
+    int startY = std::max(0, targetY - searchRadius);
+    int endY = std::min((int)map->height() - 1, targetY + searchRadius);
+
+    for (int y = startY; y <= endY; ++y)
+    {
+        for (int x = startX; x <= endX; ++x)
+        {
+            const Tile &t = map->at(x, y);
+            QRect bounds = getStructureCollisionBounds(x, y, t.type);
+            if (bounds.contains(targetX, targetY))
+            {
+
+                if (((t.type == TileType::DUNGEON_ENTRANCE) && targetX == x && targetY == y) ||
+                    (t.type == TileType::CAVERN_ENTRANCE && targetX == x && targetY == y))
+                {
+                    continue;
+                }
+
+                if ((t.type == TileType::DUNGEON_ENTRANCE) && targetX == x && targetY == y + 1)
+                {
+                    continue;
+                }
+
+                if (t.type == TileType::GRASS || t.type == TileType::SAND || t.type == TileType::WATER ||
+                    t.type == TileType::CITY_FLOOR || t.type == TileType::CAVERN_FLOOR || t.type == TileType::DUNGEON_FLOOR || t.type == TileType::EXIT)
+                {
+                    continue;
+                }
+
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 QColor MapCanvas::tileColor(const Tile &tile) const
 {
     QColor base;
@@ -230,6 +343,8 @@ void MapCanvas::paintEvent(QPaintEvent *)
         return;
     }
 
+    painter.setClipRect(0, 0, _map->width() * ts, _map->height() * ts);
+
     for (uint16_t y = 0; y < _map->height(); ++y)
     {
         for (uint16_t x = 0; x < _map->width(); ++x)
@@ -237,14 +352,58 @@ void MapCanvas::paintEvent(QPaintEvent *)
             const Tile &tile = _map->at(x, y);
             QRect r(x * ts, y * ts, ts, ts);
 
-            // Color base del tile
             painter.save();
             painter.setBrush(tileColor(tile));
             painter.setPen(Qt::NoPen);
             painter.drawRect(r);
             painter.restore();
+        }
+    }
 
-            // Entrada a mazmorra
+    for (uint16_t y = 0; y < _map->height(); ++y)
+    {
+        for (uint16_t x = 0; x < _map->width(); ++x)
+        {
+            const Tile &tile = _map->at(x, y);
+            QRect r(x * ts, y * ts, ts, ts);
+
+            if (x == 3 && y == 3)
+            {
+                painter.save();
+                painter.setPen(QPen(QColor(0, 162, 232), 2, Qt::SolidLine));
+                painter.setBrush(QBrush(QColor(0, 162, 232, 50)));
+                painter.drawRect(r);
+
+                painter.setPen(Qt::white);
+                QFont f = painter.font();
+                f.setPixelSize(8);
+                f.setBold(true);
+                painter.setFont(f);
+                painter.drawText(r, Qt::AlignCenter, "SPAWN");
+                painter.restore();
+            }
+
+            QRect tileBounds = getStructureBounds(x, y, tile.type);
+            if (tileBounds.width() > 1 || tileBounds.height() > 1)
+            {
+                bool insideMap = (tileBounds.x() >= 0 &&
+                                  tileBounds.y() >= 0 &&
+                                  (tileBounds.x() + tileBounds.width()) <= _map->width() &&
+                                  (tileBounds.y() + tileBounds.height()) <= _map->height());
+
+                if (insideMap)
+                {
+                    painter.save();
+                    QRect visualBounds(tileBounds.x() * ts, tileBounds.y() * ts,
+                                       tileBounds.width() * ts, tileBounds.height() * ts);
+
+                    painter.setBrush(QColor(255, 255, 255, 12));
+                    painter.setPen(QPen(QColor(255, 255, 255, 70), 1, Qt::DashLine));
+                    painter.drawRect(visualBounds);
+                    painter.restore();
+                }
+            }
+
             if (tile.type == TileType::DUNGEON_ENTRANCE)
             {
                 painter.save();
@@ -258,7 +417,6 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.drawText(r.adjusted(0, ts / 2, 0, 0), Qt::AlignCenter, "ENT");
                 painter.restore();
             }
-
             if (tile.type == TileType::CAVERN_ENTRANCE)
             {
                 painter.save();
@@ -272,11 +430,7 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.drawText(r.adjusted(0, ts / 2, 0, 0), Qt::AlignCenter, "CAV");
                 painter.restore();
             }
-
-            if ((tile.type == TileType::DUNGEON_ENTRANCE ||
-                 tile.type == TileType::CAVERN_ENTRANCE ||
-                 tile.type == TileType::EXIT) &&
-                !tile.targetMap.empty())
+            if ((tile.type == TileType::DUNGEON_ENTRANCE || tile.type == TileType::CAVERN_ENTRANCE || tile.type == TileType::EXIT) && !tile.targetMap.empty())
             {
                 painter.save();
                 painter.setBrush(QColor(0, 220, 80));
@@ -284,7 +438,6 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.drawEllipse(r.right() - 8, r.top() + 2, 6, 6);
                 painter.restore();
             }
-
             if (tile.zone == ZoneType::CITY)
             {
                 painter.save();
@@ -293,8 +446,6 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.drawRect(r.adjusted(1, 1, -1, -1));
                 painter.restore();
             }
-
-            // Símbolo de árbol para FOREST
             if (tile.type == TileType::FOREST)
             {
                 painter.save();
@@ -305,7 +456,6 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.drawText(r, Qt::AlignCenter, "▲");
                 painter.restore();
             }
-
             if (tile.type == TileType::CACTUS)
             {
                 painter.save();
@@ -316,7 +466,6 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.drawText(r, Qt::AlignCenter, "🌵");
                 painter.restore();
             }
-
             if (tile.type == TileType::STONE)
             {
                 painter.save();
@@ -328,14 +477,14 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.restore();
             }
 
-            if (tile.type == TileType::CAVERN_WALL_H || tile.type == TileType::DUNGEON_WALL_H)
+            if (tile.type == TileType::CAVERN_WALL_H)
             {
                 painter.save();
                 painter.setPen(QPen(QColor(255, 255, 255, 40), 2));
                 painter.drawLine(r.left(), r.center().y(), r.right(), r.center().y());
                 painter.restore();
             }
-            if (tile.type == TileType::CAVERN_WALL_V || tile.type == TileType::DUNGEON_WALL_V)
+            if (tile.type == TileType::CAVERN_WALL_V)
             {
                 painter.save();
                 painter.setPen(QPen(QColor(255, 255, 255, 40), 2));
@@ -343,27 +492,40 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.restore();
             }
 
-            // Hatching para no caminable (X encima del color oscurecido)
-            if (!tile.walkable && tile.type != TileType::FOREST && tile.type != TileType::WATER &&
-                tile.type != TileType::CACTUS && tile.type != TileType::STONE &&
-                tile.type != TileType::CAVERN_WALL_H && tile.type != TileType::CAVERN_WALL_V &&
-                tile.type != TileType::DUNGEON_WALL_H && tile.type != TileType::DUNGEON_WALL_V)
+            if (tile.type == TileType::DUNGEON_WALL_H)
             {
                 painter.save();
-                painter.setPen(QPen(QColor(200, 60, 60, 120), 1));
-                painter.drawLine(r.topLeft(), r.bottomRight());
-                painter.drawLine(r.topRight(), r.bottomLeft());
+                painter.setPen(QPen(QColor(255, 255, 255, 50), 2));
+                painter.drawLine(r.left(), r.center().y(), r.right(), r.center().y());
+                painter.restore();
+            }
+            if (tile.type == TileType::DUNGEON_WALL_V)
+            {
+                painter.save();
+                painter.setPen(QPen(QColor(255, 255, 255, 50), 2));
+                painter.drawLine(r.center().x(), r.top(), r.center().x(), r.bottom());
                 painter.restore();
             }
 
-            // Grid
+            if (!tile.walkable || isTileBlockedByStructure(_map, x, y))
+            {
+                if (tile.type != TileType::CAVERN_WALL_H && tile.type != TileType::CAVERN_WALL_V &&
+                    tile.type != TileType::DUNGEON_WALL_H && tile.type != TileType::DUNGEON_WALL_V)
+                {
+                    painter.save();
+                    painter.setPen(QPen(QColor(200, 60, 60, 100), 1));
+                    painter.drawLine(r.topLeft(), r.bottomRight());
+                    painter.drawLine(r.topRight(), r.bottomLeft());
+                    painter.restore();
+                }
+            }
+
             painter.save();
             painter.setBrush(Qt::NoBrush);
             painter.setPen(QColor(0, 0, 0, 60));
             painter.drawRect(r);
             painter.restore();
 
-            // Indicador de NPC
             if (tile.npc != NpcType::NONE)
             {
                 painter.save();
@@ -373,13 +535,12 @@ void MapCanvas::paintEvent(QPaintEvent *)
         }
     }
 
-    // Borde indicador de modo NPC
     if (_editMode == EditMode::NPCS)
     {
         painter.save();
         painter.setBrush(Qt::NoBrush);
         painter.setPen(QPen(QColor(255, 200, 0), 4));
-        painter.drawRect(rect().adjusted(2, 2, -2, -2));
+        painter.drawRect(QRect(0, 0, _map->width() * ts, _map->height() * ts).adjusted(2, 2, -2, -2));
         painter.restore();
     }
 }
@@ -408,33 +569,54 @@ void MapCanvas::applyToTile(uint16_t tx, uint16_t ty)
 
     if (_editMode == EditMode::TILES)
     {
+        if (_activeTileType == TileType::EXIT && _map->mapType() == MapType::WORLD)
+        {
+            return;
+        }
+
         t.type = _activeTileType;
         t.zone = _activeZoneType;
-        t.walkable = _activeWalkable;
 
-        // Comportamientos automáticos por tipo
-        switch (_activeTileType)
+        if (t.type == TileType::EXIT)
         {
-        case TileType::FOREST:
-        case TileType::CACTUS:
-        case TileType::STONE:
-        case TileType::WATER:
-        case TileType::HOUSE:
-        case TileType::CHURCH:
-        case TileType::MILL:
-        case TileType::CAVERN_WALL_H:
-        case TileType::CAVERN_WALL_V:
-        case TileType::DUNGEON_WALL_H:
-        case TileType::DUNGEON_WALL_V:
+            t.walkable = true;
+        }
+        else if (t.type == TileType::WATER || isTileBlockedByStructure(_map, tx, ty))
+        {
             t.walkable = false;
-            break;
-        default:
-            break;
+        }
+        else
+        {
+            t.walkable = _activeWalkable;
         }
     }
     else if (_editMode == EditMode::NPCS)
     {
         t.npc = _activeNpc;
+    }
+
+    for (int y = std::max(0, ty - 5); y < std::min((int)_map->height(), ty + 6); ++y)
+    {
+        for (int x = std::max(0, tx - 5); x < std::min((int)_map->width(), tx + 6); ++x)
+        {
+            Tile &nearTile = _map->at(x, y);
+            if (nearTile.type == TileType::EXIT)
+            {
+                nearTile.walkable = true;
+            }
+            else if (isTileBlockedByStructure(_map, x, y))
+            {
+                nearTile.walkable = false;
+            }
+        }
+    }
+
+    Tile &thisTile = _map->at(tx, ty);
+    if (thisTile.npc == NpcType::PRIEST ||
+        thisTile.npc == NpcType::MERCHANT ||
+        thisTile.npc == NpcType::BANKER)
+    {
+        thisTile.walkable = false;
     }
 
     update();

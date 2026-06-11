@@ -45,6 +45,10 @@ std::string Map::GetRandomTextureForType(TileType type)
         return "tile_cavern_vertical_wall";
     case TileType::DUNGEON_FLOOR:
         return "tile_dungeon_floor";
+    case TileType::DUNGEON_WALL_H:
+        return "tile_dungeon_horizontal_wall";
+    case TileType::DUNGEON_WALL_V:
+        return "tile_dungeon_vertical_wall";
     case TileType::EXIT:
         return "tile_exit";
 
@@ -108,6 +112,10 @@ void Map::LoadMap(const std::string &path)
             {
                 AddTile(GetRandomTextureForType(TileType::CAVERN_FLOOR), x * scaledSize, y * scaledSize, TileType::CAVERN_FLOOR);
             }
+            else if (t.type == TileType::DUNGEON_WALL_H || t.type == TileType::DUNGEON_WALL_V)
+            {
+                AddTile(GetRandomTextureForType(TileType::DUNGEON_FLOOR), x * scaledSize, y * scaledSize, TileType::DUNGEON_FLOOR);
+            }
         }
     }
 
@@ -122,6 +130,7 @@ void Map::LoadMap(const std::string &path)
                 t.type == TileType::CAVERN_ENTRANCE || t.type == TileType::HOUSE ||
                 t.type == TileType::CHURCH || t.type == TileType::MILL ||
                 t.type == TileType::CAVERN_WALL_H || t.type == TileType::CAVERN_WALL_V ||
+                t.type == TileType::DUNGEON_WALL_H || t.type == TileType::DUNGEON_WALL_V ||
                 t.type == TileType::EXIT)
             {
                 std::string randomTexId = GetRandomTextureForType(t.type);
@@ -179,7 +188,8 @@ void Map::AddTile(const std::string &texId, int x, int y, TileType type)
     if (type == TileType::FOREST || type == TileType::STONE ||
         type == TileType::CACTUS || type == TileType::DUNGEON_ENTRANCE ||
         type == TileType::CAVERN_ENTRANCE || type == TileType::HOUSE || type == TileType::CHURCH || type == TileType::MILL ||
-        type == TileType::CAVERN_WALL_H || type == TileType::CAVERN_WALL_V || type == TileType::EXIT)
+        type == TileType::CAVERN_WALL_H || type == TileType::CAVERN_WALL_V || type == TileType::DUNGEON_WALL_H ||
+        type == TileType::DUNGEON_WALL_V)
     {
         tile.addGroup(groupMapTop);
     }
