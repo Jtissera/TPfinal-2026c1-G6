@@ -95,15 +95,6 @@ void GameLoop::worldUpdate(float deltaSeconds)
             npc.getId(),
             static_cast<uint16_t>(npc.getTileX() * 96),
             static_cast<uint16_t>(npc.getTileY() * 96)));
-
-    std::cout << "[GameLoop] broadcast NPC move id="
-              << npc.getId()
-              << " pos=("
-              << npc.getTileX()
-              << ", "
-              << npc.getTileY()
-              << ")"
-              << std::endl;
   }
 
   for (const auto &npcSpawn : result.spawnedNpcs)

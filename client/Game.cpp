@@ -7,8 +7,6 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_set>
-#include <algorithm>
-#include <functional>
 
 Game::Game() {}
 
@@ -207,9 +205,7 @@ void Game::update()
 
 void Game::render()
 {
-
   SDL_RenderClear(renderer);
-
   SDL_Rect mapArea = {0, 33, 900, 687};
   SDL_RenderSetClipRect(renderer, &mapArea);
 
@@ -218,6 +214,11 @@ void Game::render()
   for (auto &t : manager.getGroup(groupMap))
     t->draw(renderContext);
 
+  if (map != nullptr)
+  {
+    map->renderLayer(renderer, camera, mapArea, false);
+  }
+
   struct RenderObject
   {
     int yFootprint;
@@ -225,36 +226,36 @@ void Game::render()
   };
 
   std::vector<RenderObject> ySorted;
-
   ySorted.reserve(512);
 
-  for (auto &tileEntity : manager.getGroup(groupMapTop))
+  if (map != nullptr)
   {
-    if (!tileEntity->hasComponent<TileComponent>())
-      continue;
-
-    auto &tile = tileEntity->getComponent<TileComponent>();
-
-    const SDL_Rect &dest = tile.getDestRect();
-    if (dest.x + dest.w < 0 || dest.x > 900 ||
-        dest.y + dest.h < 33 || dest.y > 720)
-    {
-      continue;
-    }
-
-    RenderObject obj;
-    obj.yFootprint = tile.getWorldFootprintY();
-    obj.drawFunc = [tileEntity, &renderContext]()
-    {
-      tileEntity->draw(renderContext);
-    };
-    ySorted.push_back(std::move(obj));
+    const int hudOffsetY = 133;
+    map->forEachVisibleTopTile(camera, mapArea, [this, hudOffsetY, &ySorted](const TileEntry &t)
+                               {
+      RenderObject obj;
+      
+      obj.yFootprint = t.destRect.y + (t.destRect.h * 55) / 100; 
+      
+      obj.drawFunc = [this, hudOffsetY, t]()
+      {
+        SDL_Rect dst = {
+            t.destRect.x - camera.x,
+            t.destRect.y - camera.y + hudOffsetY,
+            t.destRect.w,
+            t.destRect.h};
+        SDL_RenderCopy(renderer, t.texture,
+                       const_cast<SDL_Rect *>(&t.srcRect), &dst);
+      };
+      ySorted.push_back(std::move(obj)); });
   }
-
   {
     auto &transform = player->getComponent<TransformComponent>();
     RenderObject obj;
-    obj.yFootprint = static_cast<int>(transform.position.y);
+
+    int playerHeight = transform.height * transform.scale;
+    obj.yFootprint = static_cast<int>(transform.position.y) + playerHeight;
+
     obj.drawFunc = [this, &renderContext]()
     {
       drawEquippedEntity(player, renderContext);
@@ -268,40 +269,36 @@ void Game::render()
     {
       if (remoteEntity == nullptr)
         continue;
-
       auto &transform = remoteEntity->getComponent<TransformComponent>();
       RenderObject obj;
-      obj.yFootprint = static_cast<int>(transform.position.y);
+
+      obj.yFootprint = static_cast<int>(transform.position.y + (transform.height * transform.scale));
+
       obj.drawFunc = [remoteEntity, &renderContext]()
       {
         if (remoteEntity->hasComponent<EquipmentComponent>())
-        {
           remoteEntity->getComponent<EquipmentComponent>().drawBehind(renderContext);
-        }
         if (remoteEntity->hasComponent<SpriteComponent>())
-        {
           remoteEntity->getComponent<SpriteComponent>().draw(renderContext);
-        }
         if (remoteEntity->hasComponent<EquipmentComponent>())
-        {
           remoteEntity->getComponent<EquipmentComponent>().drawFront(renderContext);
-        }
       };
       ySorted.push_back(std::move(obj));
     }
   }
 
-  for (auto &[enemyId, enemyEntity] : enemies)
+  for (const auto &[enemyId, enemy] : enemies)
   {
-    if (enemyEntity == nullptr || attackSystem.isEnemyDead(enemyId))
+    if (enemy == nullptr || attackSystem.isEnemyDead(enemyId))
       continue;
-
-    auto &transform = enemyEntity->getComponent<TransformComponent>();
+    auto &transform = enemy->getComponent<TransformComponent>();
     RenderObject obj;
-    obj.yFootprint = static_cast<int>(transform.position.y);
-    obj.drawFunc = [enemyEntity, &renderContext]()
+
+    obj.yFootprint = static_cast<int>(transform.position.y + (transform.height * transform.scale));
+
+    obj.drawFunc = [enemy, &renderContext]()
     {
-      enemyEntity->draw(renderContext);
+      enemy->draw(renderContext);
     };
     ySorted.push_back(std::move(obj));
   }
@@ -313,7 +310,13 @@ void Game::render()
 
     auto &transform = npcEntity->getComponent<TransformComponent>();
     RenderObject obj;
-    obj.yFootprint = static_cast<int>(transform.position.y);
+
+    int screenY = static_cast<int>(transform.position.y - camera.y) + 133;
+
+    int spriteHeightOnScreen = 46 * transform.scale;
+
+    obj.yFootprint = screenY + spriteHeightOnScreen;
+
     obj.drawFunc = [npcEntity, &renderContext]()
     {
       npcEntity->draw(renderContext);
@@ -328,17 +331,12 @@ void Game::render()
                    });
 
   for (const auto &obj : ySorted)
-  {
     obj.drawFunc();
-  }
 
   renderEnemyHealthBars();
-
   attackSystem.render(renderer, *assets, camera);
   SDL_RenderSetClipRect(renderer, nullptr);
 
-  // PERF: statusMessage usa textura cacheada (creada en showStatusMessage).
-  // Solo SDL_SetTextureAlphaMod() por frame para el fade — sin alloc.
   if (!statusMessage.empty() && statusMessageTexture != nullptr)
   {
     const Uint32 elapsed = SDL_GetTicks() - statusMessageTimer;
@@ -872,9 +870,9 @@ void Game::loadAssets()
   assets->AddTexture("tile_cavern_vertical_wall", "assets/sprites/MapAssets/cavern_vertical_wall.png");
   assets->AddTexture("tile_cavern_horizontal_wall", "assets/sprites/MapAssets/cavern_horizontal_wall.png");
   assets->AddTexture("tile_dungeon_floor", "assets/sprites/MapAssets/dungeon_floor.png");
-  assets->AddTexture("tile_exit", "assets/sprites/MapAssets/exit.png");
-  assets->AddTexture("tile_dungeon_horizontal_wall", "assets/sprites/MapAssets/dungeon_horizontal_wall.png");
   assets->AddTexture("tile_dungeon_vertical_wall", "assets/sprites/MapAssets/dungeon_vertical_wall.png");
+  assets->AddTexture("tile_dungeon_horizontal_wall", "assets/sprites/MapAssets/dungeon_horizontal_wall.png");
+  assets->AddTexture("tile_exit", "assets/sprites/MapAssets/exit.png");
 
   assets->AddTexture("npc_priest", "assets/sprites/npcs/priest.png");
   assets->AddTexture("npc_shop", "assets/sprites/npcs/shop.png");
@@ -1157,7 +1155,6 @@ void Game::renderEquippedArmor()
 {
   if (isLocalPlayerDead())
   {
-    showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
   // Si no hay armadura equipada, no dibujamos nada.
@@ -1249,7 +1246,6 @@ void Game::refreshPlayerBodySprite()
 {
   if (isLocalPlayerDead())
   {
-    showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
   // Obtenemos el SpriteComponent del jugador local.
@@ -1290,7 +1286,6 @@ void Game::refreshPlayerEquipmentVisuals()
 {
   if (isLocalPlayerDead())
   {
-    showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
   // Obtenemos el SpriteComponent del jugador local.
@@ -1323,7 +1318,6 @@ void Game::renderEquippedWeapon()
 {
   if (isLocalPlayerDead())
   {
-    showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
 
@@ -1376,7 +1370,6 @@ void Game::renderEquippedShield()
 {
   if (isLocalPlayerDead())
   {
-    showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
   if (!equipmentState.shield.has_value())
@@ -1966,15 +1959,12 @@ void Game::processServerMessage(const Message &msg)
     handleLevelUp(static_cast<const LevelUpMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_SPAWN:
-    std::cout << "[CLIENT] MSG_NPC_SPAWN recibido" << std::endl;
     handleNpcSpawn(static_cast<const NpcSpawnMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_HEALTH:
-    std::cout << "[CLIENT] MSG_NPC_HEALTH recibido" << std::endl;
     handleNpcHealth(static_cast<const NpcHealthMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_MOVE:
-    std::cout << "[CLIENT] MSG_NPC_MOVE recibido" << std::endl;
     handleNpcMove(static_cast<const NpcMoveMessage &>(msg));
     return;
   case ServerOpCode::MSG_ERROR:

@@ -77,7 +77,7 @@ static SpriteSheetConfig configForNPC(NpcType type)
     case NpcType::PRIEST:
     case NpcType::MERCHANT:
     case NpcType::BANKER:
-        return SpriteSheetConfig{32, 48, 2, 0, 0};
+        return SpriteSheetConfig{27, 46, 2, 0, 0};
 
     default:
         return SpriteSheetConfig{64, 64, 2, 0, 0};

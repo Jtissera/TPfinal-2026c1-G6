@@ -43,7 +43,7 @@ public:
   void toggleInfiniteMana();
   bool hasInfiniteHp() const { return infiniteHp; }
   bool hasInfiniteMana() const { return infiniteMana; }
-  void tick(float hpGained, float manaGained);
+  bool tick(float hpGained, float manaGained);
 
   std::vector<Item> purgeInventoryOnDeath();
 
