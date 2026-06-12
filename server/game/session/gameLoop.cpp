@@ -95,15 +95,6 @@ void GameLoop::worldUpdate(float deltaSeconds)
             npc.getId(),
             static_cast<uint16_t>(npc.getTileX() * 96),
             static_cast<uint16_t>(npc.getTileY() * 96)));
-
-    std::cout << "[GameLoop] broadcast NPC move id="
-              << npc.getId()
-              << " pos=("
-              << npc.getTileX()
-              << ", "
-              << npc.getTileY()
-              << ")"
-              << std::endl;
   }
 
   for (const auto &npcSpawn : result.spawnedNpcs)
@@ -158,13 +149,13 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry)
 
   if (entry.targetMap.find("mazmorra") != std::string::npos)
   {
-    spawnX = 3;
-    spawnY = 3;
+    spawnX = 35;
+    spawnY = 35;
   }
   else if (entry.targetMap.find("caverna") != std::string::npos)
   {
-    spawnX = 3;
-    spawnY = 3;
+    spawnX = 25;
+    spawnY = 5;
   }
   else
   {

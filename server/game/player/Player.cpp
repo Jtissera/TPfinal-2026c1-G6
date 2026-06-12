@@ -119,14 +119,21 @@ void Player::resurrect(int tx, int ty)
   mana = cls.canUseMagic ? maxMana / 2 : 0;
 }
 
-void Player::tick(float hpGained, float manaGained)
+bool Player::tick(float hpGained, float manaGained)
 {
   if (!isAlive() && !isMeditating())
-    return;
+    return false;
+
+  const int16_t prevHp   = hp;
+  const int16_t prevMana = mana;
+
   if (isAlive())
     heal(static_cast<int16_t>(hpGained));
   if (cls.canUseMagic && !infiniteMana)
     restoreMana(static_cast<int16_t>(manaGained));
+
+  // Solo notifica al cliente si algo realmente cambió.
+  return (hp != prevHp || mana != prevMana);
 }
 
 std::vector<Item> Player::purgeInventoryOnDeath()
@@ -260,4 +267,3 @@ void Player::setTilePos(int tx, int ty) {
   // Sincroniza la posición real en píxeles.
   pixelY = static_cast<float>(ty * TILE_SIZE);
 }
-
