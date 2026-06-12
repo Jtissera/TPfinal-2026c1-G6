@@ -45,10 +45,6 @@ std::string Map::GetRandomTextureForType(TileType type)
         return "tile_cavern_vertical_wall";
     case TileType::DUNGEON_FLOOR:
         return "tile_dungeon_floor";
-    case TileType::DUNGEON_WALL_H:
-        return "tile_dungeon_horizontal_wall";
-    case TileType::DUNGEON_WALL_V:
-        return "tile_dungeon_vertical_wall";
     case TileType::EXIT:
         return "tile_exit";
 
@@ -82,6 +78,11 @@ void Map::LoadMap(const std::string &path)
 {
     MapData mapData = MapSerializer::load(path);
 
+    width  = mapData.width();
+    height = mapData.height();
+    tiles.clear();
+    tiles.reserve(width * height * 2);  // 2 capas por tile como maximo
+
     srand(123456);
 
     for (int y = 0; y < mapData.height(); y++)
@@ -112,10 +113,6 @@ void Map::LoadMap(const std::string &path)
             {
                 AddTile(GetRandomTextureForType(TileType::CAVERN_FLOOR), x * scaledSize, y * scaledSize, TileType::CAVERN_FLOOR);
             }
-            else if (t.type == TileType::DUNGEON_WALL_H || t.type == TileType::DUNGEON_WALL_V)
-            {
-                AddTile(GetRandomTextureForType(TileType::DUNGEON_FLOOR), x * scaledSize, y * scaledSize, TileType::DUNGEON_FLOOR);
-            }
         }
     }
 
@@ -130,7 +127,6 @@ void Map::LoadMap(const std::string &path)
                 t.type == TileType::CAVERN_ENTRANCE || t.type == TileType::HOUSE ||
                 t.type == TileType::CHURCH || t.type == TileType::MILL ||
                 t.type == TileType::CAVERN_WALL_H || t.type == TileType::CAVERN_WALL_V ||
-                t.type == TileType::DUNGEON_WALL_H || t.type == TileType::DUNGEON_WALL_V ||
                 t.type == TileType::EXIT)
             {
                 std::string randomTexId = GetRandomTextureForType(t.type);
@@ -181,20 +177,50 @@ void Map::AddTile(const std::string &texId, int x, int y, TileType type)
         xpos -= (pixelDiffX * mapScale) / 2;
     }
 
-    auto &tile(manager.addEntity());
-    tile.addComponent<TileComponent>(assets, 0, 0, xpos, ypos, srcW, srcH,
-                                     mapScale, texId);
+    const bool isTop = (type == TileType::FOREST || type == TileType::STONE ||
+                        type == TileType::CACTUS || type == TileType::DUNGEON_ENTRANCE ||
+                        type == TileType::CAVERN_ENTRANCE || type == TileType::HOUSE ||
+                        type == TileType::CHURCH || type == TileType::MILL ||
+                        type == TileType::CAVERN_WALL_H || type == TileType::CAVERN_WALL_V ||
+                        type == TileType::EXIT);
 
-    if (type == TileType::FOREST || type == TileType::STONE ||
-        type == TileType::CACTUS || type == TileType::DUNGEON_ENTRANCE ||
-        type == TileType::CAVERN_ENTRANCE || type == TileType::HOUSE || type == TileType::CHURCH || type == TileType::MILL ||
-        type == TileType::CAVERN_WALL_H || type == TileType::CAVERN_WALL_V || type == TileType::DUNGEON_WALL_H ||
-        type == TileType::DUNGEON_WALL_V)
+    TileEntry entry;
+    entry.texture  = tex;
+    entry.srcRect  = {0, 0, srcW, srcH};
+    entry.destRect = {xpos, ypos, srcW * mapScale, srcH * mapScale};
+    entry.isTop    = isTop;
+    tiles.push_back(entry);
+}
+
+void Map::renderLayer(SDL_Renderer *renderer, const SDL_Rect &camera,
+                      const SDL_Rect &viewport, bool top) const
+{
+    // Coordenadas del viewport en world-space
+    const int worldLeft   = camera.x;
+    const int worldTop    = camera.y;
+    const int worldRight  = camera.x + viewport.w;
+    const int worldBottom = camera.y + viewport.h;
+
+    // Offset vertical del HUD (33px de barra superior)
+    const int hudOffsetY = 133;
+
+    for (const TileEntry &t : tiles)
     {
-        tile.addGroup(groupMapTop);
+        if (t.isTop != top || t.texture == nullptr)
+            continue;
+
+        // Posición en pantalla
+        const int screenX = t.destRect.x - camera.x;
+        const int screenY = t.destRect.y - camera.y + hudOffsetY;
+
+        // Culling: saltar si está completamente fuera del viewport
+        if (screenX + t.destRect.w < 0 || screenX > viewport.w ||
+            screenY + t.destRect.h < 0 || screenY > viewport.h + hudOffsetY)
+            continue;
+
+        SDL_Rect dst = {screenX, screenY, t.destRect.w, t.destRect.h};
+        SDL_RenderCopy(renderer, t.texture,
+                       const_cast<SDL_Rect *>(&t.srcRect), &dst);
     }
-    else
-    {
-        tile.addGroup(groupMap);
-    }
+    (void)worldLeft; (void)worldTop; (void)worldRight; (void)worldBottom;
 }

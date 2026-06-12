@@ -214,8 +214,12 @@ void Game::render()
 
   RenderContext renderContext{renderer, camera, mapArea, *textureManager, 133};
 
-  for (auto &t : manager.getGroup(groupMap))
-    t->draw(renderContext);
+  // Render directo del mapa, solo itera los tiles visibles (~110)
+  // en lugar de las ~10.000 entidades ECS completas del mapa.
+  if (map != nullptr)
+  {
+    map->renderLayer(renderer, camera, mapArea, false);  // suelo
+  }
 
   for (auto &p : manager.getGroup(groupPlayers))
   {
@@ -229,8 +233,11 @@ void Game::render()
     enemy->draw(renderContext);
   }
 
-  for (auto &t : manager.getGroup(groupMapTop))
-    t->draw(renderContext);
+  // PERF: render directo de la capa superior (árboles, paredes, objetos).
+  if (map != nullptr)
+  {
+    map->renderLayer(renderer, camera, mapArea, true);  // objetos encima
+  }
 
   for (auto &n : manager.getGroup(groupNPC))
   {
