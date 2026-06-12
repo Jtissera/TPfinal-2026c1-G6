@@ -248,13 +248,38 @@ void MainWindow::onSaveMap()
 
 void MainWindow::onSaveMapAs()
 {
+    if (!_map)
+        return;
+
+    QString defaultPath = "assets/sprites/MapAssets/worlds/";
+
+    switch (_map->mapType())
+    {
+    case MapType::DUNGEON:
+        defaultPath += "mazmorra/";
+        break;
+    case MapType::CAVE:
+        defaultPath += "caverna/";
+        break;
+    case MapType::WORLD:
+    default:
+        break;
+    }
+
+    defaultPath += QString::fromStdString(_map->name()) + ".argmap";
+
     QString path = QFileDialog::getSaveFileName(
-        this, "Guardar mapa como", "",
+        this,
+        "Guardar mapa como",
+        defaultPath,
         "Mapas de Argentum (*.argmap);;Todos los archivos (*)");
+
     if (path.isEmpty())
         return;
+
     if (!path.endsWith(".argmap"))
         path += ".argmap";
+
     _currentFilePath = path;
     onSaveMap();
 }

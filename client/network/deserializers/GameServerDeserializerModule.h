@@ -8,6 +8,7 @@
 #include "common/network/messages/server/player/playerStatsMessage.h"
 #include "common/network/messages/server/player/playerDiedMessage.h"
 #include "common/network/messages/server/system/mapChangedMessage.h"
+#include "common/network/messages/server/error/errorMessage.h"
 
 #include "common/network/protocol/serverOpCode.h"
 #include "common/npcType.h"

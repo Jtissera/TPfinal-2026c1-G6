@@ -246,4 +246,13 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
             const uint32_t id = reader.readUint32();
             return std::make_unique<EntityDespawnMessage>(id);
         });
+
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ServerOpCode::MSG_ERROR),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+            std::string errorMsg = reader.readString();
+            std::cout << "[CLIENT PROTOCOL] Deserializado MSG_ERROR: " << errorMsg << std::endl;
+            return std::make_unique<ErrorMessage>(std::move(errorMsg));
+        });
 }

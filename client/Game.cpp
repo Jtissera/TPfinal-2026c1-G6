@@ -15,7 +15,7 @@ Game::Game() {}
 void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
                 Queue<std::shared_ptr<const Message>> &sendQ,
                 Queue<std::shared_ptr<const Message>> &receiveQ,
-                const PlayerDto &pDto)
+                const PlayerDto &pDto, const std::string &mapPath)
 {
 
   this->sendQueue = &sendQ;
@@ -59,9 +59,10 @@ void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
       static_cast<uint32_t>(playerDto.playerID), player, *assets);
 
   refreshPlayerEquipmentVisuals();
+  std::cout << "DEBUG MAP PATH: " << mapPath << std::endl;
 
   map = new Map(manager, *assets, "terrain", 3, 32);
-  map->LoadMap("assets/sprites/MapAssets/map.argmap");
+  map->LoadMap(mapPath);
 }
 
 void Game::handleEvents()
@@ -1976,6 +1977,13 @@ void Game::processServerMessage(const Message &msg)
     std::cout << "[CLIENT] MSG_NPC_MOVE recibido" << std::endl;
     handleNpcMove(static_cast<const NpcMoveMessage &>(msg));
     return;
+  case ServerOpCode::MSG_ERROR:
+  {
+    const auto &err = static_cast<const ErrorMessage &>(msg);
+    showStatusMessage(err.getReason());
+    std::cerr << "[Game] Error del servidor: " << err.getReason() << std::endl;
+    return;
+  }
   case ServerOpCode::MSG_PLAYER_RESURRECTED:
     std::cout << "[CLIENT] MSG_PLAYER_RESURRECTED recibido" << std::endl;
     handlePlayerResurrected(static_cast<const PlayerResurrectedMessage &>(msg));
@@ -1983,8 +1991,6 @@ void Game::processServerMessage(const Message &msg)
   case ServerOpCode::MSG_MAP_CHANGED:
     std::cout << "[CLIENT] MSG_MAP_CHANGED recibido" << std::endl;
     handleMapChanged(static_cast<const MapChangedMessage &>(msg));
-    return;
-    handleNpcSpawn(static_cast<const NpcSpawnMessage &>(msg));
     return;
 
   default:

@@ -22,5 +22,6 @@ void GameListMessage::serializeBody(PacketWriter &writer) const
         writer.writeString(game.gameName);
         writer.writeUint8(game.playerCount);
         writer.writeUint8(game.maxPlayers);
+        writer.writeString(game.mapPath);
     }
 }

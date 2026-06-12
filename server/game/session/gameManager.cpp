@@ -8,15 +8,34 @@ GameManager::GameManager(NpcFactory &npcFactory, ItemRepository &itemRepo,
       transitionQueue(transitionQueue), config(config) {}
 
 uint32_t GameManager::createGame(const std::string &gameName,
-                                 uint8_t maxPlayers)
+                                 uint8_t maxPlayers,
+                                 const std::string &mapPath)
 {
   std::unique_lock<std::mutex> lock(mutex);
 
+  if (mapPath.empty())
+  {
+    throw std::runtime_error("Error crítico: El cliente envió una ruta de mapa vacía.");
+  }
+
+  {
+    std::ifstream check(mapPath, std::ios::binary);
+    if (!check.good())
+      throw std::runtime_error("Mapa no encontrado: " + mapPath);
+  }
+
   uint32_t id = nextGameId++;
-  auto room = std::make_unique<GameRoom>(id, gameName, maxPlayers, npcFactory,
-                                         itemRepo, leaveQueue, transitionQueue, config);
+
+  auto room = std::make_unique<GameRoom>(
+      id, gameName, mapPath, false, 0,
+      npcFactory, itemRepo, leaveQueue, transitionQueue, config);
   room->start();
   rooms.emplace(id, std::move(room));
+
+  std::cout << "[GameManager] createGame id=" << id
+            << " name='" << gameName << "'"
+            << " map='" << mapPath << "'"
+            << std::endl;
 
   return id;
 }
@@ -26,14 +45,22 @@ uint32_t GameManager::getOrCreateInstance(const std::string &mapPath,
 {
   std::unique_lock<std::mutex> lock(mutex);
 
-  // Buscar instancia existente para ese mapa
   for (const auto &[id, room] : rooms)
   {
-    if (room->getIsInstance() && room->getName() == mapPath)
+    if (room->getIsInstance() &&
+        room->getName() == mapPath &&
+        room->getOriginRoomId() == originRoomId)
+    {
       return id;
+    }
   }
 
-  // Crear nueva instancia
+  {
+    std::ifstream check(mapPath, std::ios::binary);
+    if (!check.good())
+      throw std::runtime_error("Mapa de instancia no encontrado: " + mapPath);
+  }
+
   uint32_t id = nextGameId++;
   auto room = std::make_unique<GameRoom>(
       id, mapPath, mapPath, true, originRoomId,
@@ -139,6 +166,8 @@ std::vector<GameInfo> GameManager::listGames() const
     info.gameName = room->getName();
     info.playerCount = room->getPlayerCount();
     info.maxPlayers = room->getMaxPlayers();
+    info.mapPath = room->getMapPath();
+
     result.push_back(std::move(info));
   }
   return result;
@@ -221,7 +250,6 @@ std::string GameManager::getRoomMapPath(uint32_t gameId) const
   }
   else
   {
-    return config["world"]["map_path"].value_or(
-        std::string("assets/sprites/MapAssets/map.argmap"));
+    return it->second->getMapPath();
   }
 }

@@ -13,11 +13,12 @@
 #include "common/queue.h"
 #include "network/clientProtocolFactory.h"
 
-class GameClient {
+class GameClient
+{
 
 public:
   GameClient(Socket &socket, uint32_t idPlayer, const PlayerDto &playerDto,
-             SDL_Window *window, SDL_Renderer *renderer);
+             SDL_Window *window, SDL_Renderer *renderer, const std::string &mapPath);
   void run();
 
 private:
@@ -40,6 +41,7 @@ private:
   ClientReceiver receiver;
 
   Game gameLoop;
+  std::string mapPath;
 };
 
 #endif // TALLER_TP_GAMECLIENT_H

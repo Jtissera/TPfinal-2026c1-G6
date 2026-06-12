@@ -153,38 +153,73 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry)
   if (!player)
     return;
 
-  uint16_t spawnX = entry.returnTileX;
-  uint16_t spawnY = entry.returnTileY;
-
-  if (entry.targetMap.find("mazmorra") != std::string::npos)
-  {
-    spawnX = 3;
-    spawnY = 3;
-  }
-  else if (entry.targetMap.find("caverna") != std::string::npos)
-  {
-    spawnX = 3;
-    spawnY = 3;
-  }
-  else
-  {
-    spawnX = 3;
-    spawnY = 3;
-  }
-
   Queue<std::shared_ptr<const Message>> *clientQueue =
       monitor.getQueue(entry.playerId);
-  monitor.removeQueue(entry.playerId);
 
+  if (entry.targetMap.empty())
+  {
+    monitor.removeQueue(entry.playerId);
+    transitionQueue.try_push(std::make_shared<InstanceTransitionEvent>(
+        InstanceTransitionEvent{
+            entry.playerId, gameId, std::move(*player),
+            clientQueue, entry.targetMap, 3, 3}));
+    return;
+  }
+
+  std::string resolvedMapPath = entry.targetMap;
+  if (resolvedMapPath.find("assets/") == std::string::npos)
+  {
+    std::string baseDir = "assets/sprites/MapAssets/worlds/";
+    std::string ext = ".argmap";
+
+    std::string pathInRoot = baseDir + resolvedMapPath + ext;
+    std::string pathInMazmorra = baseDir + "mazmorra/" + resolvedMapPath + ext;
+    std::string pathInCaverna = baseDir + "caverna/" + resolvedMapPath + ext;
+
+    if (std::ifstream(pathInMazmorra, std::ios::binary).good())
+    {
+      resolvedMapPath = pathInMazmorra;
+    }
+    else if (std::ifstream(pathInCaverna, std::ios::binary).good())
+    {
+      resolvedMapPath = pathInCaverna;
+    }
+    else
+    {
+
+      resolvedMapPath = pathInRoot;
+    }
+  }
+
+  {
+    std::ifstream check(resolvedMapPath, std::ios::binary);
+    if (!check.good())
+    {
+      world.addPlayer(std::move(*player));
+
+      std::cerr << "[GameLoop] Transición fallida: El mapa no se encontró en ninguna carpeta conocida. Ruta intentada: '"
+                << resolvedMapPath
+                << "' playerId=" << entry.playerId
+                << std::endl;
+
+      if (clientQueue != nullptr)
+      {
+        monitor.sendTo(entry.playerId,
+                       std::make_shared<const ErrorMessage>(
+                           "El mapa '" + entry.targetMap + "' no existe en las carpetas del servidor."));
+      }
+      return;
+    }
+  }
+
+  uint16_t spawnX = 3;
+  uint16_t spawnY = 3;
+
+  monitor.removeQueue(entry.playerId);
   transitionQueue.try_push(std::make_shared<InstanceTransitionEvent>(
       InstanceTransitionEvent{
-          entry.playerId,
-          gameId,
-          std::move(*player),
-          clientQueue,
-          entry.targetMap,
-          spawnX,
-          spawnY}));
+          entry.playerId, gameId, std::move(*player),
+          clientQueue, resolvedMapPath, spawnX, spawnY}));
 }
 
 void GameLoop::stop()

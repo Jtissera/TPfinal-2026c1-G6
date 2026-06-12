@@ -37,6 +37,7 @@
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
 #include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/system/mapChangedMessage.h"
+#include "common/network/messages/server/error/errorMessage.h"
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"
@@ -47,11 +48,11 @@ public:
     Game();
     ~Game() = default;
 
-    void init(SDL_Window *window,
-              SDL_Renderer *renderer,
+    void init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
               Queue<std::shared_ptr<const Message>> &sendQ,
               Queue<std::shared_ptr<const Message>> &receiveQ,
-              const PlayerDto &pDto);
+              const PlayerDto &pDto,
+              const std::string &mapPath);
 
     void handleEvents();
     void update();

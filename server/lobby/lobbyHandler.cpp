@@ -132,11 +132,20 @@ void LobbyHandler::handleListGames(uint32_t clientId, const Message &)
 void LobbyHandler::handleCreateGame(uint32_t clientId, const Message &message)
 {
   const auto &createMsg = static_cast<const CreateGameMessage &>(message);
-  uint32_t gameId = gameManager.createGame(createMsg.getGameName(),
-                                           createMsg.getMaxPlayers());
-  lobbyMonitor.sendTo(clientId, std::make_shared<const GameCreatedMessage>(
-                                    gameId, createMsg.getGameName(),
-                                    createMsg.getMaxPlayers()));
+
+  try
+  {
+    auto gameId = gameManager.createGame(createMsg.getGameName(), createMsg.getMaxPlayers(), createMsg.getMapPath());
+    lobbyMonitor.sendTo(clientId, std::make_shared<const GameCreatedMessage>(
+                                      gameId, createMsg.getGameName(),
+                                      createMsg.getMaxPlayers()));
+  }
+  catch (const std::exception &e)
+  {
+    std::cerr << "[SERVER] createGame falló: " << e.what() << std::endl;
+    lobbyMonitor.sendTo(clientId, std::make_shared<const ErrorMessage>(e.what()));
+    return;
+  }
 }
 
 void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message)
@@ -257,7 +266,7 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
     std::string fullMapPath = event.targetMap;
     if (fullMapPath.find("assets/") == std::string::npos)
     {
-      fullMapPath = "assets/sprites/MapAssets/" + fullMapPath + ".argmap";
+      fullMapPath = "assets/sprites/MapAssets/worlds" + fullMapPath + ".argmap";
     }
 
     uint32_t instanceId = gameManager.getOrCreateInstance(fullMapPath, event.fromRoomId);

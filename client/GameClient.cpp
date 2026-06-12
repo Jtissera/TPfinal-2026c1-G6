@@ -2,15 +2,21 @@
 
 GameClient::GameClient(Socket &socket, uint32_t idPlayer,
                        const PlayerDto &playerDto, SDL_Window *window,
-                       SDL_Renderer *renderer)
+                       SDL_Renderer *renderer, const std::string &mapPath)
     : socket(socket), idPlayer(idPlayer), playerDto(playerDto), window(window),
       renderer(renderer), factory(),
       senderProtocol(factory.createProtocol(socket)),
       receiverProtocol(factory.createProtocol(socket)),
       sender(senderProtocol, sendQueue),
-      receiver(receiverProtocol, receiveQueue), gameLoop() {}
-void GameClient::run() {
-  if (window == nullptr || renderer == nullptr) {
+      receiver(receiverProtocol, receiveQueue), gameLoop(),
+      mapPath(mapPath)
+{
+}
+
+void GameClient::run()
+{
+  if (window == nullptr || renderer == nullptr)
+  {
     std::cerr << "[GameClient] window/renderer inválidos" << std::endl;
     return;
   }
@@ -22,9 +28,14 @@ void GameClient::run() {
   constexpr int GAME_H = 720;
   const bool useFullscreen = false; // luego viene de config
 
-  if (useFullscreen) {
+  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+
+  if (useFullscreen)
+  {
     SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-  } else {
+  }
+  else
+  {
     SDL_SetWindowFullscreen(window, 0);
     SDL_SetWindowSize(window, GAME_W, GAME_H);
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED,
@@ -41,9 +52,10 @@ void GameClient::run() {
   const int FPS = 30;
   const int frameDelay = 1000 / FPS;
 
-  gameLoop.init(window, renderer, sendQueue, receiveQueue, playerDto);
+  gameLoop.init(window, renderer, sendQueue, receiveQueue, playerDto, mapPath);
 
-  while (gameLoop.running()) {
+  while (gameLoop.running())
+  {
     const Uint32 frameStart = SDL_GetTicks();
 
     gameLoop.handleEvents();
@@ -52,7 +64,8 @@ void GameClient::run() {
 
     const int frameTime = static_cast<int>(SDL_GetTicks() - frameStart);
 
-    if (frameDelay > frameTime) {
+    if (frameDelay > frameTime)
+    {
       SDL_Delay(frameDelay - frameTime);
     }
   }

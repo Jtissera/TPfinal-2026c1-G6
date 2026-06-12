@@ -25,7 +25,8 @@ public:
               Queue<std::shared_ptr<InstanceTransitionEvent>> &,
               const toml::table &);
 
-  uint32_t createGame(const std::string &gameName, uint8_t maxPlayers);
+  uint32_t createGame(const std::string &gameName, uint8_t maxPlayers,
+                      const std::string &mapPath = "");
 
   bool joinGame(uint32_t gameId, uint32_t clientId,
                 Queue<std::shared_ptr<const Message>> &clientQueue);

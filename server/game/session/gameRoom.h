@@ -20,12 +20,6 @@
 class GameRoom
 {
 public:
-      GameRoom(uint32_t gameId, std::string gameName, uint8_t maxPlayers,
-               NpcFactory &npcFactory, ItemRepository &itemRepo,
-               Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
-               Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
-               const toml::table &config);
-
       GameRoom(uint32_t gameId, std::string gameName, const std::string &mapPath,
                bool isInstance, uint32_t originRoomId,
                NpcFactory &npcFactory, ItemRepository &itemRepo,
@@ -48,11 +42,11 @@ public:
 
       Queue<ClientMessage> &getGameQueue();
       void broadcastExcept(uint32_t excludeId, const std::shared_ptr<const Message> &msg);
-      const GameWorld& getWorld() const;
+      const GameWorld &getWorld() const;
       bool getIsInstance() const { return isInstance; }
       uint32_t getOriginRoomId() const { return originRoomId; }
+      const std::string &getMapPath() const { return mapPath; }
       void syncPlayerJoin(uint32_t newPlayerId);
-
 
       void start();
       void stop();
@@ -72,10 +66,9 @@ private:
       uint32_t originRoomId = 0;
       std::string mapPath;
 
-
-    void sendExistingPlayersTo(uint32_t newClientId);
-    void broadcastPlayerSpawn(uint32_t playerId);
-    void sendInventoryTo(uint32_t playerId);
-    PlayerDto buildPlayerDto(const Player& player) const;
-    void sendExistingNpcsTo(uint32_t clientId);
+      void sendExistingPlayersTo(uint32_t newClientId);
+      void broadcastPlayerSpawn(uint32_t playerId);
+      void sendInventoryTo(uint32_t playerId);
+      PlayerDto buildPlayerDto(const Player &player) const;
+      void sendExistingNpcsTo(uint32_t clientId);
 };

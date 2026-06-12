@@ -2,11 +2,13 @@
 
 ServerProtocolFactory::ServerProtocolFactory() : registry(buildRegistry()) {}
 
-Protocol ServerProtocolFactory::createProtocol(Socket &socket) const {
+Protocol ServerProtocolFactory::createProtocol(Socket &socket) const
+{
   return Protocol(socket, registry);
 }
 
-std::shared_ptr<const Registry> ServerProtocolFactory::buildRegistry() {
+std::shared_ptr<const Registry> ServerProtocolFactory::buildRegistry()
+{
   auto registry = std::make_shared<Registry>();
 
   AuthClientDeserializersModule auth;
@@ -15,7 +17,7 @@ std::shared_ptr<const Registry> ServerProtocolFactory::buildRegistry() {
   LobbyClientDeserializersModule lobby;
   lobby.registerDeserializers(*registry);
 
-  GameClientDeserializersModule game; // ← nuevo
+  GameClientDeserializersModule game;
   game.registerDeserializers(*registry);
 
   CharClientDeserializersModule character;
