@@ -20,6 +20,7 @@ public:
     CityResult handleRemoteResurrect(Player &player); // fantasma lejos: diferido
     CityResult handleHeal(Player &player);
     CityResult handleBuy(Player &player, const std::string &itemName);
+    CityResult handleList() const;
 
 private:
     ItemRepository &itemRepo;

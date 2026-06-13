@@ -172,6 +172,7 @@ void Map::AddTile(const std::string &texId, int x, int y, TileType type)
 
     int xpos = x;
     int ypos = y;
+    const int groundY = y + scaledSize;
 
     // Offset Vertical: Desplaza hacia arriba si el objeto es alto
     if (srcH > 32)
@@ -198,6 +199,7 @@ void Map::AddTile(const std::string &texId, int x, int y, TileType type)
     entry.srcRect = {0, 0, srcW, srcH};
     entry.destRect = {xpos, ypos, srcW * mapScale, srcH * mapScale};
     entry.isTop = isTop;
+    entry.groundY = groundY;
     tiles.push_back(entry);
 }
 

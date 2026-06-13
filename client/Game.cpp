@@ -67,6 +67,9 @@ void Game::handleEvents()
 {
   while (SDL_PollEvent(&event))
   {
+    if (miniChat.handleEvent(event))
+      continue;
+
     if (event.type == SDL_QUIT)
     {
       isRunning = false;
@@ -114,6 +117,54 @@ void Game::handleEvents()
         equippedWeapon = &equipmentState.weapon.value();
       }
 
+      bool clickedNpc = false;
+
+      for (auto &npcEntity : manager.getGroup(groupNPC))
+      {
+        if (npcEntity == nullptr)
+          continue;
+
+        if (!npcEntity->hasComponent<SpriteComponent>())
+          continue;
+
+        const SDL_Rect &npcRect =
+            npcEntity->getComponent<SpriteComponent>().getDestRect();
+
+        const bool inside = mouseX >= npcRect.x && mouseX < npcRect.x + npcRect.w &&
+                            mouseY >= npcRect.y && mouseY < npcRect.y + npcRect.h;
+
+        if (!inside)
+          continue;
+
+        clickedNpc = true;
+
+        if (npcEntity->hasComponent<NpcTypeComponent>())
+        {
+          NpcType t = npcEntity->getComponent<NpcTypeComponent>().type;
+
+          if (t == NpcType::PRIEST)
+          {
+            miniChat.appendLine("Sacerdote: /curar /resucitar /comprar <item> /lista", ChatMsgType::INFO);
+          }
+          else if (t == NpcType::MERCHANT)
+          {
+            miniChat.appendLine("Comerciante: /comprar <item> /vender <item> /lista", ChatMsgType::INFO);
+          }
+          else if (t == NpcType::BANKER)
+          {
+            miniChat.appendLine("Banquero: /depositar /retirar", ChatMsgType::INFO);
+          }
+        }
+
+        break;
+      }
+
+      if (clickedNpc)
+      {
+        miniChat.setFocused(true);
+        return;
+      }
+
       if (isLocalPlayerDead())
       {
         std::cout << "[PLAYER] No puede atacar porque está muerto/fantasma."
@@ -142,6 +193,13 @@ void Game::handleEvents()
 
       attackSystem.handleMouseClick(mouseX, mouseY, camera, attackTargets,
                                     sendQueue, player, equippedWeapon);
+    }
+
+    if (event.type == SDL_KEYDOWN &&
+        event.key.keysym.sym == SDLK_RETURN &&
+        !miniChat.isFocused())
+    {
+      miniChat.setFocused(true);
     }
   }
 }
@@ -184,10 +242,18 @@ void Game::update()
   prevCamera = camera;
 
   UpdateContext updateContext{SDL_GetKeyboardState(nullptr), sendQueue, camera,
-                              cameraMoved};
+                              cameraMoved, miniChat.isFocused()};
   manager.refresh();
   manager.update(updateContext);
 
+  if (miniChat.hasPendingInput())
+  {
+    std::string text = miniChat.consumeInput();
+    // targetId = 0: el servidor lo ignora para chat general y comandos.
+    // Para /curar, /depositar etc. el servidor busca NPC adyacente.
+    sendQueue->try_push(
+        std::make_shared<const ChatMessage>(std::move(text), 0u));
+  }
   attackSystem.update();
   attackSystem.updateRespawns(enemies);
   if (isLocalPlayerDead())
@@ -233,21 +299,18 @@ void Game::render()
     const int hudOffsetY = 133;
     map->forEachVisibleTopTile(camera, mapArea, [this, hudOffsetY, &ySorted](const TileEntry &t)
                                {
-      RenderObject obj;
-      
-      obj.yFootprint = t.destRect.y + (t.destRect.h * 55) / 100; 
-      
-      obj.drawFunc = [this, hudOffsetY, t]()
-      {
+    RenderObject obj;
+    obj.yFootprint = t.groundY;
+    obj.drawFunc = [this, hudOffsetY, t]() {
         SDL_Rect dst = {
             t.destRect.x - camera.x,
             t.destRect.y - camera.y + hudOffsetY,
             t.destRect.w,
-            t.destRect.h};
-        SDL_RenderCopy(renderer, t.texture,
-                       const_cast<SDL_Rect *>(&t.srcRect), &dst);
-      };
-      ySorted.push_back(std::move(obj)); });
+            t.destRect.h
+        };
+        SDL_RenderCopy(renderer, t.texture, const_cast<SDL_Rect*>(&t.srcRect), &dst);
+    };
+    ySorted.push_back(std::move(obj)); });
   }
   {
     auto &transform = player->getComponent<TransformComponent>();
@@ -363,6 +426,9 @@ void Game::render()
   }
 
   renderHUD();
+  // Mini-chat: log + input box sobre el área hud_chat.
+  TTF_Font *chatFont = assets->GetFont("ao_regular");
+  miniChat.render(renderer, chatFont);
   SDL_RenderPresent(renderer);
 }
 
@@ -1982,6 +2048,10 @@ void Game::processServerMessage(const Message &msg)
     std::cout << "[CLIENT] MSG_MAP_CHANGED recibido" << std::endl;
     handleMapChanged(static_cast<const MapChangedMessage &>(msg));
     return;
+  case ServerOpCode::MSG_CHAT_MESSAGE:
+    handleChatNotification(
+        static_cast<const ChatNotificationMessage &>(msg));
+    return;
 
   default:
     return;
@@ -2344,4 +2414,22 @@ void Game::handleMapChanged(const MapChangedMessage &msg)
   map->LoadMap(msg.getMapPath());
 
   std::cout << "[Game] ¡Nuevo mapa cargado exitosamente!" << std::endl;
+}
+
+void Game::handleChatNotification(const ChatNotificationMessage &msg)
+{
+  const std::string &text = msg.getText();
+  const ChatMsgType type = msg.getMsgType();
+
+  std::string::size_type start = 0;
+  std::string::size_type pos;
+  while ((pos = text.find('\n', start)) != std::string::npos)
+  {
+    const std::string line = text.substr(start, pos - start);
+    if (!line.empty())
+      miniChat.appendLine(line, type);
+    start = pos + 1;
+  }
+  if (start < text.size())
+    miniChat.appendLine(text.substr(start), type);
 }

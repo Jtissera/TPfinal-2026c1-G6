@@ -41,7 +41,8 @@ public:
     int returnTileX;
     int returnTileY;
   };
-  struct NpcSpawnEvent {
+  struct NpcSpawnEvent
+  {
     uint32_t npcId;
     NpcType type;
     std::string name;
@@ -66,6 +67,14 @@ public:
     std::vector<PlayerHit> playerHits;
     std::vector<InstanceEntry> instanceTransitions;
     std::vector<NpcSpawnEvent> spawnedNpcs;
+
+    struct PlayerResurrection
+    {
+      uint32_t playerId;
+      uint16_t tileX;
+      uint16_t tileY;
+    };
+    std::vector<PlayerResurrection> playersResurrected;
   };
 
   void addPlayer(Player player);
@@ -83,7 +92,6 @@ public:
   int getPixelY(uint32_t id) const;
 
   const Tile &getTileAt(int tileX, int tileY) const;
-
 
   struct DeathResult
   {
@@ -112,12 +120,14 @@ public:
   void handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId);
   bool hasPlayer(uint32_t playerId) const;
 
-  Npc& getNpc(uint32_t npcId);
-  const Npc& getNpc(uint32_t npcId) const;
+  std::optional<uint32_t> findPlayerIdByName(const std::string &name) const;
+
+  Npc &getNpc(uint32_t npcId);
+  const Npc &getNpc(uint32_t npcId) const;
 
   // Devuelve una vista de solo lectura de los jugadores del mundo.
   // Se usa para enviar spawns al cliente que acaba de entrar.
-  const std::unordered_map<uint32_t, Player>& getPlayers() const;
+  const std::unordered_map<uint32_t, Player> &getPlayers() const;
   std::pair<int, int> findSafeSpawnNear(int tileX, int tileY) const;
 
   CityResult handleCityInteraction(uint32_t playerId, NpcType npcType,
@@ -126,7 +136,7 @@ public:
   std::optional<NpcType> getNpcTypeAtTile(int tileX, int tileY) const;
 
 private:
-  static constexpr int TILE_SIZE = 96; // a toml
+  static constexpr int TILE_SIZE = 96;            // a toml
   static constexpr float PLAYER_MOVE_STEP = 8.0f; // a toml
 
   MapData mapData;
@@ -150,12 +160,14 @@ private:
   int tileSize;
   float npcRespawnDelayMs = 5000.0f; // toml
 
-  struct GroundItem {
+  struct GroundItem
+  {
     Item item;
     int tileX, tileY;
   };
 
-  struct GroundGold {
+  struct GroundGold
+  {
     uint32_t amount;
     int tileX, tileY;
   };
@@ -167,12 +179,12 @@ private:
   void tickNpcs(WorldTickResult &result);
 
   void spawnMapNpcs();
-  void loadInitialInventoryForPlayer(Player& player);
+  void loadInitialInventoryForPlayer(Player &player);
 
   int spawnTickCounter = 0;
   static constexpr int SPAWN_EVERY_N_TICKS = 200; // toml
-  static constexpr int MAX_NPCS = 20; // toml
-  static constexpr int SPAWN_BATCH_SIZE = 4; // toml
+  static constexpr int MAX_NPCS = 20;             // toml
+  static constexpr int SPAWN_BATCH_SIZE = 4;      // toml
 
-  std::vector<std::pair<std::string, std::pair<int,int>>> spawnPoints;
+  std::vector<std::pair<std::string, std::pair<int, int>>> spawnPoints;
 };

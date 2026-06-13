@@ -204,22 +204,23 @@ void GameWorld::giveExperience(uint32_t playerId, uint32_t exp, float xpMultipli
     p.addExperience(finalExp, limit, newMaxHp, newMaxMana);
 }
 
-GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t attackerId) {
-    Player& target = getPlayer(targetId);
+GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId, uint32_t attackerId)
+{
+    Player &target = getPlayer(targetId);
 
-
-    if (target.isGhost()) {
+    if (target.isGhost())
+    {
         return {0, {}};
     }
 
-    if (attackerId != 0) {
-        Player& attacker = getPlayer(attackerId);
+    if (attackerId != 0)
+    {
+        Player &attacker = getPlayer(attackerId);
 
         uint32_t killExp = formulas.calcExpOnKill(
             target.getMaxHp(),
             attacker.getLevel(),
-            target.getLevel()
-        );
+            target.getLevel());
 
         giveExperience(attackerId, killExp);
     }
@@ -250,8 +251,9 @@ GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t a
               << std::endl;
 
     // Según alcance actual, el oro en exceso va directo al killer.
-    if (excessGold > 0 && attackerId != 0) {
-        Player& attacker = getPlayer(attackerId);
+    if (excessGold > 0 && attackerId != 0)
+    {
+        Player &attacker = getPlayer(attackerId);
         attacker.addGold(excessGold);
 
         std::cout << "[PVP GOLD] killerId="
@@ -474,11 +476,15 @@ GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds)
     WorldTickResult result;
 
     float deltaMs = deltaSeconds * 1000.0f;
-    resurrectionSystem.tick(deltaMs, [this](uint32_t pid, int tx, int ty)
+    resurrectionSystem.tick(deltaMs, [this, &result](uint32_t pid, int tx, int ty)
                             {
-        Player &p = getPlayer(pid);
-        p.stopResurrection();
-        resurrectPlayer(pid, tx, ty); });
+                                Player &p = getPlayer(pid);
+                                p.stopResurrection();
+                                resurrectPlayer(pid, tx, ty);
+
+                                result.playersResurrected.push_back({pid,
+                                                                     static_cast<uint16_t>(p.getTileX()),
+                                                                     static_cast<uint16_t>(p.getTileY())});  result.playersChanged.push_back(pid); });
 
     tickPlayers(deltaSeconds, result);
     tickNpcs(result);
@@ -904,15 +910,18 @@ std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const
     return t != NpcType::NONE ? std::optional<NpcType>(t) : std::nullopt;
 }
 
-void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
+void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
+{
     // Buscamos el NPC muerto.
-    Npc* npc = npcManager.findNpc(npcId);
+    Npc *npc = npcManager.findNpc(npcId);
 
-    if (npc == nullptr) {
+    if (npc == nullptr)
+    {
         return;
     }
 
-    if (npc->isRespawning()) {
+    if (npc->isRespawning())
+    {
         return;
     }
 
@@ -923,17 +932,19 @@ void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
     occupancy.free(tileX, tileY);
 
     // Si hay killer válido, calculamos drop directo.
-    if (killerPlayerId != 0) {
+    if (killerPlayerId != 0)
+    {
         auto killerIt = players.find(killerPlayerId);
 
-        if (killerIt != players.end()) {
-            Player& killer = killerIt->second;
-
+        if (killerIt != players.end())
+        {
+            Player &killer = killerIt->second;
 
             // Por ahora implementamos solo oro.
             const int roll = std::rand() % 100;
 
-            if (roll >= 80 && roll < 88) {
+            if (roll >= 80 && roll < 88)
+            {
                 const double minFactor = 0.01;
                 const double maxFactor = 0.20;
 
@@ -944,10 +955,10 @@ void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
                     minFactor + random01 * (maxFactor - minFactor);
 
                 const uint32_t goldDrop = static_cast<uint32_t>(
-                    factor * static_cast<double>(npc->getMaxHp())
-                );
+                    factor * static_cast<double>(npc->getMaxHp()));
 
-                if (goldDrop > 0) {
+                if (goldDrop > 0)
+                {
                     const uint32_t goldDrop = 100;
                     killer.addGold(goldDrop);
 
@@ -973,4 +984,14 @@ void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
               << " respawnMs="
               << npcRespawnDelayMs
               << std::endl;
+}
+
+std::optional<uint32_t> GameWorld::findPlayerIdByName(const std::string &name) const
+{
+    for (const auto &[id, player] : players)
+    {
+        if (player.getName() == name)
+            return id;
+    }
+    return std::nullopt;
 }

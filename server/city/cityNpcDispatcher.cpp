@@ -33,6 +33,8 @@ CityResult CityNpcDispatcher::dispatchPriest(const CityCommand &cmd,
         return priest.handleHeal(player);
     case CityCommand::Type::BUY:
         return priest.handleBuy(player, cmd.itemName);
+    case CityCommand::Type::LIST:
+        return priest.handleList();
     default:
         return {false, "El sacerdote no entiende ese comando."};
     }
@@ -47,6 +49,8 @@ CityResult CityNpcDispatcher::dispatchMerchant(const CityCommand &cmd,
         return merchant.handleBuy(player, cmd.itemName);
     case CityCommand::Type::SELL:
         return merchant.handleSell(player, cmd.itemName);
+    case CityCommand::Type::LIST:
+        return merchant.handleList();
     default:
         return {false, "El comerciante no entiende ese comando."};
     }

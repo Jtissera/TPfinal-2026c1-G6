@@ -9,14 +9,16 @@
 #include "common/queue.h"
 #include "common/network/messages/message.h"
 
-struct UpdateContext {
-    const Uint8* keyboardState = nullptr;
-    Queue<std::shared_ptr<const Message>>* sendQueue = nullptr;
+struct UpdateContext
+{
+    const Uint8 *keyboardState = nullptr;
+    Queue<std::shared_ptr<const Message>> *sendQueue = nullptr;
     SDL_Rect camera;
     // indica si la camara se movio este frame.
     // TileComponent::update() lo usa para saltear el recalculo de destRect
     // cuando la cámara no cambió, evita 300 operaciones aritméticas por frame.
     bool cameraMoved = true;
+    bool chatFocused = false;
 };
 
-#endif //TALLER_TP_UPDATECONTEXT_H
+#endif // TALLER_TP_UPDATECONTEXT_H

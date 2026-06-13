@@ -4,6 +4,7 @@
 #include "cityResult.h"
 #include <toml++/toml.hpp>
 #include <string>
+#include <vector>
 
 class MerchantHandler
 {
@@ -12,6 +13,7 @@ public:
 
     CityResult handleBuy(Player &player, const std::string &itemName);
     CityResult handleSell(Player &player, const std::string &itemName);
+    CityResult handleList() const;
 
 private:
     ItemRepository &itemRepo;

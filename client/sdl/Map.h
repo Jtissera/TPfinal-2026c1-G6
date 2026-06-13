@@ -14,6 +14,7 @@ struct TileEntry
   SDL_Rect srcRect = {};
   SDL_Rect destRect = {};
   bool isTop = false;
+  int groundY = 0;
 };
 
 class Map

@@ -2,6 +2,8 @@
 
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
 #include "common/network/messages/server/npc/npcMoveMessage.h"
+#include "common/network/messages/server/chat/chatNotificationMessage.h"
+#include "common/network/messages/server/player/playerResurrectedMessage.h"
 
 GameLoop::GameLoop(Queue<ClientMessage> &q, Monitor &m, GameWorld &w,
                    Queue<std::shared_ptr<LeaveEvent>> &leaveQ, Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQ, uint32_t gameId,
@@ -73,6 +75,17 @@ void GameLoop::worldUpdate(float deltaSeconds)
   auto result = world.tick(deltaSeconds);
 
   // Si cambiaron stats de jugadores, mandamos stats actualizadas.
+  for (const auto &hit : result.playerHits)
+  {
+    statManager.sendPlayerStats(hit.playerId, world, monitor);
+
+    // Notificación en el mini-chat del jugador golpeado.
+    monitor.sendTo(hit.playerId,
+                   std::make_shared<const ChatNotificationMessage>(
+                       "Un enemigo te causó " + std::to_string(hit.damage) + " puntos de daño.",
+                       ChatMsgType::DAMAGE_TAKEN));
+  }
+
   for (uint32_t id : result.playersChanged)
   {
     statManager.sendPlayerStats(id, world, monitor);
@@ -84,6 +97,21 @@ void GameLoop::worldUpdate(float deltaSeconds)
     std::cout << "[GameLoop] broadcast PLAYER_DIED id=" << deadPlayerId << std::endl;
   }
 
+  for (const auto &res : result.playersResurrected)
+  {
+    monitor.broadcast(std::make_shared<const PlayerResurrectedMessage>(
+        res.playerId, res.tileX, res.tileY));
+
+    monitor.broadcast(std::make_shared<const EntityMoveMessage>(
+        static_cast<uint8_t>(res.playerId),
+        world.getPixelX(res.playerId),
+        world.getPixelY(res.playerId),
+        Direction::DOWN,
+        false));
+
+    std::cout << "[GameLoop] broadcast PLAYER_RESURRECTED id=" << res.playerId
+              << " tile=(" << res.tileX << ", " << res.tileY << ")" << std::endl;
+  }
   // Si algún NPC se movió, avisamos al cliente con un mensaje específico.
   // Esto NO crea NPCs. Solo actualiza su posición visual.
   for (uint32_t npcId : result.npcsMoved)

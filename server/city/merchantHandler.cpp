@@ -1,5 +1,6 @@
 #include "merchantHandler.h"
 #include <set>
+#include <algorithm>
 
 static const std::set<std::string> MERCHANT_BLACKLIST = {
     "vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado"};
@@ -51,4 +52,35 @@ uint32_t MerchantHandler::priceOf(const std::string &itemName) const
 uint32_t MerchantHandler::sellPriceOf(const std::string &itemName) const
 {
     return priceOf(itemName) / 2;
+}
+
+CityResult MerchantHandler::handleList() const
+{
+    std::string msg =
+        "=== Comerciante ===\n"
+        "/vender <item> — Vende un item (mitad de precio)\n"
+        "--- A la venta ---\n";
+
+    const auto *pricesNode = config["city"]["prices"].as_table();
+    if (pricesNode)
+    {
+        std::vector<std::pair<std::string, uint32_t>> items;
+        for (const auto &[key, val] : *pricesNode)
+        {
+            const std::string name = std::string(key.str());
+            const uint32_t price = val.value_or(0u);
+            if (price > 0 && isSellable(name))
+            {
+                items.push_back({name, price});
+            }
+        }
+        std::sort(items.begin(), items.end());
+
+        for (const auto &[name, price] : items)
+        {
+            msg += "  /comprar " + name + "  (" + std::to_string(price) + " oro" + " | venta: " + std::to_string(price / 2) + " oro)\n";
+        }
+    }
+
+    return {true, msg};
 }

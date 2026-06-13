@@ -87,6 +87,7 @@ static SpriteSheetConfig configForNPC(NpcType type)
 Entity *AssetManager::CreateNpc(const NPCData &data)
 {
     auto &npc = manager->addEntity();
+    npc.addComponent<NpcTypeComponent>(data.type);
 
     const float centeredX = data.x + 48.0f;
     const float centeredY = data.y + 86.0f;

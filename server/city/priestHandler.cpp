@@ -82,3 +82,28 @@ bool PriestHandler::isSellable(const std::string &itemName) const
 {
     return PRIEST_CATALOG.count(itemName) > 0;
 }
+
+CityResult PriestHandler::handleList() const
+{
+    std::string msg =
+        "=== Sacerdote ===\n"
+        "/curar         — Restaura vida y mana (gratis)\n"
+        "/resucitar     — Resurrección remota (gratis)\n"
+        "--- A la venta ---\n";
+
+    static const std::vector<std::string> catalog = {
+        "vara_fresno", "flauta_elfica",
+        "baculo_nudoso", "baculo_engarzado",
+        "pocion_vida", "pocion_mana"};
+
+    for (const auto &itemName : catalog)
+    {
+        uint32_t price = priceOf(itemName);
+        if (price > 0)
+        {
+            msg += "  /comprar " + itemName + "  (" + std::to_string(price) + " oro)\n";
+        }
+    }
+
+    return {true, msg};
+}

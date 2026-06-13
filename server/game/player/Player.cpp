@@ -113,8 +113,7 @@ uint32_t Player::die(uint32_t safeGold)
 void Player::resurrect(int tx, int ty)
 {
   state = PlayerState::ALIVE;
-  tileX = tx;
-  tileY = ty;
+  setTilePos(tx, ty);
   hp = maxHp / 2;
   mana = cls.canUseMagic ? maxMana / 2 : 0;
 }
@@ -124,7 +123,7 @@ bool Player::tick(float hpGained, float manaGained)
   if (!isAlive() && !isMeditating())
     return false;
 
-  const int16_t prevHp   = hp;
+  const int16_t prevHp = hp;
   const int16_t prevMana = mana;
 
   if (isAlive())
@@ -190,10 +189,9 @@ uint16_t Player::getShieldDefenseMax() const
   return s ? s->stats.defenseMax : 0;
 }
 
-
 uint32_t Player::getId() const { return clientId; }
 uint32_t Player::getClientId() const { return clientId; }
-const std::string& Player::getName() const { return name; }
+const std::string &Player::getName() const { return name; }
 uint8_t Player::getLevel() const { return level; }
 int16_t Player::getHp() const { return hp; }
 int16_t Player::getMaxHp() const { return maxHp; }
@@ -235,17 +233,20 @@ void Player::spendGold(uint32_t amount)
   gold = (gold >= amount) ? gold - amount : 0;
 }
 
-float Player::getPixelX() const {
+float Player::getPixelX() const
+{
   // Devuelve la posición real en píxeles.
   return pixelX;
 }
 
-float Player::getPixelY() const {
+float Player::getPixelY() const
+{
   // Devuelve la posición real en píxeles.
   return pixelY;
 }
 
-void Player::setPixelPos(float x, float y) {
+void Player::setPixelPos(float x, float y)
+{
   // Actualiza la posición real del jugador.
   pixelX = x;
   pixelY = y;
@@ -253,7 +254,8 @@ void Player::setPixelPos(float x, float y) {
   tileY = static_cast<int>(pixelY) / TILE_SIZE;
 }
 
-void Player::setTilePos(int tx, int ty) {
+void Player::setTilePos(int tx, int ty)
+{
   // Guarda el tile lógico.
   tileX = tx;
 

@@ -35,6 +35,9 @@
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
 #include "common/network/messages/server/player/playerResurrectedMessage.h"
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
+#include "MiniChat.h"
+#include "common/network/messages/server/chat/chatNotificationMessage.h"
+#include "common/network/messages/client/chat/chatMessage.h"
 #include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/system/mapChangedMessage.h"
 #include "common/network/messages/server/error/errorMessage.h"
@@ -95,6 +98,7 @@ private:
     InventoryViewState inventoryState;
     EquipmentViewState equipmentState;
     ItemCatalog itemCatalog;
+    MiniChat miniChat;
 
     std::string statusMessage;
     Uint32 statusMessageTimer = 0;
@@ -178,7 +182,7 @@ private:
     std::optional<ClientEquipmentSlot> toClientEquipmentSlot(int index) const;
     EquipSlot toServerEquipSlot(ClientEquipmentSlot slot) const;
 
-    // esto debe pasar a otra clase que maneje estos mensajes.
+    void handleChatNotification(const ChatNotificationMessage &msg);
     void processServerMessage(const Message &msg);
     void handleEntityMove(const EntityMoveMessage &msg);
     void handlePlayerDied(const PlayerDiedMessage &msg);
