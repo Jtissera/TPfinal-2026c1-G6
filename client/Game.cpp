@@ -217,11 +217,17 @@ void Game::update()
   }
   catch (const ClosedQueue &)
   {
-    std::cerr << "[Game] receiveQueue cerrada, el server se desconectó."
-              << std::endl;
     isRunning = false;
     return;
   }
+
+  if (pendingGhostReapply)
+  {
+    pendingGhostReapply = false;
+    localGhostStateApplied = false;
+    applyLocalPlayerGhostState(false);
+  }
+
   Vector2D playerPos = player->getComponent<TransformComponent>().position;
   camera.x = static_cast<int>(playerPos.x) - 450;
   camera.y = static_cast<int>(playerPos.y) - 343;
@@ -492,8 +498,6 @@ void Game::clean()
   // Son propiedad de main().
   renderer = nullptr;
   window = nullptr;
-
-  std::cout << "Game cleaned." << std::endl;
 }
 
 void Game::showStatusMessage(const std::string &msg)
@@ -1606,13 +1610,10 @@ bool Game::isLocalPlayerDead() const
   return playerState.hp <= 0;
 }
 
-void Game::applyLocalPlayerGhostState()
+void Game::applyLocalPlayerGhostState(bool showMessage)
 {
-  // Evita repetir esta lógica todos los frames.
   if (localGhostStateApplied)
-  {
     return;
-  }
 
   localGhostStateApplied = true;
   playerState.isDead = true;
@@ -1622,7 +1623,6 @@ void Game::applyLocalPlayerGhostState()
   if (player != nullptr && player->hasComponent<EquipmentComponent>())
   {
     auto &equipment = player->getComponent<EquipmentComponent>();
-
     equipment.setWeapon(std::nullopt);
     equipment.setShield(std::nullopt);
     equipment.setArmor(std::nullopt);
@@ -1630,11 +1630,9 @@ void Game::applyLocalPlayerGhostState()
   }
 
   assets->applyGhostAppearance(*player);
-  // Mensaje temporal para confirmar el estado.
-  showStatusMessage("Has muerto");
 
-  std::cout << "[PLAYER] Jugador pasó a fantasma. HP=0, ataque bloqueado."
-            << std::endl;
+  if (showMessage)
+    showStatusMessage("Has muerto");
 }
 
 void Game::reviveLocalPlayer(int newHp)
@@ -1932,30 +1930,35 @@ void Game::handleEntityMove(const EntityMoveMessage &moveMsg)
                                       moving);
   }
 }
+
 void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg)
 {
-  // ID del jugador muerto enviado por el server.
   const uint32_t deadPlayerId = diedMsg.getId();
 
-  std::cout << "[SERVER] MSG_PLAYER_DIED recibido. playerId=" << deadPlayerId
-            << std::endl;
-
-  // Si el muerto soy yo, aplico estado fantasma local.
   if (deadPlayerId == static_cast<uint32_t>(playerDto.playerID))
   {
     playerState.isDead = true;
     playerState.hp = 0;
     playerState.mana = 0;
+
+    for (auto &slot : inventoryState.slots)
+      slot = std::nullopt;
+
+    equipmentState.weapon = std::nullopt;
+    equipmentState.helmet = std::nullopt;
+    equipmentState.armor = std::nullopt;
+    equipmentState.shield = std::nullopt;
+
     applyLocalPlayerGhostState();
     return;
   }
 
-  // Si murió otro jugador, hay que actualizar su entidad remota.
   if (clientWorld != nullptr)
   {
     clientWorld->applyRemotePlayerGhostState(deadPlayerId);
   }
 }
+
 void Game::handlePlayerStats(const PlayerStatsMessage &stats)
 {
   const int serverHp = stats.getHp();
@@ -2015,14 +2018,12 @@ void Game::handleEntitySpawn(const EntitySpawnMessage &spawnMsg)
 }
 void Game::handleInventoryUpdate(const InventoryUpdateMessage &inventoryMsg)
 {
-
   applyInventoryUpdate(inventoryMsg);
 
-  std::cout << "[CLIENT] MSG_INVENTORY_UPDATE recibido. items="
-            << inventoryMsg.getItems().size() << std::endl;
   if (playerState.isDead || playerState.hp <= 0)
   {
-    applyLocalPlayerGhostState();
+    localGhostStateApplied = false;
+    applyLocalPlayerGhostState(false);
   }
 }
 
@@ -2455,6 +2456,11 @@ void Game::handleMapChanged(const MapChangedMessage &msg)
 
   map = new Map(manager, *assets, "terrain", 3, 32);
   map->LoadMap(msg.getMapPath());
+
+  if (playerState.isDead)
+  {
+    pendingGhostReapply = true;
+  }
 
   std::cout << "[Game] ¡Nuevo mapa cargado exitosamente!" << std::endl;
 }

@@ -564,10 +564,11 @@ void GameWorld::tickPlayers(float deltaSeconds, WorldTickResult &result)
 
     for (auto &[id, player] : players)
     {
-        if (!player.isAlive() || player.isGhost() || player.getHp() == 0)
+        if (player.isMeditating())
         {
             continue;
         }
+
         const Tile &tile = mapData.at(
             static_cast<uint16_t>(player.getTileX()),
             static_cast<uint16_t>(player.getTileY()));
@@ -778,10 +779,12 @@ const std::unordered_map<uint32_t, Player> &GameWorld::getPlayers() const { retu
 void GameWorld::loadInitialInventoryForPlayer(Player &player)
 {
 
-    if (!player.getInventory().getItems().empty())
+    if (player.hasReceivedInitialInventory())
     {
         return;
     }
+
+    player.markInitialInventoryGiven();
 
     const std::string &className = player.getCls().name;
 

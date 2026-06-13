@@ -70,9 +70,11 @@ void GameClient::run()
     }
   }
 
+  const bool disconnectedByServer = receiver.wasClosedByError();
   gameLoop.clean();
 
   socket.shutdown(SHUT_RDWR);
+
   sendQueue.close();
   receiveQueue.close();
 
@@ -81,5 +83,14 @@ void GameClient::run()
 
   sender.join();
   receiver.join();
+
+  if (disconnectedByServer)
+  {
+    connectionLost = true;
+    SDL_Event quitEvent;
+    quitEvent.type = SDL_QUIT;
+    SDL_PushEvent(&quitEvent);
+  }
+
   SDL_RenderSetLogicalSize(renderer, 0, 0);
 }

@@ -179,6 +179,10 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry)
   if (!player)
     return;
 
+  monitor.broadcastExcept(
+      entry.playerId,
+      std::make_shared<const EntityDespawnMessage>(entry.playerId));
+
   Queue<std::shared_ptr<const Message>> *clientQueue =
       monitor.getQueue(entry.playerId);
 

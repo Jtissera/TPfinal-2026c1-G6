@@ -74,6 +74,7 @@ private:
     Manager manager;
 
     Uint32 resurrectionEndTime = 0;
+    bool pendingGhostReapply = false;
 
     std::unique_ptr<TextureManager> textureManager;
     std::unique_ptr<AssetManager> assets;
@@ -180,7 +181,7 @@ private:
     void refreshPlayerEquipmentVisuals();
     void renderEnemyHealthBars();
     bool isLocalPlayerDead() const;
-    void applyLocalPlayerGhostState();
+    void applyLocalPlayerGhostState(bool showMessage = true);
     void reviveLocalPlayer(int newHp);
     std::optional<ClientEquipmentSlot> toClientEquipmentSlot(int index) const;
     EquipSlot toServerEquipSlot(ClientEquipmentSlot slot) const;

@@ -65,6 +65,8 @@ public:
   uint8_t getAgility() const override;
   uint8_t getStrength() const override;
   int getAttackRange() const override;
+  bool hasReceivedInitialInventory() const { return initialInventoryGiven; }
+  void markInitialInventoryGiven() { initialInventoryGiven = true; }
 
   // Devuelve la posición X real en píxeles.
   float getPixelX() const;
@@ -101,6 +103,7 @@ public:
   Player &operator=(Player &&) = default;
 
 private:
+  bool initialInventoryGiven = false;
   bool resurrecting = false;
 
   uint32_t clientId;

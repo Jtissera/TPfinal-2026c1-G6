@@ -39,13 +39,31 @@ Client::Client(const char *hostname, const char *servname,
     : hostname(hostname), servname(servname),
       renderer(renderer), window(window),
       windowW(windowW), windowH(windowH),
-      config(ClientConfig::load()) // carga ~/.config/argentum/client.toml
+      config(ClientConfig::load()),
+      serverWatcher(hostname, servname, serverShutdownDetected)
 {
+}
+
+Client::~Client()
+{
+    if (serverWatcher.is_alive())
+    {
+        serverWatcher.stop();
+        serverWatcher.join();
+    }
 }
 
 int Client::run()
 {
+    serverWatcher.start();
+
     std::string pendingError;
+
+    auto detenerWatcher = [this]()
+    {
+        serverWatcher.stop();
+        serverWatcher.join();
+    };
 
     while (true)
     {
@@ -64,7 +82,10 @@ int Client::run()
         }
 
         if (menuResult == ScreenResult::QUIT)
+        {
+            detenerWatcher();
             return 0;
+        }
 
         // ---------------------- AR-80: Configuracion ----------------------
         if (menuResult == ScreenResult::GO_CONFIG)
@@ -73,8 +94,11 @@ int Client::run()
             ConfigScreen cfg(renderer, window, windowW, windowH, FONT_PATH, config);
             ScreenResult cfgResult = cfg.run();
             if (cfgResult == ScreenResult::QUIT)
+            {
+                detenerWatcher();
                 return 0;
-            continue; // vuelve al menú
+            }
+            continue;
         }
 
         // ---------------------- 2. Pantalla crear personaje/login ----------------------
@@ -92,7 +116,11 @@ int Client::run()
             ScreenResult charResult = charScreen.run();
 
             if (charResult == ScreenResult::QUIT)
+            {
+                std::cout << "[Client] Cerrando aplicación..." << std::endl;
+                detenerWatcher();
                 return 0;
+            }
             if (charResult == ScreenResult::GO_MAIN_MENU)
                 continue;
 
@@ -137,18 +165,28 @@ int Client::run()
                 ScreenResult lobbyResult = lobby.run();
 
                 if (lobbyResult == ScreenResult::QUIT)
+                {
+                    detenerWatcher();
                     return 0;
+                }
                 if (lobbyResult == ScreenResult::GO_MAIN_MENU)
                     continue;
 
                 if (lobbyResult == ScreenResult::GO_LOBBY)
                 {
                     PlayerDto playerDto = lobby.getJoinedPlayerDto();
-
                     std::string mapPath = lobby.getChosenMapPath();
 
-                    GameClient gameClient(socket, playerDto.playerID, playerDto, window, renderer, mapPath);
+                    GameClient gameClient(socket, playerDto.playerID, playerDto,
+                                          window, renderer, mapPath);
                     gameClient.run();
+
+                    if (gameClient.wasDisconnectedByServer() || serverShutdownDetected)
+                    {
+                        std::cerr << "[Client] Servidor cerró conexión." << std::endl;
+                        detenerWatcher();
+                        return 0;
+                    }
                 }
             }
 
@@ -156,13 +194,16 @@ int Client::run()
         }
         catch (const ClosedSocket &)
         {
-            pendingError = "Conexion cerrada por el servidor. (Operacion no soportada todavia)";
-            continue;
+            std::cerr << "[Client] Conexión perdida, cerrando cliente." << std::endl;
+            detenerWatcher();
+            return 0;
         }
         catch (const std::exception &e)
         {
-            pendingError = std::string("Error: ") + e.what();
-            continue;
+            pendingError = std::string("Error fatal: ") + e.what();
+            std::cerr << pendingError << std::endl;
+            detenerWatcher();
+            return 1;
         }
     }
 }
