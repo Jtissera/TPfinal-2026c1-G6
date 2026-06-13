@@ -37,6 +37,7 @@ public:
 
 private:
     static constexpr int CHAT_MAX_LINES = 4;
+    static constexpr int HISTORY_MAX_LINES = 100;
     static constexpr int CHAT_MAX_INPUT = 120;
     static constexpr int LINE_H = 14;
 
@@ -60,6 +61,8 @@ private:
     bool focused = false;
     bool pendingInput = false;
     std::string pendingText;
+
+    int scrollOffset = 0;
 
     void renderText(SDL_Renderer *renderer, TTF_Font *font,
                     const std::string &text, SDL_Color color,

@@ -44,7 +44,7 @@ CityResult PriestHandler::handleRemoteResurrect(Player &player)
     resSystem.enqueue(player.getId(), nearest->first, nearest->second, delayMs);
     player.startResurrection();
 
-    return {true, "Estás siendo llevado ante el sacerdote..."};
+    return {true, "Estás siendo llevado ante el sacerdote...", static_cast<uint32_t>(delayMs)};
 }
 
 CityResult PriestHandler::handleHeal(Player &player)

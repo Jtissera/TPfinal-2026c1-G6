@@ -74,7 +74,14 @@ public:
       uint16_t tileX;
       uint16_t tileY;
     };
+
+    struct ResurrectStartedInfo
+    {
+      uint32_t playerId;
+      uint32_t delayMs;
+    };
     std::vector<PlayerResurrection> playersResurrected;
+    std::vector<ResurrectStartedInfo> resurrectionStarted;
   };
 
   void addPlayer(Player player);
@@ -156,6 +163,8 @@ private:
   std::unordered_map<uint32_t, Player> players;
   GroundManager groundManager;
   SpawnManager spawnManager;
+
+  std::vector<WorldTickResult::ResurrectStartedInfo> pendingResurrectionStarts;
 
   int tileSize;
   float npcRespawnDelayMs = 5000.0f; // toml

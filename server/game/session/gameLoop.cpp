@@ -74,6 +74,13 @@ void GameLoop::worldUpdate(float deltaSeconds)
 
   auto result = world.tick(deltaSeconds);
 
+  for (const auto &info : result.resurrectionStarted)
+  {
+    monitor.sendTo(info.playerId, std::make_shared<ResurrectionStartedMessage>(info.delayMs));
+    std::cout << "[GameLoop] Enviando MSG_RESURRECTION_STARTED a player " << info.playerId
+              << " Delay: " << info.delayMs << "ms" << std::endl;
+  }
+
   // Si cambiaron stats de jugadores, mandamos stats actualizadas.
   for (const auto &hit : result.playerHits)
   {

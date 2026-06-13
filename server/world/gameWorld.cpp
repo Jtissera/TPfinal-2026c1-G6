@@ -225,48 +225,14 @@ GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId, uint32_t 
         giveExperience(attackerId, killExp);
     }
 
-    // Guardamos el oro antes de morir para saber cuánto tenía realmente.
-    const uint32_t victimGoldBefore = target.getGold();
-
-    // Calculamos cuánto oro puede conservar el muerto según su nivel.
     const uint32_t safeGold = formulas.calcMaxGold(target.getLevel());
 
-    // Procesamos la muerte.
-    // Esta función deja al muerto con safeGold como máximo
-    // y devuelve el oro excedente.
     const uint32_t excessGold = target.die(safeGold);
 
-    std::cout << "[PVP GOLD BEFORE DIE] victimId="
-              << targetId
-              << " killerId="
-              << attackerId
-              << " victimGoldBefore="
-              << victimGoldBefore
-              << " safeGold="
-              << safeGold
-              << " excessGold="
-              << excessGold
-              << " victimGoldAfter="
-              << target.getGold()
-              << std::endl;
-
-    // Según alcance actual, el oro en exceso va directo al killer.
     if (excessGold > 0 && attackerId != 0)
     {
         Player &attacker = getPlayer(attackerId);
         attacker.addGold(excessGold);
-
-        std::cout << "[PVP GOLD] killerId="
-                  << attackerId
-                  << " victimId="
-                  << targetId
-                  << " excessGold="
-                  << excessGold
-                  << " killerGold="
-                  << attacker.getGold()
-                  << " victimGold="
-                  << target.getGold()
-                  << std::endl;
     }
 
     std::vector<Item> items = target.purgeInventoryOnDeath();
@@ -474,6 +440,9 @@ const std::unordered_map<uint32_t, Npc> &GameWorld::getNpcs() const
 GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds)
 {
     WorldTickResult result;
+
+    result.resurrectionStarted = std::move(pendingResurrectionStarts);
+    pendingResurrectionStarts.clear();
 
     float deltaMs = deltaSeconds * 1000.0f;
     resurrectionSystem.tick(deltaMs, [this, &result](uint32_t pid, int tx, int ty)
@@ -897,7 +866,13 @@ CityResult GameWorld::handleCityInteraction(uint32_t playerId,
 CityResult GameWorld::handleRemoteResurrect(uint32_t playerId)
 {
     Player &player = getPlayer(playerId);
-    return priestHandler.handleRemoteResurrect(player);
+    CityResult res = priestHandler.handleRemoteResurrect(player);
+
+    if (res.ok && res.actionDelayMs > 0)
+    {
+        pendingResurrectionStarts.push_back({playerId, res.actionDelayMs});
+    }
+    return res;
 }
 
 std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const

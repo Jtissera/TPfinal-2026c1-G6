@@ -424,9 +424,45 @@ void Game::render()
       statusMessageTexture = nullptr;
     }
   }
+  if (resurrectionEndTime > 0)
+  {
+    const Uint32 now = SDL_GetTicks();
+    if (now < resurrectionEndTime)
+    {
+      const Uint32 remainingMs = resurrectionEndTime - now;
+      const int seconds = (remainingMs / 1000) + 1;
 
+      std::string countdownText = "Resucitando en " + std::to_string(seconds) + "s...";
+
+      TTF_Font *resFont = assets->GetFont("ao_regular");
+      SDL_Color yellow = {255, 220, 60, 255};
+
+      SDL_Surface *surf = TTF_RenderUTF8_Blended(resFont, countdownText.c_str(), yellow);
+      if (surf)
+      {
+        SDL_Texture *tex = SDL_CreateTextureFromSurface(renderer, surf);
+        if (tex)
+        {
+          SDL_Rect dest = {(900 - surf->w) / 2, (687 - surf->h) / 2, surf->w, surf->h};
+
+          SDL_Rect bg = {dest.x - 10, dest.y - 5, dest.w + 20, dest.h + 10};
+          SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+          SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
+          SDL_RenderFillRect(renderer, &bg);
+          SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
+          SDL_RenderCopy(renderer, tex, nullptr, &dest);
+          SDL_DestroyTexture(tex);
+        }
+        SDL_FreeSurface(surf);
+      }
+    }
+    else
+    {
+      resurrectionEndTime = 0;
+    }
+  }
   renderHUD();
-  // Mini-chat: log + input box sobre el área hud_chat.
   TTF_Font *chatFont = assets->GetFont("ao_regular");
   miniChat.render(renderer, chatFont);
   SDL_RenderPresent(renderer);
@@ -2041,6 +2077,7 @@ void Game::processServerMessage(const Message &msg)
     return;
   }
   case ServerOpCode::MSG_PLAYER_RESURRECTED:
+    resurrectionEndTime = 0;
     std::cout << "[CLIENT] MSG_PLAYER_RESURRECTED recibido" << std::endl;
     handlePlayerResurrected(static_cast<const PlayerResurrectedMessage &>(msg));
     return;
@@ -2052,6 +2089,12 @@ void Game::processServerMessage(const Message &msg)
     handleChatNotification(
         static_cast<const ChatNotificationMessage &>(msg));
     return;
+  case ServerOpCode::MSG_RESURRECTION_STARTED:
+  {
+    const auto &resMsg = static_cast<const ResurrectionStartedMessage &>(msg);
+    resurrectionEndTime = SDL_GetTicks() + resMsg.getDelayMs();
+    return;
+  }
 
   default:
     return;

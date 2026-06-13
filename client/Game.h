@@ -30,6 +30,7 @@
 #include "common/network/messages/server/npc/npcHealthMessage.h"
 #include "common/network/messages/server/npc/npcMoveMessage.h"
 #include "common/network/messages/server/player/levelUpMessage.h"
+#include "common/network/messages/server/player/resurrectionStartedMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
@@ -71,6 +72,8 @@ private:
     SDL_Renderer *renderer = nullptr;
     SDL_Event event{};
     Manager manager;
+
+    Uint32 resurrectionEndTime = 0;
 
     std::unique_ptr<TextureManager> textureManager;
     std::unique_ptr<AssetManager> assets;

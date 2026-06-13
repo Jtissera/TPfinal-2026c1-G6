@@ -1,4 +1,3 @@
-
 #include "AttackSystem.h"
 #include <algorithm>
 #include <iostream>
@@ -64,10 +63,6 @@ void AttackSystem::handleMouseClick(
         // Validación visual solamente.
         // No cortamos el ataque porque el server es la autoridad real.
         if (!isTargetInRange(player, *target.entity, attackRange)) {
-            std::cout << "[ATTACK] Cliente detecta fuera de rango. "
-                      << "Se manda igual; server valida. Rango="
-                      << attackRange
-                      << std::endl;
         }
 
         // El cliente solo manda intención de ataque.
@@ -96,9 +91,6 @@ bool AttackSystem::applyDamage(uint32_t targetId, int damage) {
     // Aplicamos daño.
     enemyHealth[targetId] -= damage;
 
-    std::cout << "Enemigo id=" << targetId
-              << " vida restante=" << enemyHealth[targetId]
-              << std::endl;
 
 
     if (enemyHealth[targetId] < 0) {
@@ -109,7 +101,7 @@ bool AttackSystem::applyDamage(uint32_t targetId, int damage) {
 }
 
 void AttackSystem::createLocalAttackEffect(
-    uint32_t targetId,
+    uint32_t /*targetId*/,
     Entity& target,
     const SDL_Rect& camera
 ) {
@@ -134,44 +126,14 @@ void AttackSystem::createLocalAttackEffect(
     effect.durationMs = 500;
 
     attackEffects.push_back(effect);
-
-    std::cout << "[ATTACK EFFECT CREATE] targetId="
-              << targetId
-              << " world=("
-              << effect.x
-              << ", "
-              << effect.y
-              << ") total="
-              << attackEffects.size()
-              << std::endl;
 }
 
 void AttackSystem::sendAttackMessage(uint32_t targetId,Queue<std::shared_ptr<const Message>>* sendQueue) {
-    // Si no hay cola de envío, no podemos mandar nada al server.
     if (sendQueue == nullptr) {
         return;
     }
 
-
     sendQueue->try_push(std::make_shared<const AttackMessage>(targetId));
-
-    std::cout << "[ATTACK] AttackMessage enviado. targetId="<< targetId<< std::endl;
-}
-
-void AttackSystem::update() {
-    Uint32 now = SDL_GetTicks();
-
-    // Eliminamos los efectos que ya superaron su duración.
-    attackEffects.erase(
-        std::remove_if(
-            attackEffects.begin(),
-            attackEffects.end(),
-            [now](const AttackEffect& e) {
-                return now - e.createdAt > e.durationMs;
-            }
-        ),
-        attackEffects.end()
-    );
 }
 
 void AttackSystem::render(
@@ -182,9 +144,6 @@ void AttackSystem::render(
     SDL_Texture* texAtk = assets.GetTexture("effect_attack_magic_01");
 
     if (texAtk == nullptr) {
-        std::cout << "[ATTACK EFFECT] No se encontró textura: "
-                  << "effect_attack_magic_01"
-                  << std::endl;
         return;
     }
 
@@ -192,10 +151,6 @@ void AttackSystem::render(
 
     const int frameWidth = 64;
     const int frameHeight = 64;
-
-    // Frames visibles del spritesheet.
-    // Fila 0: primeros 5 frames.
-    // Fila 1: primeros 6 frames.
     const int totalFrames = 11;
 
     for (auto& ef : attackEffects) {
@@ -211,23 +166,15 @@ void AttackSystem::render(
         int srcY = 0;
 
         if (frame < 5) {
-            // Primera fila: columnas 0 a 4.
             srcX = frame * frameWidth;
             srcY = 0;
         } else {
-            // Segunda fila: columnas 0 a 5.
             const int secondRowFrame = frame - 5;
             srcX = secondRowFrame * frameWidth;
             srcY = 64;
         }
 
-        SDL_Rect src = {
-            srcX,
-            srcY,
-            frameWidth,
-            frameHeight
-        };
-
+        SDL_Rect src = { srcX, srcY, frameWidth, frameHeight };
         SDL_Rect dst = {
             ef.x - camera.x,
             ef.y - camera.y + 133,
@@ -331,12 +278,6 @@ void AttackSystem::markEnemyAsDead(uint32_t enemyId) {
         enemyMaxHealth[enemyId] = 100;
     }
 
-    std::cout << "[ENEMY] enemigo id="
-              << enemyId
-              << " muerto visualmente. Respawn en "
-              << enemyRespawnMs
-              << " ms."
-              << std::endl;
 }
 
 bool AttackSystem::isEnemyDead(uint32_t enemyId) const {
@@ -385,22 +326,14 @@ void AttackSystem::updateRespawns(std::map<uint32_t, Entity*>& enemies) {
         chasingEnemies.erase(enemyId);
 
         enemyLastAttackAt.erase(enemyId);
-        std::cout << "[ENEMY] enemigo id="
-                  << enemyId
-                  << " reapareció con HP="
-                  << maxHp
-                  << std::endl;
     }
 }
 
 EnemyChaseResult AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp) {
-    // Si no hay jugador, no hay nada que perseguir.
     if (player == nullptr) {
         return EnemyChaseResult::PlayerStillAlive;
     }
 
-    // Si el jugador ya está muerto, cortamos aggro y no actualizamos enemigos.
-    // Esta regla evita que queden persiguiendo a un fantasma.
     if (playerHp <= 0) {
         playerHp = 0;
         clearEnemyAggro();
@@ -408,37 +341,28 @@ EnemyChaseResult AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& ene
     }
 
     auto& playerTransform = player->getComponent<TransformComponent>();
-
     float playerCenterX = playerTransform.position.x + 16.0f;
     float playerCenterY = playerTransform.position.y + 32.0f;
 
+    // PERF: iterar sin copiar el set — acumular borrados y aplicarlos al final.
+    std::vector<uint32_t> toErase;
 
-    std::vector<uint32_t> chasingIds(
-        chasingEnemies.begin(),
-        chasingEnemies.end()
-    );
-
-    for (uint32_t enemyId : chasingIds) {
-        // Si el jugador murió por un enemigo anterior en este mismo frame,
-        // cortamos inmediatamente.
+    for (uint32_t enemyId : chasingEnemies) {
         if (playerHp <= 0) {
             playerHp = 0;
             clearEnemyAggro();
             return EnemyChaseResult::PlayerDied;
         }
 
-        // Si el enemigo está muerto, no puede perseguir ni atacar.
         if (isEnemyDead(enemyId)) {
-            chasingEnemies.erase(enemyId);
+            toErase.push_back(enemyId);
             enemyLastAttackAt.erase(enemyId);
             continue;
         }
 
         auto it = enemies.find(enemyId);
-
-        // Si el enemigo no existe visualmente, limpiamos su estado.
         if (it == enemies.end() || it->second == nullptr) {
-            chasingEnemies.erase(enemyId);
+            toErase.push_back(enemyId);
             enemyLastAttackAt.erase(enemyId);
             continue;
         }
@@ -446,51 +370,22 @@ EnemyChaseResult AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& ene
         Entity* enemy = it->second;
         auto& enemyTransform = enemy->getComponent<TransformComponent>();
 
-        float enemyCenterX = enemyTransform.position.x + 16.0f;
-        float enemyCenterY = enemyTransform.position.y + 32.0f;
+        float dx = playerCenterX - (enemyTransform.position.x + 16.0f);
+        float dy = playerCenterY - (enemyTransform.position.y + 32.0f);
 
-        float dx = playerCenterX - enemyCenterX;
-        float dy = playerCenterY - enemyCenterY;
-
-        float distance = std::sqrt(dx * dx + dy * dy);
-
-        // Si están en la misma posición, no normalizamos para evitar división por cero.
-        if (distance <= 0.01f) {
+        // PERF: evitar sqrt — usar distSq para el check de posición mínima.
+        float distSq = dx * dx + dy * dy;
+        if (distSq <= 0.0001f)
             continue;
-        }
 
-        // Si el enemigo está cerca, intenta atacar con cooldown.
-        // if (distance <= enemyStopDistance) {
-        //     Uint32 lastAttack = 0;
-        //
-        //     auto lastIt = enemyLastAttackAt.find(enemyId);
-        //     if (lastIt != enemyLastAttackAt.end()) {
-        //         lastAttack = lastIt->second;
-        //     }
-        //
-        //     // if (now - lastAttack >= enemyAttackCooldownMs) {
-        //     //     enemyLastAttackAt[enemyId] = now;
-        //     //     if (sendQueue != nullptr) {
-        //     //         sendQueue->try_push(std::make_shared<const EnemyHitPlayerMessage>(enemyId));
-        //     //     }
-        //     //
-        //     //     std::cout << "[ENEMY ATTACK] enemigo id="
-        //     //               << enemyId
-        //     //               << " atacó. Mensaje enviado al server."
-        //     //               << std::endl;
-        //     //
-        //     // }
-        //
-        //     continue;
-        // }
-
-        // Si está lejos, persigue.
-        float dirX = dx / distance;
-        float dirY = dy / distance;
-
-        enemyTransform.position.x += dirX * enemyChaseSpeed;
-        enemyTransform.position.y += dirY * enemyChaseSpeed;
+        // Normalizar: un sqrt por enemigo activo (inevitable para la dirección).
+        float invDist = 1.0f / std::sqrt(distSq);
+        enemyTransform.position.x += dx * invDist * enemyChaseSpeed;
+        enemyTransform.position.y += dy * invDist * enemyChaseSpeed;
     }
+
+    for (uint32_t id : toErase)
+        chasingEnemies.erase(id);
 
     return EnemyChaseResult::PlayerStillAlive;
 }
@@ -516,33 +411,30 @@ int AttackSystem::getEnemyMaxHealth(uint32_t enemyId) const {
 }
 
 void AttackSystem::clearEnemyAggro() {
-    // Limpiamos todos los enemigos que estaban persiguiendo al jugador.
-    // Esto corta el estado de combate cuando el jugador muere.
     chasingEnemies.clear();
-
-    // Limpiamos cooldowns de ataque para no conservar estado viejo.
-    // Si luego el jugador revive, los enemigos no deben pegar instantáneamente
-    // por cooldown heredado de una vida anterior.
     enemyLastAttackAt.clear();
+}
 
-    std::cout << "[ENEMY] Aggro limpiado. Los enemigos dejan de perseguir." << std::endl;
+void AttackSystem::update() {
+    Uint32 now = SDL_GetTicks();
+    attackEffects.erase(
+        std::remove_if(
+            attackEffects.begin(),
+            attackEffects.end(),
+            [now](const AttackEffect& e) {
+                return now - e.createdAt > e.durationMs;
+            }
+        ),
+        attackEffects.end()
+    );
 }
 
 void AttackSystem::setEnemyHealth(uint32_t enemyId, int hp, int maxHp) {
-    // Normalizamos valores para evitar vida negativa o máximo inválido.
-    if (maxHp < 0) {
-        maxHp = 0;
-    }
+    if (maxHp < 0) maxHp = 0;
+    if (hp < 0)    hp = 0;
+    if (hp > maxHp) hp = maxHp;
 
-    if (hp < 0) {
-        hp = 0;
-    }
-
-    if (hp > maxHp) {
-        hp = maxHp;
-    }
-
-    enemyHealth[enemyId] = hp;
+    enemyHealth[enemyId]    = hp;
     enemyMaxHealth[enemyId] = maxHp;
 
     if (hp <= 0) {
@@ -550,12 +442,4 @@ void AttackSystem::setEnemyHealth(uint32_t enemyId, int hp, int maxHp) {
     } else {
         deadEnemies.erase(enemyId);
     }
-
-    std::cout << "[ATTACK SYSTEM] vida NPC actualizada id="
-              << enemyId
-              << " hp="
-              << hp
-              << "/"
-              << maxHp
-              << std::endl;
 }

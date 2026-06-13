@@ -22,8 +22,11 @@ SDL_Color MiniChat::colorFor(ChatMsgType type)
 void MiniChat::appendLine(const std::string &text, ChatMsgType type)
 {
     lines.push_back({text, type});
-    if (static_cast<int>(lines.size()) > CHAT_MAX_LINES)
+
+    if (static_cast<int>(lines.size()) > HISTORY_MAX_LINES)
         lines.pop_front();
+
+    scrollOffset = 0;
 }
 
 void MiniChat::setFocused(bool f)
@@ -64,6 +67,32 @@ bool MiniChat::handleEvent(const SDL_Event &event)
         if (focused)
             setFocused(false);
         return false;
+    }
+
+    if (event.type == SDL_MOUSEWHEEL)
+    {
+        int mx, my;
+        SDL_GetMouseState(&mx, &my);
+
+        if (mx >= 0 && mx <= 900 && my >= 33 && my <= 133)
+        {
+            if (event.wheel.y > 0)
+            {
+                scrollOffset++;
+            }
+            else if (event.wheel.y < 0)
+            {
+                scrollOffset--;
+            }
+
+            int maxScroll = std::max(0, static_cast<int>(lines.size()) - CHAT_MAX_LINES);
+            if (scrollOffset > maxScroll)
+                scrollOffset = maxScroll;
+            if (scrollOffset < 0)
+                scrollOffset = 0;
+
+            return true;
+        }
     }
 
     if (!focused)
@@ -137,10 +166,17 @@ void MiniChat::renderText(SDL_Renderer *renderer, TTF_Font *font,
 
 void MiniChat::render(SDL_Renderer *renderer, TTF_Font *font) const
 {
-    const int count = static_cast<int>(lines.size());
-    for (int i = 0; i < count; ++i)
+    const int totalLines = static_cast<int>(lines.size());
+    const int visibleCount = std::min(totalLines, CHAT_MAX_LINES);
+
+    int startIndex = totalLines - CHAT_MAX_LINES - scrollOffset;
+    if (startIndex < 0)
+        startIndex = 0;
+
+    for (int i = 0; i < visibleCount; ++i)
     {
-        renderText(renderer, font, lines[i].text, colorFor(lines[i].type),
+        int lineIndex = startIndex + i;
+        renderText(renderer, font, lines[lineIndex].text, colorFor(lines[lineIndex].type),
                    LOG_X, LOG_Y + i * LINE_H, LOG_W);
     }
 

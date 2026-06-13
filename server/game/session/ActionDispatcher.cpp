@@ -718,6 +718,7 @@ void ActionDispatcher::handleInteractNpc(uint32_t id, const Message &msg,
         }
         auto result = world.handleRemoteResurrect(id);
         monitor.sendTo(id, std::make_shared<const NpcResponseMessage>(result.message));
+
         return;
     }
 
