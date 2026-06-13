@@ -210,12 +210,6 @@ void NpcManager::startRespawn(uint32_t npcId, float respawnMs) {
     }
 
     it->second.startRespawn(respawnMs);
-
-    std::cout << "[NPC MANAGER] start respawn npcId="
-              << npcId
-              << " respawnMs="
-              << respawnMs
-              << std::endl;
 }
 
 std::vector<uint32_t> NpcManager::tickRespawns(float deltaMs) {

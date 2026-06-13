@@ -42,6 +42,20 @@ NpcAI::decide(const Npc &npc,
 uint32_t NpcAI::findClosestPlayerId(
     const Npc &npc, const std::unordered_map<uint32_t, Player> &players) const {
 
+  // PERF: si el NPC ya tiene target asignado, verificar si sigue vivo y en rango
+  // antes de hacer O(N) búsqueda completa. Evita 2400+ comparaciones/seg con 20 NPCs.
+  const uint32_t currentTarget = npc.getTargetId();
+  if (currentTarget != 0) {
+    auto it = players.find(currentTarget);
+    if (it != players.end() && it->second.isAlive()) {
+      int dist = distance(npc.getTileX(), npc.getTileY(),
+                          it->second.getTileX(), it->second.getTileY());
+      if (dist <= npc.getDetectionRange())
+        return currentTarget;  // target existente sigue válido, no buscar más
+    }
+  }
+
+  // Búsqueda completa solo cuando no hay target válido.
   uint32_t closestId = 0;
   int minDist = npc.getDetectionRange() + 1;
 
