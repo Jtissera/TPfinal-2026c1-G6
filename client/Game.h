@@ -14,6 +14,7 @@
 #include "sdl/Map.h"
 #include "common/queue.h"
 #include "sdl/AttackSystem.h"
+#include "sdl/AudioManager.h"
 #include <memory>
 #include "sdl/world/ClientGameWorld.h"
 
@@ -156,6 +157,8 @@ private:
     bool sameColor(SDL_Color a, SDL_Color b) const;
     void drawEquippedEntity(Entity *entity, RenderContext &context);
     // --- Cheats ---
+    AudioManager audioManager;
+
     bool cheatGodMode = false; // Ctrl+H: vida y mana siempre al maximo
     bool cheatInfMana = false; // Ctrl+M: mana siempre al maximo
     void handleCheatKeys();
