@@ -15,10 +15,12 @@
 #include "network/acceptor.h"
 #include "network/receiverRegistry.h"
 #include "npc/npcRepository.h"
+#include "persistence/characterArchive.h"
+#include "persistence/gameArchive.h"
+#include "persistence/playerArchive.h"
 #include <toml++/toml.h>
 
-class Server
-{
+class Server {
 public:
   explicit Server(const char *servname);
   int run();
@@ -29,6 +31,8 @@ private:
   RaceRepository raceRepo;
   PlayerFactory playerFactory;
   PlayerRepository playerRepo;
+  PlayerArchive playerArchive;
+  CharacterArchive characterArchive;
 
   Monitor lobbyMonitor;
   Queue<ClientMessage> lobbyQueue;
@@ -37,6 +41,7 @@ private:
   ReceiverRegistry receiverRegistry;
   Queue<std::shared_ptr<LeaveEvent>> leaveQueue;
   Queue<std::shared_ptr<InstanceTransitionEvent>> transitionQueue;
+  GameArchive gameArchive;
   GameManager gameManager;
   LobbyHandler lobbyHandler;
 

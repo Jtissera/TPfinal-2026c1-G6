@@ -12,8 +12,7 @@
 #include "inventory.h"
 #include "playerState.h"
 
-class Player : public Combatant
-{
+class Player : public Combatant {
 public:
   Player(uint32_t clientId, std::string name, const RaceStats &race,
          const ClassStats &cls, int16_t maxHp, int16_t maxMana,
@@ -49,6 +48,13 @@ public:
 
   void setTilePos(int tx, int ty);
   void setPixelPos(float tx, float ty);
+  void setHp(int16_t newHp);
+  void setMana(int16_t newMana);
+  void setLevel(uint8_t newLevel);
+  void setGold(uint32_t newGold);
+  void setExp(uint32_t newExp);
+  void forceGhostState();
+  void setClientId(uint32_t id);
 
   int getTileX() const override { return static_cast<int>(pixelX) / TILE_SIZE; }
   int getTileY() const override { return static_cast<int>(pixelY) / TILE_SIZE; }

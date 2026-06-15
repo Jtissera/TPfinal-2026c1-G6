@@ -1,10 +1,11 @@
 #pragma once
 
-#include "../../lobby/leaveEvent.h"
 #include "../../lobby/instanceTransitionEvent.h"
+#include "../../lobby/leaveEvent.h"
+#include "../../persistence/playerArchive.h"
 #include "../common/network/messages/client/movement/moveMessage.h"
-#include "../common/network/messages/server/player/EntityMoveMessage.h"
 #include "../common/network/messages/server/player/EntityDespawnMessage.h"
+#include "../common/network/messages/server/player/EntityMoveMessage.h"
 #include "../common/network/protocol/clientOpCode.h"
 #include "../session/statManager.h"
 
@@ -18,12 +19,13 @@
 #include "../common/thread.h"
 #include "ActionDispatcher.h"
 
-class GameLoop : public Thread
-{
+class GameLoop : public Thread {
 public:
   GameLoop(Queue<ClientMessage> &gameQueue, Monitor &monitor, GameWorld &world,
-           Queue<std::shared_ptr<LeaveEvent>> &leaveQueue, Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue, uint32_t gameId,
-           const toml::table &config);
+           Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
+           Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
+           uint32_t gameId, const toml::table &config, PlayerArchive &archive,
+           const std::string &mapId);
   void run() override;
   void stop() override;
 
@@ -31,6 +33,10 @@ public:
   GameLoop &operator=(const GameLoop &) = delete;
 
 private:
+  PlayerArchive &archive;
+  std::string mapId;
+  uint32_t persistTickCounter = 0;
+  uint32_t persistEveryNTicks = 0;
   Queue<ClientMessage> &gameQueue;
   Monitor &monitor;
   ActionDispatcher dispatcher;

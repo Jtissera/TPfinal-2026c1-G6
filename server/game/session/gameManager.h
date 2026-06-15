@@ -12,18 +12,19 @@
 #include "../../../common/network/messages/server/lobby/gameListMessage.h"
 #include "../../../common/queue.h"
 #include "../../clientMessage.h"
+#include "../../lobby/instanceTransitionEvent.h"
 #include "../../lobby/leaveEvent.h"
+#include "../../persistence/gameArchive.h"
 #include "../player/Player.h"
 #include "gameRoom.h"
-#include "../../lobby/instanceTransitionEvent.h"
 
-class GameManager
-{
+class GameManager {
 public:
   GameManager(NpcFactory &, ItemRepository &,
               Queue<std::shared_ptr<LeaveEvent>> &,
               Queue<std::shared_ptr<InstanceTransitionEvent>> &,
-              const toml::table &);
+              const toml::table &, PlayerArchive &archive,
+              GameArchive &gameArchive);
 
   uint32_t createGame(const std::string &gameName, uint8_t maxPlayers,
                       const std::string &mapPath = "");
@@ -40,16 +41,20 @@ public:
   void stopAll();
 
   uint32_t getOriginRoomId(uint32_t instanceRoomId) const;
-  uint32_t getOrCreateInstance(const std::string &mapPath, uint32_t originRoomId);
+  uint32_t getOrCreateInstance(const std::string &mapPath,
+                               uint32_t originRoomId);
   Queue<ClientMessage> &getGameQueue(uint32_t gameId);
-  void broadcastExceptInGame(uint32_t gameId, uint32_t excludeId, const std::shared_ptr<const Message> &msg);
+  void broadcastExceptInGame(uint32_t gameId, uint32_t excludeId,
+                             const std::shared_ptr<const Message> &msg);
   const GameWorld *getGameWorld(uint32_t gameId) const;
   void syncPlayerJoin(uint32_t gameId, uint32_t playerId);
   std::string getRoomMapPath(uint32_t gameId) const;
+  void restoreFromArchive();
 
 private:
   const toml::table &config;
   mutable std::mutex mutex;
+  GameArchive &gameArchive;
   uint32_t nextGameId = 1;
 
   void cleanEmptyInstances();
@@ -59,6 +64,7 @@ private:
 
   NpcFactory &npcFactory;
   ItemRepository &itemRepo;
+  PlayerArchive &archive;
 
   Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue;
   Queue<std::shared_ptr<LeaveEvent>> &leaveQueue;
