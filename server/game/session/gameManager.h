@@ -8,6 +8,7 @@
 #include <toml++/toml.hpp>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 #include "../../../common/network/messages/server/lobby/gameListMessage.h"
 #include "../../../common/queue.h"
@@ -17,8 +18,10 @@
 #include "../../persistence/gameArchive.h"
 #include "../player/Player.h"
 #include "gameRoom.h"
+#include "server/game/clan/clanManager.h"
 
-class GameManager {
+class GameManager
+{
 public:
   GameManager(NpcFactory &, ItemRepository &,
               Queue<std::shared_ptr<LeaveEvent>> &,
@@ -51,6 +54,10 @@ public:
   std::string getRoomMapPath(uint32_t gameId) const;
   void restoreFromArchive();
 
+  void sendToClient(uint32_t clientId, const std::shared_ptr<const Message> &msg);
+  std::optional<uint32_t> findOnlineClientByNick(const std::string &nick) const;
+  void updatePlayerClanState(const std::string &nick, const std::string &clanName, bool isFounder);
+
 private:
   const toml::table &config;
   mutable std::mutex mutex;
@@ -61,6 +68,9 @@ private:
 
   std::unordered_map<uint32_t, std::unique_ptr<GameRoom>> rooms;
   std::unordered_map<uint32_t, uint32_t> clientRoom;
+
+  std::unordered_map<uint32_t, std::string> clientNick;
+  std::unordered_map<std::string, uint32_t> nickToClient;
 
   NpcFactory &npcFactory;
   ItemRepository &itemRepo;

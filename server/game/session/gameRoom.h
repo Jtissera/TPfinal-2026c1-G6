@@ -18,7 +18,8 @@
 #include "gameLoop.h"
 #include "server/game/equipmentDtoFactory.h"
 
-class GameRoom {
+class GameRoom
+{
 public:
   GameRoom(uint32_t gameId, std::string gameName, const std::string &mapPath,
            bool isInstance, uint32_t originRoomId, NpcFactory &npcFactory,
@@ -52,6 +53,9 @@ public:
   void start();
   void stop();
   void join();
+
+  const Player *findPlayer(uint32_t clientId) const;
+  void sendTo(uint32_t clientId, const std::shared_ptr<const Message> &msg);
 
 private:
   uint32_t gameId;

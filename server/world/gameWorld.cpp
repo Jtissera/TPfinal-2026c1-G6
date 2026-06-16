@@ -1,4 +1,5 @@
 #include "gameWorld.h"
+#include "../game/clan/clanManager.h"
 
 GameWorld::GameWorld(const std::string &mapPath,
                      NpcFactory &npcFactory,
@@ -972,4 +973,48 @@ std::optional<uint32_t> GameWorld::findPlayerIdByName(const std::string &name) c
             return id;
     }
     return std::nullopt;
+}
+
+int GameWorld::countClanAlliesNear(const Player &player, int radiusTiles) const
+{
+    auto playerClanInfo = ClanManager::instance().findClanInfoForMember(player.getName());
+    if (!playerClanInfo)
+        return 0; // No tiene clan, no tiene aliados cerca
+
+    const std::string &playerClan = playerClanInfo->first;
+    int count = 0;
+
+    for (const auto &[id, other] : players)
+    {
+        if (id == player.getId() || !other.isAlive())
+            continue;
+
+        auto otherClanInfo = ClanManager::instance().findClanInfoForMember(other.getName());
+        if (otherClanInfo && otherClanInfo->first == playerClan)
+        {
+            const int dx = std::abs(other.getTileX() - player.getTileX());
+            const int dy = std::abs(other.getTileY() - player.getTileY());
+            if (dx <= radiusTiles && dy <= radiusTiles)
+                count++;
+        }
+    }
+    return count;
+}
+
+std::vector<uint32_t> GameWorld::getOnlineClanMemberIds(const std::string &clanName) const
+{
+    std::vector<uint32_t> clanMembers;
+
+    for (const auto &[id, other] : players)
+    {
+        if (!other.isAlive())
+            continue;
+
+        auto otherClanInfo = ClanManager::instance().findClanInfoForMember(other.getName());
+        if (otherClanInfo && otherClanInfo->first == clanName)
+        {
+            clanMembers.push_back(id);
+        }
+    }
+    return clanMembers;
 }

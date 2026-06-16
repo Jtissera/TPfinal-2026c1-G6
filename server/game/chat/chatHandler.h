@@ -5,6 +5,10 @@
 #include "server/monitorQueues.h"
 #include "server/world/gameWorld.h"
 #include "server/game/player/Player.h"
+namespace
+{
+    constexpr uint8_t CLAN_MIN_LEVEL_TO_FOUND = 6;
+}
 
 class ChatHandler
 {

@@ -24,6 +24,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+#include <cstdlib>
 
 class GameWorld
 {
@@ -141,6 +142,9 @@ public:
                                    const CityCommand &cmd);
   CityResult handleRemoteResurrect(uint32_t playerId);
   std::optional<NpcType> getNpcTypeAtTile(int tileX, int tileY) const;
+
+  int countClanAlliesNear(const Player &player, int radiusTiles) const;
+  std::vector<uint32_t> getOnlineClanMemberIds(const std::string &clanName) const;
 
 private:
   static constexpr int TILE_SIZE = 96;            // a toml

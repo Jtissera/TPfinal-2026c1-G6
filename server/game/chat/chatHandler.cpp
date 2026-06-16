@@ -6,6 +6,8 @@
 #include "server/game/stats/gameFormulas.h"
 #include "server/city/cityCommandParser.h"
 #include "server/city/cityResult.h"
+#include "server/game/clan/clanManager.h"
+#include "server/game/clan/clan.h"
 
 void ChatHandler::sendChat(uint32_t clientId,
                            const std::string &text,
@@ -148,6 +150,243 @@ void ChatHandler::handleCommand(uint32_t senderId,
         return;
     }
 
+    if (cmd == "fundar-clan")
+    {
+        if (arg.empty())
+        {
+            sendChat(senderId, "Uso: /fundar-clan <nombre>", ChatMsgType::INFO, monitor);
+            return;
+        }
+
+        Player &p = world.getPlayer(senderId);
+
+        if (p.getLevel() < CLAN_MIN_LEVEL_TO_FOUND)
+        {
+            sendChat(senderId,
+                     "Necesitás ser nivel " + std::to_string(CLAN_MIN_LEVEL_TO_FOUND) +
+                         " o más para fundar un clan.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        }
+
+        auto result = ClanManager::instance().foundClan(arg, p.getName());
+
+        switch (result)
+        {
+        case ClanManager::Result::NAME_TAKEN:
+            sendChat(senderId, "Ya existe un clan llamado '" + arg + "'.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::ALREADY_IN_CLAN:
+            sendChat(senderId, "Ya pertenecés a un clan.", ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::OK:
+            ClanManager::instance().syncPlayerClanState(p.getName());
+            sendChat(senderId, "¡Fundaste el clan '" + arg + "'!",
+                     ChatMsgType::CLAN, monitor);
+            return;
+        default:
+            sendChat(senderId, "No se pudo fundar el clan.", ChatMsgType::INFO, monitor);
+            return;
+        }
+    }
+
+    if (cmd == "unirse")
+    {
+        if (arg.empty())
+        {
+            sendChat(senderId, "Uso: /unirse <nombre del clan>", ChatMsgType::INFO, monitor);
+            return;
+        }
+
+        Player &p = world.getPlayer(senderId);
+        auto result = ClanManager::instance().applyToJoin(arg, p.getName());
+
+        switch (result)
+        {
+        case ClanManager::Result::CLAN_NOT_FOUND:
+            sendChat(senderId, "No existe ningún clan llamado '" + arg + "'.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::ALREADY_IN_CLAN:
+            sendChat(senderId, "Ya pertenecés a un clan. Usá /dejar-clan primero.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::BANNED:
+            sendChat(senderId, "No podés unirte a ese clan.", ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::ALREADY_APPLIED:
+            sendChat(senderId, "Ya tenés una solicitud pendiente para ese clan.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::OK:
+            sendChat(senderId, "Solicitud enviada al clan '" + arg + "'.",
+                     ChatMsgType::CLAN, monitor);
+            return;
+        default:
+            sendChat(senderId, "No se pudo procesar la solicitud.", ChatMsgType::INFO, monitor);
+            return;
+        }
+    }
+
+    if (cmd == "dejar-clan")
+    {
+        Player &p = world.getPlayer(senderId);
+
+        // Obtenemos el nombre del clan antes de salir para el mensaje de notificación
+        auto clanInfo = ClanManager::instance().findClanInfoForMember(p.getName());
+        std::string clanName = clanInfo ? clanInfo->first : "";
+
+        auto result = ClanManager::instance().leaveClan(p.getName());
+
+        switch (result)
+        {
+        case ClanManager::Result::NOT_A_MEMBER:
+            sendChat(senderId, "No pertenecés a ningún clan.", ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::FOUNDER_CANNOT_LEAVE:
+            sendChat(senderId, "El fundador no puede abandonar su propio clan.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::OK:
+            sendChat(senderId, "Dejaste el clan '" + clanName + "'.",
+                     ChatMsgType::CLAN, monitor);
+            ClanManager::instance().syncPlayerClanState(p.getName());
+            return;
+        default:
+            sendChat(senderId, "No se pudo procesar la salida del clan.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        }
+    }
+
+    if (cmd == "revisar-clan")
+    {
+        Player &p = world.getPlayer(senderId);
+        auto clanInfo = ClanManager::instance().findClanInfoForMember(p.getName());
+
+        // Verificamos si pertenece a un clan y si efectivamente es el fundador
+        if (!clanInfo || !clanInfo->second)
+        {
+            sendChat(senderId, "Solo el fundador de un clan puede revisarlo.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        }
+
+        auto overview = ClanManager::instance().getOverviewForFounder(p.getName());
+        if (!overview)
+        {
+            sendChat(senderId, "No se encontró información de tu clan.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        }
+
+        std::string info = "Clan '" + overview->clanName + "' - Miembros (" +
+                           std::to_string(overview->members.size()) + "/" +
+                           std::to_string(Clan::MAX_MEMBERS) + "): ";
+        for (size_t i = 0; i < overview->members.size(); ++i)
+        {
+            if (i > 0)
+                info += ", ";
+            info += overview->members[i];
+        }
+        sendChat(senderId, info, ChatMsgType::CLAN, monitor);
+
+        if (overview->applicants.empty())
+        {
+            sendChat(senderId, "No hay solicitudes pendientes.", ChatMsgType::CLAN, monitor);
+        }
+        else
+        {
+            std::string pending = "Solicitudes pendientes: ";
+            for (size_t i = 0; i < overview->applicants.size(); ++i)
+            {
+                if (i > 0)
+                    pending += ", ";
+                pending += overview->applicants[i];
+            }
+            sendChat(senderId, pending, ChatMsgType::CLAN, monitor);
+        }
+        return;
+    }
+
+    if (cmd == "clan-aceptar" || cmd == "clan-rechazar" ||
+        cmd == "clan-ban" || cmd == "clan-kick")
+    {
+        if (arg.empty())
+        {
+            sendChat(senderId, "Uso: /" + cmd + " <nick>", ChatMsgType::INFO, monitor);
+            return;
+        }
+
+        Player &p = world.getPlayer(senderId);
+        auto clanInfo = ClanManager::instance().findClanInfoForMember(p.getName());
+
+        if (!clanInfo || !clanInfo->second)
+        {
+            sendChat(senderId, "Solo el fundador de un clan puede usar ese comando.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        }
+
+        std::string clanName = clanInfo->first;
+        ClanManager::Result result;
+        std::string successMsgToSender;
+        std::string successMsgToTarget;
+
+        if (cmd == "clan-aceptar")
+        {
+            result = ClanManager::instance().acceptApplicant(p.getName(), arg);
+            successMsgToSender = arg + " fue aceptado en el clan.";
+            successMsgToTarget = "¡Fuiste aceptado en el clan '" + clanName + "'!";
+        }
+        else if (cmd == "clan-rechazar")
+        {
+            result = ClanManager::instance().rejectApplicant(p.getName(), arg);
+            successMsgToSender = "Rechazaste la solicitud de " + arg + ".";
+            successMsgToTarget = "Tu solicitud al clan '" + clanName + "' fue rechazada.";
+        }
+        else if (cmd == "clan-ban")
+        {
+            result = ClanManager::instance().banPlayer(p.getName(), arg);
+            successMsgToSender = arg + " fue baneado del clan.";
+            successMsgToTarget = "Fuiste baneado del clan '" + clanName + "'.";
+        }
+        else
+        {
+            result = ClanManager::instance().kickMember(p.getName(), arg);
+            successMsgToSender = arg + " fue expulsado del clan.";
+            successMsgToTarget = "Fuiste expulsado del clan '" + clanName + "'.";
+        }
+
+        switch (result)
+        {
+        case ClanManager::Result::NOT_AN_APPLICANT:
+            sendChat(senderId, arg + " no tiene una solicitud pendiente.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::NOT_A_MEMBER:
+            sendChat(senderId, arg + " no pertenece a tu clan.", ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::CLAN_FULL:
+            sendChat(senderId, "Tu clan está lleno.", ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::CANNOT_KICK_SELF:
+            sendChat(senderId, "No podés expulsarte a vos mismo. Usá /dejar-clan.",
+                     ChatMsgType::INFO, monitor);
+            return;
+        case ClanManager::Result::OK:
+            sendChat(senderId, successMsgToSender, ChatMsgType::CLAN, monitor);
+            ClanManager::instance().syncPlayerClanState(arg);
+            ClanManager::instance().notifyPlayer(arg, successMsgToTarget);
+            return;
+        default:
+            sendChat(senderId, "No se pudo procesar el comando.", ChatMsgType::INFO, monitor);
+            return;
+        }
+    }
+
+    // --- Interacciones con NPCs de Ciudad ---
     Player &player = world.getPlayer(senderId);
     int px = player.getTileX();
     int py = player.getTileY();

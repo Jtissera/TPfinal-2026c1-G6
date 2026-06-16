@@ -8,6 +8,7 @@
 #include "server/game/equipmentDtoFactory.h"
 #include "common/network/messages/server/chat/chatNotificationMessage.h"
 #include "server/game/chat/chatHandler.h"
+#include "server/game/clan/clanManager.h"
 
 static void sendCombatChat(uint32_t clientId,
                            const std::string &text,
@@ -454,7 +455,7 @@ void ActionDispatcher::handleAttackPlayer(
         return;
     }
 
-    auto result = combat.attackPlayer(attacker, target);
+    auto result = combat.attackPlayer(attacker, target, world);
 
     std::cout << "[SERVER PVP RESULT] valid="
               << result.valid
@@ -476,6 +477,20 @@ void ActionDispatcher::handleAttackPlayer(
     {
         sendStats(attackerId, attacker, monitor);
         return;
+    }
+
+    auto targetClanInfo = ClanManager::instance().findClanInfoForMember(target.getName());
+    if (targetClanInfo)
+    {
+        std::string clanName = targetClanInfo->first;
+        std::string alertMsg = "¡Nuestro aliado " + target.getName() + " está siendo atacado!";
+
+        std::vector<uint32_t> localAllies = world.getOnlineClanMemberIds(clanName);
+
+        for (uint32_t allyId : localAllies)
+        {
+            sendCombatChat(allyId, alertMsg, ChatMsgType::CLAN, monitor);
+        }
     }
 
     // Si esquivó, actualizamos stats y terminamos.
@@ -575,7 +590,7 @@ void ActionDispatcher::handleAttackNpc(
         return;
     }
 
-    auto result = combat.attackNpc(attacker, npc);
+    auto result = combat.attackNpc(attacker, npc, world);
 
     // Si el ataque no fue válido, reenviamos stats por si se consumió algo antes.
     if (!result.valid)

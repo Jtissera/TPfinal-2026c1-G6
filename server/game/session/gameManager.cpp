@@ -7,14 +7,19 @@ GameManager::GameManager(
     const toml::table &config, PlayerArchive &archive, GameArchive &gameArchive)
     : npcFactory(npcFactory), itemRepo(itemRepo), leaveQueue(leaveQueue),
       transitionQueue(transitionQueue), config(config), archive(archive),
-      gameArchive(gameArchive) {}
+      gameArchive(gameArchive)
+{
+  ClanManager::instance().bindGameManager(this);
+}
 
 uint32_t GameManager::createGame(const std::string &gameName,
                                  uint8_t maxPlayers,
-                                 const std::string &mapPath) {
+                                 const std::string &mapPath)
+{
   std::unique_lock<std::mutex> lock(mutex);
 
-  if (mapPath.empty()) {
+  if (mapPath.empty())
+  {
     throw std::runtime_error(
         "Error crítico: El cliente envió una ruta de mapa vacía.");
   }
@@ -43,12 +48,15 @@ uint32_t GameManager::createGame(const std::string &gameName,
 }
 
 uint32_t GameManager::getOrCreateInstance(const std::string &mapPath,
-                                          uint32_t originRoomId) {
+                                          uint32_t originRoomId)
+{
   std::unique_lock<std::mutex> lock(mutex);
 
-  for (const auto &[id, room] : rooms) {
+  for (const auto &[id, room] : rooms)
+  {
     if (room->getIsInstance() && room->getName() == mapPath &&
-        room->getOriginRoomId() == originRoomId) {
+        room->getOriginRoomId() == originRoomId)
+    {
       return id;
     }
   }
@@ -68,13 +76,15 @@ uint32_t GameManager::getOrCreateInstance(const std::string &mapPath,
   return id;
 }
 
-void GameManager::cleanEmptyInstances() {
+void GameManager::cleanEmptyInstances()
+{
   std::vector<uint32_t> toRemove;
   for (const auto &[id, room] : rooms)
     if (room->getIsInstance() && room->getPlayerCount() == 0)
       toRemove.push_back(id);
 
-  for (uint32_t id : toRemove) {
+  for (uint32_t id : toRemove)
+  {
     rooms[id]->stop();
     rooms[id]->join();
     rooms.erase(id);
@@ -82,7 +92,8 @@ void GameManager::cleanEmptyInstances() {
 }
 
 bool GameManager::joinGame(uint32_t gameId, uint32_t clientId,
-                           Queue<std::shared_ptr<const Message>> &clientQueue) {
+                           Queue<std::shared_ptr<const Message>> &clientQueue)
+{
   std::unique_lock<std::mutex> lock(mutex);
 
   auto it = rooms.find(gameId);
@@ -100,28 +111,70 @@ bool GameManager::joinGame(uint32_t gameId, uint32_t clientId,
   return true;
 }
 
-void GameManager::addPlayerToGame(uint32_t gameId, Player player) {
+void GameManager::addPlayerToGame(uint32_t gameId, Player player)
+{
   std::unique_lock<std::mutex> lock(mutex);
 
   const uint32_t playerId = player.getClientId();
+  const std::string playerName = player.getName();
 
-  std::cout << "[GameManager] addPlayerToGame gameId=" << gameId
-            << " playerId=" << playerId << std::endl;
+  std::cout << "[GameManager] addPlayerToGame gameId="
+            << gameId
+            << " playerId="
+            << playerId
+            << std::endl;
+
+  // 1. Buscamos la información del clan de forma dinámica en el ClanManager
+  auto clanInfo = ClanManager::instance().findClanInfoForMember(playerName);
 
   auto it = rooms.find(gameId);
 
-  if (it == rooms.end()) {
+  if (it == rooms.end())
+  {
     std::cerr << "[GameManager] addPlayerToGame fallo. gameId inexistente="
-              << gameId << std::endl;
+              << gameId
+              << std::endl;
     return;
   }
 
   it->second->addPlayer(std::move(player));
 
-  std::cout << "[GameManager] addPlayerToGame OK gameId=" << gameId
-            << " playerId=" << playerId << std::endl;
+  clientNick[playerId] = playerName;
+  nickToClient[playerName] = playerId;
+
+  std::cout << "[GameManager] addPlayerToGame OK gameId="
+            << gameId
+            << " playerId="
+            << playerId
+            << std::endl;
+
+  // 2. Notificación LOCAL: Avisamos SOLO a los miembros del clan en esta misma sala
+  if (clanInfo)
+  {
+    std::string clanName = clanInfo->first;
+    auto chatMsg = std::make_shared<ChatNotificationMessage>(
+        "Tu aliado " + playerName + " ha ingresado a Argentum.", ChatMsgType::CLAN);
+
+    for (const auto &[cId, rId] : clientRoom)
+    {
+      if (rId == gameId)
+      {
+        auto targetNickIt = clientNick.find(cId);
+        if (targetNickIt != clientNick.end())
+        {
+          auto targetClan = ClanManager::instance().findClanInfoForMember(targetNickIt->second);
+          if (targetClan && targetClan->first == clanName)
+          {
+            it->second->sendTo(cId, chatMsg);
+          }
+        }
+      }
+    }
+  }
 }
-void GameManager::removeClient(uint32_t clientId) {
+
+void GameManager::removeClient(uint32_t clientId)
+{
   std::unique_lock<std::mutex> lock(mutex);
 
   auto it = clientRoom.find(clientId);
@@ -131,17 +184,66 @@ void GameManager::removeClient(uint32_t clientId) {
   uint32_t gameId = it->second;
   clientRoom.erase(it);
 
+  std::string playerName;
+  std::string playerClan;
+  bool hadClan = false;
+
   auto roomIt = rooms.find(gameId);
   if (roomIt != rooms.end())
+  {
+    const Player *p = roomIt->second->findPlayer(clientId);
+    if (p != nullptr)
+    {
+      playerName = p->getName();
+      // Buscamos el clan desde el ClanManager en lugar de p->getClanName()
+      auto clanInfo = ClanManager::instance().findClanInfoForMember(playerName);
+      if (clanInfo)
+      {
+        playerClan = clanInfo->first;
+        hadClan = true;
+      }
+    }
     roomIt->second->removeClient(clientId);
+  }
+
+  auto nickIt = clientNick.find(clientId);
+  if (nickIt != clientNick.end())
+  {
+    nickToClient.erase(nickIt->second);
+    clientNick.erase(nickIt);
+  }
 
   cleanEmptyInstances();
+
+  if (hadClan && roomIt != rooms.end())
+  {
+    auto chatMsg = std::make_shared<ChatNotificationMessage>(
+        "Tu aliado " + playerName + " ha salido de Argentum.", ChatMsgType::CLAN);
+
+    for (const auto &[cId, rId] : clientRoom)
+    {
+      if (rId == gameId)
+      {
+        auto targetNickIt = clientNick.find(cId);
+        if (targetNickIt != clientNick.end())
+        {
+          auto targetClan = ClanManager::instance().findClanInfoForMember(targetNickIt->second);
+          if (targetClan && targetClan->first == playerClan)
+          {
+            roomIt->second->sendTo(cId, chatMsg);
+          }
+        }
+      }
+    }
+  }
 }
 
-std::vector<GameInfo> GameManager::listGames() const {
+std::vector<GameInfo> GameManager::listGames() const
+{
   std::unique_lock<std::mutex> lock(mutex);
   std::vector<GameInfo> result;
-  for (const auto &[id, room] : rooms) {
+  for (const auto &[id, room] : rooms)
+  {
     if (room->getIsInstance())
       continue; // oculto instancias
     GameInfo info;
@@ -156,10 +258,12 @@ std::vector<GameInfo> GameManager::listGames() const {
   return result;
 }
 
-void GameManager::stopAll() {
+void GameManager::stopAll()
+{
   std::unique_lock<std::mutex> lock(mutex);
 
-  for (auto &pair : rooms) {
+  for (auto &pair : rooms)
+  {
     pair.second->stop();
     pair.second->join();
   }
@@ -167,12 +271,14 @@ void GameManager::stopAll() {
   clientRoom.clear();
 }
 
-Queue<ClientMessage> &GameManager::getGameQueue(uint32_t gameId) {
+Queue<ClientMessage> &GameManager::getGameQueue(uint32_t gameId)
+{
   std::unique_lock<std::mutex> lock(mutex);
   return rooms.at(gameId)->getGameQueue();
 }
 
-uint32_t GameManager::getOriginRoomId(uint32_t instanceRoomId) const {
+uint32_t GameManager::getOriginRoomId(uint32_t instanceRoomId) const
+{
   std::unique_lock<std::mutex> lock(mutex);
   auto it = rooms.find(instanceRoomId);
   if (it == rooms.end())
@@ -181,14 +287,16 @@ uint32_t GameManager::getOriginRoomId(uint32_t instanceRoomId) const {
 }
 void GameManager::broadcastExceptInGame(
     uint32_t gameId, uint32_t excludeId,
-    const std::shared_ptr<const Message> &msg) {
+    const std::shared_ptr<const Message> &msg)
+{
   std::unique_lock<std::mutex> lock(mutex);
   auto it = rooms.find(gameId);
   if (it != rooms.end())
     it->second->broadcastExcept(excludeId, msg);
 }
 
-const GameWorld *GameManager::getGameWorld(uint32_t gameId) const {
+const GameWorld *GameManager::getGameWorld(uint32_t gameId) const
+{
   std::unique_lock<std::mutex> lock(mutex);
   auto it = rooms.find(gameId);
   if (it == rooms.end())
@@ -196,12 +304,14 @@ const GameWorld *GameManager::getGameWorld(uint32_t gameId) const {
   return &it->second->getWorld();
 }
 
-void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId) {
+void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId)
+{
   std::unique_lock<std::mutex> lock(mutex);
 
   auto it = rooms.find(gameId);
 
-  if (it != rooms.end()) {
+  if (it != rooms.end())
+  {
     std::cout << "[GameManager] syncPlayerJoin gameId=" << gameId
               << " playerId=" << playerId << std::endl;
 
@@ -209,7 +319,8 @@ void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId) {
   }
 }
 
-void GameManager::restoreFromArchive() {
+void GameManager::restoreFromArchive()
+{
   auto records = gameArchive.loadAll();
 
   // nextGameId arranca después del mayor id conocido
@@ -217,13 +328,15 @@ void GameManager::restoreFromArchive() {
   if (maxId >= nextGameId)
     nextGameId = maxId + 1;
 
-  for (const auto &rec : records) {
+  for (const auto &rec : records)
+  {
     std::string mapPath(rec.mapPath, strnlen(rec.mapPath, sizeof(rec.mapPath)));
     std::string gameName(rec.gameName,
                          strnlen(rec.gameName, sizeof(rec.gameName)));
 
     std::ifstream check(mapPath, std::ios::binary);
-    if (!check.good()) {
+    if (!check.good())
+    {
       std::cerr << "[GameManager] restore: mapa no encontrado para gameId="
                 << rec.gameId << " path='" << mapPath << "' — omitiendo."
                 << std::endl;
@@ -241,15 +354,57 @@ void GameManager::restoreFromArchive() {
   }
 }
 
-std::string GameManager::getRoomMapPath(uint32_t gameId) const {
+std::string GameManager::getRoomMapPath(uint32_t gameId) const
+{
   std::unique_lock<std::mutex> lock(mutex);
   auto it = rooms.find(gameId);
   if (it == rooms.end())
     return "";
 
-  if (it->second->getIsInstance()) {
+  if (it->second->getIsInstance())
+  {
     return it->second->getName();
-  } else {
+  }
+  else
+  {
     return it->second->getMapPath();
+  }
+}
+
+void GameManager::sendToClient(uint32_t clientId, const std::shared_ptr<const Message> &msg)
+{
+  std::unique_lock<std::mutex> lock(mutex);
+  auto roomIt = clientRoom.find(clientId);
+  if (roomIt == clientRoom.end())
+    return;
+  auto it = rooms.find(roomIt->second);
+  if (it != rooms.end())
+    it->second->sendTo(clientId, msg);
+}
+
+std::optional<uint32_t> GameManager::findOnlineClientByNick(const std::string &nick) const
+{
+  std::unique_lock<std::mutex> lock(mutex);
+  auto it = nickToClient.find(nick);
+  if (it == nickToClient.end())
+    return std::nullopt;
+  return it->second;
+}
+
+void GameManager::updatePlayerClanState(const std::string &nick, const std::string &clanName, bool isFounder)
+{
+  std::unique_lock<std::mutex> lock(mutex);
+  auto it = nickToClient.find(nick);
+  if (it == nickToClient.end())
+    return;
+
+  uint32_t clientId = it->second;
+  uint32_t gameId = clientRoom[clientId];
+
+  auto roomIt = rooms.find(gameId);
+  if (roomIt != rooms.end())
+  {
+    // Acá podés enviar un paquete de red si el cliente necesita actualizar visualmente
+    // el tag del clan sobre la cabeza del personaje en tiempo real.
   }
 }
