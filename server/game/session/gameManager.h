@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <optional>
 
 #include "../../../common/network/messages/server/lobby/gameListMessage.h"
 #include "../../../common/queue.h"
@@ -18,8 +19,10 @@
 #include "../../persistence/gameArchive.h"
 #include "../player/Player.h"
 #include "gameRoom.h"
+#include "server/game/clan/clanManager.h"
 
-class GameManager {
+class GameManager
+{
 public:
   GameManager(NpcFactory &, ItemRepository &,
               Queue<std::shared_ptr<LeaveEvent>> &,
@@ -61,9 +64,20 @@ public:
   // Es idempotente: llamarlo sin sesión activa no hace nada.
   void markOffline(uint32_t clientId);
 
+  // ── Clan / mensajería dirigida ──────────────────────────────────────────
+  void sendToClient(uint32_t clientId, const std::shared_ptr<const Message> &msg);
+  std::optional<uint32_t> findOnlineClientByNick(const std::string &nick) const;
+  void updatePlayerClanState(const std::string &nick, const std::string &clanName, bool isFounder);
+  void unregisterClientForTransition(uint32_t clientId);
+  void broadcastDespawnInRoom(uint32_t fromRoomId, uint32_t clientId);
+  void joinAndAddPlayer(uint32_t gameId, uint32_t clientId,
+                        Queue<std::shared_ptr<const Message>> &clientQueue,
+                        Player player);
+
 private:
   const toml::table &config;
   mutable std::mutex mutex;
+  ClanManager clanManager;
   GameArchive &gameArchive;
   uint32_t nextGameId = 1;
 
@@ -75,6 +89,9 @@ private:
   // Control de sesión única: nombre de personaje <-> clientId que lo tiene online
   std::unordered_set<std::string> onlineCharacters;
   std::unordered_map<uint32_t, std::string> clientToCharacter;
+
+  std::unordered_map<uint32_t, std::string> clientNick;
+  std::unordered_map<std::string, uint32_t> nickToClient;
 
   NpcFactory &npcFactory;
   ItemRepository &itemRepo;

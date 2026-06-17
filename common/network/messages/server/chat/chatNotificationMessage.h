@@ -12,6 +12,7 @@ enum class ChatMsgType : uint8_t
     DAMAGE_DEALT = 2, // Rojo     — daño causado
     DAMAGE_TAKEN = 3, // Verde    — daño recibido
     INFO = 4,         // Celeste  — sistema, NPC, errores leves
+    CLAN = 5,         // Cyan/Esmeralda — mensajes de clan
 };
 
 class ChatNotificationMessage : public Message

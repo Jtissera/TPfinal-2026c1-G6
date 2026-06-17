@@ -15,6 +15,8 @@ SDL_Color MiniChat::colorFor(ChatMsgType type)
         return {80, 200, 80, 255};
     case ChatMsgType::INFO:
         return {100, 200, 255, 255};
+    case ChatMsgType::CLAN:
+        return {0, 255, 128, 255};
     }
     return {255, 255, 255, 255};
 }

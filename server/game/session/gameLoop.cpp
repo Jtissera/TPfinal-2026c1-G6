@@ -10,9 +10,10 @@ GameLoop::GameLoop(Queue<ClientMessage> &q, Monitor &m, GameWorld &w,
                    Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQ,
                    uint32_t gameId, const toml::table &config,
                    PlayerArchive &archive, const std::string &mapId,
+                   ClanManager &clanManager,
                    uint32_t originRoomId)
     : gameQueue(q), monitor(m), world(w), leaveQueue(leaveQ),
-      transitionQueue(transitionQ), gameId(gameId), dispatcher(config),
+      transitionQueue(transitionQ), gameId(gameId), dispatcher(config, clanManager),
       statManager(config),
       tickRateMs(config["server"]["tick_rate_ms"].value_or(33)),
       archive(archive), mapId(mapId),
@@ -20,15 +21,18 @@ GameLoop::GameLoop(Queue<ClientMessage> &q, Monitor &m, GameWorld &w,
           config["server"]["persist_every_n_ticks"].value_or(300)),
       originRoomId(originRoomId) {}
 
-void GameLoop::run() {
+void GameLoop::run()
+{
   using Clock = std::chrono::steady_clock;
   using Ms = std::chrono::duration<float, std::milli>;
   using Duration = std::chrono::milliseconds;
 
   auto t1 = Clock::now();
 
-  try {
-    while (true) {
+  try
+  {
+    while (true)
+    {
       ClientMessage incoming;
       while (gameQueue.try_pop(incoming))
         processMessage(incoming);
@@ -37,38 +41,49 @@ void GameLoop::run() {
       float elapsed = std::chrono::duration_cast<Ms>(t2 - t1).count();
       float rest = tickRateMs - elapsed;
 
-      if (rest < 0) {
+      if (rest < 0)
+      {
         float behind = -rest;
         rest = tickRateMs - std::fmod(behind, tickRateMs);
         float lost = behind + rest;
         t1 += Duration(static_cast<long>(lost));
-      } else {
+      }
+      else
+      {
         std::this_thread::sleep_for(Duration(static_cast<long>(rest)));
       }
 
       worldUpdate(tickRateMs / 1000.0f);
       t1 += Duration(static_cast<long>(tickRateMs));
     }
-  } catch (const ClosedQueue &) {
-  } catch (const std::exception &e) {
+  }
+  catch (const ClosedQueue &)
+  {
+  }
+  catch (const std::exception &e)
+  {
     std::cerr << "[GameLoop] error: " << e.what() << std::endl;
   }
 }
 
-void GameLoop::processMessage(const ClientMessage &incoming) {
+void GameLoop::processMessage(const ClientMessage &incoming)
+{
   if (incoming.message->opCode() ==
-      static_cast<uint8_t>(ClientOpCode::MSG_LEAVE_GAME)) {
+      static_cast<uint8_t>(ClientOpCode::MSG_LEAVE_GAME))
+  {
     handleLeaveGame(incoming.clientId);
     return;
   }
   dispatcher.dispatch(incoming, world, monitor);
 }
 
-void GameLoop::worldUpdate(float deltaSeconds) {
+void GameLoop::worldUpdate(float deltaSeconds)
+{
 
   auto result = world.tick(deltaSeconds);
 
-  for (const auto &info : result.resurrectionStarted) {
+  for (const auto &info : result.resurrectionStarted)
+  {
     monitor.sendTo(info.playerId,
                    std::make_shared<ResurrectionStartedMessage>(info.delayMs));
     std::cout << "[GameLoop] Enviando MSG_RESURRECTION_STARTED a player "
@@ -77,7 +92,8 @@ void GameLoop::worldUpdate(float deltaSeconds) {
   }
 
   // Si cambiaron stats de jugadores, mandamos stats actualizadas.
-  for (const auto &hit : result.playerHits) {
+  for (const auto &hit : result.playerHits)
+  {
     statManager.sendPlayerStats(hit.playerId, world, monitor);
 
     // Notificación en el mini-chat del jugador golpeado.
@@ -88,17 +104,34 @@ void GameLoop::worldUpdate(float deltaSeconds) {
                        ChatMsgType::DAMAGE_TAKEN));
   }
 
-  for (uint32_t id : result.playersChanged) {
+  for (const auto &allyHit : result.clanAllyHits)
+  {
+    std::vector<uint32_t> allies = world.getOnlineClanMemberIds(allyHit.clanName);
+    std::string msg = "¡Nuestro aliado " + allyHit.targetName + " está siendo atacado!";
+    for (uint32_t allyId : allies)
+    {
+      if (allyId == allyHit.targetId)
+        continue;
+      monitor.sendTo(allyId,
+                     std::make_shared<const ChatNotificationMessage>(
+                         msg, ChatMsgType::CLAN));
+    }
+  }
+
+  for (uint32_t id : result.playersChanged)
+  {
     statManager.sendPlayerStats(id, world, monitor);
   }
-  for (uint32_t deadPlayerId : result.playersDied) {
+  for (uint32_t deadPlayerId : result.playersDied)
+  {
     monitor.broadcast(std::make_shared<const PlayerDiedMessage>(deadPlayerId));
 
     std::cout << "[GameLoop] broadcast PLAYER_DIED id=" << deadPlayerId
               << std::endl;
   }
 
-  for (const auto &res : result.playersResurrected) {
+  for (const auto &res : result.playersResurrected)
+  {
     monitor.broadcast(std::make_shared<const PlayerResurrectedMessage>(
         res.playerId, res.tileX, res.tileY));
 
@@ -112,7 +145,8 @@ void GameLoop::worldUpdate(float deltaSeconds) {
   }
   // Si algún NPC se movió, avisamos al cliente con un mensaje específico.
   // Esto NO crea NPCs. Solo actualiza su posición visual.
-  for (uint32_t npcId : result.npcsMoved) {
+  for (uint32_t npcId : result.npcsMoved)
+  {
     const Npc &npc = world.getNpc(npcId);
 
     monitor.broadcast(std::make_shared<const NpcMoveMessage>(
@@ -120,7 +154,8 @@ void GameLoop::worldUpdate(float deltaSeconds) {
         static_cast<uint16_t>(npc.getTileY() * 96)));
   }
 
-  for (const auto &npcSpawn : result.spawnedNpcs) {
+  for (const auto &npcSpawn : result.spawnedNpcs)
+  {
     monitor.broadcast(std::make_shared<const NpcSpawnMessage>(
         npcSpawn.npcId, npcSpawn.type, npcSpawn.name, npcSpawn.x, npcSpawn.y,
         npcSpawn.hp, npcSpawn.maxHp, npcSpawn.hostile));
@@ -130,21 +165,26 @@ void GameLoop::worldUpdate(float deltaSeconds) {
   }
 
   // Transiciones de instancia.
-  for (auto &entry : result.instanceTransitions) {
+  for (auto &entry : result.instanceTransitions)
+  {
     handleInstanceTransition(entry);
   }
 
   ++persistTickCounter;
-  if (persistTickCounter >= persistEveryNTicks) {
-      persistTickCounter = 0;
-      for (const auto &[clientId, player] : world.getPlayers()) {
-          archive.enqueue( archive.toSnapshot(player, mapId, gameId, originRoomId),gameId);
-      }
+  if (persistTickCounter >= persistEveryNTicks)
+  {
+    persistTickCounter = 0;
+    for (const auto &[clientId, player] : world.getPlayers())
+    {
+      archive.enqueue(archive.toSnapshot(player, mapId, gameId, originRoomId), gameId);
+    }
   }
 }
 
-void GameLoop::handleLeaveGame(uint32_t clientId) {
-  if (world.hasPlayer(clientId)) {
+void GameLoop::handleLeaveGame(uint32_t clientId)
+{
+  if (world.hasPlayer(clientId))
+  {
     const Player &player = world.getPlayer(clientId);
     // archive.enqueue(archive.toSnapshot(player, mapId, gameId), gameId); no deberia ser necesario 
   }
@@ -161,7 +201,8 @@ void GameLoop::handleLeaveGame(uint32_t clientId) {
       LeaveEvent{clientId, gameId, std::move(*player), clientQueue}));
 }
 
-void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry) {
+void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry)
+{
   auto player = world.removePlayer(entry.playerId);
   if (!player)
     return;
@@ -173,7 +214,8 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry) {
   Queue<std::shared_ptr<const Message>> *clientQueue =
       monitor.getQueue(entry.playerId);
 
-  if (entry.targetMap.empty()) {
+  if (entry.targetMap.empty())
+  {
     monitor.removeQueue(entry.playerId);
     transitionQueue.try_push(std::make_shared<InstanceTransitionEvent>(
         InstanceTransitionEvent{entry.playerId, gameId, std::move(*player),
@@ -182,7 +224,8 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry) {
   }
 
   std::string resolvedMapPath = entry.targetMap;
-  if (resolvedMapPath.find("assets/") == std::string::npos) {
+  if (resolvedMapPath.find("assets/") == std::string::npos)
+  {
     std::string baseDir = "assets/sprites/MapAssets/worlds/";
     std::string ext = ".argmap";
 
@@ -190,11 +233,16 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry) {
     std::string pathInMazmorra = baseDir + "mazmorra/" + resolvedMapPath + ext;
     std::string pathInCaverna = baseDir + "caverna/" + resolvedMapPath + ext;
 
-    if (std::ifstream(pathInMazmorra, std::ios::binary).good()) {
+    if (std::ifstream(pathInMazmorra, std::ios::binary).good())
+    {
       resolvedMapPath = pathInMazmorra;
-    } else if (std::ifstream(pathInCaverna, std::ios::binary).good()) {
+    }
+    else if (std::ifstream(pathInCaverna, std::ios::binary).good())
+    {
       resolvedMapPath = pathInCaverna;
-    } else {
+    }
+    else
+    {
 
       resolvedMapPath = pathInRoot;
     }
@@ -202,7 +250,8 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry) {
 
   {
     std::ifstream check(resolvedMapPath, std::ios::binary);
-    if (!check.good()) {
+    if (!check.good())
+    {
       world.addPlayer(std::move(*player));
 
       std::cerr << "[GameLoop] Transición fallida: El mapa no se encontró en "
@@ -210,7 +259,8 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry) {
                 << resolvedMapPath << "' playerId=" << entry.playerId
                 << std::endl;
 
-      if (clientQueue != nullptr) {
+      if (clientQueue != nullptr)
+      {
         monitor.sendTo(entry.playerId,
                        std::make_shared<const ErrorMessage>(
                            "El mapa '" + entry.targetMap +
@@ -229,7 +279,8 @@ void GameLoop::handleInstanceTransition(const GameWorld::InstanceEntry &entry) {
                               clientQueue, resolvedMapPath, spawnX, spawnY}));
 }
 
-void GameLoop::stop() {
+void GameLoop::stop()
+{
   Thread::stop();
   gameQueue.close();
 }

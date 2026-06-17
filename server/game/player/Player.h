@@ -12,7 +12,8 @@
 #include "inventory.h"
 #include "playerState.h"
 
-class Player : public Combatant {
+class Player : public Combatant
+{
 public:
   Player(uint32_t clientId, std::string name, const RaceStats &race,
          const ClassStats &cls, int16_t maxHp, int16_t maxMana,
@@ -97,6 +98,11 @@ public:
   void stopResurrection() { resurrecting = false; }
   bool canInteract() const { return !isGhost() && !resurrecting; }
 
+  const std::string &getClanName() const { return clanName; }
+  void setClanName(std::string name) { clanName = std::move(name); }
+  bool isClanFounder() const { return clanFounder; }
+  void setClanFounder(bool founder) { clanFounder = founder; }
+
   const RaceStats &getRace() const;
   const ClassStats &getCls() const;
 
@@ -141,6 +147,9 @@ private:
 
   float hpAccumulator = 0.f;
   float manaAccumulator = 0.f;
+
+  std::string clanName;
+  bool clanFounder = false;
 
   Inventory inventory;
 };

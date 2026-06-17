@@ -1,15 +1,18 @@
 #include "gameWorld.h"
+#include "../game/clan/clanManager.h"
 
 GameWorld::GameWorld(const std::string &mapPath,
                      NpcFactory &npcFactory,
                      ItemRepository &itemRepo,
-                     const toml::table &config)
+                     const toml::table &config,
+                     ClanManager &clanManager)
     : mapData(MapSerializer::load(mapPath)),
       collision(mapData),
       occupancy(),
       formulas(config),
       npcManager(npcFactory, collision, mapData),
       itemRepo(itemRepo),
+      clanManager(clanManager),
       bankRepo(),
       resurrectionSystem(),
       priestHandler(itemRepo, resurrectionSystem, mapData, config),
@@ -28,13 +31,15 @@ GameWorld::GameWorld(const std::string &mapPath,
 GameWorld::GameWorld(MapData mapData,
                      NpcFactory &npcFactory,
                      ItemRepository &itemRepo,
-                     const toml::table &config)
+                     const toml::table &config,
+                     ClanManager &clanManager)
     : mapData(std::move(mapData)),
       collision(this->mapData),
       occupancy(),
       formulas(config),
       npcManager(npcFactory, collision, this->mapData),
       itemRepo(itemRepo),
+      clanManager(clanManager),
       bankRepo(),
       resurrectionSystem(),
       priestHandler(itemRepo, resurrectionSystem, this->mapData, config),
@@ -640,6 +645,13 @@ void GameWorld::tickNpcs(WorldTickResult &result)
         result.playerHits.push_back({attack.targetPlayerId, attack.damage});
         result.playersChanged.push_back(attack.targetPlayerId);
 
+        if (!target.getClanName().empty())
+        {
+            result.clanAllyHits.push_back({target.getClanName(),
+                                           target.getName(),
+                                           attack.targetPlayerId});
+        }
+
         // Si murió con este golpe, avisamos que murio
         if (target.getHp() == 0)
         {
@@ -972,4 +984,48 @@ std::optional<uint32_t> GameWorld::findPlayerIdByName(const std::string &name) c
             return id;
     }
     return std::nullopt;
+}
+
+int GameWorld::countClanAlliesNear(const Player &player, int radiusTiles) const
+{
+    auto playerClanInfo = clanManager.findClanInfoForMember(player.getName());
+    if (!playerClanInfo)
+        return 0; // No tiene clan, no tiene aliados cerca
+
+    const std::string &playerClan = playerClanInfo->first;
+    int count = 0;
+
+    for (const auto &[id, other] : players)
+    {
+        if (id == player.getId() || !other.isAlive())
+            continue;
+
+        auto otherClanInfo = clanManager.findClanInfoForMember(other.getName());
+        if (otherClanInfo && otherClanInfo->first == playerClan)
+        {
+            const int dx = std::abs(other.getTileX() - player.getTileX());
+            const int dy = std::abs(other.getTileY() - player.getTileY());
+            if (dx <= radiusTiles && dy <= radiusTiles)
+                count++;
+        }
+    }
+    return count;
+}
+
+std::vector<uint32_t> GameWorld::getOnlineClanMemberIds(const std::string &clanName) const
+{
+    std::vector<uint32_t> clanMembers;
+
+    for (const auto &[id, other] : players)
+    {
+        if (!other.isAlive())
+            continue;
+
+        auto otherClanInfo = clanManager.findClanInfoForMember(other.getName());
+        if (otherClanInfo && otherClanInfo->first == clanName)
+        {
+            clanMembers.push_back(id);
+        }
+    }
+    return clanMembers;
 }

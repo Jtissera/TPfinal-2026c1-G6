@@ -14,6 +14,7 @@
 #include "common/network/messages/server/player/EntityDespawnMessage.h"
 #include "common/network/messages/server/chat/chatNotificationMessage.h"
 #include "common/network/messages/server/player/resurrectionStartedMessage.h"
+#include "common/network/messages/server/combat/combatLogMessage.h"
 #include "common/network/protocol/clientOpCode.h"
 
 void GameServerDeserializersModule::registerDeserializers(Registry &registry) const
@@ -274,5 +275,13 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
         {
             const uint32_t delayMs = reader.readUint32();
             return std::make_unique<ResurrectionStartedMessage>(delayMs);
+        });
+
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ServerOpCode::MSG_COMBAT_LOG),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+            std::string text = reader.readString();
+            return std::make_unique<CombatLogMessage>(std::move(text));
         });
 }

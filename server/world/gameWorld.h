@@ -18,21 +18,26 @@
 #include "../city/merchantHandler.h"
 #include "../city/bankerHandler.h"
 #include "../city/cityNpcDispatcher.h"
+#include "server/game/clan/clanManager.h"
 #include <iostream>
 #include <map>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+#include <cstdlib>
+class ClanManager;
 
 class GameWorld
 {
 public:
   explicit GameWorld(const std::string &mapPath, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config);
+                     ItemRepository &itemRepo, const toml::table &config,
+                     ClanManager &clanManager);
 
   explicit GameWorld(MapData mapData, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config);
+                     ItemRepository &itemRepo, const toml::table &config,
+                     ClanManager &clanManager);
 
   struct InstanceEntry
   {
@@ -82,6 +87,14 @@ public:
     };
     std::vector<PlayerResurrection> playersResurrected;
     std::vector<ResurrectStartedInfo> resurrectionStarted;
+
+    struct ClanAllyHit
+    {
+      std::string clanName;
+      std::string targetName;
+      uint32_t targetId;
+    };
+    std::vector<ClanAllyHit> clanAllyHits;
   };
 
   void addPlayer(Player player);
@@ -142,6 +155,9 @@ public:
   CityResult handleRemoteResurrect(uint32_t playerId);
   std::optional<NpcType> getNpcTypeAtTile(int tileX, int tileY) const;
 
+  int countClanAlliesNear(const Player &player, int radiusTiles) const;
+  std::vector<uint32_t> getOnlineClanMemberIds(const std::string &clanName) const;
+
 private:
   static constexpr int TILE_SIZE = 96;            // a toml
   static constexpr float PLAYER_MOVE_STEP = 8.0f; // a toml
@@ -152,6 +168,7 @@ private:
   GameFormulas formulas;
   NpcManager npcManager;
   ItemRepository &itemRepo;
+  ClanManager &clanManager;
 
   BankRepository bankRepo;
   ResurrectionSystem resurrectionSystem;
