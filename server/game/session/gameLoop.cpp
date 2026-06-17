@@ -146,7 +146,7 @@ void GameLoop::worldUpdate(float deltaSeconds) {
 void GameLoop::handleLeaveGame(uint32_t clientId) {
   if (world.hasPlayer(clientId)) {
     const Player &player = world.getPlayer(clientId);
-    // archive.enqueue(archive.toSnapshot(player, mapId, gameId), gameId);
+    // archive.enqueue(archive.toSnapshot(player, mapId, gameId), gameId); no deberia ser necesario 
   }
 
   auto player = world.removePlayer(clientId);
