@@ -169,9 +169,10 @@ int Client::run() {
         if (lobbyResult == ScreenResult::GO_LOBBY) {
           PlayerDto playerDto = lobby.getJoinedPlayerDto();
           std::string mapPath = lobby.getChosenMapPath();
+          auto pending = lobby.takePendingMessage(); 
 
           GameClient gameClient(socket, playerDto.playerID, playerDto, window,
-                                renderer, mapPath);
+                                renderer, mapPath, std::move(pending));
           gameClient.run();
 
           if (gameClient.wasDisconnectedByServer() || serverShutdownDetected) {

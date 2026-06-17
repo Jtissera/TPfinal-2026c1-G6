@@ -12,7 +12,7 @@ GameRoom::GameRoom(
       isInstance(isInstance), originRoomId(originRoomId), mapPath(mapPath),
       leaveQueue(leaveQueue), world(mapPath, npcFactory, itemRepo, config),
       gameLoop(gameQueue, monitor, world, leaveQueue, transitionQueue, gameId,
-               config, archive, mapPath),
+               config, archive, mapPath, originRoomId),  
       archive(archive) {}
 
 void GameRoom::addClient(uint32_t clientId,

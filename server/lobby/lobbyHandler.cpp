@@ -13,16 +13,14 @@ LobbyHandler::LobbyHandler(
     Monitor &lobbyMonitor, GameManager &gameManager,
     ReceiverRegistry &receiverRegistry, PlayerRepository &playerRepo,
     PlayerFactory &playerFactory, PlayerArchive &archive,
-    CharacterArchive &characterArchive, // ← coma, no punto y coma
+    CharacterArchive &characterArchive,
     const toml::table &config)
     : lobbyQueue(lobbyQueue), leaveQueue(leaveQueue),
       transitionQueue(transitionQueue), lobbyMonitor(lobbyMonitor),
       gameManager(gameManager), receiverRegistry(receiverRegistry),
       playerRepo(playerRepo), playerFactory(playerFactory), archive(archive),
-      characterArchive(characterArchive), config(config) // ← sin punto y coma
-{
+      characterArchive(characterArchive), config(config) {
   initHandlers();
-
 }
 
 void LobbyHandler::initHandlers() {
@@ -107,8 +105,6 @@ void LobbyHandler::handleCreateChar(uint32_t clientId, const Message &message) {
       return;
     }
 
-    // Marcamos online de inmediato: el personaje recién creado ya
-    // pertenece a esta sesión y nadie más debería poder loguearse con él.
     gameManager.tryMarkOnline(clientId, msg.getName());
 
     Player player = playerFactory.create(clientId, msg.getName(), msg.getRaza(),
@@ -130,27 +126,26 @@ void LobbyHandler::handleListGames(uint32_t clientId, const Message &) {
 void LobbyHandler::handleLogin(uint32_t clientId, const Message &message) {
   const auto &msg = static_cast<const LoginMessage &>(message);
   const std::string &characterName = msg.getCharacterName();
- 
+
   if (!characterArchive.exists(characterName)) {
     lobbyMonitor.sendTo(
         clientId, std::make_shared<const ErrorMessage>(
                       "Personaje '" + characterName + "' no encontrado."));
     return;
   }
- 
+
   if (!gameManager.tryMarkOnline(clientId, characterName)) {
     lobbyMonitor.sendTo(
         clientId, std::make_shared<const ErrorMessage>(
                       "Ese personaje ya está conectado."));
     return;
   }
- 
+
   pendingCharacterNames[clientId] = characterName;
   lobbyMonitor.sendTo(clientId, std::make_shared<LoginOkMessage>());
   std::cout << "[LobbyHandler] Login OK: '" << characterName
             << "' clientId=" << clientId << std::endl;
 }
- 
 
 void LobbyHandler::handleCreateGame(uint32_t clientId, const Message &message) {
   const auto &createMsg = static_cast<const CreateGameMessage &>(message);
@@ -171,7 +166,7 @@ void LobbyHandler::handleCreateGame(uint32_t clientId, const Message &message) {
 void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message) {
 
   const auto &joinMsg = static_cast<const JoinGameMessage &>(message);
-  const uint32_t gameId = joinMsg.getGameId();
+  const uint32_t requestedGameId = joinMsg.getGameId();
 
   Queue<std::shared_ptr<const Message>> *clientQueue =
       lobbyMonitor.getQueue(clientId);
@@ -185,10 +180,14 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message) {
   // ── Resolución del Player ──────────────────────────────────────────────
   // Caso A: personaje recién creado (está en playerRepo, nunca fue persistido).
   // Caso B: personaje existente que hizo login (nombre en
-  // pendingCharacterNames,
-  //         hay que cargarlo del archive con este gameId).
+  // pendingCharacterNames, hay que cargarlo del archive con este gameId).
 
   Player *player = playerRepo.get(clientId);
+
+  // targetGameId puede diferir de requestedGameId si el jugador estaba en
+  // una instancia al desconectarse — en ese caso la recreamos y lo mandamos
+  // directamente ahí.
+  uint32_t targetGameId = requestedGameId;
 
   if (!player) {
     // Caso B: viene de un login
@@ -201,21 +200,42 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message) {
     }
 
     const std::string &characterName = it->second;
-    std::string mapId = gameManager.getRoomMapPath(gameId);
 
-    auto loaded = archive.load(characterName, gameId);
-    if (loaded) {
-      // Jugador que ya estuvo en esta partida: lo restauramos tal cual.
-      loaded->setClientId(clientId);
-      playerRepo.save(clientId, std::move(*loaded));
+    if (auto snap = archive.loadSnapshot(characterName, requestedGameId)) {
+      // El jugador ya estuvo en esta sala pública (o en una instancia de ella).
+      if (snap->originGameId != 0) {
+        // Estaba en una instancia cuando se desconectó: recrearla.
+        std::string instanceMap(snap->mapId,
+                                strnlen(snap->mapId, sizeof(snap->mapId)));
+        try {
+          targetGameId =
+              gameManager.getOrCreateInstance(instanceMap, requestedGameId);
+          std::cout << "[LobbyHandler] '" << characterName
+                    << "' reconectando a instancia gameId=" << targetGameId
+                    << " map='" << instanceMap << "'" << std::endl;
+        } catch (const std::exception &e) {
+          // El mapa de la instancia ya no existe en disco (caso raro).
+          // Fallback: unirse a la sala pública normalmente.
+          std::cerr << "[LobbyHandler] No se pudo recrear instancia para '"
+                    << characterName << "': " << e.what()
+                    << " — fallback a sala pública." << std::endl;
+          targetGameId = requestedGameId;
+        }
+      }
+
+      auto loaded = archive.load(characterName, requestedGameId);
+      if (loaded) {
+        loaded->setClientId(clientId);
+        playerRepo.save(clientId, std::move(*loaded));
+      }
     } else {
-      // Primera vez en esta partida: construimos desde cero con raza/clase del
-      // registro
+      // Primera vez en esta sala: construir desde cero.
       auto rec = characterArchive.load(characterName);
       if (!rec) {
         lobbyMonitor.sendTo(clientId,
                             std::make_shared<const ErrorMessage>(
                                 "Error interno al cargar el personaje."));
+        pendingCharacterNames.erase(it);
         return;
       }
 
@@ -225,7 +245,8 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message) {
           std::string(rec->cls, strnlen(rec->cls, sizeof(rec->cls))), 3, 3);
 
       std::cout << "[LobbyHandler] '" << characterName
-                << "' entra por primera vez a gameId=" << gameId << std::endl;
+                << "' entra por primera vez a gameId=" << requestedGameId
+                << std::endl;
       playerRepo.save(clientId, std::move(fresh));
     }
 
@@ -233,9 +254,9 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message) {
     player = playerRepo.get(clientId);
   }
 
-  // ── Unirse a la GameRoom ───────────────────────────────────────────────
+  // ── Unirse a la GameRoom (pública o instancia recreada) ───────────────────
 
-  if (!gameManager.joinGame(gameId, clientId, *clientQueue)) {
+  if (!gameManager.joinGame(targetGameId, clientId, *clientQueue)) {
     lobbyMonitor.sendTo(clientId, std::make_shared<const ErrorMessage>(
                                       "Game not found or full"));
     return;
@@ -243,31 +264,40 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message) {
 
   PlayerDto playerDto = buildPlayerDto(*player);
 
-  // Primer snapshot para este jugador en esta partida (o actualización si ya
-  // existía).
-  std::string mapId = gameManager.getRoomMapPath(gameId);
-  archive.enqueue(archive.toSnapshot(*player, mapId, gameId), gameId);
+  std::string mapId = gameManager.getRoomMapPath(targetGameId);
+  uint32_t originId = gameManager.getOriginRoomId(targetGameId);
+  archive.enqueue(
+      archive.toSnapshot(*player, mapId, targetGameId, originId),
+      targetGameId);
 
-  gameManager.addPlayerToGame(gameId, std::move(*player));
+  gameManager.addPlayerToGame(targetGameId, std::move(*player));
   playerRepo.remove(clientId);
 
+  // El nombre de la partida siempre viene de la sala pública.
   std::string gameName;
   for (const auto &info : gameManager.listGames()) {
-    if (info.gameId == gameId) {
+    if (info.gameId == requestedGameId) {
       gameName = info.gameName;
       break;
     }
   }
 
   clientQueue->try_push(std::make_shared<const JoinOkMessage>(
-      gameId, gameName, std::move(playerDto)));
+      targetGameId, gameName, std::move(playerDto)));
+
+  if (targetGameId != requestedGameId) {
+    clientQueue->try_push(std::make_shared<const MapChangedMessage>(mapId));
+    std::cout << "[LobbyHandler] MapChanged enviado a clientId=" << clientId
+              << " (reconexión a instancia) mapId='" << mapId << "'"
+              << std::endl;
+  }
 
   auto *receiver = receiverRegistry.get(clientId);
   if (receiver)
-    receiver->setQueue(gameManager.getGameQueue(gameId));
+    receiver->setQueue(gameManager.getGameQueue(targetGameId));
 
   lobbyMonitor.removeQueue(clientId);
-  gameManager.syncPlayerJoin(gameId, clientId);
+  gameManager.syncPlayerJoin(targetGameId, clientId);
 }
 
 void LobbyHandler::handleLeaveGame(LeaveEvent &event) {
@@ -284,6 +314,7 @@ void LobbyHandler::handleLeaveGame(LeaveEvent &event) {
 
 void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event) {
   if (event.targetMap.empty()) {
+    // Salida de instancia → volver a sala pública de origen.
     uint32_t originId = gameManager.getOriginRoomId(event.fromRoomId);
     if (originId == 0)
       return;
@@ -294,6 +325,12 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event) {
 
     gameManager.joinGame(originId, event.clientId, *event.clientQueue);
     event.player.setTilePos(event.spawnTileX, event.spawnTileY);
+
+    // Al volver a la sala pública, originGameId vuelve a 0.
+    archive.enqueue(
+        archive.toSnapshot(event.player, originMapPath, originId, 0),
+        originId);
+
     gameManager.addPlayerToGame(originId, std::move(event.player));
 
     auto *receiver = receiverRegistry.get(event.clientId);
@@ -301,7 +338,9 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event) {
       receiver->setQueue(gameManager.getGameQueue(originId));
 
     gameManager.syncPlayerJoin(originId, event.clientId);
+
   } else {
+    // Entrada a instancia.
     std::string fullMapPath = event.targetMap;
     if (fullMapPath.find("assets/") == std::string::npos)
       fullMapPath = "assets/sprites/MapAssets/worlds" + fullMapPath + ".argmap";
@@ -316,6 +355,13 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event) {
 
     gameManager.joinGame(instanceId, event.clientId, *event.clientQueue);
     event.player.setTilePos(event.spawnTileX, event.spawnTileY);
+
+    // Persistir con originGameId = sala pública de origen (event.fromRoomId).
+    archive.enqueue(
+        archive.toSnapshot(event.player, fullMapPath, instanceId,
+                           event.fromRoomId),
+        instanceId);
+
     gameManager.addPlayerToGame(instanceId, std::move(event.player));
 
     auto *receiver = receiverRegistry.get(event.clientId);

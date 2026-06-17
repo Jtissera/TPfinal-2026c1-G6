@@ -9,14 +9,16 @@ GameLoop::GameLoop(Queue<ClientMessage> &q, Monitor &m, GameWorld &w,
                    Queue<std::shared_ptr<LeaveEvent>> &leaveQ,
                    Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQ,
                    uint32_t gameId, const toml::table &config,
-                   PlayerArchive &archive, const std::string &mapId)
+                   PlayerArchive &archive, const std::string &mapId,
+                   uint32_t originRoomId)
     : gameQueue(q), monitor(m), world(w), leaveQueue(leaveQ),
       transitionQueue(transitionQ), gameId(gameId), dispatcher(config),
       statManager(config),
       tickRateMs(config["server"]["tick_rate_ms"].value_or(33)),
       archive(archive), mapId(mapId),
       persistEveryNTicks(
-          config["server"]["persist_every_n_ticks"].value_or(300)) {}
+          config["server"]["persist_every_n_ticks"].value_or(300)),
+      originRoomId(originRoomId) {}
 
 void GameLoop::run() {
   using Clock = std::chrono::steady_clock;
@@ -134,10 +136,10 @@ void GameLoop::worldUpdate(float deltaSeconds) {
 
   ++persistTickCounter;
   if (persistTickCounter >= persistEveryNTicks) {
-    persistTickCounter = 0;
-    for (const auto &[clientId, player] : world.getPlayers()) {
-      archive.enqueue(archive.toSnapshot(player, mapId, gameId), gameId);
-    }
+      persistTickCounter = 0;
+      for (const auto &[clientId, player] : world.getPlayers()) {
+          archive.enqueue( archive.toSnapshot(player, mapId, gameId, originRoomId),gameId);
+      }
   }
 }
 

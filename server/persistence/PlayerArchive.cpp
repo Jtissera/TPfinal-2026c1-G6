@@ -13,10 +13,21 @@ static constexpr std::size_t INDEX_KEY_LEN = 48;
 static constexpr std::size_t INDEX_ENTRY_SIZE =
     INDEX_KEY_LEN + sizeof(uint64_t);
 
-// ─── helper ──────────────────────────────────────────────────────────────────
+// ─── helpers ─────────────────────────────────────────────────────────────────
 
 static std::string makeKey(const std::string &name, uint32_t gameId) {
   return name + "@" + std::to_string(gameId);
+}
+
+// Al escribir, la clave del índice usa siempre la sala pública (originGameId
+// si está en una instancia, gameId si está en sala pública). Así load() con
+// el publicGameId siempre encuentra al jugador aunque la instancia haya
+// desaparecido tras un restart.
+static std::string makeKeyForIndex(const PlayerSnapshot &snap) {
+  std::string name(snap.name, strnlen(snap.name, sizeof(snap.name)));
+  uint32_t keyId =
+      (snap.originGameId != 0) ? snap.originGameId : snap.gameId;
+  return name + "@" + std::to_string(keyId);
 }
 
 // ─── constructor / destructor
@@ -88,7 +99,8 @@ uint64_t PlayerArchive::allocateSlot(const std::string &key) {
 
 PlayerSnapshot PlayerArchive::toSnapshot(const Player &player,
                                          const std::string &mapId,
-                                         uint32_t gameId) const {
+                                         uint32_t gameId,
+                                         uint32_t originGameId) const {
   PlayerSnapshot snap;
   std::memset(&snap, 0, sizeof(snap));
   snap.version = SNAPSHOT_VERSION;
@@ -108,6 +120,7 @@ PlayerSnapshot PlayerArchive::toSnapshot(const Player &player,
   snap.gold = player.getGold();
   snap.experience = player.getExp();
   snap.gameId = gameId;
+  snap.originGameId = originGameId;
   snap.isGhost = player.isGhost() ? 1 : 0;
 
   const auto &invItems = player.getInventory().getItems();
@@ -139,8 +152,9 @@ PlayerSnapshot PlayerArchive::toSnapshot(const Player &player,
     snap.equipped[i].slot = static_cast<uint8_t>(i);
   }
 
-  std::cout << "[Archive] toSnapshot key='" << makeKey(player.getName(), gameId)
-            << "' mapId='" << mapId << "'" << std::endl;
+  std::cout << "[Archive] toSnapshot key='" << makeKeyForIndex(snap)
+            << "' mapId='" << mapId << "' originGameId=" << originGameId
+            << std::endl;
   return snap;
 }
 
@@ -149,11 +163,8 @@ PlayerSnapshot PlayerArchive::toSnapshot(const Player &player,
 
 void PlayerArchive::enqueue(PlayerSnapshot snap, uint32_t gameId) {
   snap.gameId = gameId;
-  std::cout << "[Archive] enqueue key='"
-            << makeKey(std::string(snap.name,
-                                   strnlen(snap.name, sizeof(snap.name))),
-                       gameId)
-            << "'" << std::endl;
+  std::cout << "[Archive] enqueue key='" << makeKeyForIndex(snap) << "'"
+            << std::endl;
   snapQueue.try_push(std::move(snap));
 }
 
@@ -163,7 +174,7 @@ void PlayerArchive::run() {
       PlayerSnapshot snap = snapQueue.pop();
       writeSnapshot(snap);
     }
-  } catch (const ClosedQueue&) {
+  } catch (const ClosedQueue &) {
 
   } catch (const std::exception &e) {
     std::cerr << "[PlayerArchive] error inesperado: " << e.what() << std::endl;
@@ -188,7 +199,9 @@ void PlayerArchive::writeSnapshot(const PlayerSnapshot &snap) {
     return;
   }
 
-  std::string key = makeKey(name, snap.gameId);
+  // La clave normaliza al publicGameId para que load() siempre encuentre
+  // al jugador independientemente de si estaba en una instancia efímera.
+  std::string key = makeKeyForIndex(snap);
 
   if (key.size() >= INDEX_KEY_LEN) {
     std::cerr << "[Archive] ERROR: clave '" << key << "' supera los "
@@ -231,8 +244,38 @@ void PlayerArchive::writeSnapshot(const PlayerSnapshot &snap) {
   }
 }
 
-// ─── lectura
-// ──────────────────────────────────────────────────────────────────
+// ─── lectura raw (snapshot sin construir Player)
+// ──────────────────────────────────────────────
+
+std::optional<PlayerSnapshot> PlayerArchive::loadSnapshot(
+    const std::string &name, uint32_t gameId) const {
+
+  std::string key = makeKey(name, gameId);
+
+  uint64_t offset = 0;
+  {
+    std::shared_lock lock(indexMutex);
+    auto it = index_.find(key);
+    if (it == index_.end())
+      return std::nullopt;
+    offset = it->second;
+  }
+
+  std::ifstream reader(datPath_, std::ios::binary);
+  if (!reader.is_open())
+    return std::nullopt;
+
+  reader.seekg(static_cast<std::streamoff>(offset));
+  PlayerSnapshot snap;
+  reader.read(reinterpret_cast<char *>(&snap), sizeof(PlayerSnapshot));
+  if (!reader)
+    return std::nullopt;
+
+  return snap;
+}
+
+// ─── lectura (construye Player)
+// ──────────────────────────────────────────────────
 
 std::optional<Player> PlayerArchive::load(const std::string &name,
                                           uint32_t gameId) {
@@ -302,17 +345,23 @@ std::optional<Player> PlayerArchive::load(const std::string &name,
     player.getInventory().addItem(std::move(*optItem));
   }
 
-for (std::size_t i = 0; i < 4; ++i) {
-  const EquipSlotSnapshot &eq = snap.equipped[i];
-  if (eq.catalogId == 0) continue;
+  for (std::size_t i = 0; i < 4; ++i) {
+      const EquipSlotSnapshot &eq = snap.equipped[i];
+      if (eq.catalogId == 0)
+        continue;
 
- 
-  uint32_t instanceId = player.getInventory().findInstanceIdByCatalogId(eq.catalogId);
-  
-  if (instanceId != 0) {
-    player.getInventory().equipItem(instanceId); //  lo equipás, no lo volvés a agregar
-  }
-}
+      const Item *found = nullptr;
+      for (const Item &item : player.getInventory().getItems()) {
+        if (item.catalogId == eq.catalogId) {
+          found = &item;
+          break;
+        }
+      }
+
+      if (found) {
+        player.getInventory().equipItem(found->instanceId);
+      }
+    }
 
   std::cout << "[Archive::load] key='" << key << "' hp=" << player.getHp()
             << " pixelX=" << player.getPixelX()

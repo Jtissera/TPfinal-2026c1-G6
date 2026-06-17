@@ -10,6 +10,7 @@
 #include "../../../common/network/protocol/protocol.h"
 #include "../../../common/network/messages/server/lobby/gameListMessage.h"
 #include "../../../common/dtos/gameTypes.h"
+#include "../../../common/network/messages/server/system/mapChangedMessage.h"
 
 struct MapEntry
 {
@@ -40,8 +41,11 @@ public:
     const PlayerDto &getJoinedPlayerDto() const;
 
     std::string getChosenMapPath() const { return chosenMapPath; }
+    std::shared_ptr<const Message> takePendingMessage() { return std::move(pendingMessage); }
 
 private:
+    std::shared_ptr<const Message> pendingMessage = nullptr;
+    
     int gamesScrollOffset = 0;
     int hoveredGame = -1;
 
