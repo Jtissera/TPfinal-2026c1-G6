@@ -7,6 +7,7 @@
 #include <string>
 #include <toml++/toml.hpp>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "../../../common/network/messages/server/lobby/gameListMessage.h"
@@ -51,6 +52,15 @@ public:
   std::string getRoomMapPath(uint32_t gameId) const;
   void restoreFromArchive();
 
+  // ── Control de sesión única por personaje ──────────────────────────────
+  // Marca el personaje como online asociado a este clientId.
+  // Devuelve false si el personaje ya estaba online (con otro clientId).
+  bool tryMarkOnline(uint32_t clientId, const std::string &characterName);
+
+  // Libera el personaje asociado a este clientId, si había alguno.
+  // Es idempotente: llamarlo sin sesión activa no hace nada.
+  void markOffline(uint32_t clientId);
+
 private:
   const toml::table &config;
   mutable std::mutex mutex;
@@ -61,6 +71,10 @@ private:
 
   std::unordered_map<uint32_t, std::unique_ptr<GameRoom>> rooms;
   std::unordered_map<uint32_t, uint32_t> clientRoom;
+
+  // Control de sesión única: nombre de personaje <-> clientId que lo tiene online
+  std::unordered_set<std::string> onlineCharacters;
+  std::unordered_map<uint32_t, std::string> clientToCharacter;
 
   NpcFactory &npcFactory;
   ItemRepository &itemRepo;

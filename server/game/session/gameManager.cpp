@@ -121,22 +121,7 @@ void GameManager::addPlayerToGame(uint32_t gameId, Player player) {
   std::cout << "[GameManager] addPlayerToGame OK gameId=" << gameId
             << " playerId=" << playerId << std::endl;
 }
-void GameManager::removeClient(uint32_t clientId) {
-  std::unique_lock<std::mutex> lock(mutex);
 
-  auto it = clientRoom.find(clientId);
-  if (it == clientRoom.end())
-    return;
-
-  uint32_t gameId = it->second;
-  clientRoom.erase(it);
-
-  auto roomIt = rooms.find(gameId);
-  if (roomIt != rooms.end())
-    roomIt->second->removeClient(clientId);
-
-  cleanEmptyInstances();
-}
 
 std::vector<GameInfo> GameManager::listGames() const {
   std::unique_lock<std::mutex> lock(mutex);
@@ -252,4 +237,59 @@ std::string GameManager::getRoomMapPath(uint32_t gameId) const {
   } else {
     return it->second->getMapPath();
   }
+}
+
+ 
+bool GameManager::tryMarkOnline(uint32_t clientId, const std::string &characterName) {
+  std::unique_lock<std::mutex> lock(mutex);
+ 
+  if (onlineCharacters.find(characterName) != onlineCharacters.end()) {
+    return false;  // ya hay alguien jugando con este personaje
+  }
+ 
+  onlineCharacters.insert(characterName);
+  clientToCharacter[clientId] = characterName;
+ 
+  std::cout << "[GameManager] tryMarkOnline OK character='" << characterName
+            << "' clientId=" << clientId << std::endl;
+ 
+  return true;
+}
+ 
+void GameManager::markOffline(uint32_t clientId) {
+  std::unique_lock<std::mutex> lock(mutex);
+ 
+  auto it = clientToCharacter.find(clientId);
+  if (it == clientToCharacter.end())
+    return;  // este clientId no tenía personaje marcado online, no-op
+ 
+  std::cout << "[GameManager] markOffline character='" << it->second
+            << "' clientId=" << clientId << std::endl;
+ 
+  onlineCharacters.erase(it->second);
+  clientToCharacter.erase(it);
+}
+ 
+// ─── Modificar removeClient así (agregar la primera línea) ───────────────────
+ 
+void GameManager::removeClient(uint32_t clientId) {
+  // Liberar el personaje asociado a este clientId, sin importar en qué
+  // estado estaba (lobby, en partida, en transición). Esto es lo que evita
+  // que un personaje quede "trabado" tras una desconexión abrupta.
+  markOffline(clientId);
+ 
+  std::unique_lock<std::mutex> lock(mutex);
+ 
+  auto it = clientRoom.find(clientId);
+  if (it == clientRoom.end())
+    return;
+ 
+  uint32_t gameId = it->second;
+  clientRoom.erase(it);
+ 
+  auto roomIt = rooms.find(gameId);
+  if (roomIt != rooms.end())
+    roomIt->second->removeClient(clientId);
+ 
+  cleanEmptyInstances();
 }

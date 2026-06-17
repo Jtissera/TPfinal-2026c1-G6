@@ -31,13 +31,14 @@ static_assert(sizeof(ItemSnapshot) == 24, "ItemSnapshot size mismatch");
 struct EquipSlotSnapshot {
   uint32_t catalogId = 0;
   uint8_t slot = 0;
-  uint8_t _pad[3] = {};
+  uint8_t _pad[2] = {};
 };
 static_assert(sizeof(EquipSlotSnapshot) == 8,
               "EquipSlotSnapshot size mismatch");
 
 struct PlayerSnapshot {
   uint8_t version = SNAPSHOT_VERSION;
+  uint8_t  isGhost   = 0;
   uint8_t _pad0[3] = {};
 
   char name[MAX_NAME_LEN] = {};
@@ -60,6 +61,8 @@ struct PlayerSnapshot {
   uint32_t experience = 0;
 
   uint32_t gameId = 0;
+  uint32_t originGameId = 0;
+
   // Inventario (slots de mochila)
   uint8_t itemCount = 0;
   uint8_t _pad2[3] = {};

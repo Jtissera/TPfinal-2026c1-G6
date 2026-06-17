@@ -22,6 +22,7 @@ LobbyHandler::LobbyHandler(
       characterArchive(characterArchive), config(config) // ← sin punto y coma
 {
   initHandlers();
+
 }
 
 void LobbyHandler::initHandlers() {
@@ -99,13 +100,17 @@ void LobbyHandler::handleConnect(uint32_t clientId, const Message &message) {
 void LobbyHandler::handleCreateChar(uint32_t clientId, const Message &message) {
   const auto &msg = static_cast<const CreateCharMessage &>(message);
   try {
-    // Unicidad: si el nombre ya existe, rechazamos
     if (!characterArchive.save(msg.getName(), msg.getRaza(), msg.getClase())) {
       lobbyMonitor.sendTo(
           clientId, std::make_shared<const ErrorMessage>(
                         "El nombre '" + msg.getName() + "' ya está en uso."));
       return;
     }
+
+    // Marcamos online de inmediato: el personaje recién creado ya
+    // pertenece a esta sesión y nadie más debería poder loguearse con él.
+    gameManager.tryMarkOnline(clientId, msg.getName());
+
     Player player = playerFactory.create(clientId, msg.getName(), msg.getRaza(),
                                          msg.getClase(), 2, 2);
     playerRepo.save(clientId, std::move(player));
@@ -115,6 +120,7 @@ void LobbyHandler::handleCreateChar(uint32_t clientId, const Message &message) {
                         std::make_shared<const ErrorMessage>(e.what()));
   }
 }
+
 void LobbyHandler::handleListGames(uint32_t clientId, const Message &) {
   auto games = gameManager.listGames();
   lobbyMonitor.sendTo(
@@ -124,19 +130,27 @@ void LobbyHandler::handleListGames(uint32_t clientId, const Message &) {
 void LobbyHandler::handleLogin(uint32_t clientId, const Message &message) {
   const auto &msg = static_cast<const LoginMessage &>(message);
   const std::string &characterName = msg.getCharacterName();
-
+ 
   if (!characterArchive.exists(characterName)) {
     lobbyMonitor.sendTo(
         clientId, std::make_shared<const ErrorMessage>(
                       "Personaje '" + characterName + "' no encontrado."));
     return;
   }
-
+ 
+  if (!gameManager.tryMarkOnline(clientId, characterName)) {
+    lobbyMonitor.sendTo(
+        clientId, std::make_shared<const ErrorMessage>(
+                      "Ese personaje ya está conectado."));
+    return;
+  }
+ 
   pendingCharacterNames[clientId] = characterName;
   lobbyMonitor.sendTo(clientId, std::make_shared<LoginOkMessage>());
   std::cout << "[LobbyHandler] Login OK: '" << characterName
             << "' clientId=" << clientId << std::endl;
 }
+ 
 
 void LobbyHandler::handleCreateGame(uint32_t clientId, const Message &message) {
   const auto &createMsg = static_cast<const CreateGameMessage &>(message);
@@ -155,6 +169,7 @@ void LobbyHandler::handleCreateGame(uint32_t clientId, const Message &message) {
 }
 
 void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message) {
+
   const auto &joinMsg = static_cast<const JoinGameMessage &>(message);
   const uint32_t gameId = joinMsg.getGameId();
 

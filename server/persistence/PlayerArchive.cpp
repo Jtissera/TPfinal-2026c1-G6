@@ -108,6 +108,7 @@ PlayerSnapshot PlayerArchive::toSnapshot(const Player &player,
   snap.gold = player.getGold();
   snap.experience = player.getExp();
   snap.gameId = gameId;
+  snap.isGhost = player.isGhost() ? 1 : 0;
 
   const auto &invItems = player.getInventory().getItems();
   snap.itemCount =
@@ -162,14 +163,12 @@ void PlayerArchive::run() {
       PlayerSnapshot snap = snapQueue.pop();
       writeSnapshot(snap);
     }
-  } catch (const ClosedQueue &) {
-    PlayerSnapshot snap;
-    while (snapQueue.try_pop(snap))
-      writeSnapshot(snap);
-    dat_.flush();
+  } catch (const ClosedQueue&) {
+
   } catch (const std::exception &e) {
-    std::cerr << "[PlayerArchive] error: " << e.what() << std::endl;
+    std::cerr << "[PlayerArchive] error inesperado: " << e.what() << std::endl;
   }
+  dat_.flush();
 }
 
 void PlayerArchive::stop() {
@@ -286,8 +285,9 @@ std::optional<Player> PlayerArchive::load(const std::string &name,
 
   player.markInitialInventoryGiven();
 
-  if (player.getHp() <= 0)
+  if (snap.isGhost == 1) {
     player.forceGhostState();
+  }
 
   for (uint8_t i = 0; i < snap.itemCount; ++i) {
     const ItemSnapshot &src = snap.items[i];
@@ -302,17 +302,17 @@ std::optional<Player> PlayerArchive::load(const std::string &name,
     player.getInventory().addItem(std::move(*optItem));
   }
 
-  for (std::size_t i = 0; i < 4; ++i) {
-    const EquipSlotSnapshot &eq = snap.equipped[i];
-    if (eq.catalogId == 0)
-      continue;
-    auto optItem = itemRepo.findByCatalogId(eq.catalogId);
-    if (!optItem)
-      continue;
-    uint32_t instanceId = optItem->instanceId;
-    player.getInventory().addItem(std::move(*optItem));
-    player.getInventory().equipItem(instanceId);
+for (std::size_t i = 0; i < 4; ++i) {
+  const EquipSlotSnapshot &eq = snap.equipped[i];
+  if (eq.catalogId == 0) continue;
+
+ 
+  uint32_t instanceId = player.getInventory().findInstanceIdByCatalogId(eq.catalogId);
+  
+  if (instanceId != 0) {
+    player.getInventory().equipItem(instanceId); //  lo equipás, no lo volvés a agregar
   }
+}
 
   std::cout << "[Archive::load] key='" << key << "' hp=" << player.getHp()
             << " pixelX=" << player.getPixelX()
