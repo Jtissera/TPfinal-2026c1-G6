@@ -72,6 +72,9 @@ void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
   audioManager.loadEffect("equip",     "assets/audio/sfx_equip.ogg");
   audioManager.loadEffect("potion",    "assets/audio/sfx_potion.ogg");
   audioManager.loadEffect("resurrect", "assets/audio/sfx_resurrect.ogg");
+  audioManager.loadEffect("magic",        "assets/audio/sfx_attack_magic.ogg");
+  audioManager.loadEffect("meditate",     "assets/audio/sfx_meditate.ogg");
+  audioManager.loadEffect("npc_interact", "assets/audio/sfx_npc_interact.ogg");
   audioManager.playMusic();
 }
 
@@ -149,6 +152,7 @@ void Game::handleEvents()
           continue;
 
         clickedNpc = true;
+        audioManager.playEffect("npc_interact");
 
         if (npcEntity->hasComponent<NpcTypeComponent>())
         {
@@ -205,7 +209,11 @@ void Game::handleEvents()
 
       attackSystem.handleMouseClick(mouseX, mouseY, camera, attackTargets,
                                     sendQueue, player, equippedWeapon);
-      audioManager.playEffect("attack");
+      if (equippedWeapon != nullptr &&
+          equippedWeapon->type == ClientItemType::MagicWeapon)
+        audioManager.playEffect("magic");
+      else
+        audioManager.playEffect("attack");
     }
 
     if (event.type == SDL_KEYDOWN &&
@@ -2483,6 +2491,9 @@ void Game::handleChatNotification(const ChatNotificationMessage &msg)
 {
   const std::string &text = msg.getText();
   const ChatMsgType type = msg.getMsgType();
+
+  if (text.find("Empezaste a meditar") != std::string::npos)
+    audioManager.playEffect("meditate");
 
   std::string::size_type start = 0;
   std::string::size_type pos;
