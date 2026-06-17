@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "ZoneNaming.h"
+
 GameFormulas::GameFormulas(const toml::table& config)
     : config(config) {
 }
@@ -111,4 +113,34 @@ float GameFormulas::calcManaRegenMeditating(const ClassStats& cls,
                                             const RaceStats& race,
                                             float deltaSeconds) const {
   return cls.meditation * race.intelligence * deltaSeconds;
+}
+
+std::string GameFormulas::rollNpcDrop(ZoneType zone) const {
+    const double nothingChance =
+        config["npc"]["drop_chance_nothing"].value_or<double>(0.80);
+    const double goldChance =
+        config["npc"]["drop_chance_gold"].value_or<double>(0.08);
+
+    const int roll = std::rand() % 100;
+    const double rollPct = static_cast<double>(roll) / 100.0;
+
+    if (rollPct < nothingChance) {
+        return "";
+    }
+
+    if (rollPct < nothingChance + goldChance) {
+        return "GOLD";
+    }
+
+    const std::string poolKey = ZoneNaming::toPoolPrefix(zone) + "_pool";
+    const auto* poolArray = config["drops"][poolKey].as_array();
+
+    if (poolArray == nullptr || poolArray->empty()) {
+        return "";
+    }
+
+    const std::size_t index =
+        static_cast<std::size_t>(std::rand()) % poolArray->size();
+
+    return (*poolArray)[index].value_or<std::string>("");
 }

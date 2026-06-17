@@ -823,10 +823,20 @@ void GameWorld::loadInitialInventoryForPlayer(Player &player)
 
     if (className == "Cleric")
     {
-        player.getInventory().addItem(itemRepo.createItem("vara_fresno"));
+        player.getInventory().addItem(itemRepo.createItem("casco_hierro"));
+        player.getInventory().addItem(itemRepo.createItem("gorro_calabaza"));
+        player.getInventory().addItem(itemRepo.createItem("gorro_navidad"));
+        player.getInventory().addItem(itemRepo.createItem("gorro_arlequin"));
+        player.getInventory().addItem(itemRepo.createItem("sombrero_magico"));
         player.getInventory().addItem(itemRepo.createItem("capucha"));
-        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
-        player.getInventory().addItem(itemRepo.createItem("pocion_mana"));
+        player.getInventory().addItem(itemRepo.createItem("espada_maldita"));
+        player.getInventory().addItem(itemRepo.createItem("armadura_sombras"));
+        player.getInventory().addItem(itemRepo.createItem("escudo_maldito"));
+        player.getInventory().addItem(itemRepo.createItem("armadura_placas"));
+        player.getInventory().addItem(itemRepo.createItem("escudo_tortuga"));
+        player.getInventory().addItem(itemRepo.createItem("tunica_iniciado"));
+        player.getInventory().addItem(itemRepo.createItem("tunica_azul"));
+        player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
         return;
     }
     if (className == "Mage")
@@ -835,6 +845,7 @@ void GameWorld::loadInitialInventoryForPlayer(Player &player)
         player.getInventory().addItem(itemRepo.createItem("capucha"));
         player.getInventory().addItem(itemRepo.createItem("pocion_mana"));
         player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
+        player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
         return;
     }
     if (className == "Paladin")
@@ -846,16 +857,38 @@ void GameWorld::loadInitialInventoryForPlayer(Player &player)
         player.getInventory().addItem(itemRepo.createItem("capucha"));
         player.getInventory().addItem(itemRepo.createItem("pocion_mana"));
         player.getInventory().addItem(itemRepo.createItem("vara_fresno"));
-        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
-        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
+        player.getInventory().addItem(itemRepo.createItem("hacha"));
+        player.getInventory().addItem(itemRepo.createItem("martillo"));
+        player.getInventory().addItem(itemRepo.createItem("baculo_nudoso"));
+        player.getInventory().addItem(itemRepo.createItem("baculo_engarzado"));
+        player.getInventory().addItem(itemRepo.createItem("arco_simple"));
+        player.getInventory().addItem(itemRepo.createItem("arco_compuesto"));
+        player.getInventory().addItem(itemRepo.createItem("armadura_cuero"));
+        player.getInventory().addItem(itemRepo.createItem("tunica_azul"));
+        player.getInventory().addItem(itemRepo.createItem("escudo_hierro"));
+        player.getInventory().addItem(itemRepo.createItem("casco_hierro"));
+        player.getInventory().addItem(itemRepo.createItem("sombrero_magico"));
+        player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
         return;
     }
     if (className == "Warrior")
     {
-        player.getInventory().addItem(itemRepo.createItem("espada"));
+
+        player.getInventory().addItem(itemRepo.createItem("casco_hierro"));
+        player.getInventory().addItem(itemRepo.createItem("gorro_calabaza"));
+        player.getInventory().addItem(itemRepo.createItem("gorro_navidad"));
+        player.getInventory().addItem(itemRepo.createItem("gorro_arlequin"));
+        player.getInventory().addItem(itemRepo.createItem("sombrero_magico"));
+        player.getInventory().addItem(itemRepo.createItem("capucha"));
+        player.getInventory().addItem(itemRepo.createItem("espada_maldita"));
+        player.getInventory().addItem(itemRepo.createItem("armadura_sombras"));
+        player.getInventory().addItem(itemRepo.createItem("escudo_maldito"));
         player.getInventory().addItem(itemRepo.createItem("armadura_placas"));
         player.getInventory().addItem(itemRepo.createItem("escudo_tortuga"));
-        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
+        player.getInventory().addItem(itemRepo.createItem("tunica_iniciado"));
+        player.getInventory().addItem(itemRepo.createItem("tunica_azul"));
+        player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
+
         return;
     }
 
@@ -915,72 +948,57 @@ std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const
     return t != NpcType::NONE ? std::optional<NpcType>(t) : std::nullopt;
 }
 
-void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
+NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
+    NpcDropResult dropResult{};
+
     // Buscamos el NPC muerto.
     Npc* npc = npcManager.findNpc(npcId);
-
     if (npc == nullptr) {
-        return;
+        return dropResult;
     }
-
     if (npc->isRespawning()) {
-        return;
+        return dropResult;
     }
-    std::cout << "[NPC GOLD DEBUG] npcId="
-          << npcId
-          << " killerPlayerId="
-          << killerPlayerId
-          << " npcMaxHp="
-          << npc->getMaxHp()
-          << std::endl;
 
     const int tileX = npc->getTileX();
     const int tileY = npc->getTileY();
 
+    dropResult.tileX = tileX;
+    dropResult.tileY = tileY;
+
     // Liberamos el tile ocupado por el NPC muerto.
     occupancy.free(tileX, tileY);
 
-    // Si hay killer válido, calculamos drop directo.
-    if (killerPlayerId != 0) {
-        auto killerIt = players.find(killerPlayerId);
+    // Decidimos que dropea segun la zona del NPC.
+    const std::string drop = formulas.rollNpcDrop(npc->getStats().homeZone);
 
-        if (killerIt != players.end()) {
-            Player& killer = killerIt->second;
+    if (drop == "GOLD") {
+        const uint32_t goldAmount = formulas.calcNpcGoldDrop(npc->getMaxHp());
 
+        if (goldAmount > 0) {
+            addGoldOnGround(goldAmount, tileX, tileY);
 
-            // Por ahora implementamos solo oro.
-            const int roll = std::rand() % 100;
+            dropResult.hasGold = true;
+            dropResult.goldAmount = goldAmount;
 
-            if (roll >= 80 && roll < 88) {
-                const double minFactor = 0.01;
-                const double maxFactor = 0.20;
-
-                const double random01 =
-                    static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
-
-                const double factor =
-                    minFactor + random01 * (maxFactor - minFactor);
-
-                const uint32_t goldDrop = static_cast<uint32_t>(
-                    factor * static_cast<double>(npc->getMaxHp())
-                );
-
-                if (goldDrop > 0) {
-                    const uint32_t goldDrop = 100;
-                    killer.addGold(goldDrop);
-
-                    std::cout << "[NPC GOLD] killerId="
-                              << killerPlayerId
-                              << " npcId="
-                              << npcId
-                              << " goldDrop="
-                              << goldDrop
-                              << " killerGold="
-                              << killer.getGold()
-                              << std::endl;
-                }
-            }
+            std::cout << "[NPC DROP] npcId=" << npcId
+                      << " GOLD=" << goldAmount
+                      << " tile=(" << tileX << "," << tileY << ")"
+                      << std::endl;
         }
+    }
+
+    else if (!drop.empty()) {
+        Item item = itemRepo.createItem(drop);
+        addItemOnGround(item, tileX, tileY);
+
+        dropResult.hasItem = true;
+        dropResult.droppedItem = item;
+
+        std::cout << "[NPC DROP] npcId=" << npcId
+                  << " item=" << drop
+                  << " tile=(" << tileX << "," << tileY << ")"
+                  << std::endl;
     }
 
     // El NPC NO se borra, conserva su ID y entra en RESPAWNING.
@@ -991,4 +1009,6 @@ void GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
               << " respawnMs="
               << npcRespawnDelayMs
               << std::endl;
+
+    return dropResult;
 }

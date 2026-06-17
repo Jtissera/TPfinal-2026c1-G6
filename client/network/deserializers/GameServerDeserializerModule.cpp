@@ -4,8 +4,11 @@
 #include <iostream>
 
 #include "common/network/messages/client/inventory/useItemMessage.h"
+#include "common/network/messages/server/inventory/goldOnGroundMessage.h"
 #include "common/network/messages/server/world/EntitySpawnMessage.h"
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
+#include "common/network/messages/server/inventory/itemOnGroundMessage.h"
+#include "common/network/messages/server/inventory/itemPickedMessage.h"
 #include "common/network/messages/server/player/levelUpMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
@@ -246,4 +249,39 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
             const uint32_t id = reader.readUint32();
             return std::make_unique<EntityDespawnMessage>(id);
         });
+
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ServerOpCode::MSG_GOLD_ON_GROUND),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+            const uint32_t amount = reader.readUint32();
+            const int x = reader.readUint16();
+            const int y = reader.readUint16();
+            return std::make_unique<GoldOnGroundMessage>(amount, x, y);
+        });
+
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ServerOpCode::MSG_ITEM_ON_GROUND),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+            Item item{};
+            item.instanceId = reader.readUint32();
+            item.catalogId = reader.readUint32();
+            item.typeName = reader.readString();
+
+            const int x = reader.readUint16();
+            const int y = reader.readUint16();
+
+            return std::make_unique<ItemOnGroundMessage>(item, x, y);
+        });
+
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ServerOpCode::MSG_ITEM_PICKED),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+            const uint32_t clientId = reader.readUint32();
+            const uint32_t itemId = reader.readUint32();
+            return std::make_unique<ItemPickedMessage>(clientId, itemId);
+        });
 }
+

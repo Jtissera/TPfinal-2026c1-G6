@@ -1,0 +1,303 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Espada",
+      "type": "melee_weapon",
+      "textureId": "item_sword",
+      "visualTextureId": "weapon_sword",
+      "iconSrcX": 0, "iconSrcY": 225, "iconSrcW": 34, "iconSrcH": 31,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+    {
+      "id": 28,
+      "name": "Espada Maldita",
+      "type": "melee_weapon",
+      "textureId": "item_dark_sword",
+      "visualTextureId": "weapon_dark_sword",
+      "iconSrcX": 0, "iconSrcY": 225, "iconSrcW": 34, "iconSrcH": 31,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+    {
+      "id": 8,
+      "name": "Hacha",
+      "type": "melee_weapon",
+      "textureId": "item_axe",
+      "visualTextureId": "weapon_axe",
+      "iconSrcX": 0, "iconSrcY": 220, "iconSrcW": 33, "iconSrcH": 36,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+    {
+      "id": 9,
+      "name": "Martillo",
+      "type": "melee_weapon",
+      "textureId": "item_hammer",
+      "visualTextureId": "weapon_hammer",
+      "iconSrcX": 0, "iconSrcY": 222, "iconSrcW": 34, "iconSrcH": 34,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+    {
+      "id": 2,
+      "name": "Vara de fresno",
+      "type": "magic_weapon",
+      "textureId": "item_vara_fresno",
+      "visualTextureId": "item_vara_fresno",
+      "iconSrcX": 0, "iconSrcY": 225, "iconSrcW": 31, "iconSrcH": 33,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+    {
+      "id": 10,
+      "name": "Flauta élfica",
+      "type": "magic_weapon",
+      "textureId": "item_elven_flute",
+      "visualTextureId": "",
+      "iconSrcX": 128, "iconSrcY": 128, "iconSrcW": 35, "iconSrcH": 33,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+    {
+      "id": 11,
+      "name": "Báculo nudoso",
+      "type": "magic_weapon",
+      "textureId": "item_staff",
+      "visualTextureId": "weapon_staff",
+      "iconSrcX": 0, "iconSrcY": 219, "iconSrcW": 36, "iconSrcH": 37,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+    {
+      "id": 12,
+      "name": "Báculo engarzado",
+      "type": "magic_weapon",
+      "textureId": "item_ash_staff",
+      "visualTextureId": "weapon_ash_staff",
+      "iconSrcX": 0, "iconSrcY": 228, "iconSrcW": 27, "iconSrcH": 29,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+    {
+      "id": 13,
+      "name": "Arco simple",
+      "type": "ranged_weapon",
+      "textureId": "item_simple_bow",
+      "visualTextureId": "weapon_simple_bow",
+      "iconSrcX": 0, "iconSrcY": 225, "iconSrcW": 32, "iconSrcH": 32,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+    {
+      "id": 14,
+      "name": "Arco compuesto",
+      "type": "ranged_weapon",
+      "textureId": "item_composite_bow",
+      "visualTextureId": "weapon_composite_bow",
+      "iconSrcX": 0, "iconSrcY": 225, "iconSrcW": 31, "iconSrcH": 31,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+
+    {
+      "id": 3,
+      "name": "Armadura de placas",
+      "type": "armor",
+      "textureId": "item_iron_armor",
+      "visualTextureId": "armor_iron_tall",
+      "iconSrcX": 0, "iconSrcY": 226, "iconSrcW": 33, "iconSrcH": 30,
+      "visuals": { "tall": "armor_iron_tall", "short": "armor_iron_short", "tallOffsetX": 0, "tallOffsetY": 2, "shortOffsetX": 0, "shortOffsetY": -12 }
+    },
+    {
+      "id": 15,
+      "name": "Armadura de cuero",
+      "type": "armor",
+      "textureId": "item_leather_armor",
+      "visualTextureId": "armor_leather_tall",
+      "iconSrcX": 0, "iconSrcY": 222, "iconSrcW": 35, "iconSrcH": 34,
+      "visuals": { "tall": "armor_leather_tall", "short": "armor_leather_short", "tallOffsetX": 0, "tallOffsetY": 0, "shortOffsetX": 0, "shortOffsetY": -12 }
+    },
+    {
+      "id": 30,
+      "name": "Uniforme Argentino",
+      "type": "armor",
+      "textureId": "item_uniforme_tall_ar",
+      "visualTextureId": "item_uniforme_tall_ar",
+      "iconSrcX": 0, "iconSrcY": 222, "iconSrcW": 29, "iconSrcH": 33,
+      "visuals": {
+        "tall": "item_uniforme_tall_ar",
+        "short": "item_uniforme_short_ar",
+        "tallOffsetX": 0, "tallOffsetY": 2,
+        "shortOffsetX": 0, "shortOffsetY": -12
+      }
+    },
+    {
+      "id": 16,
+      "name": "Túnica azul",
+      "type": "armor",
+      "textureId": "item_blue_tunic",
+      "visualTextureId": "tunic_blue_tall",
+      "iconSrcX": 4, "iconSrcY": 226, "iconSrcW": 25, "iconSrcH": 30,
+      "visuals": { "tall": "tunic_blue_tall", "short": "tunic_blue_short", "tallOffsetX": 0, "tallOffsetY": 0, "shortOffsetX": 0, "shortOffsetY": -12 }
+    },
+    {
+      "id": 20,
+      "name": "Armadura de las Sombras",
+      "type": "armor",
+      "textureId": "armor_dark_tall",
+      "visualTextureId": "armor_dark_tall",
+      "iconSrcX": 0, "iconSrcY": 224, "iconSrcW": 31, "iconSrcH": 32,
+      "visuals": { "tall": "armor_dark_tall", "short": "armor_dark_short", "tallOffsetX": 0, "tallOffsetY": 2, "shortOffsetX": 0, "shortOffsetY": -12 }
+    },
+    {
+      "id": 22,
+      "name": "Armadura de Clérigo",
+      "type": "armor",
+      "textureId": "cleric_tall",
+      "visualTextureId": "cleric_tall",
+      "iconSrcX": 6, "iconSrcY": 227, "iconSrcW": 22, "iconSrcH": 29,
+      "visuals": { "tall": "cleric_tall", "short": "cleric_short", "tallOffsetX": 0, "tallOffsetY": 2, "shortOffsetX": 0, "shortOffsetY": -12 }
+    },
+    {
+      "id": 29,
+      "name": "Túnica de Iniciado",
+      "type": "armor",
+      "textureId": "item_cleric_init",
+      "visualTextureId": "cleric_init_tall",
+      "iconSrcX": 0, "iconSrcY": 224, "iconSrcW": 29, "iconSrcH": 32,
+      "visuals": { "tall": "cleric_init_tall", "short": "cleric_init_short", "tallOffsetX": 0, "tallOffsetY": 0, "shortOffsetX": 0, "shortOffsetY": -12 }
+    },
+
+    {
+      "id": 4,
+      "name": "Capucha",
+      "type": "helmet",
+      "textureId": "item_hood",
+      "visualTextureId": "helmet_hood",
+      "iconSrcX": 231, "iconSrcY": 841, "iconSrcW": 19, "iconSrcH": 19,
+      "visuals": {
+        "offsetX": 2, "offsetY": 0,
+        "frameW": 32, "frameH": 32,
+        "downSrcX": 196, "downSrcY": 523,
+        "upSrcX": 196, "upSrcY": 588,
+        "leftSrcX": 196, "leftSrcY": 654,
+        "rightSrcX": 196, "rightSrcY": 716
+      }
+    },
+    {
+      "id": 17,
+      "name": "Casco de hierro",
+      "type": "helmet",
+      "textureId": "item_iron_helmet",
+      "visualTextureId": "helmet_iron",
+      "iconSrcX": 585, "iconSrcY": 810, "iconSrcW": 13, "iconSrcH": 16,
+      "visuals": {
+        "offsetX": -3,
+        "offsetY": -2,
+        "frameW": 32,
+        "frameH": 32,
+        "downSrcX": 492,
+        "downSrcY": 269,
+        "upSrcX": 492,
+        "upSrcY": 333,
+        "leftSrcX": 492,
+        "leftSrcY": 396,
+        "rightSrcX": 492,
+        "rightSrcY": 462
+      }
+    },
+    {
+      "id": 24,
+      "name": "Gorro de Calabaza",
+      "type": "helmet",
+      "textureId": "item_pumpkin_hat",
+      "visualTextureId": "helmet_pumpkin",
+      "iconSrcX": 613, "iconSrcY": 806, "iconSrcW": 21, "iconSrcH": 22,
+      "visuals": { "offsetX": -2, "offsetY": -7, "frameW": 32, "frameH": 32,
+        "downSrcX": 517, "downSrcY": 265, "upSrcX": 517, "upSrcY": 329,
+        "leftSrcX": 517, "leftSrcY": 392, "rightSrcX": 517, "rightSrcY": 458 }
+    },
+    {
+      "id": 19,
+      "name": "Sombrero magico",
+      "type": "helmet",
+      "textureId": "item_magic_hat",
+      "visualTextureId": "helmet_magic_hat",
+      "iconSrcX": 451, "iconSrcY": 774, "iconSrcW": 25, "iconSrcH": 22,
+      "visuals": {
+        "offsetX": -4, "offsetY": -8,
+        "frameW": 32, "frameH": 32,
+        "downSrcX": 378, "downSrcY": 6,
+        "upSrcX": 378, "upSrcY": 69,
+        "leftSrcX": 378, "leftSrcY": 136,
+        "rightSrcX": 378, "rightSrcY": 199
+      }
+    },
+
+    {
+      "id": 25,
+      "name": "Gorro de Navidad",
+      "type": "helmet",
+      "textureId": "item_xmas_hat",
+      "visualTextureId": "helmet_xmas",
+      "iconSrcX": 581, "iconSrcY": 777, "iconSrcW": 21, "iconSrcH": 19,
+      "visuals": { "offsetX": 2, "offsetY": -10, "frameW": 32, "frameH": 32,
+        "downSrcX": 493, "downSrcY": 7, "upSrcX": 493, "upSrcY": 72,
+        "leftSrcX": 493, "leftSrcY": 137, "rightSrcX": 493, "rightSrcY": 200 }
+    },
+    {
+      "id": 26,
+      "name": "Gorro de Arlequín",
+      "type": "helmet",
+      "textureId": "item_jester_hat",
+      "visualTextureId": "helmet_jester",
+      "iconSrcX": 613, "iconSrcY": 782, "iconSrcW": 20, "iconSrcH": 15,
+      "visuals": { "offsetX": -1, "offsetY": -10, "frameW": 32, "frameH": 32,
+        "downSrcX": 519, "downSrcY": 9, "upSrcX": 519, "upSrcY": 72,
+        "leftSrcX": 519, "leftSrcY": 140, "rightSrcX": 519, "rightSrcY": 204 }
+    },
+
+
+    {
+      "id": 5,
+      "name": "Escudo de tortuga",
+      "type": "shield",
+      "textureId": "item_turtle_shield",
+      "visualTextureId": "shield_turtle",
+      "iconSrcX": 6, "iconSrcY": 227, "iconSrcW": 21, "iconSrcH": 27,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+    {
+      "id": 18,
+      "name": "Escudo de hierro",
+      "type": "shield",
+      "textureId": "item_iron_shield",
+      "visualTextureId": "shield_iron",
+      "iconSrcX": 0, "iconSrcY": 225, "iconSrcW": 34, "iconSrcH": 31,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+    {
+      "id": 21,
+      "name": "Escudo Maldito",
+      "type": "shield",
+      "textureId": "shield_dark",
+      "visualTextureId": "shield_dark",
+      "iconSrcX": 6, "iconSrcY": 228, "iconSrcW": 23, "iconSrcH": 26,
+      "visuals": { "offsetX": 0, "offsetY": 0 }
+    },
+
+    {
+      "id": 6,
+      "name": "Poción de vida",
+      "type": "health_potion",
+      "textureId": "item_health_potion",
+      "iconSrcX": 448, "iconSrcY": 32, "iconSrcW": 32, "iconSrcH": 32
+    },
+    {
+      "id": 7,
+      "name": "Poción de maná",
+      "type": "mana_potion",
+      "textureId": "item_mana_potion",
+      "iconSrcX": 416, "iconSrcY": 32, "iconSrcW": 32, "iconSrcH": 32
+    },
+    {
+      "id": 23,
+      "name": "Oro",
+      "type": "gold",
+      "textureId": "item_gold",
+      "iconSrcX": 0, "iconSrcY": 0, "iconSrcW": 32, "iconSrcH": 32
+    }
+  ]
+}

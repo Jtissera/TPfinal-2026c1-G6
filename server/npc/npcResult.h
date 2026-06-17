@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include "server/game/items/item.h"
 
 struct NpcMoveIntent
 {
@@ -32,4 +33,16 @@ struct NpcTickResult
     std::vector<NpcMoveIntent> moveIntents; // GameWorld aplica si puede
     std::vector<NpcAttack> attacks;
     std::vector<NpcDeathResult> deaths;
+};
+
+struct NpcDropResult
+{
+    bool hasGold = false;
+    uint32_t goldAmount = 0;
+
+    bool hasItem = false;
+    Item droppedItem;
+
+    int tileX = 0;
+    int tileY = 0;
 };

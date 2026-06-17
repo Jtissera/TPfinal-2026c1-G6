@@ -1,7 +1,7 @@
 #pragma once
 #include "common/network/messages/message.h"
 #include "common/network/protocol/serverOpCode.h"
-#include "server/game/item.h"
+#include "server/game/items/item.h"
 
 class ItemOnGroundMessage : public Message {
     Item item;
@@ -20,7 +20,8 @@ public:
 
     // itemOnGroundMessage.cpp
 void serializeBody(PacketWriter& writer) const override{
-    writer.writeUint32(item.id);
+    writer.writeUint32(item.instanceId);
+    writer.writeUint32(item.catalogId);
     writer.writeString(item.typeName);
     writer.writeUint16(static_cast<uint16_t>(x));
     writer.writeUint16(static_cast<uint16_t>(y));

@@ -2,6 +2,8 @@
 
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
 #include "common/network/messages/client/inventory/useItemMessage.h"
+#include "common/network/messages/server/inventory/goldOnGroundMessage.h"
+#include "common/network/messages/server/inventory/itemOnGroundMessage.h"
 #include "common/network/messages/server/npc/npcHealthMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/messages/server/player/playerResurrectedMessage.h"
@@ -531,11 +533,23 @@ void ActionDispatcher::handleAttackNpc(
 
     // Si el NPC murió, procesamos muerte, oro directo y respawn.
     if (result.killed) {
-        world.handleNpcDeath(npcId, attackerId);
+        NpcDropResult dropResult = world.handleNpcDeath(npcId, attackerId);
 
-        // El killer pudo recibir oro por drop NPC.
+        if (dropResult.hasGold) {
+            monitor.broadcast(std::make_shared<const GoldOnGroundMessage>(
+                dropResult.goldAmount,
+                dropResult.tileX,
+                dropResult.tileY));
+        }
+
+        if (dropResult.hasItem) {
+            monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(
+                dropResult.droppedItem,
+                dropResult.tileX,
+                dropResult.tileY));
+        }
+
         sendStats(attackerId, attacker, monitor);
-        sendInventory(attackerId, attacker, monitor);
         sendLevelUpIfNeeded(attackerId, attacker, monitor);
 
         return;

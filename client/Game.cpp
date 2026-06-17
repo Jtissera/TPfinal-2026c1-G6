@@ -8,6 +8,9 @@
 #include <sstream>
 #include <unordered_set>
 
+#include "common/network/messages/server/inventory/goldOnGroundMessage.h"
+#include "common/network/messages/server/inventory/itemOnGroundMessage.h"
+
 Game::Game() {}
 
 void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
@@ -42,7 +45,7 @@ void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
 
   try
   {
-    itemCatalog.loadFromJson("assets/items/items.json");
+    itemCatalog.loadFromJson("assets/sprites/items/items.json");
   }
   catch (const std::exception &e)
   {
@@ -188,7 +191,6 @@ void Game::update()
   manager.update(updateContext);
 
   attackSystem.update();
-  attackSystem.updateRespawns(enemies);
   if (isLocalPlayerDead())
   {
     applyLocalPlayerGhostState();
@@ -1884,18 +1886,39 @@ void Game::processServerMessage(const Message &msg)
     std::cout << "[CLIENT] MSG_PLAYER_RESURRECTED recibido" << std::endl;
     handlePlayerResurrected(static_cast<const PlayerResurrectedMessage &>(msg));
     return;
-  case ServerOpCode::MSG_MAP_CHANGED:
-    std::cout << "[CLIENT] MSG_MAP_CHANGED recibido" << std::endl;
-    handleMapChanged(static_cast<const MapChangedMessage &>(msg));
-    return;
-    handleNpcSpawn(static_cast<const NpcSpawnMessage &>(msg));
-    return;
+    case ServerOpCode::MSG_MAP_CHANGED:
+      std::cout << "[CLIENT] MSG_MAP_CHANGED recibido" << std::endl;
+      handleMapChanged(static_cast<const MapChangedMessage &>(msg));
+      return;
 
-  default:
-    return;
+    case ServerOpCode::MSG_ITEM_ON_GROUND:
+    {
+      const auto &groundMsg = static_cast<const ItemOnGroundMessage &>(msg);
+      std::cout << "[CLIENT] MSG_ITEM_ON_GROUND recibido instanceId="
+                << groundMsg.getItem().instanceId
+                << " catalogId=" << groundMsg.getItem().catalogId
+                << " typeName=" << groundMsg.getItem().typeName
+                << " x=" << groundMsg.getX()
+                << " y=" << groundMsg.getY()
+                << std::endl;
+      return;
+    }
+
+    case ServerOpCode::MSG_GOLD_ON_GROUND:
+    {
+      const auto &goldMsg = static_cast<const GoldOnGroundMessage &>(msg);
+      std::cout << "[CLIENT] MSG_GOLD_ON_GROUND recibido amount="
+                << goldMsg.getAmount()
+                << " x=" << goldMsg.getX()
+                << " y=" << goldMsg.getY()
+                << std::endl;
+      return;
+    }
+
+    default:
+      return;
   }
 }
-
 std::optional<ClientEquipmentSlot>
 Game::toClientEquipmentSlot(int index) const
 {

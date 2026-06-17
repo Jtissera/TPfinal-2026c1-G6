@@ -109,7 +109,8 @@ public:
   void resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY);
   bool hasNpc(uint32_t npcId) const;
   bool damageNpc(uint32_t npcId, int16_t damage, uint32_t attackerPlayerId);
-  void handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId);
+
+  NpcDropResult handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId);
   bool hasPlayer(uint32_t playerId) const;
 
   Npc& getNpc(uint32_t npcId);

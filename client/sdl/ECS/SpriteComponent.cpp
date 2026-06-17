@@ -176,43 +176,27 @@ void SpriteComponent::draw(RenderContext &context)
         {
             SDL_Rect helmetSrc{};
 
-            // Base del sprite de la capucha.
-            helmetSrc.x = helmetSrcX;
-            helmetSrc.y = helmetSrcY;
+            int dirIndex = animationIndex % 4;
 
-            // Cada sprite mide 32x32.
-            helmetSrc.w = helmetSrcW;
-            helmetSrc.h = helmetSrcH;
-
-            // Elegimos manualmente qué recorte usar según dirección.
-            // animationIndex:
-            // 0 = abajo
-            // 1 = izquierda
-            // 2 = derecha
-            // 3 = arriba
-            if (animationIndex == 0)
+            if (dirIndex == 0)
             {
-                // Abajo.
                 helmetSrc.x = helmetDownSrcX;
                 helmetSrc.y = helmetDownSrcY;
             }
-            else if (animationIndex == 1)
+            else if (dirIndex == 1)
             {
-                // Izquierda.
+                helmetSrc.x = helmetUpSrcX;
+                helmetSrc.y = helmetUpSrcY;
+            }
+            else if (dirIndex == 2)
+            {
                 helmetSrc.x = helmetLeftSrcX;
                 helmetSrc.y = helmetLeftSrcY;
             }
-            else if (animationIndex == 2)
+            else
             {
-                // Derecha.
                 helmetSrc.x = helmetRightSrcX;
                 helmetSrc.y = helmetRightSrcY;
-            }
-            else if (animationIndex == 3)
-            {
-                // Arriba.
-                helmetSrc.x = helmetUpSrcX;
-                helmetSrc.y = helmetUpSrcY;
             }
 
             helmetSrc.w = helmetSrcW;
@@ -220,22 +204,16 @@ void SpriteComponent::draw(RenderContext &context)
 
             SDL_Rect helmetDst{};
 
-            helmetDst.w = 50;
-            helmetDst.h = 50;
+            helmetDst.w = helmetSrcW * 8 / 5;
+            helmetDst.h = helmetSrcH * 8 / 5;
 
-            helmetDst.x = headDst.x + helmetOffsetX;
-            helmetDst.y = headDst.y + helmetOffsetY;
+            helmetDst.x = headDst.x + (headDst.w / 2) - (helmetDst.w / 2) + helmetOffsetX;
+            helmetDst.y = headDst.y + (headDst.h / 2) - (helmetDst.h / 2) + helmetOffsetY;
 
-            SDL_RendererFlip helmetFlip = spriteFlip;
+            SDL_RendererFlip helmetFlip = SDL_FLIP_NONE;
 
-            if (animationIndex == 2)
-            {
-                // Para mirar a la derecha, espejamos el sprite de izquierda.
-                helmetFlip = SDL_FLIP_HORIZONTAL;
-            }
+            context.textureManager.Draw(helmetTexture, helmetSrc, helmetDst, helmetFlip);
 
-            context.textureManager.Draw(helmetTexture, helmetSrc, helmetDst,
-                                        helmetFlip);
         }
     }
 }

@@ -80,6 +80,55 @@ is_ranged = false
 damage_min = 2
 damage_max = 5
 
+[items.gorro_calabaza]
+catalog_id = 24
+slot = "HELMET"
+defense_min = 1
+defense_max = 2
+
+[items.gorro_navidad]
+catalog_id = 25
+slot = "HELMET"
+defense_min = 1
+defense_max = 2
+
+[items.gorro_arlequin]
+catalog_id = 26
+slot = "HELMET"
+defense_min = 1
+defense_max = 2
+
+[items.espada_maldita]
+catalog_id = 28
+slot = "WEAPON"
+is_ranged = false
+damage_min = 50
+damage_max = 80
+
+[items.armadura_sombras]
+catalog_id = 20
+slot = "ARMOR"
+defense_min = 40
+defense_max = 60
+
+[items.escudo_maldito]
+catalog_id = 21
+slot = "SHIELD"
+defense_min = 20
+defense_max = 35
+
+[items.armadura_clerigo]
+catalog_id = 22
+slot = "ARMOR"
+defense_min = 8
+defense_max = 14
+
+[items.tunica_iniciado]
+catalog_id = 29
+slot = "ARMOR"
+defense_min = 1
+defense_max = 3
+
 [items.hacha]
 catalog_id = 8
 slot = "WEAPON"
@@ -180,6 +229,12 @@ catalog_id = 18
 slot        = "SHIELD"
 defense_min = 1
 defense_max = 4
+
+[items.uniforme_argentino]
+catalog_id = 30
+slot = "ARMOR"
+defense_min = 1
+defense_max = 1
 
 [items.sombrero_magico]
 catalog_id = 19
@@ -339,11 +394,15 @@ damage_max = 0
 [world]
 tile_size = 96
 map_path = "assets/sprites/MapAssets/map.argmap"
-
+[drops]
+combat_pool = ["espada", "hacha", "martillo", "armadura_cuero", "casco_hierro", "capucha", "escudo_hierro", "arco_simple"]
+cavern_pool = ["armadura_placas", "tunica_azul", "sombrero_magico", "baculo_nudoso", "arco_compuesto", "escudo_tortuga"]
+dungeon_pool = ["espada_maldita", "armadura_sombras", "escudo_maldito", "baculo_engarzado", "armadura_clerigo"]
 [cavern]
 gold_multiplier = 1.5
 xp_multiplier   = 1.5
 item_multiplier = 1.5
+
 
 [dungeon]
 gold_multiplier = 3.0
@@ -542,3 +601,6 @@ casco_hierro     = 180
 escudo_tortuga   = 100
 escudo_hierro    = 220
 sombrero_magico  = 350
+armadura_clerigo = 400
+espada_maldita   = 9999
+tunica_iniciado  = 0

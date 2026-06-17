@@ -20,96 +20,54 @@ void ItemCatalog::loadFromJson(const std::string& path) {
     if (!data.contains("items") || !data["items"].is_array()) {
         throw std::runtime_error("ItemCatalog: JSON invalido, falta array 'items'");
     }
-
     for (const auto& itemJson : data["items"]) {
         ItemView item;
 
-        item.itemId = itemJson.value("id", 0);
+        // --- Identidad ---
+        item.itemId   = itemJson.value("id", 0);
         item.itemName = itemJson.value("name", "");
+        item.type     = parseItemType(itemJson.value("type", "other"));
 
-    // Textura usada dentro del inventario.
-    item.textureId = itemJson.value("textureId", "");
+        // --- Ícono inventario ---
+        item.textureId = itemJson.value("textureId", "");
+        item.iconSrcX  = itemJson.value("iconSrcX", 0);
+        item.iconSrcY  = itemJson.value("iconSrcY", 0);
+        item.iconSrcW  = itemJson.value("iconSrcW", 32);
+        item.iconSrcH  = itemJson.value("iconSrcH", 32);
 
-    // Textura usada cuando el ítem está equipado visualmente.
-    item.visualTextureId = itemJson.value("visualTextureId", "");
-
-    // Primero cargamos el recorte del ícono.
-    // Esto es importante porque los datos visuales pueden usarlo como fallback.
-    item.iconSrcX = itemJson.value("iconSrcX", 0);
-    item.iconSrcY = itemJson.value("iconSrcY", 0);
-    item.iconSrcW = itemJson.value("iconSrcW", 32);
-    item.iconSrcH = itemJson.value("iconSrcH", 32);
-
-        // Ahora cargamos la configuración visual extra.
-        if (itemJson.contains("visuals")) {
-            const auto& visuals = itemJson["visuals"];
-
-            // Texturas específicas para armaduras grandes/chicas.
-            item.visualTextureIdTall = visuals.value("tall", item.visualTextureId);
-            item.visualTextureIdShort = visuals.value("short", item.visualTextureId);
-
-            // Offsets para armaduras grandes.
-            item.visualTallOffsetX = visuals.value("tallOffsetX", 0);
-            item.visualTallOffsetY = visuals.value("tallOffsetY", 0);
-
-            // Offsets para armaduras chicas.
-            item.visualShortOffsetX = visuals.value("shortOffsetX", 0);
-            item.visualShortOffsetY = visuals.value("shortOffsetY", 0);
-
-            // Offset genérico para casco, arma o escudo.
-            item.visualOffsetX = visuals.value("offsetX", 0);
-            item.visualOffsetY = visuals.value("offsetY", 0);
-
-            // Recortes visuales por dirección.
-            item.visualDownSrcX = visuals.value("downSrcX", item.iconSrcX);
-            item.visualDownSrcY = visuals.value("downSrcY", item.iconSrcY);
-
-            item.visualLeftSrcX = visuals.value("leftSrcX", item.iconSrcX);
-            item.visualLeftSrcY = visuals.value("leftSrcY", item.iconSrcY);
-
-            item.visualRightSrcX = visuals.value("rightSrcX", item.iconSrcX);
-            item.visualRightSrcY = visuals.value("rightSrcY", item.iconSrcY);
-
-            item.visualUpSrcX = visuals.value("upSrcX", item.iconSrcX);
-            item.visualUpSrcY = visuals.value("upSrcY", item.iconSrcY);
-
-            // Offsets por dirección.
-            // Esto es lo que necesitás para que arma y escudo no cambien de mano.
-            item.visualDownOffsetX = visuals.value("downOffsetX", item.visualOffsetX);
-            item.visualDownOffsetY = visuals.value("downOffsetY", item.visualOffsetY);
-
-            item.visualLeftOffsetX = visuals.value("leftOffsetX", item.visualOffsetX);
-            item.visualLeftOffsetY = visuals.value("leftOffsetY", item.visualOffsetY);
-
-            item.visualRightOffsetX = visuals.value("rightOffsetX", item.visualOffsetX);
-            item.visualRightOffsetY = visuals.value("rightOffsetY", item.visualOffsetY);
-
-            item.visualUpOffsetX = visuals.value("upOffsetX", item.visualOffsetX);
-            item.visualUpOffsetY = visuals.value("upOffsetY", item.visualOffsetY);
-        }
-
-        item.type = parseItemType(itemJson.value("type", "other"));
-
-        item.quantity = itemJson.value("quantity", 1);
-
-        item.damageMin = itemJson.value("damageMin", 0);
-        item.damageMax = itemJson.value("damageMax", 0);
-
-        item.defenseMin = itemJson.value("defenseMin", 0);
-        item.defenseMax = itemJson.value("defenseMax", 0);
-
-        item.manaCost = itemJson.value("manaCost", 0);
-
+        // --- Consumibles ---
+        item.quantity   = itemJson.value("quantity", 1);
         item.healAmount = itemJson.value("healAmount", 0);
         item.manaAmount = itemJson.value("manaAmount", 0);
 
-        item.ranged = itemJson.value("ranged", false);
+        // --- Visual equipado ---
+        if (itemJson.contains("visuals")) {
+            const auto& visuals = itemJson["visuals"];
 
-        item.soundId = itemJson.value("soundId", "");
-        item.iconSrcX = itemJson.value("iconSrcX", 0);
-        item.iconSrcY = itemJson.value("iconSrcY", 1);
-        item.iconSrcW = itemJson.value("iconSrcW", 32);
-        item.iconSrcH = itemJson.value("iconSrcH", 32);
+            item.visualTextureId      = itemJson.value("visualTextureId", "");
+            item.visualOffsetX        = visuals.value("offsetX", 0);
+            item.visualOffsetY        = visuals.value("offsetY", 0);
+
+            // Armaduras tall/short
+            item.visualTextureIdTall  = visuals.value("tall",  item.visualTextureId);
+            item.visualTextureIdShort = visuals.value("short", item.visualTextureId);
+            item.visualTallOffsetX    = visuals.value("tallOffsetX",  0);
+            item.visualTallOffsetY    = visuals.value("tallOffsetY",  0);
+            item.visualShortOffsetX   = visuals.value("shortOffsetX", 0);
+            item.visualShortOffsetY   = visuals.value("shortOffsetY", 0);
+
+            // Cascos — recorte por dirección
+            item.visualSrcW      = visuals.value("frameW", 32);
+            item.visualSrcH      = visuals.value("frameH", 32);
+            item.visualDownSrcX  = visuals.value("downSrcX",  item.iconSrcX);
+            item.visualDownSrcY  = visuals.value("downSrcY",  item.iconSrcY);
+            item.visualUpSrcX    = visuals.value("upSrcX",    item.iconSrcX);
+            item.visualUpSrcY    = visuals.value("upSrcY",    item.iconSrcY);
+            item.visualLeftSrcX  = visuals.value("leftSrcX",  item.iconSrcX);
+            item.visualLeftSrcY  = visuals.value("leftSrcY",  item.iconSrcY);
+            item.visualRightSrcX = visuals.value("rightSrcX", item.iconSrcX);
+            item.visualRightSrcY = visuals.value("rightSrcY", item.iconSrcY);
+        }
 
         if (item.itemId <= 0) {
             throw std::runtime_error("ItemCatalog: item con id invalido en " + path);
@@ -117,6 +75,7 @@ void ItemCatalog::loadFromJson(const std::string& path) {
 
         addItem(item);
     }
+
 }
 
 void ItemCatalog::addItem(const ItemView& item) {
