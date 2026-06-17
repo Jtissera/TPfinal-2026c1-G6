@@ -16,6 +16,16 @@ public:
 
   struct Result
   {
+    enum class FailReason
+    {
+      NONE,
+      FRIENDLY_FIRE,
+      NO_MANA,
+      OUT_OF_RANGE,
+      LEVEL_TOO_LOW,
+      LEVEL_DIFF_TOO_HIGH
+    };
+
     bool valid = false;
     bool dodged = false;
     bool killed = false;
@@ -23,6 +33,7 @@ public:
     int16_t damage = 0;
     int16_t defense = 0;
     uint32_t expGained = 0;
+    FailReason failReason = FailReason::NONE;
   };
 
   Result attack(Combatant &attacker, Combatant &target,
@@ -30,7 +41,7 @@ public:
   Result attackPlayer(Player &attacker, Player &target, const GameWorld &world);
   Result attackNpc(Player &attacker, Combatant &target, const GameWorld &world);
   bool canAttack(const Combatant &attacker, const Combatant &target) const;
-  bool canAttackPlayer(const Player &attacker, const Player &target) const;
+  bool canAttackPlayer(const Player &attacker, const Player &target, Result::FailReason &failReason) const;
 
 private:
   int meleeRange;

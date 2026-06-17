@@ -6,26 +6,27 @@
 #include "common/network/messages/client/combat/attackMessage.h"
 #include "world/RemotePlayer.h"
 
-
-
 void AttackSystem::handleMouseClick(
     int screenX,
     int screenY,
-    const SDL_Rect& camera,
-    const std::vector<AttackTarget>& targets,
-    Queue<std::shared_ptr<const Message>>* sendQueue,
-    Entity* player,
-    const ItemView* equippedWeapon
-) {
-    for (const AttackTarget& target : targets) {
-        if (target.entity == nullptr) {
+    const SDL_Rect &camera,
+    const std::vector<AttackTarget> &targets,
+    Queue<std::shared_ptr<const Message>> *sendQueue,
+    Entity *player,
+    const ItemView *equippedWeapon)
+{
+    for (const AttackTarget &target : targets)
+    {
+        if (target.entity == nullptr)
+        {
             continue;
         }
 
         SDL_Rect clickableRect{};
 
-        if (target.entity->hasComponent<SpriteComponent>()) {
-            const auto& sprite = target.entity->getComponent<SpriteComponent>();
+        if (target.entity->hasComponent<SpriteComponent>())
+        {
+            const auto &sprite = target.entity->getComponent<SpriteComponent>();
 
             // getDestRect() representa dónde se ve realmente el sprite en pantalla.
             clickableRect = sprite.getDestRect();
@@ -36,16 +37,17 @@ void AttackSystem::handleMouseClick(
             clickableRect.y -= 10;
             clickableRect.w += 20;
             clickableRect.h += 20;
-        } else {
-            auto& tf = target.entity->getComponent<TransformComponent>();
+        }
+        else
+        {
+            auto &tf = target.entity->getComponent<TransformComponent>();
 
             // Fallback por si alguna entidad atacable no tiene SpriteComponent.
             clickableRect = SDL_Rect{
                 static_cast<int>(tf.position.x - camera.x),
                 static_cast<int>(tf.position.y - camera.y + 133),
                 96,
-                96
-            };
+                96};
         }
 
         const bool clickedTarget =
@@ -54,7 +56,8 @@ void AttackSystem::handleMouseClick(
             screenY >= clickableRect.y &&
             screenY <= clickableRect.y + clickableRect.h;
 
-        if (!clickedTarget) {
+        if (!clickedTarget)
+        {
             continue;
         }
 
@@ -62,28 +65,27 @@ void AttackSystem::handleMouseClick(
 
         // Validación visual solamente.
         // No cortamos el ataque porque el server es la autoridad real.
-        if (!isTargetInRange(player, *target.entity, attackRange)) {
+        if (!isTargetInRange(player, *target.entity, attackRange))
+        {
         }
 
         // El cliente solo manda intención de ataque.
         sendAttackMessage(target.id, sendQueue);
 
-        // Efecto visual local para bastón/hechizo.
-        if (shouldCreateVisualEffect(equippedWeapon)) {
-            createLocalAttackEffect(target.id, *target.entity, camera);
-        }
-
         return;
     }
 }
-bool AttackSystem::applyDamage(uint32_t targetId, int damage) {
+bool AttackSystem::applyDamage(uint32_t targetId, int damage)
+{
     // Si el enemigo todavía no tiene vida registrada, le damos vida inicial.
     // Para demo: skeleton con 100 de vida.
-    if (isEnemyDead(targetId)) {
+    if (isEnemyDead(targetId))
+    {
         return true;
     }
-    if (enemyHealth.find(targetId) == enemyHealth.end()) {
-        //mock de vida del enemigo;
+    if (enemyHealth.find(targetId) == enemyHealth.end())
+    {
+        // mock de vida del enemigo;
         enemyHealth[targetId] = 50;
         enemyMaxHealth[targetId] = 50;
     }
@@ -91,9 +93,8 @@ bool AttackSystem::applyDamage(uint32_t targetId, int damage) {
     // Aplicamos daño.
     enemyHealth[targetId] -= damage;
 
-
-
-    if (enemyHealth[targetId] < 0) {
+    if (enemyHealth[targetId] < 0)
+    {
         enemyHealth[targetId] = 0;
     }
     // Devuelve true si murió.
@@ -102,15 +103,16 @@ bool AttackSystem::applyDamage(uint32_t targetId, int damage) {
 
 void AttackSystem::createLocalAttackEffect(
     uint32_t /*targetId*/,
-    Entity& target,
-    const SDL_Rect& camera
-) {
-    if (!target.hasComponent<SpriteComponent>()) {
+    Entity &target,
+    const SDL_Rect &camera)
+{
+    if (!target.hasComponent<SpriteComponent>())
+    {
         return;
     }
 
-    const auto& sprite = target.getComponent<SpriteComponent>();
-    const SDL_Rect& targetRect = sprite.getDestRect();
+    const auto &sprite = target.getComponent<SpriteComponent>();
+    const SDL_Rect &targetRect = sprite.getDestRect();
 
     constexpr int effectSize = 64;
 
@@ -128,8 +130,10 @@ void AttackSystem::createLocalAttackEffect(
     attackEffects.push_back(effect);
 }
 
-void AttackSystem::sendAttackMessage(uint32_t targetId,Queue<std::shared_ptr<const Message>>* sendQueue) {
-    if (sendQueue == nullptr) {
+void AttackSystem::sendAttackMessage(uint32_t targetId, Queue<std::shared_ptr<const Message>> *sendQueue)
+{
+    if (sendQueue == nullptr)
+    {
         return;
     }
 
@@ -137,13 +141,14 @@ void AttackSystem::sendAttackMessage(uint32_t targetId,Queue<std::shared_ptr<con
 }
 
 void AttackSystem::render(
-    SDL_Renderer* renderer,
-    AssetManager& assets,
-    const SDL_Rect& camera
-) {
-    SDL_Texture* texAtk = assets.GetTexture("effect_attack_magic_01");
+    SDL_Renderer *renderer,
+    AssetManager &assets,
+    const SDL_Rect &camera)
+{
+    SDL_Texture *texAtk = assets.GetTexture("effect_attack_magic_01");
 
-    if (texAtk == nullptr) {
+    if (texAtk == nullptr)
+    {
         return;
     }
 
@@ -153,56 +158,65 @@ void AttackSystem::render(
     const int frameHeight = 64;
     const int totalFrames = 11;
 
-    for (auto& ef : attackEffects) {
+    for (auto &ef : attackEffects)
+    {
         Uint32 elapsed = now - ef.createdAt;
 
         int frame = static_cast<int>((elapsed * totalFrames) / ef.durationMs);
 
-        if (frame >= totalFrames) {
+        if (frame >= totalFrames)
+        {
             frame = totalFrames - 1;
         }
 
         int srcX = 0;
         int srcY = 0;
 
-        if (frame < 5) {
+        if (frame < 5)
+        {
             srcX = frame * frameWidth;
             srcY = 0;
-        } else {
+        }
+        else
+        {
             const int secondRowFrame = frame - 5;
             srcX = secondRowFrame * frameWidth;
             srcY = 64;
         }
 
-        SDL_Rect src = { srcX, srcY, frameWidth, frameHeight };
+        SDL_Rect src = {srcX, srcY, frameWidth, frameHeight};
         SDL_Rect dst = {
             ef.x - camera.x,
             ef.y - camera.y + 133,
             64,
-            64
-        };
+            64};
 
         SDL_RenderCopy(renderer, texAtk, &src, &dst);
     }
 }
 
-int AttackSystem::attackRangeForWeapon(const ItemView* weapon) const {
+int AttackSystem::attackRangeForWeapon(const ItemView *weapon) const
+{
     // Si no tiene arma, rango mínimo.
-    if (weapon == nullptr) {
+    if (weapon == nullptr)
+    {
         return 35;
     }
 
-    if (weapon->type == ClientItemType::MeleeWeapon) {
+    if (weapon->type == ClientItemType::MeleeWeapon)
+    {
         // Espada, daga, hacha, etc.
         return 55;
     }
 
-    if (weapon->type == ClientItemType::RangedWeapon) {
+    if (weapon->type == ClientItemType::RangedWeapon)
+    {
         // Arco. No hay flecha visible por ahora.
         return 220;
     }
 
-    if (weapon->type == ClientItemType::MagicWeapon) {
+    if (weapon->type == ClientItemType::MagicWeapon)
+    {
         // Bastones. El efecto visual aparece sobre el objetivo.
         return 180;
     }
@@ -210,9 +224,11 @@ int AttackSystem::attackRangeForWeapon(const ItemView* weapon) const {
     return 35;
 }
 
-int AttackSystem::damageForWeapon(const ItemView* weapon) const {
+int AttackSystem::damageForWeapon(const ItemView *weapon) const
+{
     // Si no tiene arma, daño básico.
-    if (weapon == nullptr) {
+    if (weapon == nullptr)
+    {
         return 5;
     }
 
@@ -220,7 +236,8 @@ int AttackSystem::damageForWeapon(const ItemView* weapon) const {
     // Evitamos random por ahora para que sea más fácil testear.
     int damage = (weapon->damageMin + weapon->damageMax) / 2;
 
-    if (damage <= 0) {
+    if (damage <= 0)
+    {
         damage = 1;
     }
 
@@ -228,16 +245,17 @@ int AttackSystem::damageForWeapon(const ItemView* weapon) const {
 }
 
 bool AttackSystem::isTargetInRange(
-    Entity* attacker,
-    Entity& target,
-    int range
-) const {
-    if (attacker == nullptr) {
+    Entity *attacker,
+    Entity &target,
+    int range) const
+{
+    if (attacker == nullptr)
+    {
         return false;
     }
 
-    auto& attackerTf = attacker->getComponent<TransformComponent>();
-    auto& targetTf = target.getComponent<TransformComponent>();
+    auto &attackerTf = attacker->getComponent<TransformComponent>();
+    auto &targetTf = target.getComponent<TransformComponent>();
 
     // Centro aproximado del jugador.
     float attackerCenterX = attackerTf.position.x + 32.0f;
@@ -255,8 +273,10 @@ bool AttackSystem::isTargetInRange(
     return distance <= static_cast<float>(range);
 }
 
-bool AttackSystem::shouldCreateVisualEffect(const ItemView* weapon) const {
-    if (weapon == nullptr) {
+bool AttackSystem::shouldCreateVisualEffect(const ItemView *weapon) const
+{
+    if (weapon == nullptr)
+    {
         return false;
     }
 
@@ -265,7 +285,8 @@ bool AttackSystem::shouldCreateVisualEffect(const ItemView* weapon) const {
     // - bastón: efecto visual sobre el enemigo
     return weapon->type == ClientItemType::MagicWeapon;
 }
-void AttackSystem::markEnemyAsDead(uint32_t enemyId) {
+void AttackSystem::markEnemyAsDead(uint32_t enemyId)
+{
     deadEnemies.insert(enemyId);
     enemyDeadAt[enemyId] = SDL_GetTicks();
 
@@ -274,36 +295,42 @@ void AttackSystem::markEnemyAsDead(uint32_t enemyId) {
     // Si murió, deja de perseguir.
     chasingEnemies.erase(enemyId);
 
-    if (enemyMaxHealth.find(enemyId) == enemyMaxHealth.end()) {
+    if (enemyMaxHealth.find(enemyId) == enemyMaxHealth.end())
+    {
         enemyMaxHealth[enemyId] = 100;
     }
-
 }
 
-bool AttackSystem::isEnemyDead(uint32_t enemyId) const {
+bool AttackSystem::isEnemyDead(uint32_t enemyId) const
+{
     return deadEnemies.find(enemyId) != deadEnemies.end();
 }
 
-void AttackSystem::updateRespawns(std::map<uint32_t, Entity*>& enemies) {
+void AttackSystem::updateRespawns(std::map<uint32_t, Entity *> &enemies)
+{
     Uint32 now = SDL_GetTicks();
 
     std::vector<uint32_t> toRespawn;
 
-    for (uint32_t enemyId : deadEnemies) {
+    for (uint32_t enemyId : deadEnemies)
+    {
         auto it = enemyDeadAt.find(enemyId);
 
-        if (it == enemyDeadAt.end()) {
+        if (it == enemyDeadAt.end())
+        {
             continue;
         }
 
         Uint32 deadAt = it->second;
 
-        if (now - deadAt >= enemyRespawnMs) {
+        if (now - deadAt >= enemyRespawnMs)
+        {
             toRespawn.push_back(enemyId);
         }
     }
 
-    for (uint32_t enemyId : toRespawn) {
+    for (uint32_t enemyId : toRespawn)
+    {
         int maxHp = getEnemyMaxHealth(enemyId);
 
         enemyHealth[enemyId] = maxHp;
@@ -313,9 +340,10 @@ void AttackSystem::updateRespawns(std::map<uint32_t, Entity*>& enemies) {
 
         if (enemyIt != enemies.end() &&
             enemyIt->second != nullptr &&
-            spawnIt != enemySpawnPositions.end()) {
+            spawnIt != enemySpawnPositions.end())
+        {
 
-            auto& transform = enemyIt->second->getComponent<TransformComponent>();
+            auto &transform = enemyIt->second->getComponent<TransformComponent>();
 
             transform.position.x = spawnIt->second.x;
             transform.position.y = spawnIt->second.y;
@@ -329,46 +357,53 @@ void AttackSystem::updateRespawns(std::map<uint32_t, Entity*>& enemies) {
     }
 }
 
-EnemyChaseResult AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& enemies,Entity* player,int& playerHp) {
-    if (player == nullptr) {
+EnemyChaseResult AttackSystem::updateEnemyChase(std::map<uint32_t, Entity *> &enemies, Entity *player, int &playerHp)
+{
+    if (player == nullptr)
+    {
         return EnemyChaseResult::PlayerStillAlive;
     }
 
-    if (playerHp <= 0) {
+    if (playerHp <= 0)
+    {
         playerHp = 0;
         clearEnemyAggro();
         return EnemyChaseResult::PlayerDied;
     }
 
-    auto& playerTransform = player->getComponent<TransformComponent>();
+    auto &playerTransform = player->getComponent<TransformComponent>();
     float playerCenterX = playerTransform.position.x + 16.0f;
     float playerCenterY = playerTransform.position.y + 32.0f;
 
     // PERF: iterar sin copiar el set — acumular borrados y aplicarlos al final.
     std::vector<uint32_t> toErase;
 
-    for (uint32_t enemyId : chasingEnemies) {
-        if (playerHp <= 0) {
+    for (uint32_t enemyId : chasingEnemies)
+    {
+        if (playerHp <= 0)
+        {
             playerHp = 0;
             clearEnemyAggro();
             return EnemyChaseResult::PlayerDied;
         }
 
-        if (isEnemyDead(enemyId)) {
+        if (isEnemyDead(enemyId))
+        {
             toErase.push_back(enemyId);
             enemyLastAttackAt.erase(enemyId);
             continue;
         }
 
         auto it = enemies.find(enemyId);
-        if (it == enemies.end() || it->second == nullptr) {
+        if (it == enemies.end() || it->second == nullptr)
+        {
             toErase.push_back(enemyId);
             enemyLastAttackAt.erase(enemyId);
             continue;
         }
 
-        Entity* enemy = it->second;
-        auto& enemyTransform = enemy->getComponent<TransformComponent>();
+        Entity *enemy = it->second;
+        auto &enemyTransform = enemy->getComponent<TransformComponent>();
 
         float dx = playerCenterX - (enemyTransform.position.x + 16.0f);
         float dy = playerCenterY - (enemyTransform.position.y + 32.0f);
@@ -390,56 +425,78 @@ EnemyChaseResult AttackSystem::updateEnemyChase(std::map<uint32_t, Entity*>& ene
     return EnemyChaseResult::PlayerStillAlive;
 }
 
-int AttackSystem::getEnemyHealth(uint32_t enemyId) const {
+int AttackSystem::getEnemyHealth(uint32_t enemyId) const
+{
     auto it = enemyHealth.find(enemyId);
 
-    if (it == enemyHealth.end()) {
+    if (it == enemyHealth.end())
+    {
         return 100;
     }
 
     return it->second;
 }
 
-int AttackSystem::getEnemyMaxHealth(uint32_t enemyId) const {
+int AttackSystem::getEnemyMaxHealth(uint32_t enemyId) const
+{
     auto it = enemyMaxHealth.find(enemyId);
 
-    if (it == enemyMaxHealth.end()) {
+    if (it == enemyMaxHealth.end())
+    {
         return 100;
     }
 
     return it->second;
 }
 
-void AttackSystem::clearEnemyAggro() {
+void AttackSystem::clearEnemyAggro()
+{
     chasingEnemies.clear();
     enemyLastAttackAt.clear();
 }
 
-void AttackSystem::update() {
+void AttackSystem::update()
+{
     Uint32 now = SDL_GetTicks();
     attackEffects.erase(
         std::remove_if(
             attackEffects.begin(),
             attackEffects.end(),
-            [now](const AttackEffect& e) {
+            [now](const AttackEffect &e)
+            {
                 return now - e.createdAt > e.durationMs;
-            }
-        ),
-        attackEffects.end()
-    );
+            }),
+        attackEffects.end());
 }
 
-void AttackSystem::setEnemyHealth(uint32_t enemyId, int hp, int maxHp) {
-    if (maxHp < 0) maxHp = 0;
-    if (hp < 0)    hp = 0;
-    if (hp > maxHp) hp = maxHp;
+void AttackSystem::setEnemyHealth(uint32_t enemyId, int hp, int maxHp)
+{
+    if (maxHp < 0)
+        maxHp = 0;
+    if (hp < 0)
+        hp = 0;
+    if (hp > maxHp)
+        hp = maxHp;
 
-    enemyHealth[enemyId]    = hp;
+    enemyHealth[enemyId] = hp;
     enemyMaxHealth[enemyId] = maxHp;
 
-    if (hp <= 0) {
+    if (hp <= 0)
+    {
         deadEnemies.insert(enemyId);
-    } else {
+    }
+    else
+    {
         deadEnemies.erase(enemyId);
     }
+}
+
+void AttackSystem::triggerAttackEffect(uint32_t targetId, Entity *targetEntity,
+                                       const SDL_Rect &camera, bool isMagicWeapon)
+{
+    if (targetEntity == nullptr)
+        return;
+    if (!isMagicWeapon)
+        return;
+    createLocalAttackEffect(targetId, *targetEntity, camera);
 }

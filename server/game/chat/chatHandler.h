@@ -5,14 +5,12 @@
 #include "server/monitorQueues.h"
 #include "server/world/gameWorld.h"
 #include "server/game/player/Player.h"
-namespace
-{
-    constexpr uint8_t CLAN_MIN_LEVEL_TO_FOUND = 6;
-}
+class ClanManager;
 
 class ChatHandler
 {
 public:
+    explicit ChatHandler(ClanManager &clanManager);
     bool handle(uint32_t senderId,
                 const std::string &rawText,
                 uint32_t targetId,
@@ -20,6 +18,7 @@ public:
                 Monitor &monitor);
 
 private:
+    ClanManager &clanManager;
     static void sendChat(uint32_t clientId,
                          const std::string &text,
                          ChatMsgType type,

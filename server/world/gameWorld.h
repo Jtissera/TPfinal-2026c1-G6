@@ -18,6 +18,7 @@
 #include "../city/merchantHandler.h"
 #include "../city/bankerHandler.h"
 #include "../city/cityNpcDispatcher.h"
+#include "server/game/clan/clanManager.h"
 #include <iostream>
 #include <map>
 #include <optional>
@@ -25,15 +26,18 @@
 #include <unordered_map>
 #include <vector>
 #include <cstdlib>
+class ClanManager;
 
 class GameWorld
 {
 public:
   explicit GameWorld(const std::string &mapPath, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config);
+                     ItemRepository &itemRepo, const toml::table &config,
+                     ClanManager &clanManager);
 
   explicit GameWorld(MapData mapData, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config);
+                     ItemRepository &itemRepo, const toml::table &config,
+                     ClanManager &clanManager);
 
   struct InstanceEntry
   {
@@ -83,6 +87,14 @@ public:
     };
     std::vector<PlayerResurrection> playersResurrected;
     std::vector<ResurrectStartedInfo> resurrectionStarted;
+
+    struct ClanAllyHit
+    {
+      std::string clanName;
+      std::string targetName;
+      uint32_t targetId;
+    };
+    std::vector<ClanAllyHit> clanAllyHits;
   };
 
   void addPlayer(Player player);
@@ -156,6 +168,7 @@ private:
   GameFormulas formulas;
   NpcManager npcManager;
   ItemRepository &itemRepo;
+  ClanManager &clanManager;
 
   BankRepository bankRepo;
   ResurrectionSystem resurrectionSystem;

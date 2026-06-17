@@ -9,6 +9,13 @@
 #include "server/game/clan/clanManager.h"
 #include "server/game/clan/clan.h"
 
+namespace
+{
+    constexpr uint8_t CLAN_MIN_LEVEL_TO_FOUND = 6;
+}
+
+ChatHandler::ChatHandler(ClanManager &clanManager) : clanManager(clanManager) {}
+
 void ChatHandler::sendChat(uint32_t clientId,
                            const std::string &text,
                            ChatMsgType type,
@@ -169,7 +176,7 @@ void ChatHandler::handleCommand(uint32_t senderId,
             return;
         }
 
-        auto result = ClanManager::instance().foundClan(arg, p.getName());
+        auto result = clanManager.foundClan(arg, p.getName());
 
         switch (result)
         {
@@ -181,7 +188,7 @@ void ChatHandler::handleCommand(uint32_t senderId,
             sendChat(senderId, "Ya pertenecés a un clan.", ChatMsgType::INFO, monitor);
             return;
         case ClanManager::Result::OK:
-            ClanManager::instance().syncPlayerClanState(p.getName());
+            clanManager.syncPlayerClanState(p.getName());
             sendChat(senderId, "¡Fundaste el clan '" + arg + "'!",
                      ChatMsgType::CLAN, monitor);
             return;
@@ -200,7 +207,7 @@ void ChatHandler::handleCommand(uint32_t senderId,
         }
 
         Player &p = world.getPlayer(senderId);
-        auto result = ClanManager::instance().applyToJoin(arg, p.getName());
+        auto result = clanManager.applyToJoin(arg, p.getName());
 
         switch (result)
         {
@@ -234,10 +241,10 @@ void ChatHandler::handleCommand(uint32_t senderId,
         Player &p = world.getPlayer(senderId);
 
         // Obtenemos el nombre del clan antes de salir para el mensaje de notificación
-        auto clanInfo = ClanManager::instance().findClanInfoForMember(p.getName());
+        auto clanInfo = clanManager.findClanInfoForMember(p.getName());
         std::string clanName = clanInfo ? clanInfo->first : "";
 
-        auto result = ClanManager::instance().leaveClan(p.getName());
+        auto result = clanManager.leaveClan(p.getName());
 
         switch (result)
         {
@@ -251,7 +258,7 @@ void ChatHandler::handleCommand(uint32_t senderId,
         case ClanManager::Result::OK:
             sendChat(senderId, "Dejaste el clan '" + clanName + "'.",
                      ChatMsgType::CLAN, monitor);
-            ClanManager::instance().syncPlayerClanState(p.getName());
+            clanManager.syncPlayerClanState(p.getName());
             return;
         default:
             sendChat(senderId, "No se pudo procesar la salida del clan.",
@@ -263,7 +270,7 @@ void ChatHandler::handleCommand(uint32_t senderId,
     if (cmd == "revisar-clan")
     {
         Player &p = world.getPlayer(senderId);
-        auto clanInfo = ClanManager::instance().findClanInfoForMember(p.getName());
+        auto clanInfo = clanManager.findClanInfoForMember(p.getName());
 
         // Verificamos si pertenece a un clan y si efectivamente es el fundador
         if (!clanInfo || !clanInfo->second)
@@ -273,7 +280,7 @@ void ChatHandler::handleCommand(uint32_t senderId,
             return;
         }
 
-        auto overview = ClanManager::instance().getOverviewForFounder(p.getName());
+        auto overview = clanManager.getOverviewForFounder(p.getName());
         if (!overview)
         {
             sendChat(senderId, "No se encontró información de tu clan.",
@@ -320,7 +327,7 @@ void ChatHandler::handleCommand(uint32_t senderId,
         }
 
         Player &p = world.getPlayer(senderId);
-        auto clanInfo = ClanManager::instance().findClanInfoForMember(p.getName());
+        auto clanInfo = clanManager.findClanInfoForMember(p.getName());
 
         if (!clanInfo || !clanInfo->second)
         {
@@ -336,25 +343,25 @@ void ChatHandler::handleCommand(uint32_t senderId,
 
         if (cmd == "clan-aceptar")
         {
-            result = ClanManager::instance().acceptApplicant(p.getName(), arg);
+            result = clanManager.acceptApplicant(p.getName(), arg);
             successMsgToSender = arg + " fue aceptado en el clan.";
             successMsgToTarget = "¡Fuiste aceptado en el clan '" + clanName + "'!";
         }
         else if (cmd == "clan-rechazar")
         {
-            result = ClanManager::instance().rejectApplicant(p.getName(), arg);
+            result = clanManager.rejectApplicant(p.getName(), arg);
             successMsgToSender = "Rechazaste la solicitud de " + arg + ".";
             successMsgToTarget = "Tu solicitud al clan '" + clanName + "' fue rechazada.";
         }
         else if (cmd == "clan-ban")
         {
-            result = ClanManager::instance().banPlayer(p.getName(), arg);
+            result = clanManager.banPlayer(p.getName(), arg);
             successMsgToSender = arg + " fue baneado del clan.";
             successMsgToTarget = "Fuiste baneado del clan '" + clanName + "'.";
         }
         else
         {
-            result = ClanManager::instance().kickMember(p.getName(), arg);
+            result = clanManager.kickMember(p.getName(), arg);
             successMsgToSender = arg + " fue expulsado del clan.";
             successMsgToTarget = "Fuiste expulsado del clan '" + clanName + "'.";
         }
@@ -377,8 +384,8 @@ void ChatHandler::handleCommand(uint32_t senderId,
             return;
         case ClanManager::Result::OK:
             sendChat(senderId, successMsgToSender, ChatMsgType::CLAN, monitor);
-            ClanManager::instance().syncPlayerClanState(arg);
-            ClanManager::instance().notifyPlayer(arg, successMsgToTarget);
+            clanManager.syncPlayerClanState(arg);
+            clanManager.notifyPlayer(arg, successMsgToTarget);
             return;
         default:
             sendChat(senderId, "No se pudo procesar el comando.", ChatMsgType::INFO, monitor);

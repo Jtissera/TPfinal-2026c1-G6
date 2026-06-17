@@ -30,6 +30,7 @@
 #include "../../../common/network/messages/client/city/interactNpcMessage.h"
 #include "../../../common/network/messages/server/city/npcResponseMessage.h"
 #include "../../../common/network/messages/server/error/errorMessage.h"
+class ClanManager;
 
 class ActionDispatcher
 {
@@ -42,6 +43,7 @@ private:
   GameFormulas formulas;
   CombatHandler combatHandler;
   ChatHandler chatHandler;
+  ClanManager &clanManager;
 
   void handleMove(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
 
@@ -67,7 +69,9 @@ private:
   void handleAttack(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
   void handleChat(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
 
+  void handleClanSync(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+
 public:
-  explicit ActionDispatcher(const toml::table &config);
+  explicit ActionDispatcher(const toml::table &config, ClanManager &clanManager);
   void dispatch(const ClientMessage &msg, GameWorld &world, Monitor &monitor);
 };

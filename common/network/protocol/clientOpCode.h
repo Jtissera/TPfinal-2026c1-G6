@@ -35,4 +35,6 @@ enum class ClientOpCode : uint8_t
 
   MSG_CHEAT = 0x40,
 
+  MSG_CLAN_SYNC_INTERNAL = 0xFE,
+
 };

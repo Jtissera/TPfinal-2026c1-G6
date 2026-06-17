@@ -14,8 +14,7 @@ class GameManager;
 class ClanManager
 {
 public:
-    static ClanManager &instance();
-
+    ClanManager() = default;
     void bindGameManager(GameManager *gameManager);
 
     enum class Result
@@ -62,8 +61,6 @@ public:
     ClanManager &operator=(const ClanManager &) = delete;
 
 private:
-    ClanManager() = default;
-
     Clan *findClanByNameUnlocked(const std::string &name);
     Clan *findClanOfMemberUnlocked(const std::string &nick);
     void removeApplicantEverywhereUnlocked(const std::string &nick);

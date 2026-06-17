@@ -78,6 +78,7 @@ protected:
   NpcRepository npcRepo{config};
   NpcFactory npcFact{npcRepo};
   ItemRepository itemRepo{toml::parse(R"([items])")};
+  ClanManager clanManager;
 
   MapData makeWalkableMap()
   {
@@ -97,7 +98,7 @@ protected:
 
 TEST_F(GameWorldTest, PlayerMovesOnWalkableTile)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 3, 3));
   EXPECT_TRUE(world.movePlayer(1, Direction::RIGHT));
   EXPECT_EQ(world.getTileX(1), 4);
@@ -105,7 +106,7 @@ TEST_F(GameWorldTest, PlayerMovesOnWalkableTile)
 
 TEST_F(GameWorldTest, PlayerBlockedByNonWalkableTile)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 4, 3));
   EXPECT_FALSE(world.movePlayer(1, Direction::RIGHT));
   EXPECT_EQ(world.getTileX(1), 4);
@@ -113,7 +114,7 @@ TEST_F(GameWorldTest, PlayerBlockedByNonWalkableTile)
 
 TEST_F(GameWorldTest, TwoPlayersCannotOccupySameTile)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 3, 3));
   world.addPlayer(makePlayer(2, 4, 3));
   EXPECT_FALSE(world.movePlayer(1, Direction::RIGHT));
@@ -121,7 +122,7 @@ TEST_F(GameWorldTest, TwoPlayersCannotOccupySameTile)
 
 TEST_F(GameWorldTest, PlayerAndNpcCannotOccupySameTile)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 3, 3));
   world.spawnNpc("goblin", 4, 3);
   EXPECT_FALSE(world.movePlayer(1, Direction::RIGHT));
@@ -129,7 +130,7 @@ TEST_F(GameWorldTest, PlayerAndNpcCannotOccupySameTile)
 
 TEST_F(GameWorldTest, PlayerDiesAndDropsExcessGold)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   Player p = makePlayer(1, 3, 3);
   p.addGold(200);
   world.addPlayer(std::move(p));
@@ -141,7 +142,7 @@ TEST_F(GameWorldTest, PlayerDiesAndDropsExcessGold)
 
 TEST_F(GameWorldTest, ExcessGoldCanBePickedFromGround)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   Player p = makePlayer(1, 3, 3);
   p.addGold(200);
   world.addPlayer(std::move(p));
@@ -154,7 +155,7 @@ TEST_F(GameWorldTest, ExcessGoldCanBePickedFromGround)
 
 TEST_F(GameWorldTest, NoGoldDropIfUnderSafeAmount)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   Player p = makePlayer(1, 3, 3);
   p.addGold(50);
   world.addPlayer(std::move(p));
@@ -166,7 +167,7 @@ TEST_F(GameWorldTest, NoGoldDropIfUnderSafeAmount)
 
 TEST_F(GameWorldTest, PlayerDiesAndDropsItems)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   Player p = makePlayer(1, 3, 3);
   p.getInventory().addItem(makeWeapon(5, 10));
   world.addPlayer(std::move(p));
@@ -178,7 +179,7 @@ TEST_F(GameWorldTest, PlayerDiesAndDropsItems)
 
 TEST_F(GameWorldTest, DroppedItemCanBePickedFromGround)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   Player p = makePlayer(1, 3, 3);
   p.getInventory().addItem(makeWeapon(5, 10));
   world.addPlayer(std::move(p));
@@ -191,7 +192,7 @@ TEST_F(GameWorldTest, DroppedItemCanBePickedFromGround)
 
 TEST_F(GameWorldTest, PlayerCanPickItemFromGround)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 3, 3));
   world.addItemOnGround(makeWeapon(5, 10), 3, 3);
 
@@ -202,14 +203,14 @@ TEST_F(GameWorldTest, PlayerCanPickItemFromGround)
 
 TEST_F(GameWorldTest, PickItemEmptyIfNothingThere)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   auto item = world.pickItemAt(3, 3);
   EXPECT_FALSE(item.has_value());
 }
 
 TEST_F(GameWorldTest, PlayerResurrects)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 3, 3));
   world.handlePlayerDeath(1, 0);
   EXPECT_TRUE(world.getPlayer(1).isGhost());
@@ -220,7 +221,7 @@ TEST_F(GameWorldTest, PlayerResurrects)
 
 TEST_F(GameWorldTest, PlayerResurrectedAtTargetZone)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 3, 3));
   world.handlePlayerDeath(1, 0);
 
@@ -270,7 +271,7 @@ TEST(NpcTest, AttackCooldownRespected)
 
 TEST_F(GameWorldTest, PlayerOnEntranceTileGeneratesTransition)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
 
   // Crear un mapa con tile de entrada
   MapData m = makeWalkableMap();
@@ -280,7 +281,7 @@ TEST_F(GameWorldTest, PlayerOnEntranceTileGeneratesTransition)
   entrance.targetMap = "dungeon.argmap";
   m.at(3, 3) = entrance;
 
-  GameWorld worldWithEntrance(std::move(m), npcFact, itemRepo, config);
+  GameWorld worldWithEntrance(std::move(m), npcFact, itemRepo, config, clanManager);
   worldWithEntrance.addPlayer(makePlayer(1, 3, 3));
 
   auto result = worldWithEntrance.tick(0.016f);
@@ -298,7 +299,7 @@ TEST_F(GameWorldTest, PlayerOnExitTileGeneratesEmptyTransition)
   exit.walkable = true;
   m.at(3, 3) = exit;
 
-  GameWorld world(std::move(m), npcFact, itemRepo, config);
+  GameWorld world(std::move(m), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 3, 3));
 
   auto result = world.tick(0.016f);
@@ -310,7 +311,7 @@ TEST_F(GameWorldTest, PlayerOnExitTileGeneratesEmptyTransition)
 
 TEST_F(GameWorldTest, PlayerOnNormalTileGeneratesNoTransition)
 {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 3, 3));
 
   auto result = world.tick(0.016f);
@@ -327,7 +328,7 @@ TEST_F(GameWorldTest, FindSafeSpawnNearReturnsAdjacentNonEntranceTile)
   entrance.targetMap = "dungeon.argmap";
   m.at(3, 3) = entrance;
 
-  GameWorld world(std::move(m), npcFact, itemRepo, config);
+  GameWorld world(std::move(m), npcFact, itemRepo, config, clanManager);
   auto [tx, ty] = world.findSafeSpawnNear(3, 3);
 
   const Tile &t = world.getTileAt(tx, ty);

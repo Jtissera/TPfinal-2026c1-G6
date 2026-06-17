@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
-#include "../clan/clanManager.h"
 
 CombatSystem::CombatSystem(const toml::table &config)
     : meleeRange(config["combat"]["attack_range"].value_or(1)),
@@ -60,14 +59,18 @@ CombatSystem::Result CombatSystem::attackPlayer(Player &attacker, Player &target
 {
   Result result;
 
-  if (!canAttackPlayer(attacker, target))
+  if (!canAttackPlayer(attacker, target, result.failReason))
     return result;
 
-  // Gasto de mana: solo aplica a jugadores con arma equipada que lo requiera
   const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
   if (weapon && weapon->stats.manaCost > 0)
+  {
     if (!attacker.spendMana(weapon->stats.manaCost))
+    {
+      result.failReason = Result::FailReason::NO_MANA;
       return result;
+    }
+  }
 
   const int attackerAllies = world.countClanAlliesNear(attacker, clanProximityRadius);
   const int targetAllies = world.countClanAlliesNear(target, clanProximityRadius);
@@ -92,26 +95,35 @@ bool CombatSystem::canAttack(const Combatant &attacker, const Combatant &target)
   return true;
 }
 
-bool CombatSystem::canAttackPlayer(const Player &attacker, const Player &target) const
+bool CombatSystem::canAttackPlayer(const Player &attacker, const Player &target,
+                                   Result::FailReason &failReason) const
 {
   if (!canAttack(attacker, target))
-    return false;
-
-  auto attackerClan = ClanManager::instance().findClanInfoForMember(attacker.getName());
-  auto targetClan = ClanManager::instance().findClanInfoForMember(target.getName());
-
-  // Jugadores del mismo clan no pueden atacarse entre sí.
-  if (attackerClan && targetClan && attackerClan->first == targetClan->first)
   {
+    failReason = Result::FailReason::OUT_OF_RANGE;
+    return false;
+  }
+
+  if (!attacker.getClanName().empty() &&
+      attacker.getClanName() == target.getClanName())
+  {
+    failReason = Result::FailReason::FRIENDLY_FIRE;
     return false;
   }
 
   if (attacker.getLevel() <= newbieMaxLevel || target.getLevel() <= newbieMaxLevel)
+  {
+    failReason = Result::FailReason::LEVEL_TOO_LOW;
     return false;
-  int levelDiff = std::abs((int)attacker.getLevel() - (int)target.getLevel());
+  }
 
+  int levelDiff = std::abs((int)attacker.getLevel() - (int)target.getLevel());
   if (levelDiff > maxLevelDiff)
+  {
+    failReason = Result::FailReason::LEVEL_DIFF_TOO_HIGH;
     return false;
+  }
+
   return true;
 }
 
@@ -172,6 +184,7 @@ CombatSystem::Result CombatSystem::attackNpc(Player &attacker, Combatant &target
 
     if (!attacker.spendMana(manaCost))
     {
+      result.failReason = Result::FailReason::NO_MANA;
       return result;
     }
   }

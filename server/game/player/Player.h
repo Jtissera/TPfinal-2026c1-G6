@@ -98,6 +98,11 @@ public:
   void stopResurrection() { resurrecting = false; }
   bool canInteract() const { return !isGhost() && !resurrecting; }
 
+  const std::string &getClanName() const { return clanName; }
+  void setClanName(std::string name) { clanName = std::move(name); }
+  bool isClanFounder() const { return clanFounder; }
+  void setClanFounder(bool founder) { clanFounder = founder; }
+
   const RaceStats &getRace() const;
   const ClassStats &getCls() const;
 
@@ -139,6 +144,9 @@ private:
   bool didLevelUp = false;
   bool infiniteHp = false;
   bool infiniteMana = false;
+
+  std::string clanName;
+  bool clanFounder = false;
 
   Inventory inventory;
 };

@@ -9,6 +9,7 @@
 #include "common/network/messages/server/chat/chatNotificationMessage.h"
 #include "server/game/chat/chatHandler.h"
 #include "server/game/clan/clanManager.h"
+#include "common/network/messages/internal/clanSyncMessage.h"
 
 static void sendCombatChat(uint32_t clientId,
                            const std::string &text,
@@ -19,10 +20,12 @@ static void sendCombatChat(uint32_t clientId,
                    std::make_shared<const ChatNotificationMessage>(text, type));
 }
 
-ActionDispatcher::ActionDispatcher(const toml::table &config)
+ActionDispatcher::ActionDispatcher(const toml::table &config, ClanManager &clanManager)
     : combat(config),
       formulas(config),
-      combatHandler(combat, effects, formulas)
+      combatHandler(combat, effects, formulas),
+      chatHandler(clanManager),
+      clanManager(clanManager)
 {
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_MOVE)] = &ActionDispatcher::handleMove;
 
@@ -40,6 +43,7 @@ ActionDispatcher::ActionDispatcher(const toml::table &config)
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_CHEAT)] = &ActionDispatcher::handleCheat;
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_INTERACT_NPC)] = &ActionDispatcher::handleInteractNpc;
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_CHAT)] = &ActionDispatcher::handleChat;
+    handlers[static_cast<uint8_t>(ClientOpCode::MSG_CLAN_SYNC_INTERNAL)] = &ActionDispatcher::handleClanSync;
 }
 
 void ActionDispatcher::dispatch(const ClientMessage &msg, GameWorld &world,
@@ -54,7 +58,8 @@ void ActionDispatcher::dispatch(const ClientMessage &msg, GameWorld &world,
         if (opcode != static_cast<uint8_t>(ClientOpCode::MSG_MOVE) &&
             opcode != static_cast<uint8_t>(ClientOpCode::MSG_RESURRECT) &&
             opcode != static_cast<uint8_t>(ClientOpCode::MSG_INTERACT_NPC) &&
-            opcode != static_cast<uint8_t>(ClientOpCode::MSG_CHAT))
+            opcode != static_cast<uint8_t>(ClientOpCode::MSG_CHAT) &&
+            opcode != static_cast<uint8_t>(ClientOpCode::MSG_CLAN_SYNC_INTERNAL))
             return;
     }
 
@@ -475,11 +480,35 @@ void ActionDispatcher::handleAttackPlayer(
 
     if (!result.valid)
     {
+        if (result.failReason == CombatSystem::Result::FailReason::FRIENDLY_FIRE)
+        {
+            sendCombatChat(attackerId,
+                           "No podés atacar a tus aliados.",
+                           ChatMsgType::INFO, monitor);
+        }
+        else if (result.failReason == CombatSystem::Result::FailReason::NO_MANA)
+        {
+            sendCombatChat(attackerId,
+                           "No tenés mana suficiente para realizar ese hechizo.",
+                           ChatMsgType::INFO, monitor);
+        }
+        else if (result.failReason == CombatSystem::Result::FailReason::LEVEL_TOO_LOW)
+        {
+            sendCombatChat(attackerId,
+                           "No podés atacar a jugadores de nivel bajo.",
+                           ChatMsgType::INFO, monitor);
+        }
+        else if (result.failReason == CombatSystem::Result::FailReason::LEVEL_DIFF_TOO_HIGH)
+        {
+            sendCombatChat(attackerId,
+                           "La diferencia de nivel es demasiado grande para atacar.",
+                           ChatMsgType::INFO, monitor);
+        }
         sendStats(attackerId, attacker, monitor);
         return;
     }
 
-    auto targetClanInfo = ClanManager::instance().findClanInfoForMember(target.getName());
+    auto targetClanInfo = clanManager.findClanInfoForMember(target.getName());
     if (targetClanInfo)
     {
         std::string clanName = targetClanInfo->first;
@@ -489,8 +518,17 @@ void ActionDispatcher::handleAttackPlayer(
 
         for (uint32_t allyId : localAllies)
         {
+            if (allyId == targetId)
+                continue;
             sendCombatChat(allyId, alertMsg, ChatMsgType::CLAN, monitor);
         }
+    }
+
+    if (result.valid && !result.dodged)
+    {
+        monitor.sendTo(attackerId,
+                       std::make_shared<const CombatLogMessage>(
+                           std::to_string(targetId)));
     }
 
     // Si esquivó, actualizamos stats y terminamos.
@@ -595,8 +633,21 @@ void ActionDispatcher::handleAttackNpc(
     // Si el ataque no fue válido, reenviamos stats por si se consumió algo antes.
     if (!result.valid)
     {
+        if (result.failReason == CombatSystem::Result::FailReason::NO_MANA)
+        {
+            sendCombatChat(attackerId,
+                           "No tenés mana suficiente para realizar ese hechizo.",
+                           ChatMsgType::INFO, monitor);
+        }
         sendStats(attackerId, attacker, monitor);
         return;
+    }
+
+    if (!result.dodged)
+    {
+        monitor.sendTo(attackerId,
+                       std::make_shared<const CombatLogMessage>(
+                           std::to_string(npcId)));
     }
 
     // Siempre informamos vida nueva del NPC después del ataque válido.
@@ -777,4 +828,18 @@ void ActionDispatcher::handleChat(uint32_t id,
                        chatMsg.getTargetId(),
                        world,
                        monitor);
+}
+
+void ActionDispatcher::handleClanSync(uint32_t id, const Message &msg,
+                                      GameWorld &world, Monitor &monitor)
+{
+    (void)monitor;
+
+    if (!world.hasPlayer(id))
+        return;
+
+    const auto &syncMsg = static_cast<const ClanSyncMessage &>(msg);
+    Player &player = world.getPlayer(id);
+    player.setClanName(syncMsg.getClanName());
+    player.setClanFounder(syncMsg.getIsFounder());
 }

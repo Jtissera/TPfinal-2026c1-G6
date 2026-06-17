@@ -42,6 +42,8 @@
 #include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/system/mapChangedMessage.h"
 #include "common/network/messages/server/error/errorMessage.h"
+#include "common/network/messages/server/combat/combatLogMessage.h"
+
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"

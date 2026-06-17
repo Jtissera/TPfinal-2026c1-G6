@@ -2096,6 +2096,25 @@ void Game::processServerMessage(const Message &msg)
     resurrectionEndTime = SDL_GetTicks() + resMsg.getDelayMs();
     return;
   }
+  case ServerOpCode::MSG_COMBAT_LOG:
+  {
+    const auto &combatMsg = static_cast<const CombatLogMessage &>(msg);
+    uint32_t targetId = static_cast<uint32_t>(std::stoul(combatMsg.getText()));
+
+    Entity *targetEntity = nullptr;
+    auto it = enemies.find(targetId);
+    if (it != enemies.end())
+      targetEntity = it->second;
+    else if (clientWorld != nullptr)
+      targetEntity = clientWorld->getRemotePlayerEntity(targetId);
+
+    bool isMagic = equipmentState.weapon.has_value() &&
+                   equipmentState.weapon->type == ClientItemType::MagicWeapon;
+
+    if (targetEntity != nullptr)
+      attackSystem.triggerAttackEffect(targetId, targetEntity, camera, isMagic);
+    return;
+  }
 
   default:
     return;

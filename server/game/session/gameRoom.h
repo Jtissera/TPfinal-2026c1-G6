@@ -17,7 +17,7 @@
 #include "common/network/messages/server/world/EntitySpawnMessage.h"
 #include "gameLoop.h"
 #include "server/game/equipmentDtoFactory.h"
-
+class ClanManager;
 class GameRoom
 {
 public:
@@ -26,7 +26,7 @@ public:
            ItemRepository &itemRepo,
            Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
            Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
-           const toml::table &config, PlayerArchive &archive);
+           const toml::table &config, PlayerArchive &archive, ClanManager &clanManager);
 
   void addClient(uint32_t clientId,
                  Queue<std::shared_ptr<const Message>> &clientQueue);
@@ -56,6 +56,7 @@ public:
 
   const Player *findPlayer(uint32_t clientId) const;
   void sendTo(uint32_t clientId, const std::shared_ptr<const Message> &msg);
+  void removeMonitorOnly(uint32_t clientId);
 
 private:
   uint32_t gameId;
@@ -64,6 +65,7 @@ private:
   Queue<std::shared_ptr<LeaveEvent>> &leaveQueue;
 
   PlayerArchive &archive;
+  ClanManager &clanManager;
 
   Monitor monitor;
   Queue<ClientMessage> gameQueue;

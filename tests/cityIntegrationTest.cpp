@@ -20,6 +20,7 @@ protected:
     ItemRepository itemRepo{config};
     NpcRepository npcRepo{config};
     NpcFactory npcFactory{npcRepo};
+    ClanManager clanManager;
 
     // Construimos el mundo con un MapData que tiene los NPCs de ciudad
     GameWorld makeWorld()
@@ -37,7 +38,7 @@ protected:
         map.at(5, 6).npc = NpcType::MERCHANT;
         map.at(5, 7).npc = NpcType::BANKER;
 
-        return GameWorld(std::move(map), npcFactory, itemRepo, config);
+        return GameWorld(std::move(map), npcFactory, itemRepo, config, clanManager);
     }
 };
 

@@ -70,6 +70,8 @@ public:
     void applyRemotePlayerAliveState(uint32_t playerId);
 
     void updateRemotePlayerLevel(uint32_t playerId, uint8_t newLevel);
+
+    Entity *getRemotePlayerEntity(uint32_t entityId) const;
 };
 
 #endif // TALLER_TP_CLIENTGAMEWORLD_H

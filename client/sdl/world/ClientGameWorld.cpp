@@ -347,3 +347,11 @@ std::vector<Entity *> ClientGameWorld::getRemotePlayerEntities() const
 
     return result;
 }
+
+Entity *ClientGameWorld::getRemotePlayerEntity(uint32_t entityId) const
+{
+    auto it = remotePlayers.find(entityId);
+    if (it == remotePlayers.end())
+        return nullptr;
+    return const_cast<RemotePlayer &>(it->second).getEntity();
+}

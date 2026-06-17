@@ -18,6 +18,7 @@
 #include "server/npc/npcStats.h"
 #include "server/world/CollisionSystem.h"
 #include "server/world/OccupancySystem.h"
+#include "server/game/clan/clanManager.h"
 #include "server/world/gameWorld.h"
 #include <toml++/toml.h>
 
@@ -259,10 +260,10 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 {
   static auto config = makeConfig();
   static MapData map = makeWalkableMap(20, 20);
-
   static ItemRepository itemRepo(config);
   static NpcRepository npcRepo(config);
   static NpcFactory npcFactory(npcRepo);
+  static ClanManager clanManager;
 
-  return std::make_unique<GameWorld>(map, npcFactory, itemRepo, config);
+  return std::make_unique<GameWorld>(map, npcFactory, itemRepo, config, clanManager);
 }

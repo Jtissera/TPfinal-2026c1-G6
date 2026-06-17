@@ -18,14 +18,16 @@
 #include "../common/queue.h"
 #include "../common/thread.h"
 #include "ActionDispatcher.h"
+class ClanManager;
 
-class GameLoop : public Thread {
+class GameLoop : public Thread
+{
 public:
   GameLoop(Queue<ClientMessage> &gameQueue, Monitor &monitor, GameWorld &world,
            Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
            Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
            uint32_t gameId, const toml::table &config, PlayerArchive &archive,
-           const std::string &mapId);
+           const std::string &mapId, ClanManager &clanManager);
   void run() override;
   void stop() override;
 

@@ -57,10 +57,16 @@ public:
   void sendToClient(uint32_t clientId, const std::shared_ptr<const Message> &msg);
   std::optional<uint32_t> findOnlineClientByNick(const std::string &nick) const;
   void updatePlayerClanState(const std::string &nick, const std::string &clanName, bool isFounder);
+  void unregisterClientForTransition(uint32_t clientId);
+  void broadcastDespawnInRoom(uint32_t fromRoomId, uint32_t clientId);
+  void joinAndAddPlayer(uint32_t gameId, uint32_t clientId,
+                        Queue<std::shared_ptr<const Message>> &clientQueue,
+                        Player player);
 
 private:
   const toml::table &config;
   mutable std::mutex mutex;
+  ClanManager clanManager;
   GameArchive &gameArchive;
   uint32_t nextGameId = 1;
 

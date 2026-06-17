@@ -7,13 +7,13 @@ GameRoom::GameRoom(
     bool isInstance, uint32_t originRoomId, NpcFactory &npcFactory,
     ItemRepository &itemRepo, Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
     Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
-    const toml::table &config, PlayerArchive &archive)
+    const toml::table &config, PlayerArchive &archive, ClanManager &clanManager)
     : gameId(gameId), gameName(std::move(gameName)), maxPlayers(255),
       isInstance(isInstance), originRoomId(originRoomId), mapPath(mapPath),
-      leaveQueue(leaveQueue), world(mapPath, npcFactory, itemRepo, config),
+      leaveQueue(leaveQueue), world(mapPath, npcFactory, itemRepo, config, clanManager),
       gameLoop(gameQueue, monitor, world, leaveQueue, transitionQueue, gameId,
-               config, archive, mapPath),
-      archive(archive) {}
+               config, archive, mapPath, clanManager),
+      archive(archive), clanManager(clanManager) {}
 
 void GameRoom::addClient(uint32_t clientId,
                          Queue<std::shared_ptr<const Message>> &clientQueue)
@@ -209,4 +209,9 @@ const Player *GameRoom::findPlayer(uint32_t clientId) const
 void GameRoom::sendTo(uint32_t clientId, const std::shared_ptr<const Message> &msg)
 {
   monitor.sendTo(clientId, msg);
+}
+
+void GameRoom::removeMonitorOnly(uint32_t clientId)
+{
+  monitor.removeQueue(clientId);
 }

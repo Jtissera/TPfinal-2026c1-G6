@@ -3,31 +3,36 @@
 
 #include "helpers/testHelpers.h"
 
-class ExtractPlayerTest : public ::testing::Test {
+class ExtractPlayerTest : public ::testing::Test
+{
 protected:
   toml::table config = makeConfig();
   NpcRepository npcRepo{config};
   NpcFactory npcFact{npcRepo};
   ItemRepository itemRepo{config};
+  ClanManager clanManager;
 };
-TEST_F(ExtractPlayerTest, RemoveReturnsPlayerWithCorrectId) {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+TEST_F(ExtractPlayerTest, RemoveReturnsPlayerWithCorrectId)
+{
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 3, 3));
 
   auto extracted = world.removePlayer(1);
   EXPECT_EQ(extracted->getId(), 1u);
 }
 
-TEST_F(ExtractPlayerTest, RemoveRemovesPlayerFromWorld) {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+TEST_F(ExtractPlayerTest, RemoveRemovesPlayerFromWorld)
+{
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 3, 3));
 
   world.removePlayer(1);
   EXPECT_THROW(world.getPlayer(1), std::runtime_error);
 }
 
-TEST_F(ExtractPlayerTest, RemoveFreesOccupancyTileForReuse) {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+TEST_F(ExtractPlayerTest, RemoveFreesOccupancyTileForReuse)
+{
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   world.addPlayer(makePlayer(1, 3, 3));
 
   world.removePlayer(1);
@@ -36,8 +41,9 @@ TEST_F(ExtractPlayerTest, RemoveFreesOccupancyTileForReuse) {
   EXPECT_NO_THROW(world.addPlayer(makePlayer(2, 3, 3)));
 }
 
-TEST_F(ExtractPlayerTest, RemovePreservesPlayerState) {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+TEST_F(ExtractPlayerTest, RemovePreservesPlayerState)
+{
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   Player p = makePlayer(1, 3, 3);
   p.getInventory().addItem(makeWeaponWithId(10, 10, 10));
   world.addPlayer(std::move(p));
@@ -52,7 +58,8 @@ TEST_F(ExtractPlayerTest, RemovePreservesPlayerState) {
   EXPECT_NE(extracted->getInventory().findItem(10), nullptr);
 }
 
-TEST_F(ExtractPlayerTest, RemoveNonExistentPlayerReturnsNullopt) {
-  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
+TEST_F(ExtractPlayerTest, RemoveNonExistentPlayerReturnsNullopt)
+{
+  GameWorld world(makeWalkableMap(), npcFact, itemRepo, config, clanManager);
   EXPECT_EQ(world.removePlayer(999), std::nullopt);
 }

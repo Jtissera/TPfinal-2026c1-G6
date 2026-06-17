@@ -18,12 +18,6 @@ namespace
     }
 }
 
-ClanManager &ClanManager::instance()
-{
-    static ClanManager instance;
-    return instance;
-}
-
 void ClanManager::bindGameManager(GameManager *gm)
 {
     std::lock_guard<std::mutex> lock(mutex);

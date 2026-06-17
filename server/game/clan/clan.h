@@ -7,7 +7,7 @@
 class Clan
 {
 public:
-    static constexpr std::size_t MAX_MEMBERS = 16;
+    static constexpr std::size_t MAX_MEMBERS = 16; // toml
 
     Clan() = default;
     Clan(std::string name, std::string founderNick);
