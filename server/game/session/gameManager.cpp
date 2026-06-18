@@ -5,13 +5,16 @@ GameManager::GameManager(
     NpcFactory &npcFactory, ItemRepository &itemRepo,
     Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
     Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
-    const toml::table &config, PlayerArchive &archive, GameArchive &gameArchive)
+    const toml::table &config, PlayerArchive &archive, GameArchive &gameArchive,
+    ClanArchive &clanArchive, CharacterArchive &characterArchive)
     : npcFactory(npcFactory), itemRepo(itemRepo), leaveQueue(leaveQueue),
       transitionQueue(transitionQueue), config(config), archive(archive),
+      clanManager(clanArchive, characterArchive),
       gameArchive(gameArchive)
 {
   clanManager.bindGameManager(this);
 }
+
 
 uint32_t GameManager::createGame(const std::string &gameName,
                                  uint8_t maxPlayers,
@@ -262,19 +265,20 @@ void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId)
 
 void GameManager::restoreFromArchive()
 {
+  clanManager.restoreFromArchive();
+ 
   auto records = gameArchive.loadAll();
-
-  // nextGameId arranca después del mayor id conocido
+ 
   uint32_t maxId = gameArchive.maxGameId();
   if (maxId >= nextGameId)
     nextGameId = maxId + 1;
-
+ 
   for (const auto &rec : records)
   {
     std::string mapPath(rec.mapPath, strnlen(rec.mapPath, sizeof(rec.mapPath)));
     std::string gameName(rec.gameName,
                          strnlen(rec.gameName, sizeof(rec.gameName)));
-
+ 
     std::ifstream check(mapPath, std::ios::binary);
     if (!check.good())
     {
@@ -283,13 +287,13 @@ void GameManager::restoreFromArchive()
                 << std::endl;
       continue;
     }
-
+ 
     auto room = std::make_unique<GameRoom>(rec.gameId, gameName, mapPath, false,
                                            0, npcFactory, itemRepo, leaveQueue,
                                            transitionQueue, config, archive, clanManager);
     room->start();
     rooms.emplace(rec.gameId, std::move(room));
-
+ 
     std::cout << "[GameManager] restore gameId=" << rec.gameId << " name='"
               << gameName << "'" << std::endl;
   }
@@ -312,7 +316,7 @@ std::string GameManager::getRoomMapPath(uint32_t gameId) const
   }
 }
 
-// ── Control de sesión única por personaje ──────────────────────────────────
+
 
 bool GameManager::tryMarkOnline(uint32_t clientId, const std::string &characterName)
 {
@@ -320,7 +324,7 @@ bool GameManager::tryMarkOnline(uint32_t clientId, const std::string &characterN
 
   if (onlineCharacters.find(characterName) != onlineCharacters.end())
   {
-    return false; // ya hay alguien jugando con este personaje
+    return false; 
   }
 
   onlineCharacters.insert(characterName);
@@ -338,7 +342,7 @@ void GameManager::markOffline(uint32_t clientId)
 
   auto it = clientToCharacter.find(clientId);
   if (it == clientToCharacter.end())
-    return; // este clientId no tenía personaje marcado online, no-op
+    return;
 
   std::cout << "[GameManager] markOffline character='" << it->second
             << "' clientId=" << clientId << std::endl;
@@ -347,16 +351,8 @@ void GameManager::markOffline(uint32_t clientId)
   clientToCharacter.erase(it);
 }
 
-// removeClient combina ambas ramas:
-//  - HEAD: liberar el personaje (markOffline) sin importar el estado en que
-//    haya quedado, para que no quede "trabado" tras una desconexión abrupta.
-//  - dev: limpieza de los mapas de nick y notificación a los aliados de clan
-//    cuando el jugador que se va pertenece a uno.
 void GameManager::removeClient(uint32_t clientId)
 {
-  // Liberar el personaje asociado a este clientId, sin importar en qué
-  // estado estaba (lobby, en partida, en transición). Esto es lo que evita
-  // que un personaje quede "trabado" tras una desconexión abrupta.
   markOffline(clientId);
 
   std::unique_lock<std::mutex> lock(mutex);
@@ -379,7 +375,6 @@ void GameManager::removeClient(uint32_t clientId)
     if (p != nullptr)
     {
       playerName = p->getName();
-      // Buscamos el clan desde el ClanManager en lugar de p->getClanName()
       auto clanInfo = clanManager.findClanInfoForMember(playerName);
       if (clanInfo)
       {
@@ -517,10 +512,8 @@ void GameManager::joinAndAddPlayer(uint32_t gameId, uint32_t clientId,
     player.setClanFounder(clanInfo->second);
   }
 
-  // Primero agregamos al mundo
   it->second->addPlayer(std::move(player));
 
-  // Luego al Monitor — en el mismo lock, sin ventana
   it->second->addClient(clientId, clientQueue);
 
   clientNick[playerId] = playerName;

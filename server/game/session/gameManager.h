@@ -17,6 +17,8 @@
 #include "../../lobby/instanceTransitionEvent.h"
 #include "../../lobby/leaveEvent.h"
 #include "../../persistence/gameArchive.h"
+#include "../../persistence/clanArchive.h"
+#include "../../persistence/characterArchive.h"
 #include "../player/Player.h"
 #include "gameRoom.h"
 #include "server/game/clan/clanManager.h"
@@ -28,7 +30,9 @@ public:
               Queue<std::shared_ptr<LeaveEvent>> &,
               Queue<std::shared_ptr<InstanceTransitionEvent>> &,
               const toml::table &, PlayerArchive &archive,
-              GameArchive &gameArchive);
+              GameArchive &gameArchive,
+              ClanArchive &clanArchive,
+              CharacterArchive &characterArchive);
 
   uint32_t createGame(const std::string &gameName, uint8_t maxPlayers,
                       const std::string &mapPath = "");
@@ -56,12 +60,7 @@ public:
   void restoreFromArchive();
 
   // ── Control de sesión única por personaje ──────────────────────────────
-  // Marca el personaje como online asociado a este clientId.
-  // Devuelve false si el personaje ya estaba online (con otro clientId).
   bool tryMarkOnline(uint32_t clientId, const std::string &characterName);
-
-  // Libera el personaje asociado a este clientId, si había alguno.
-  // Es idempotente: llamarlo sin sesión activa no hace nada.
   void markOffline(uint32_t clientId);
 
   // ── Clan / mensajería dirigida ──────────────────────────────────────────
@@ -86,7 +85,6 @@ private:
   std::unordered_map<uint32_t, std::unique_ptr<GameRoom>> rooms;
   std::unordered_map<uint32_t, uint32_t> clientRoom;
 
-  // Control de sesión única: nombre de personaje <-> clientId que lo tiene online
   std::unordered_set<std::string> onlineCharacters;
   std::unordered_map<uint32_t, std::string> clientToCharacter;
 

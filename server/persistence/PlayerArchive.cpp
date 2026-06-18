@@ -13,7 +13,6 @@ static constexpr std::size_t INDEX_KEY_LEN = 48;
 static constexpr std::size_t INDEX_ENTRY_SIZE =
     INDEX_KEY_LEN + sizeof(uint64_t);
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
 
 static std::string makeKey(const std::string &name, uint32_t gameId) {
   return name + "@" + std::to_string(gameId);
@@ -30,8 +29,7 @@ static std::string makeKeyForIndex(const PlayerSnapshot &snap) {
   return name + "@" + std::to_string(keyId);
 }
 
-// ─── constructor / destructor
-// ─────────────────────────────────────────────────
+
 
 PlayerArchive::PlayerArchive(const std::string &datPath,
                              const std::string &indexPath,
@@ -68,9 +66,6 @@ PlayerArchive::~PlayerArchive() {
   }
 }
 
-// ─── índice
-// ───────────────────────────────────────────────────────────────────
-
 void PlayerArchive::loadIndex() {
   std::ifstream f(indexPath_, std::ios::binary);
   if (!f.is_open())
@@ -93,9 +88,6 @@ uint64_t PlayerArchive::allocateSlot(const std::string &key) {
   index_[key] = offset;
   return offset;
 }
-
-// ─── snapshot
-// ─────────────────────────────────────────────────────────────────
 
 PlayerSnapshot PlayerArchive::toSnapshot(const Player &player,
                                          const std::string &mapId,
@@ -158,8 +150,6 @@ PlayerSnapshot PlayerArchive::toSnapshot(const Player &player,
   return snap;
 }
 
-// ─── hilo worker
-// ──────────────────────────────────────────────────────────────
 
 void PlayerArchive::enqueue(PlayerSnapshot snap, uint32_t gameId) {
   snap.gameId = gameId;
@@ -187,8 +177,6 @@ void PlayerArchive::stop() {
   snapQueue.close();
 }
 
-// ─── escritura
-// ────────────────────────────────────────────────────────────────
 
 void PlayerArchive::writeSnapshot(const PlayerSnapshot &snap) {
   std::string name(snap.name, strnlen(snap.name, sizeof(snap.name)));
@@ -199,8 +187,6 @@ void PlayerArchive::writeSnapshot(const PlayerSnapshot &snap) {
     return;
   }
 
-  // La clave normaliza al publicGameId para que load() siempre encuentre
-  // al jugador independientemente de si estaba en una instancia efímera.
   std::string key = makeKeyForIndex(snap);
 
   if (key.size() >= INDEX_KEY_LEN) {
@@ -244,8 +230,6 @@ void PlayerArchive::writeSnapshot(const PlayerSnapshot &snap) {
   }
 }
 
-// ─── lectura raw (snapshot sin construir Player)
-// ──────────────────────────────────────────────
 
 std::optional<PlayerSnapshot> PlayerArchive::loadSnapshot(
     const std::string &name, uint32_t gameId) const {
@@ -274,8 +258,6 @@ std::optional<PlayerSnapshot> PlayerArchive::loadSnapshot(
   return snap;
 }
 
-// ─── lectura (construye Player)
-// ──────────────────────────────────────────────────
 
 std::optional<Player> PlayerArchive::load(const std::string &name,
                                           uint32_t gameId) {

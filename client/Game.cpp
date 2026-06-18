@@ -188,7 +188,7 @@ void Game::handleEvents()
       if (clientWorld != nullptr)
       {
         clientWorld->appendRemoteAttackTargets(
-            attackTargets, static_cast<uint8_t>(playerState.level));
+            attackTargets);
       }
 
       attackSystem.handleMouseClick(mouseX, mouseY, camera, attackTargets,
@@ -2486,6 +2486,10 @@ void Game::handleMapChanged(const MapChangedMessage &msg)
 
 void Game::handleChatNotification(const ChatNotificationMessage &msg)
 {
+
+    std::cout << "[CHAT DEBUG] type=" << static_cast<int>(msg.getMsgType())
+            << " text='" << msg.getText() << "'" << std::endl;
+
   const std::string &text = msg.getText();
   const ChatMsgType type = msg.getMsgType();
 

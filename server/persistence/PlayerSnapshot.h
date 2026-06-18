@@ -63,16 +63,12 @@ struct PlayerSnapshot {
   uint32_t gameId = 0;
   uint32_t originGameId = 0;
 
-  // Inventario (slots de mochila)
   uint8_t itemCount = 0;
   uint8_t _pad2[3] = {};
   ItemSnapshot items[MAX_ITEMS] = {};
 
-  // Equipo equipado (un slot por tipo)
   EquipSlotSnapshot equipped[4] = {};
 
-  uint8_t _reserved[64] =
-      {}; // espacio para futuras versiones (clanes probablemente)
 };
 static_assert(std::is_trivially_copyable_v<PlayerSnapshot>,
               "must be POD"); // en caso de que no se

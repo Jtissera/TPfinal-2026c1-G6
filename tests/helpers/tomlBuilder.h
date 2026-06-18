@@ -4,7 +4,7 @@
 class TomlBuilder
 {
 public:
-    static toml::table withCityPrices()
+static toml::table withCityPrices()
     {
         return toml::parse(R"(
         [city]
@@ -32,36 +32,42 @@ public:
         sombrero_magico  = 350
 
         [items.espada]
+        catalog_id = 1
         slot = "WEAPON"
         is_ranged = false
         damage_min = 2
         damage_max = 5
 
         [items.hacha]
+        catalog_id = 4
         slot = "WEAPON"
         is_ranged = false
         damage_min = 4
         damage_max = 5
 
         [items.martillo]
+        catalog_id = 5
         slot = "WEAPON"
         is_ranged = false
         damage_min = 1
         damage_max = 9
 
         [items.arco_simple]
+        catalog_id = 6
         slot = "WEAPON"
         is_ranged = true
         damage_min = 1
         damage_max = 4
 
         [items.arco_compuesto]
+        catalog_id = 7
         slot = "WEAPON"
         is_ranged = true
         damage_min = 4
         damage_max = 16
 
         [items.vara_fresno]
+        catalog_id = 8
         slot = "STAFF"
         is_ranged = true
         damage_min = 2
@@ -69,12 +75,28 @@ public:
         mana_cost = 5
 
         [items.flauta_elfica]
+        catalog_id = 9
         slot = "STAFF"
         is_ranged = true
         mana_cost = 100
         effect = "heal"
 
+        # --- MODIFICADO: Dejamos armadura_cuero con otro ID ---
+        [items.armadura_cuero]
+        catalog_id = 3
+        slot = "ARMOR"
+        defense_min = 2
+        defense_max = 6
+
+        # --- AGREGADO: Item Weapon con ID 10 para el test de remoción ---
+        [items.item_test_remocion]
+        catalog_id = 10
+        slot = "WEAPON"
+        damage_min = 5
+        damage_max = 5
+
         [items.baculo_nudoso]
+        catalog_id = 11
         slot = "STAFF"
         is_ranged = true
         damage_min = 4
@@ -82,57 +104,62 @@ public:
         mana_cost = 15
 
         [items.baculo_engarzado]
+        catalog_id = 12
         slot = "STAFF"
         is_ranged = true
         damage_min = 8
         damage_max = 20
         mana_cost = 30
 
-        [items.armadura_cuero]
-        slot = "ARMOR"
-        defense_min = 2
-        defense_max = 6
-
         [items.armadura_placas]
+        catalog_id = 13
         slot = "ARMOR"
         defense_min = 15
         defense_max = 30
 
         [items.tunica_azul]
+        catalog_id = 14
         slot = "ARMOR"
         defense_min = 6
         defense_max = 10
 
         [items.capucha]
+        catalog_id = 15
         slot = "HELMET"
         defense_min = 1
         defense_max = 4
 
         [items.casco_hierro]
+        catalog_id = 16
         slot = "HELMET"
         defense_min = 4
         defense_max = 8
 
         [items.escudo_tortuga]
+        catalog_id = 17
         slot = "SHIELD"
         defense_min = 1
         defense_max = 2
 
         [items.escudo_hierro]
+        catalog_id = 18
         slot = "SHIELD"
         defense_min = 1
         defense_max = 4
 
         [items.sombrero_magico]
+        catalog_id = 19
         slot = "HELMET"
         defense_min = 4
         defense_max = 12
 
         [items.pocion_vida]
+        catalog_id = 2
         slot = "CONSUMABLE"
         heal_amount = 100
 
         [items.pocion_mana]
+        catalog_id = 20
         slot = "CONSUMABLE"
         mana_amount = 100
 
@@ -148,6 +175,50 @@ public:
         attack_cooldown_ms = 1000
         move_cooldown_ms   = 500
         zones              = ["COMBAT"]
+
+        # --- AGREGADO: Definiciones de NPCs urbanos para CityIntegrationTest ---
+        [npcs.priest]
+        hp                 = 1000
+        damage_min         = 0
+        damage_max         = 0
+        level              = 100
+        agility            = 10
+        strength           = 10
+        detection_range    = 0
+        home_range         = 0
+        attack_cooldown_ms = 0
+        move_cooldown_ms   = 0
+        zones              = ["CITY"]
+
+        [npcs.merchant]
+        hp                 = 1000
+        damage_min         = 0
+        damage_max         = 0
+        level              = 100
+        agility            = 10
+        strength           = 10
+        detection_range    = 0
+        home_range         = 0
+        attack_cooldown_ms = 0
+        move_cooldown_ms   = 0
+        zones              = ["CITY"]
+
+        [npcs.banker]
+        hp                 = 1000
+        damage_min         = 0
+        damage_max         = 0
+        level              = 100
+        agility            = 10
+        strength           = 10
+        detection_range    = 0
+        home_range         = 0
+        attack_cooldown_ms = 0
+        move_cooldown_ms   = 0
+        zones              = ["CITY"]
+
+        # --- AGREGADO: Inventario inicial del warrior para evitar fallback roto ---
+        [initial_inventory.warrior]
+        items = [ "espada" ]
 
         [combat]
         attack_range        = 1

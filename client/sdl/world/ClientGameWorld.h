@@ -59,7 +59,7 @@ public:
 
     void updateRemotePlayerEquipment(uint32_t entityId, const EquipmentDto &equipment, const ItemCatalog &itemCatalog);
 
-    void appendRemoteAttackTargets(std::vector<AttackTarget> &targets, uint8_t localPlayerLevel);
+    void appendRemoteAttackTargets(std::vector<AttackTarget> &targets);
 
     // Aplica visualmente el estado fantasma a un jugador remoto.
     // No toca inventario real; solo cambia sprite y oculta equipamiento visual.
