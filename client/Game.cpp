@@ -115,11 +115,22 @@ void Game::handleEvents()
       {
         equippedWeapon = &equipmentState.weapon.value();
       }
+      std::vector<GroundPickupTarget> pickupTargets;
 
-      if (isLocalPlayerDead())
+      for (auto &[instanceId, entity] : groundItems)
       {
-        std::cout << "[PLAYER] No puede atacar porque está muerto/fantasma."
-                  << std::endl;
+        if (entity == nullptr) continue;
+        pickupTargets.push_back(GroundPickupTarget{instanceId, false, entity});
+      }
+
+      for (auto &[instanceId, entity] : groundGold)
+      {
+        if (entity == nullptr) continue;
+        pickupTargets.push_back(GroundPickupTarget{instanceId, true, entity});
+      }
+
+      if (pickUpSystem.handleMouseClick(mouseX, mouseY, pickupTargets, sendQueue))
+      {
         return;
       }
 

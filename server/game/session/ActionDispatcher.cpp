@@ -5,6 +5,7 @@
 #include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/inventory/goldOnGroundMessage.h"
 #include "common/network/messages/server/inventory/itemOnGroundMessage.h"
+#include "common/network/messages/server/inventory/itemPickedMessage.h"
 #include "common/network/messages/server/npc/npcHealthMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/messages/server/player/playerResurrectedMessage.h"
@@ -118,6 +119,8 @@ void ActionDispatcher::handlePickItem(uint32_t id, const Message& msg,GameWorld&
         if (gold) {
             p.addGold(*gold);
             sendStats(id, p, monitor);
+            monitor.broadcast(std::make_shared<const ItemPickedMessage>(id,pickMsg.getInstanceId()));
+
         }
         return;
     }
@@ -125,6 +128,7 @@ void ActionDispatcher::handlePickItem(uint32_t id, const Message& msg,GameWorld&
     auto item = world.pickItemById(pickMsg.getInstanceId());
     if (item && p.getInventory().addItem(std::move(*item))) {
         sendInventory(id, p, monitor);
+        monitor.broadcast(std::make_shared<const ItemPickedMessage>(id,pickMsg.getInstanceId()));
     }
 }
 

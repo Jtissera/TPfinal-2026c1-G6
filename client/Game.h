@@ -43,6 +43,7 @@
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"
+#include "sdl/pickUpSystem.h"
 
 class Game
 {
@@ -94,6 +95,7 @@ private:
     std::map<uint32_t,Entity*> groundItems;
     std::map<uint32_t,Entity*> groundGold;
     AttackSystem attackSystem;
+    PickupSystem pickUpSystem;
     PlayerViewState playerState;
     InventoryViewState inventoryState;
     EquipmentViewState equipmentState;
@@ -195,7 +197,7 @@ private:
     void handleNpcHealth(const NpcHealthMessage &msg);
     void handleNpcMove(const NpcMoveMessage &msg);
     void handlePlayerResurrected(const PlayerResurrectedMessage &msg);
-    // FIND (Game.h):
+
     void handleEntityDespawn(const EntityDespawnMessage &msg);
     void clearCurrentScene();
     void handleMapChanged(const MapChangedMessage &msg);
