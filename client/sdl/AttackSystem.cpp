@@ -174,3 +174,13 @@ bool AttackSystem::shouldCreateVisualEffect(const ItemView* weapon) const {
     if (weapon == nullptr) return false;
     return weapon->type == ClientItemType::MagicWeapon;
 }
+
+void AttackSystem::triggerAttackEffect(uint32_t targetId, Entity *targetEntity,
+                                       const SDL_Rect &camera, bool isMagicWeapon)
+{
+    if (targetEntity == nullptr)
+        return;
+    if (!isMagicWeapon)
+        return;
+    createLocalAttackEffect(targetId, *targetEntity, camera);
+}

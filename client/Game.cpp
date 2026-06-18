@@ -2120,7 +2120,7 @@ void Game::processServerMessage(const Message &msg)
     resurrectionEndTime = SDL_GetTicks() + resMsg.getDelayMs();
     return;
   }
-  case ServerOpCode::MSG_COMBAT_LOG:
+    case ServerOpCode::MSG_COMBAT_LOG:
   {
     const auto &combatMsg = static_cast<const CombatLogMessage &>(msg);
     uint32_t targetId = static_cast<uint32_t>(std::stoul(combatMsg.getText()));
@@ -2144,6 +2144,7 @@ void Game::processServerMessage(const Message &msg)
       return;
   }
 }
+
 
 
 std::optional<ClientEquipmentSlot>

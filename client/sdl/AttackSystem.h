@@ -68,10 +68,6 @@ public:
     // Indica si el enemigo está muerto temporalmente.
     bool isEnemyDead(uint32_t enemyId) const;
 
-    // Actualiza respawns de enemigos muertos.
-    // Recibe enemies para poder restaurar la posición original del enemigo.
-    void updateRespawns(std::map<uint32_t, Entity *> &enemies);
-
     // Vida actual del enemigo.
     int getEnemyHealth(uint32_t enemyId) const;
 
@@ -83,7 +79,7 @@ public:
     void setEnemyHealth(uint32_t enemyId, int hp, int maxHp);
 
     void triggerAttackEffect(uint32_t targetId, Entity *targetEntity,
-                             const SDL_Rect &camera, bool isMagicWeapon);
+                         const SDL_Rect &camera, bool isMagicWeapon);
 
 private:
     std::vector<AttackEffect> attackEffects;

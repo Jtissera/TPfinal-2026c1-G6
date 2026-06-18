@@ -615,35 +615,90 @@ void ChatHandler::handlePickItem(uint32_t senderId,
                                  GameWorld &world,
                                  Monitor &monitor)
 {
+
     Player &p = world.getPlayer(senderId);
 
-    auto item = world.pickItemAt(p.getTileX(), p.getTileY());
-    if (item)
+    // Primero recorremos los items del piso.
+    // un item que esté en el mismo tile del jugador.
+    for (const GroundItem &groundItem : world.getGroundManager().getAllItems())
     {
-        if (p.getInventory().addItem(std::move(*item)))
+        // Comparamos la posición del item contra la posición actual del jugador.
+        if (groundItem.tileX == p.getTileX() &&
+            groundItem.tileY == p.getTileY())
         {
-            sendInventory(senderId, p, monitor);
-            sendChat(senderId, "Recogiste el objeto.", ChatMsgType::INFO, monitor);
+            // Ahora sí usamos el modelo nuevo: levantar por instanceId.
+            auto item = world.pickItemById(groundItem.item.instanceId);
+
+            if (!item)
+            {
+                sendChat(senderId,
+                         "El objeto ya no está disponible.",
+                         ChatMsgType::INFO,
+                         monitor);
+                return;
+            }
+
+            // Intentamos agregar el item al inventario.
+            if (p.getInventory().addItem(std::move(*item)))
+            {
+                sendInventory(senderId, p, monitor);
+
+                sendChat(senderId,
+                         "Recogiste el objeto.",
+                         ChatMsgType::INFO,
+                         monitor);
+            }
+            else
+            {
+
+                sendChat(senderId,
+                         "Inventario lleno.",
+                         ChatMsgType::INFO,
+                         monitor);
+            }
+
+            return;
         }
-        else
-        {
-            sendChat(senderId, "Inventario lleno.", ChatMsgType::INFO, monitor);
-        }
-        return;
     }
 
-    auto gold = world.pickGoldAt(p.getTileX(), p.getTileY());
-    if (gold)
+
+    for (const GroundGold &groundGold : world.getGroundManager().getAllGold())
     {
-        p.addGold(*gold);
-        sendStats(senderId, p, monitor);
-        sendChat(senderId,
-                 "Recogiste " + std::to_string(*gold) + " oro.",
-                 ChatMsgType::INFO, monitor);
-        return;
+
+        if (groundGold.tileX == p.getTileX() &&
+            groundGold.tileY == p.getTileY())
+        {
+
+            auto gold = world.pickGoldById(groundGold.instanceId);
+
+            if (!gold)
+            {
+                sendChat(senderId,
+                         "El oro ya no está disponible.",
+                         ChatMsgType::INFO,
+                         monitor);
+                return;
+            }
+
+
+            p.addGold(*gold);
+
+            sendStats(senderId, p, monitor);
+
+            sendChat(senderId,
+                     "Recogiste " + std::to_string(*gold) + " oro.",
+                     ChatMsgType::INFO,
+                     monitor);
+
+            return;
+        }
     }
 
-    sendChat(senderId, "No hay nada aquí.", ChatMsgType::INFO, monitor);
+    // Si no había item ni oro en el tile.
+    sendChat(senderId,
+             "No hay nada aquí.",
+             ChatMsgType::INFO,
+             monitor);
 }
 
 void ChatHandler::handleDropItem(uint32_t senderId,
