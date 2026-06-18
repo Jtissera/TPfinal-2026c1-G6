@@ -238,6 +238,9 @@ void Game::render()
   {
     n->draw(renderContext);
   }
+  for (auto&item:manager.getGroup(groupItems)) {
+    item->draw(renderContext);
+  }
 
   renderEnemyHealthBars();
 
@@ -836,9 +839,6 @@ void Game::handleInventorySlotClick(int slotIndex)
   // Obtenemos el ítem del slot clickeado.
   const ItemView &item = inventoryState.slots[slotIndex].value();
 
-  std::cout << "[INVENTORY] click slot " << slotIndex
-            << " item=" << item.itemName << " instanceId=" << item.instanceId
-            << std::endl;
 
   if (item.type == ClientItemType::HealthPotion ||
       item.type == ClientItemType::ManaPotion)
@@ -962,10 +962,6 @@ void Game::handleEquipmentSlotClick(int equipmentSlotIndex)
 
   const EquipSlot serverSlot = toServerEquipSlot(visualSlot);
 
-  std::cout << "[EQUIPMENT] pedido desequipar visualSlot=" << equipmentSlotIndex
-            << " serverSlot=" << static_cast<int>(serverSlot)
-            << " item=" << selectedSlot->value().itemName << std::endl;
-
   sendQueue->try_push(std::make_shared<const UnequipSlotMessage>(serverSlot));
 }
 
@@ -1002,9 +998,7 @@ void Game::consumePotion(int slotIndex)
       playerState.hp = playerState.maxHp;
     }
 
-    std::cout << "[POTION] consumida vida: " << item.itemName
-              << " hp=" << playerState.hp << "/" << playerState.maxHp
-              << std::endl;
+
   }
   else if (item.type == ClientItemType::ManaPotion)
   {
@@ -1016,9 +1010,6 @@ void Game::consumePotion(int slotIndex)
       playerState.mana = playerState.maxMana;
     }
 
-    std::cout << "[POTION] consumida maná: " << item.itemName
-              << " mana=" << playerState.mana << "/" << playerState.maxMana
-              << std::endl;
   }
   else
   {
@@ -1443,8 +1434,6 @@ void Game::applyLocalPlayerGhostState()
   // Mensaje temporal para confirmar el estado.
   showStatusMessage("Has muerto");
 
-  std::cout << "[PLAYER] Jugador pasó a fantasma. HP=0, ataque bloqueado."
-            << std::endl;
 }
 
 void Game::reviveLocalPlayer(int newHp)
@@ -1714,7 +1703,8 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg)
   applyEquipped(EquipSlot::ARMOR, equipmentState.armor);
   applyEquipped(EquipSlot::SHIELD, equipmentState.shield);
 
-  if (player != nullptr && player->hasComponent<EquipmentComponent>())
+  if (player != nullptr && player->hasComponent<EquipmentComponent>() &&
+      !playerState.isDead)
   {
     auto &equipment = player->getComponent<EquipmentComponent>();
 
@@ -1747,8 +1737,6 @@ void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg)
   // ID del jugador muerto enviado por el server.
   const uint32_t deadPlayerId = diedMsg.getId();
 
-  std::cout << "[SERVER] MSG_PLAYER_DIED recibido. playerId=" << deadPlayerId
-            << std::endl;
 
   // Si el muerto soy yo, aplico estado fantasma local.
   if (deadPlayerId == static_cast<uint32_t>(playerDto.playerID))
@@ -1871,49 +1859,31 @@ void Game::processServerMessage(const Message &msg)
     handleLevelUp(static_cast<const LevelUpMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_SPAWN:
-    std::cout << "[CLIENT] MSG_NPC_SPAWN recibido" << std::endl;
     handleNpcSpawn(static_cast<const NpcSpawnMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_HEALTH:
-    std::cout << "[CLIENT] MSG_NPC_HEALTH recibido" << std::endl;
     handleNpcHealth(static_cast<const NpcHealthMessage &>(msg));
     return;
   case ServerOpCode::MSG_NPC_MOVE:
-    std::cout << "[CLIENT] MSG_NPC_MOVE recibido" << std::endl;
     handleNpcMove(static_cast<const NpcMoveMessage &>(msg));
     return;
   case ServerOpCode::MSG_PLAYER_RESURRECTED:
-    std::cout << "[CLIENT] MSG_PLAYER_RESURRECTED recibido" << std::endl;
     handlePlayerResurrected(static_cast<const PlayerResurrectedMessage &>(msg));
     return;
-    case ServerOpCode::MSG_MAP_CHANGED:
-      std::cout << "[CLIENT] MSG_MAP_CHANGED recibido" << std::endl;
-      handleMapChanged(static_cast<const MapChangedMessage &>(msg));
-      return;
+  case ServerOpCode::MSG_MAP_CHANGED:
+    handleMapChanged(static_cast<const MapChangedMessage &>(msg));
+    return;
+  case ServerOpCode::MSG_ITEM_ON_GROUND:
+    handleItemOnGround(static_cast<const ItemOnGroundMessage &>(msg));
+    return;
 
-    case ServerOpCode::MSG_ITEM_ON_GROUND:
-    {
-      const auto &groundMsg = static_cast<const ItemOnGroundMessage &>(msg);
-      std::cout << "[CLIENT] MSG_ITEM_ON_GROUND recibido instanceId="
-                << groundMsg.getItem().instanceId
-                << " catalogId=" << groundMsg.getItem().catalogId
-                << " typeName=" << groundMsg.getItem().typeName
-                << " x=" << groundMsg.getX()
-                << " y=" << groundMsg.getY()
-                << std::endl;
-      return;
-    }
+  case ServerOpCode::MSG_GOLD_ON_GROUND:
+    handleGoldOnGround(static_cast<const GoldOnGroundMessage &>(msg));
+    return;
 
-    case ServerOpCode::MSG_GOLD_ON_GROUND:
-    {
-      const auto &goldMsg = static_cast<const GoldOnGroundMessage &>(msg);
-      std::cout << "[CLIENT] MSG_GOLD_ON_GROUND recibido amount="
-                << goldMsg.getAmount()
-                << " x=" << goldMsg.getX()
-                << " y=" << goldMsg.getY()
-                << std::endl;
-      return;
-    }
+  case ServerOpCode::MSG_ITEM_PICKED:
+    handleItemPicked(static_cast<const ItemPickedMessage &>(msg));
+    return;
 
     default:
       return;
@@ -2019,9 +1989,6 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg)
       attackSystem.setEnemyHealth(msg.getNpcId(), static_cast<int>(msg.getHp()),
                                   static_cast<int>(msg.getHpMax()));
 
-      std::cout << "[CLIENT NPC] respawn/update npcId=" << msg.getNpcId()
-                << " pos=(" << msg.getX() << ", " << msg.getY()
-                << ") hp=" << msg.getHp() << "/" << msg.getHpMax() << std::endl;
 
       return;
     }
@@ -2275,4 +2242,75 @@ void Game::handleMapChanged(const MapChangedMessage &msg)
   map->LoadMap(msg.getMapPath());
 
   std::cout << "[Game] ¡Nuevo mapa cargado exitosamente!" << std::endl;
+}
+
+
+void Game::handleItemOnGround(const ItemOnGroundMessage &msg) {
+  const Item &item = msg.getItem();
+
+  const ItemView *itemView = itemCatalog.getById(static_cast<int>(item.catalogId));
+
+  if (itemView == nullptr) {
+    std::cout << "[GROUND ITEM] catalogId desconocido: "
+              << item.catalogId << std::endl;
+    return;
+  }
+
+  const int pixelX = msg.getX() * 96;
+  const int pixelY = msg.getY() * 96;
+
+  Entity *entity = assets->CreateGroundItem(*itemView, pixelX, pixelY);
+
+  groundItems[item.instanceId] = entity;
+
+  std::cout << "[GROUND ITEM] creado instanceId=" << item.instanceId
+            << " catalogId=" << item.catalogId
+            << " tile=(" << msg.getX() << "," << msg.getY() << ")"
+            << " pixel=(" << pixelX << "," << pixelY << ")"
+            << std::endl;
+}
+
+void Game::handleGoldOnGround(const GoldOnGroundMessage &msg) {
+  const ItemView *goldView = itemCatalog.getById(23);
+
+  if (goldView == nullptr) {
+    std::cout << "[GROUND GOLD] no se encontro catalogId=23 para oro" << std::endl;
+    return;
+  }
+
+  const int pixelX = msg.getX() * 96;
+  const int pixelY = msg.getY() * 96;
+
+  Entity *entity = assets->CreateGroundItem(*goldView, pixelX, pixelY);
+
+  groundGold[msg.getInstanceId()] = entity;
+
+  std::cout << "[GROUND GOLD] creado instanceId=" << msg.getInstanceId()
+            << " amount=" << msg.getAmount()
+            << " tile=(" << msg.getX() << "," << msg.getY() << ")"
+            << " pixel=(" << pixelX << "," << pixelY << ")"
+            << std::endl;
+}
+
+void Game::handleItemPicked(const ItemPickedMessage &msg) {
+  const uint32_t itemId = msg.getItemId();
+
+  auto itemIt = groundItems.find(itemId);
+  if (itemIt != groundItems.end()) {
+    if (itemIt->second != nullptr) {
+      itemIt->second->destroy();
+    }
+    groundItems.erase(itemIt);
+    std::cout << "[GROUND ITEM] removido instanceId=" << itemId << std::endl;
+    return;
+  }
+
+  auto goldIt = groundGold.find(itemId);
+  if (goldIt != groundGold.end()) {
+    if (goldIt->second != nullptr) {
+      goldIt->second->destroy();
+    }
+    groundGold.erase(goldIt);
+    std::cout << "[GROUND GOLD] removido instanceId=" << itemId << std::endl;
+  }
 }

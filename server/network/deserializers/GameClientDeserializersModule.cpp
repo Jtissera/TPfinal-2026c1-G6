@@ -6,6 +6,7 @@
 #include "common/network/messages/client/inventory/equipItemMessage.h"
 #include "common/network/messages/client/cheat/cheatMessage.h"
 #include "common/network/messages/client/city/interactNpcMessage.h"
+#include "common/network/messages/client/inventory/pickItemMessage.h"
 #include "common/network/messages/client/movement/moveMessage.h"
 #include "common/network/protocol/clientOpCode.h"
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
@@ -60,20 +61,29 @@ void GameClientDeserializersModule::registerDeserializers(Registry& registry) co
 
         return std::make_unique<AttackMessage>(targetId);
     });
-  registry.registerDeserializer(
-      static_cast<uint8_t>(ClientOpCode::MSG_CHEAT),
-      [](PacketReader &reader) -> std::unique_ptr<Message>
-      {
-        auto cheat = static_cast<CheatType>(reader.readUint8());
-        return std::make_unique<CheatMessage>(cheat);
-      });
 
-  registry.registerDeserializer(
-      static_cast<uint8_t>(ClientOpCode::MSG_INTERACT_NPC),
-      [](PacketReader &reader) -> std::unique_ptr<Message>
-      {
-        auto npcId = reader.readUint32();
-        auto cmd = reader.readString();
-        return std::make_unique<InteractNpcMessage>(npcId, std::move(cmd));
-      });
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ClientOpCode::MSG_INTERACT_NPC),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+          auto npcId = reader.readUint32();
+          auto cmd = reader.readString();
+          return std::make_unique<InteractNpcMessage>(npcId, std::move(cmd));
+        });
+
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ClientOpCode::MSG_PICK_ITEM),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+          const uint32_t instanceId = reader.readUint32();
+          const bool isGold = reader.readUint8() != 0;
+          return std::make_unique<PickItemMessage>(instanceId, isGold);
+        });
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ClientOpCode::MSG_CHEAT),
+    [](PacketReader &reader) -> std::unique_ptr<Message>
+    {
+      auto cheat = static_cast<CheatType>(reader.readUint8());
+      return std::make_unique<CheatMessage>(cheat);
+    });
 }

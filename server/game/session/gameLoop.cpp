@@ -1,5 +1,7 @@
 #include "gameLoop.h"
 
+#include "common/network/messages/server/inventory/goldOnGroundMessage.h"
+#include "common/network/messages/server/inventory/itemOnGroundMessage.h"
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
 #include "common/network/messages/server/npc/npcMoveMessage.h"
 
@@ -77,13 +79,41 @@ void GameLoop::worldUpdate(float deltaSeconds)
   {
     statManager.sendPlayerStats(id, world, monitor);
   }
+
+  for (auto &[playerId, deathResult] : result.playerDeathsByNpc)
+  {
+    if (deathResult.excessGold > 0)
+    {
+      monitor.broadcast(std::make_shared<const GoldOnGroundMessage>(
+          deathResult.goldInstanceId,
+          deathResult.excessGold,
+          deathResult.tileX,
+          deathResult.tileY));
+    }
+
+    for (const Item &item : deathResult.droppedItems)
+    {
+      monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(
+          item,
+          deathResult.tileX,
+          deathResult.tileY));
+    }
+
+    Player &victim = world.getPlayer(playerId);
+    monitor.sendTo(playerId, std::make_shared<const InventoryUpdateMessage>(
+                                  victim.getInventory().getItems(),
+                                  victim.getInventory().getInventorySlots(),
+                                  victim.getInventory().getEquippedArray()));
+
+    std::cout << "[GameLoop] inventario purgado enviado a victima playerId="
+              << playerId << std::endl;
+  }
+
   for (uint32_t deadPlayerId : result.playersDied)
   {
     monitor.broadcast(std::make_shared<const PlayerDiedMessage>(deadPlayerId));
-
     std::cout << "[GameLoop] broadcast PLAYER_DIED id=" << deadPlayerId << std::endl;
   }
-
   // Si algún NPC se movió, avisamos al cliente con un mensaje específico.
   // Esto NO crea NPCs. Solo actualiza su posición visual.
   for (uint32_t npcId : result.npcsMoved)

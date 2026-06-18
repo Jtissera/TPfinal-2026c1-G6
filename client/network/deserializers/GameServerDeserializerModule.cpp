@@ -254,10 +254,11 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
         static_cast<uint8_t>(ServerOpCode::MSG_GOLD_ON_GROUND),
         [](PacketReader &reader) -> std::unique_ptr<Message>
         {
+            const uint32_t instanceId = reader.readUint32();
             const uint32_t amount = reader.readUint32();
             const int x = reader.readUint16();
             const int y = reader.readUint16();
-            return std::make_unique<GoldOnGroundMessage>(amount, x, y);
+            return std::make_unique<GoldOnGroundMessage>(instanceId,amount, x, y);
         });
 
     registry.registerDeserializer(

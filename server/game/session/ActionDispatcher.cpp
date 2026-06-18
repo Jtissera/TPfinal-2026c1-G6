@@ -1,5 +1,6 @@
 #include "ActionDispatcher.h"
 
+#include "common/network/messages/client/inventory/pickItemMessage.h"
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
 #include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/inventory/goldOnGroundMessage.h"
@@ -106,17 +107,24 @@ void ActionDispatcher::handleMove(uint32_t id, const Message& msg,GameWorld& wor
     ));
   }
 }
+
 void ActionDispatcher::handlePickItem(uint32_t id, const Message& msg,GameWorld& world, Monitor& monitor) {
     Player& p = world.getPlayer(id);
 
-    auto item = world.pickItemAt(p.getTileX(), p.getTileY());
-    if (item && p.getInventory().addItem(std::move(*item)))
-        sendInventory(id, p, monitor);
+    const auto& pickMsg = static_cast<const PickItemMessage&>(msg);
 
-    auto gold = world.pickGoldAt(p.getTileX(), p.getTileY());
-    if (gold) {
-        p.addGold(*gold);
-        sendStats(id, p, monitor);
+    if (pickMsg.getIsGold()) {
+        auto gold = world.pickGoldById(pickMsg.getInstanceId());
+        if (gold) {
+            p.addGold(*gold);
+            sendStats(id, p, monitor);
+        }
+        return;
+    }
+
+    auto item = world.pickItemById(pickMsg.getInstanceId());
+    if (item && p.getInventory().addItem(std::move(*item))) {
+        sendInventory(id, p, monitor);
     }
 }
 
@@ -452,36 +460,33 @@ void ActionDispatcher::handleAttackPlayer(
         return;
     }
 
-    // Si mató, primero procesamos la muerte.
-    // Esto aplica:
-    // - estado DEAD/ghost al target
-    // - oro seguro del muerto
-    // - oro en exceso al attacker
-    // - experiencia por kill si está dentro de handlePlayerDeath
     if (result.killed || target.getHp() <= 0) {
-        world.handlePlayerDeath(targetId, attackerId);
+        GameWorld::DeathResult deathResult = world.handlePlayerDeath(targetId, attackerId);
 
-        // El atacante pudo recibir oro, exp y level up.
+        if (deathResult.excessGold > 0) {
+            monitor.broadcast(std::make_shared<const GoldOnGroundMessage>(
+                deathResult.goldInstanceId,
+                deathResult.excessGold,
+                deathResult.tileX,
+                deathResult.tileY));
+        }
+
+        for (const Item& item : deathResult.droppedItems) {
+            monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(
+                item,
+                deathResult.tileX,
+                deathResult.tileY));
+        }
+
         sendStats(attackerId, attacker, monitor);
-        sendInventory(attackerId, attacker, monitor);
         sendLevelUpIfNeeded(attackerId, attacker, monitor);
 
-        // IMPORTANTE:
-        // sendDeath debe ser lo último que se le manda al muerto,
-        // porque aplica ghost visual en el cliente.
+        sendInventory(targetId, target, monitor);
         sendDeath(targetId, target, monitor);
 
         return;
     }
-    //FDFDSFS
-    // Caso normal: golpe válido, no esquivado, no mató.
-    world.giveExperience(attackerId, result.expGained);
-
-    sendStats(attackerId, attacker, monitor);
-    sendStats(targetId, target, monitor);
-    sendLevelUpIfNeeded(attackerId, attacker, monitor);
 }
-
 void ActionDispatcher::handleAttackNpc(
     uint32_t attackerId,
     uint32_t npcId,
@@ -537,6 +542,7 @@ void ActionDispatcher::handleAttackNpc(
 
         if (dropResult.hasGold) {
             monitor.broadcast(std::make_shared<const GoldOnGroundMessage>(
+                dropResult.goldInstanceId,
                 dropResult.goldAmount,
                 dropResult.tileX,
                 dropResult.tileY));
@@ -600,41 +606,67 @@ void ActionDispatcher::handleDropItem(uint32_t id, const Message &msg,
 void ActionDispatcher::handleCheat(uint32_t id, const Message &msg,
                                    GameWorld &world, Monitor &monitor)
 {
+  std::cout << "[CHEAT DEBUG] handleCheat invocado clientId=" << id << std::endl;
   const auto &cheatMsg = static_cast<const CheatMessage &>(msg);
+  std::cout << "[CHEAT DEBUG] tipo=" << static_cast<int>(cheatMsg.getCheat()) << std::endl;
   Player &p = world.getPlayer(id);
-
   switch (cheatMsg.getCheat())
   {
   case CheatType::INFINITE_HP:
+    std::cout << "[CHEAT DEBUG] INFINITE_HP inicio" << std::endl;
     p.toggleInfiniteHp();
+    std::cout << "[CHEAT DEBUG] INFINITE_HP toggle hecho" << std::endl;
     sendStats(id, p, monitor);
+    std::cout << "[CHEAT DEBUG] INFINITE_HP sendStats OK" << std::endl;
     break;
-
   case CheatType::INFINITE_MANA:
+    std::cout << "[CHEAT DEBUG] INFINITE_MANA inicio" << std::endl;
     p.toggleInfiniteMana();
     sendStats(id, p, monitor);
+    std::cout << "[CHEAT DEBUG] INFINITE_MANA fin" << std::endl;
     break;
-
   case CheatType::DIE:
-    if (!p.isAlive() || p.isGhost()) {
-        return;
-    }
-    world.handlePlayerDeath(id,0);
-    sendDeath(id, p, monitor);
-    break;
-
+      std::cout << "[CHEAT DEBUG] DIE inicio" << std::endl;
+      if (!p.isAlive() || p.isGhost()) {
+          std::cout << "[CHEAT DEBUG] DIE early return" << std::endl;
+          return;
+      }
+      {
+      GameWorld::DeathResult deathResult = world.handlePlayerDeath(id, 0);
+      std::cout << "[CHEAT DEBUG] DIE handlePlayerDeath OK excessGold=" << deathResult.excessGold << std::endl;
+      if (deathResult.excessGold > 0) {
+          monitor.broadcast(std::make_shared<const GoldOnGroundMessage>(
+              deathResult.goldInstanceId,
+              deathResult.excessGold,
+              deathResult.tileX,
+              deathResult.tileY));
+          std::cout << "[CHEAT DEBUG] DIE gold broadcast OK" << std::endl;
+      }
+      for (const Item& item : deathResult.droppedItems) {
+          monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(item,deathResult.tileX,deathResult.tileY));
+      }
+      std::cout << "[CHEAT DEBUG] DIE items broadcast OK" << std::endl;
+      }
+      sendDeath(id, p, monitor);
+      std::cout << "[CHEAT DEBUG] DIE sendDeath OK" << std::endl;
+      break;
   case CheatType::ADD_GOLD:
+          std::cout << "[CHEAT DEBUG] ADD_GOLD inicio" << std::endl;
           p.addGold(1000);
           sendInventory(id,p,monitor);
+          std::cout << "[CHEAT DEBUG] ADD_GOLD sendInventory OK" << std::endl;
           sendStats(id,p,monitor);
-
+          std::cout << "[CHEAT DEBUG] ADD_GOLD sendStats OK" << std::endl;
       break;
   case CheatType::LEVEL_UP:
+          std::cout << "[CHEAT DEBUG] LEVEL_UP inicio" << std::endl;
           world.giveExperience(id,100000);
           sendStats(id,p,monitor);
           sendLevelUpIfNeeded(id,p,monitor);
+          std::cout << "[CHEAT DEBUG] LEVEL_UP fin" << std::endl;
       break;
   }
+  std::cout << "[CHEAT DEBUG] handleCheat fin" << std::endl;
 }
 
 void ActionDispatcher::handleInteractNpc(uint32_t id, const Message &msg,

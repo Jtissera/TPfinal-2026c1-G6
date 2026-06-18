@@ -38,6 +38,7 @@ struct NpcTickResult
 struct NpcDropResult
 {
     bool hasGold = false;
+    uint32_t goldInstanceId = 0;
     uint32_t goldAmount = 0;
 
     bool hasItem = false;

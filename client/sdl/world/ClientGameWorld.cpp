@@ -115,9 +115,6 @@ void ClientGameWorld::updateRemotePlayerPosition(uint32_t entityId, float x, flo
 
     if (it == remotePlayers.end())
     {
-        std::cout << "[CLIENT_WORLD][WARN] Movimiento recibido para remoto no spawneado. id="
-                  << entityId
-                  << std::endl;
         return;
     }
 
@@ -160,9 +157,6 @@ void ClientGameWorld::updateRemotePlayerEquipment(uint32_t entityId, const Equip
 
     remotePlayer.setEquipment(equipment, itemCatalog);
 
-    std::cout << "[CLIENT_WORLD] Equipment remoto actualizado. id="
-              << entityId
-              << std::endl;
 }
 
 void ClientGameWorld::appendRemoteAttackTargets(

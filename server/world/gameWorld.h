@@ -51,6 +51,14 @@ public:
     uint16_t maxHp;
     bool hostile;
   };
+  struct DeathResult
+  {
+    uint32_t excessGold;
+    uint32_t goldInstanceId = 0;
+    std::vector<Item> droppedItems;
+    int tileX = 0;
+    int tileY = 0;
+  };
 
   struct WorldTickResult
   {
@@ -58,6 +66,7 @@ public:
     std::vector<uint32_t> playersChanged;
     std::vector<uint32_t> npcsMoved;
     std::vector<NpcDeathResult> npcDeaths;
+
     struct PlayerHit
     {
       uint32_t playerId;
@@ -66,6 +75,7 @@ public:
     std::vector<PlayerHit> playerHits;
     std::vector<InstanceEntry> instanceTransitions;
     std::vector<NpcSpawnEvent> spawnedNpcs;
+    std::vector<std::pair<uint32_t, DeathResult>> playerDeathsByNpc;
   };
 
   void addPlayer(Player player);
@@ -85,19 +95,16 @@ public:
   const Tile &getTileAt(int tileX, int tileY) const;
 
 
-  struct DeathResult
-  {
-    uint32_t excessGold;
-    std::vector<Item> droppedItems;
-  };
+
   void giveExperience(uint32_t playerId, uint32_t exp, float xpMultiplier = 1.0f);
   DeathResult handlePlayerDeath(uint32_t targetId, uint32_t attackerId);
 
   void addItemOnGround(Item item, int tileX, int tileY);
-  std::optional<Item> pickItemAt(int tileX, int tileY);
+  std::optional<Item> pickItemById(uint32_t instanceId);
 
-  void addGoldOnGround(uint32_t amount, int tileX, int tileY);
-  std::optional<uint32_t> pickGoldAt(int tileX, int tileY);
+  uint32_t addGoldOnGround(uint32_t amount, int tileX, int tileY);
+  std::optional<uint32_t> pickGoldById(uint32_t instanceId);
+  const GroundManager& getGroundManager() const {return groundManager;}
 
   void spawnNpc(const std::string &typeName, int tileX, int tileY);
 

@@ -36,6 +36,9 @@
 #include "common/network/messages/server/player/playerResurrectedMessage.h"
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
 #include "common/network/messages/client/inventory/useItemMessage.h"
+#include "common/network/messages/server/inventory/goldOnGroundMessage.h"
+#include "common/network/messages/server/inventory/itemOnGroundMessage.h"
+#include "common/network/messages/server/inventory/itemPickedMessage.h"
 #include "common/network/messages/server/system/mapChangedMessage.h"
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
@@ -88,7 +91,8 @@ private:
     PlayerDto playerDto;
 
     std::map<uint32_t, Entity *> enemies;
-
+    std::map<uint32_t,Entity*> groundItems;
+    std::map<uint32_t,Entity*> groundGold;
     AttackSystem attackSystem;
     PlayerViewState playerState;
     InventoryViewState inventoryState;
@@ -191,9 +195,14 @@ private:
     void handleNpcHealth(const NpcHealthMessage &msg);
     void handleNpcMove(const NpcMoveMessage &msg);
     void handlePlayerResurrected(const PlayerResurrectedMessage &msg);
+    // FIND (Game.h):
     void handleEntityDespawn(const EntityDespawnMessage &msg);
     void clearCurrentScene();
     void handleMapChanged(const MapChangedMessage &msg);
+
+    void handleItemOnGround(const ItemOnGroundMessage &msg);
+    void handleGoldOnGround(const GoldOnGroundMessage &msg);
+    void handleItemPicked(const ItemPickedMessage &msg);
 };
 
 #endif // PRUEBA_SDL_GAME_H

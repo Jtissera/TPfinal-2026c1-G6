@@ -78,4 +78,5 @@ private:
     void sendInventoryTo(uint32_t playerId);
     PlayerDto buildPlayerDto(const Player& player) const;
     void sendExistingNpcsTo(uint32_t clientId);
+    void sendExistingGroundItemsTo(uint32_t clientId);
 };

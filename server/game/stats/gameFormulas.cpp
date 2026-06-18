@@ -117,9 +117,9 @@ float GameFormulas::calcManaRegenMeditating(const ClassStats& cls,
 
 std::string GameFormulas::rollNpcDrop(ZoneType zone) const {
     const double nothingChance =
-        config["npc"]["drop_chance_nothing"].value_or<double>(0.80);
+        config["npc"]["drop_chance_nothing"].value_or<double>(0.0);
     const double goldChance =
-        config["npc"]["drop_chance_gold"].value_or<double>(0.08);
+        config["npc"]["drop_chance_gold"].value_or<double>(0.7);
 
     const int roll = std::rand() % 100;
     const double rollPct = static_cast<double>(roll) / 100.0;

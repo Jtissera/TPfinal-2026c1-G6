@@ -23,20 +23,15 @@ protected:
 TEST_F(IntegrationTest, NpcKillsPlayerDropsItemCanBePickedUp)
 {
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
-
   Player p = makePlayer(1, 5, 5, 6);
   p.getInventory().addItem(makeWeaponWithId(10, 10, 10));
   world.addPlayer(std::move(p));
-
   world.spawnNpc("goblin", 5, 6);
-
   auto result = world.tick(0.016f);
-
   EXPECT_FALSE(result.playerHits.empty());
-
   if (!world.getPlayer(1).isAlive())
   {
-    auto item = world.pickItemAt(5, 5);
+    auto item = world.pickItemById(10);
     EXPECT_TRUE(item.has_value());
   }
 }
@@ -46,14 +41,10 @@ TEST_F(IntegrationTest, NpcKillsPlayerDropsItemCanBePickedUp)
 TEST_F(IntegrationTest, PlayerPicksUpWeaponEquipsAndDealsDamage)
 {
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
-
   world.addPlayer(makePlayer(1, 3, 3));
-
   world.addPlayer(makePlayer(2, 3, 4));
-
   world.addItemOnGround(makeWeaponWithId(50, 50, 50), 3, 3);
-
-  auto picked = world.pickItemAt(3, 3);
+  auto picked = world.pickItemById(50);
   ASSERT_TRUE(picked.has_value());
 
   Player &attacker = world.getPlayer(1);

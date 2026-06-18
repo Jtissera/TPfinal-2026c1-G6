@@ -249,29 +249,41 @@ GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t a
               << target.getGold()
               << std::endl;
 
-    // Según alcance actual, el oro en exceso va directo al killer.
-    if (excessGold > 0 && attackerId != 0) {
-        Player& attacker = getPlayer(attackerId);
-        attacker.addGold(excessGold);
+    const int tileX = target.getTileX();
+    const int tileY = target.getTileY();
 
-        std::cout << "[PVP GOLD] killerId="
-                  << attackerId
-                  << " victimId="
+    // El oro en exceso cae al piso, visible para cualquiera.
+    uint32_t goldInstanceId = 0;
+    if (excessGold > 0) {
+        goldInstanceId = addGoldOnGround(excessGold, tileX, tileY);
+
+        std::cout << "[PVP GOLD DROP] victimId="
                   << targetId
                   << " excessGold="
                   << excessGold
-                  << " killerGold="
-                  << attacker.getGold()
-                  << " victimGold="
-                  << target.getGold()
+                  << " instanceId="
+                  << goldInstanceId
+                  << " tile=(" << tileX << "," << tileY << ")"
                   << std::endl;
     }
 
     std::vector<Item> items = target.purgeInventoryOnDeath();
 
-    occupancy.free(target.getTileX(), target.getTileY());
+    // Los items del muerto tambien caen al piso.
+    for (const Item& item : items) {
+        addItemOnGround(item, tileX, tileY);
+    }
 
-    return {excessGold, std::move(items)};
+    occupancy.free(tileX, tileY);
+
+    DeathResult result;
+    result.excessGold = excessGold;
+    result.goldInstanceId = goldInstanceId;
+    result.droppedItems = std::move(items);
+    result.tileX = tileX;
+    result.tileY = tileY;
+
+    return result;
 }
 
 void GameWorld::addItemOnGround(Item item, int tileX, int tileY)
@@ -279,19 +291,19 @@ void GameWorld::addItemOnGround(Item item, int tileX, int tileY)
     groundManager.addItem(std::move(item), tileX, tileY);
 }
 
-void GameWorld::addGoldOnGround(uint32_t amount, int tileX, int tileY)
+uint32_t GameWorld::addGoldOnGround(uint32_t amount, int tileX, int tileY)
 {
-    groundManager.addGold(amount, tileX, tileY);
+    return groundManager.addGold(amount,tileX,tileY);
 }
 
-std::optional<Item> GameWorld::pickItemAt(int tileX, int tileY)
+std::optional<Item> GameWorld::pickItemById(uint32_t instanceId)
 {
-    return groundManager.pickItemAt(tileX, tileY);
+    return groundManager.pickItemById(instanceId);
 }
 
-std::optional<uint32_t> GameWorld::pickGoldAt(int tileX, int tileY)
+std::optional<uint32_t> GameWorld::pickGoldById(uint32_t instanceId)
 {
-    return groundManager.pickGoldAt(tileX, tileY);
+    return groundManager.pickGoldById(instanceId);
 }
 
 void GameWorld::spawnNpc(const std::string &typeName, int tileX, int tileY)
@@ -665,9 +677,10 @@ void GameWorld::tickNpcs(WorldTickResult &result)
         // Si murió con este golpe, avisamos que murio
         if (target.getHp() == 0)
         {
-            handlePlayerDeath(attack.targetPlayerId, 0);
+            DeathResult deathResult = handlePlayerDeath(attack.targetPlayerId, 0);
 
             result.playersDied.push_back(attack.targetPlayerId);
+            result.playerDeathsByNpc.push_back({attack.targetPlayerId, deathResult});
 
             // Marcamos stats cambiadas después de la muerte.
             result.playersChanged.push_back(attack.targetPlayerId);
@@ -976,13 +989,15 @@ NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
         const uint32_t goldAmount = formulas.calcNpcGoldDrop(npc->getMaxHp());
 
         if (goldAmount > 0) {
-            addGoldOnGround(goldAmount, tileX, tileY);
+            const uint32_t goldInstanceId = addGoldOnGround(goldAmount, tileX, tileY);
 
             dropResult.hasGold = true;
+            dropResult.goldInstanceId = goldInstanceId;
             dropResult.goldAmount = goldAmount;
 
             std::cout << "[NPC DROP] npcId=" << npcId
                       << " GOLD=" << goldAmount
+                      << " instanceId=" << goldInstanceId
                       << " tile=(" << tileX << "," << tileY << ")"
                       << std::endl;
         }

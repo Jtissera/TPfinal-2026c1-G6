@@ -14,6 +14,7 @@ enum GroupLabels : std::size_t
   groupProjectiles,
   groupNPC,
   groupEnemies,
-  groupUI
+  groupUI,
+  groupItems,
 };
 #endif // TALLER_TP_GROUPLABELS_H

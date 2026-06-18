@@ -541,3 +541,25 @@ void AssetManager::applyRemotePlayerAppearance(Entity &entity, const PlayerDto &
               << dto.headId
               << std::endl;
 }
+
+Entity * AssetManager::CreateGroundItem(const ItemView &itemView, int worldX, int worldY) {
+
+    auto &groundItem = manager->addEntity();
+
+    groundItem.addComponent<TransformComponent>(worldX,worldY,itemView.iconSrcH,itemView.iconSrcW,1);
+
+    std::map<std::string, Animation> itemAnimatation;
+    itemAnimatation.emplace("Idle", Animation(0, 1, 1));
+
+    SpriteSheetConfig itemConfig{};
+    itemConfig.frameWidth = itemView.iconSrcW;
+    itemConfig.frameHeight = itemView.iconSrcH;
+    itemConfig.scale = 1;
+    itemConfig.startX = itemView.iconSrcX;
+    itemConfig.startY = itemView.iconSrcY;
+
+    groundItem.addComponent<SpriteComponent>(*this,itemView.textureId,false,itemAnimatation,itemConfig);
+    groundItem.addGroup(groupItems);
+
+    return &groundItem;
+}

@@ -145,9 +145,9 @@ TEST_F(GameWorldTest, ExcessGoldCanBePickedFromGround)
   Player p = makePlayer(1, 3, 3);
   p.addGold(200);
   world.addPlayer(std::move(p));
-
-  world.handlePlayerDeath(1, 0);
-  auto gold = world.pickGoldAt(3, 3);
+  auto deathResult = world.handlePlayerDeath(1,0);
+  EXPECT_GT(deathResult.excessGold,0u);
+  auto gold = world.pickGoldById(deathResult.goldInstanceId);
   EXPECT_TRUE(gold.has_value());
   EXPECT_GT(*gold, 0u);
 }
@@ -158,10 +158,9 @@ TEST_F(GameWorldTest, NoGoldDropIfUnderSafeAmount)
   Player p = makePlayer(1, 3, 3);
   p.addGold(50);
   world.addPlayer(std::move(p));
+  auto deathResult = world.handlePlayerDeath(1,0);
+  EXPECT_EQ(deathResult.excessGold,0u);
 
-  world.handlePlayerDeath(1, 0);
-  auto gold = world.pickGoldAt(3, 3);
-  EXPECT_FALSE(gold.has_value());
 }
 
 TEST_F(GameWorldTest, PlayerDiesAndDropsItems)
@@ -182,9 +181,9 @@ TEST_F(GameWorldTest, DroppedItemCanBePickedFromGround)
   Player p = makePlayer(1, 3, 3);
   p.getInventory().addItem(makeWeapon(5, 10));
   world.addPlayer(std::move(p));
-
-  world.handlePlayerDeath(1, 0);
-  auto item = world.pickItemAt(3, 3);
+  auto deathResult = world.handlePlayerDeath(1, 0);
+  ASSERT_EQ(deathResult.droppedItems.size(), 1u);
+  auto item = world.pickItemById(deathResult.droppedItems[0].instanceId);
   EXPECT_TRUE(item.has_value());
   EXPECT_EQ(item->typeName, "sword");
 }
@@ -193,9 +192,10 @@ TEST_F(GameWorldTest, PlayerCanPickItemFromGround)
 {
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
   world.addPlayer(makePlayer(1, 3, 3));
-  world.addItemOnGround(makeWeapon(5, 10), 3, 3);
-
-  auto item = world.pickItemAt(3, 3);
+  Item weapon = makeWeapon(5, 10);
+  const uint32_t instanceId = weapon.instanceId;
+  world.addItemOnGround(weapon, 3, 3);
+  auto item = world.pickItemById(instanceId);
   EXPECT_TRUE(item.has_value());
   EXPECT_EQ(item->typeName, "sword");
 }
@@ -203,7 +203,7 @@ TEST_F(GameWorldTest, PlayerCanPickItemFromGround)
 TEST_F(GameWorldTest, PickItemEmptyIfNothingThere)
 {
   GameWorld world(makeWalkableMap(), npcFact, itemRepo, config);
-  auto item = world.pickItemAt(3, 3);
+  auto item = world.pickItemById(999);
   EXPECT_FALSE(item.has_value());
 }
 

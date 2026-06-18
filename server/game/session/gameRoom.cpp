@@ -1,5 +1,7 @@
 #include "gameRoom.h"
 
+#include "common/network/messages/server/inventory/goldOnGroundMessage.h"
+#include "common/network/messages/server/inventory/itemOnGroundMessage.h"
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
 
 GameRoom::GameRoom(
@@ -116,6 +118,7 @@ void GameRoom::syncPlayerJoin(uint32_t newPlayerId) {
   sendInventoryTo(newPlayerId);
   sendExistingPlayersTo(newPlayerId);
   sendExistingNpcsTo(newPlayerId);
+  sendExistingGroundItemsTo(newPlayerId);
   broadcastPlayerSpawn(newPlayerId);
 }
 
@@ -196,4 +199,30 @@ void GameRoom::sendExistingNpcsTo(uint32_t clientId) {
     std::cout << "[GameRoom] enviado NPC id=" << npcId
               << " a clientId=" << clientId << std::endl;
   }
+}
+
+void GameRoom::sendExistingGroundItemsTo(uint32_t clientId) {
+  const GroundManager &ground = world.getGroundManager();
+  const auto &items = ground.getAllItems();
+  const auto &gold = ground.getAllGold();
+
+  std::cout << "[GameRoom] sendExistingGroundItemsTo clientId=" << clientId
+            << " itemCount=" << items.size()
+            << " goldCount=" << gold.size() << std::endl;
+
+  for (const auto &groundItem : items) {
+    monitor.sendTo(clientId, std::make_shared<const ItemOnGroundMessage>(
+                                 groundItem.item,
+                                 groundItem.tileX,
+                                 groundItem.tileY));
+  }
+
+  for (const auto &groundGold : gold) {
+    monitor.sendTo(clientId, std::make_shared<const GoldOnGroundMessage>(
+                                 groundGold.instanceId,
+                                 groundGold.amount,
+                                 groundGold.tileX,
+                                 groundGold.tileY));
+  }
+
 }

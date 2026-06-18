@@ -6,11 +6,12 @@
 #include "common/network/messages/message.h"
 
 class GoldOnGroundMessage : public Message {
+    uint32_t instanceId;
     uint32_t amount;
     int x, y;
 public:
-    explicit GoldOnGroundMessage(uint32_t amount, int x, int y);
-
+    explicit GoldOnGroundMessage(uint32_t instanceId,uint32_t amount, int x, int y);
+    uint32_t getInstanceId() const;
     uint32_t getAmount() const;
     int getX() const;
     int getY() const;

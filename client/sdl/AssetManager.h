@@ -12,6 +12,7 @@
 #include "common/queue.h"
 #include "common/network/messages/message.h"
 #include "ECS/SpriteSheetConfig.h"
+#include "state/ItemView.h"
 #include "state/PlayerViewState.h"
 
 class AssetManager
@@ -29,6 +30,7 @@ public:
     Entity* CreateEnemy(const NPCData& data);
     Entity* CreatePlayer(const PlayerDto& data);
     Entity* CreateRemotePlayer(const PlayerDto& data);
+    Entity* CreateGroundItem(const ItemView& itemView, int worldX, int worldY);
 
     //texture management
     void AddTexture(std::string id, const char* path);
@@ -55,6 +57,8 @@ public:
     void applyPlayerAppearance(Entity& entity, const PlayerViewState& playerState);
 
     void applyRemotePlayerAppearance(Entity& entity, const PlayerDto& dto);
+
+
 private:
 
     Manager* manager;
