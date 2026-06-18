@@ -64,6 +64,21 @@ void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
 
   map = new Map(manager, *assets, "terrain", 3, 32);
   map->LoadMap(mapPath);
+
+  // Audio — cargar musica y efectos de sonido.
+  // Si SDL_mixer no está disponible o falta algún archivo, el juego sigue sin audio.
+  audioManager.loadMusic("assets/audio/music_game.mp3");
+  audioManager.loadEffect("attack",    "assets/audio/sfx_attack.ogg");
+  audioManager.loadEffect("hit",       "assets/audio/sfx_hit.ogg");
+  audioManager.loadEffect("die",       "assets/audio/sfx_die.ogg");
+  audioManager.loadEffect("levelup",   "assets/audio/sfx_levelup.ogg");
+  audioManager.loadEffect("equip",     "assets/audio/sfx_equip.ogg");
+  audioManager.loadEffect("potion",    "assets/audio/sfx_potion.ogg");
+  audioManager.loadEffect("resurrect", "assets/audio/sfx_resurrect.ogg");
+  audioManager.loadEffect("magic",        "assets/audio/sfx_attack_magic.ogg");
+  audioManager.loadEffect("meditate",     "assets/audio/sfx_meditate.ogg");
+  audioManager.loadEffect("npc_interact", "assets/audio/sfx_npc_interact.ogg");
+  audioManager.playMusic();
 }
 
 void Game::handleEvents()
@@ -160,6 +175,7 @@ void Game::handleEvents()
           continue;
 
         clickedNpc = true;
+        audioManager.playEffect("npc_interact");
 
         if (npcEntity->hasComponent<NpcTypeComponent>())
         {
@@ -213,6 +229,11 @@ void Game::handleEvents()
 
       attackSystem.handleMouseClick(mouseX, mouseY, camera, attackTargets,
                                     sendQueue, equippedWeapon);
+      if (equippedWeapon != nullptr &&
+          equippedWeapon->type == ClientItemType::MagicWeapon)
+        audioManager.playEffect("magic");
+      else
+        audioManager.playEffect("attack");
     }
 
     if (event.type == SDL_KEYDOWN &&
@@ -1061,10 +1082,7 @@ void Game::handleInventorySlotClick(int slotIndex)
   if (item.type == ClientItemType::HealthPotion ||
       item.type == ClientItemType::ManaPotion)
   {
-
-    std::cout << "[INVENTORY] pedido usar poción item=" << item.itemName
-              << " instanceId=" << item.instanceId << std::endl;
-
+    audioManager.playEffect("potion");
     sendQueue->try_push(
         std::make_shared<const UseItemMessage>(item.instanceId));
     return;
@@ -1082,8 +1100,7 @@ void Game::handleInventorySlotClick(int slotIndex)
     return;
   }
 
-  // Por ahora, todo click sobre item equipable se manda al server.
-  // El cliente NO equipa localmente.
+  audioManager.playEffect("equip");
   sendQueue->try_push(
       std::make_shared<const EquipItemMessage>(item.instanceId));
 }
@@ -1962,6 +1979,7 @@ void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg)
     equipmentState.armor = std::nullopt;
     equipmentState.shield = std::nullopt;
 
+    audioManager.playEffect("die");
     applyLocalPlayerGhostState();
     return;
   }
@@ -1981,6 +1999,8 @@ void Game::handlePlayerStats(const PlayerStatsMessage &stats)
     hasReceivedValidPlayerStats = true;
   }
 
+  const int prevHp = playerState.hp;
+
   playerState.maxHp = stats.getMaxHp();
   playerState.mana = stats.getMana();
   playerState.maxMana = stats.getMaxMana();
@@ -1989,8 +2009,7 @@ void Game::handlePlayerStats(const PlayerStatsMessage &stats)
   playerState.level = stats.getLevel();
   playerState.gold = stats.getGold();
 
-  // Si el server dice HP 0, el jugador local debe quedar fantasma,
-  // aunque todavía no haya llegado o ya haya llegado MSG_PLAYER_DIED.
+  // Si el server dice HP 0, el jugador local debe quedar fantasma.
   if (serverHp <= 0)
   {
     playerState.isDead = true;
@@ -2006,6 +2025,10 @@ void Game::handlePlayerStats(const PlayerStatsMessage &stats)
     reviveLocalPlayer(serverHp);
     return;
   }
+
+  // Sonido de daño recibido: HP bajó y el jugador estaba vivo.
+  if (hasReceivedValidPlayerStats && serverHp < prevHp)
+    audioManager.playEffect("hit");
 
   playerState.hp = serverHp;
 }
@@ -2218,6 +2241,7 @@ void Game::handleLevelUp(const LevelUpMessage &msg)
   if (updatedPlayerId == static_cast<uint32_t>(playerDto.playerID))
   {
     playerState.level = newLevel;
+    audioManager.playEffect("levelup");
     return;
   }
 
@@ -2361,9 +2385,7 @@ void Game::handlePlayerResurrected(const PlayerResurrectedMessage &msg)
   if (resurrectedId == static_cast<uint32_t>(playerDto.playerID))
   {
     localGhostStateApplied = false;
-
-    // Si tu reviveLocalPlayer espera HP, usá el HP actual del playerState
-    // o un valor mínimo. Después PlayerStatsMessage va a corregirlo.
+    audioManager.playEffect("resurrect");
     reviveLocalPlayer(playerState.hp > 0 ? playerState.hp : 1);
     return;
   }
@@ -2511,6 +2533,9 @@ void Game::handleChatNotification(const ChatNotificationMessage &msg)
 {
   const std::string &text = msg.getText();
   const ChatMsgType type = msg.getMsgType();
+
+  if (text.find("Empezaste a meditar") != std::string::npos)
+    audioManager.playEffect("meditate");
 
   std::string::size_type start = 0;
   std::string::size_type pos;
