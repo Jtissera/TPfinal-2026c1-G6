@@ -53,7 +53,6 @@ public:
         const SDL_Rect& camera,
         const std::vector<AttackTarget>& targets,
         Queue<std::shared_ptr<const Message>>* sendQueue,
-        Entity* player,
         const ItemView* equippedWeapon
     );
 
@@ -79,13 +78,9 @@ public:
     // Vida máxima del enemigo.
     int getEnemyMaxHealth(uint32_t enemyId) const;
 
-    // Indica si el enemigo está muerto.
-    bool isEnemyDead(uint32_t enemyId) const;
 
     // Actualiza la vida del enemigo desde el servidor.
     void setEnemyHealth(uint32_t enemyId, int hp, int maxHp);
-
-    void handleMouseClick(int screenX, int screenY, const SDL_Rect &camera, const std::vector<AttackTarget> &targets, Queue<std::shared_ptr<const Message>> *sendQueue, Entity *player, const ItemView *equippedWeapon);
 
     void triggerAttackEffect(uint32_t targetId, Entity *targetEntity,
                              const SDL_Rect &camera, bool isMagicWeapon);

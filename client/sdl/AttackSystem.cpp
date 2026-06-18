@@ -11,7 +11,6 @@ void AttackSystem::handleMouseClick(
     const SDL_Rect& camera,
     const std::vector<AttackTarget>& targets,
     Queue<std::shared_ptr<const Message>>* sendQueue,
-    Entity* player,
     const ItemView* equippedWeapon
 ) {
     for (const AttackTarget& target : targets) {

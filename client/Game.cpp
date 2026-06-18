@@ -188,7 +188,9 @@ void Game::handleEvents()
         return;
       }
 
-      if (isLocalPlayerDead())
+      if (isLocalPlayerDead()) {
+        return;
+      }
 
       std::vector<AttackTarget> attackTargets;
 
@@ -210,7 +212,7 @@ void Game::handleEvents()
       }
 
       attackSystem.handleMouseClick(mouseX, mouseY, camera, attackTargets,
-                                    sendQueue, player, equippedWeapon);
+                                    sendQueue, equippedWeapon);
     }
 
     if (event.type == SDL_KEYDOWN &&
