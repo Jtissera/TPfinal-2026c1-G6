@@ -13,8 +13,9 @@ void LobbyClientDeserializersModule::registerDeserializers(
       [](PacketReader &reader) -> std::unique_ptr<Message> {
         auto gameName = reader.readString();
         auto maxPlayers = reader.readUint8();
-        return std::make_unique<CreateGameMessage>(std::move(gameName),
-                                                   maxPlayers);
+        auto mapPath = reader.readString();
+        return std::make_unique<CreateGameMessage>(
+            std::move(gameName), maxPlayers, std::move(mapPath));
       });
 
   registry.registerDeserializer(
@@ -28,5 +29,12 @@ void LobbyClientDeserializersModule::registerDeserializers(
       static_cast<uint8_t>(ClientOpCode::MSG_LEAVE_GAME),
       [](PacketReader &) -> std::unique_ptr<Message> {
         return std::make_unique<LeaveGameMessage>();
+      });
+
+  registry.registerDeserializer(
+      static_cast<uint8_t>(ClientOpCode::MSG_LOGIN),
+      [](PacketReader &reader) -> std::unique_ptr<Message> {
+        auto characterName = reader.readString();
+        return std::make_unique<LoginMessage>(std::move(characterName));
       });
 }

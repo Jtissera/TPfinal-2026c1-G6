@@ -21,7 +21,7 @@ std::optional<CityCommand> CityCommandParser::parse(const std::string &raw)
     ss >> verb;
     verb = toLower(verb);
 
-    CityCommand cmd; // CAMBIAR LOS IFS
+    CityCommand cmd;
 
     if (verb == "resucitar")
     {
@@ -80,6 +80,12 @@ std::optional<CityCommand> CityCommandParser::parse(const std::string &raw)
         return parseGoldOrItem(CityCommand::Type::DEPOSIT);
     if (verb == "retirar")
         return parseGoldOrItem(CityCommand::Type::WITHDRAW);
+
+    if (verb == "lista")
+    {
+        cmd.type = CityCommand::Type::LIST;
+        return cmd;
+    }
 
     return std::nullopt;
 }

@@ -3,6 +3,7 @@
 #include "../game/items/itemRepository.h"
 #include "../resurrection/priestLocator.h"
 #include "../resurrection/resurrectionSystem.h"
+#include "../../common/network/messages/server/player/resurrectionStartedMessage.h"
 #include "cityResult.h"
 #include "../../editor/map/mapData.h"
 #include <toml++/toml.hpp>
@@ -20,6 +21,7 @@ public:
     CityResult handleRemoteResurrect(Player &player); // fantasma lejos: diferido
     CityResult handleHeal(Player &player);
     CityResult handleBuy(Player &player, const std::string &itemName);
+    CityResult handleList() const;
 
 private:
     ItemRepository &itemRepo;

@@ -25,6 +25,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     _map = std::make_unique<MapData>(20, 15);
     _canvas->setMap(_map.get());
+    _tilePalette->setMapType(_map->mapType());
 }
 
 void MainWindow::setupMenuBar()
@@ -188,6 +189,7 @@ void MainWindow::onNewMap()
         tipo);
 
     _canvas->setMap(_map.get());
+    _tilePalette->setMapType(_map->mapType());
     _currentFilePath.clear();
     _unsavedChanges = false;
     updateTitle();
@@ -210,6 +212,7 @@ void MainWindow::onOpenMap()
         MapData loaded = MapSerializer::load(path.toStdString());
         _map = std::make_unique<MapData>(std::move(loaded));
         _canvas->setMap(_map.get());
+        _tilePalette->setMapType(_map->mapType());
         _currentFilePath = path;
         _unsavedChanges = false;
         updateTitle();
@@ -245,13 +248,38 @@ void MainWindow::onSaveMap()
 
 void MainWindow::onSaveMapAs()
 {
+    if (!_map)
+        return;
+
+    QString defaultPath = "assets/sprites/MapAssets/worlds/";
+
+    switch (_map->mapType())
+    {
+    case MapType::DUNGEON:
+        defaultPath += "mazmorra/";
+        break;
+    case MapType::CAVE:
+        defaultPath += "caverna/";
+        break;
+    case MapType::WORLD:
+    default:
+        break;
+    }
+
+    defaultPath += QString::fromStdString(_map->name()) + ".argmap";
+
     QString path = QFileDialog::getSaveFileName(
-        this, "Guardar mapa como", "",
+        this,
+        "Guardar mapa como",
+        defaultPath,
         "Mapas de Argentum (*.argmap);;Todos los archivos (*)");
+
     if (path.isEmpty())
         return;
+
     if (!path.endsWith(".argmap"))
         path += ".argmap";
+
     _currentFilePath = path;
     onSaveMap();
 }

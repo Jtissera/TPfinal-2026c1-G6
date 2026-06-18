@@ -8,14 +8,17 @@
 #include <toml++/toml.hpp>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 #include "../../../common/network/messages/server/lobby/gameListMessage.h"
 #include "../../../common/queue.h"
 #include "../../clientMessage.h"
+#include "../../lobby/instanceTransitionEvent.h"
 #include "../../lobby/leaveEvent.h"
+#include "../../persistence/gameArchive.h"
 #include "../player/Player.h"
 #include "gameRoom.h"
-#include "../../lobby/instanceTransitionEvent.h"
+#include "server/game/clan/clanManager.h"
 
 class GameManager
 {
@@ -23,9 +26,11 @@ public:
   GameManager(NpcFactory &, ItemRepository &,
               Queue<std::shared_ptr<LeaveEvent>> &,
               Queue<std::shared_ptr<InstanceTransitionEvent>> &,
-              const toml::table &);
+              const toml::table &, PlayerArchive &archive,
+              GameArchive &gameArchive);
 
-  uint32_t createGame(const std::string &gameName, uint8_t maxPlayers);
+  uint32_t createGame(const std::string &gameName, uint8_t maxPlayers,
+                      const std::string &mapPath = "");
 
   bool joinGame(uint32_t gameId, uint32_t clientId,
                 Queue<std::shared_ptr<const Message>> &clientQueue);
@@ -39,16 +44,30 @@ public:
   void stopAll();
 
   uint32_t getOriginRoomId(uint32_t instanceRoomId) const;
-  uint32_t getOrCreateInstance(const std::string &mapPath, uint32_t originRoomId);
+  uint32_t getOrCreateInstance(const std::string &mapPath,
+                               uint32_t originRoomId);
   Queue<ClientMessage> &getGameQueue(uint32_t gameId);
-  void broadcastExceptInGame(uint32_t gameId, uint32_t excludeId, const std::shared_ptr<const Message> &msg);
+  void broadcastExceptInGame(uint32_t gameId, uint32_t excludeId,
+                             const std::shared_ptr<const Message> &msg);
   const GameWorld *getGameWorld(uint32_t gameId) const;
   void syncPlayerJoin(uint32_t gameId, uint32_t playerId);
   std::string getRoomMapPath(uint32_t gameId) const;
+  void restoreFromArchive();
+
+  void sendToClient(uint32_t clientId, const std::shared_ptr<const Message> &msg);
+  std::optional<uint32_t> findOnlineClientByNick(const std::string &nick) const;
+  void updatePlayerClanState(const std::string &nick, const std::string &clanName, bool isFounder);
+  void unregisterClientForTransition(uint32_t clientId);
+  void broadcastDespawnInRoom(uint32_t fromRoomId, uint32_t clientId);
+  void joinAndAddPlayer(uint32_t gameId, uint32_t clientId,
+                        Queue<std::shared_ptr<const Message>> &clientQueue,
+                        Player player);
 
 private:
   const toml::table &config;
   mutable std::mutex mutex;
+  ClanManager clanManager;
+  GameArchive &gameArchive;
   uint32_t nextGameId = 1;
 
   void cleanEmptyInstances();
@@ -56,8 +75,12 @@ private:
   std::unordered_map<uint32_t, std::unique_ptr<GameRoom>> rooms;
   std::unordered_map<uint32_t, uint32_t> clientRoom;
 
+  std::unordered_map<uint32_t, std::string> clientNick;
+  std::unordered_map<std::string, uint32_t> nickToClient;
+
   NpcFactory &npcFactory;
   ItemRepository &itemRepo;
+  PlayerArchive &archive;
 
   Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue;
   Queue<std::shared_ptr<LeaveEvent>> &leaveQueue;

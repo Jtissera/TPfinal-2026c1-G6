@@ -16,7 +16,7 @@ Game::Game() {}
 void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
                 Queue<std::shared_ptr<const Message>> &sendQ,
                 Queue<std::shared_ptr<const Message>> &receiveQ,
-                const PlayerDto &pDto)
+                const PlayerDto &pDto, const std::string &mapPath)
 {
 
   this->sendQueue = &sendQ;
@@ -60,15 +60,19 @@ void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
       static_cast<uint32_t>(playerDto.playerID), player, *assets);
 
   refreshPlayerEquipmentVisuals();
+  std::cout << "DEBUG MAP PATH: " << mapPath << std::endl;
 
   map = new Map(manager, *assets, "terrain", 3, 32);
-  map->LoadMap("assets/sprites/MapAssets/map.argmap");
+  map->LoadMap(mapPath);
 }
 
 void Game::handleEvents()
 {
   while (SDL_PollEvent(&event))
   {
+    if (miniChat.handleEvent(event))
+      continue;
+
     if (event.type == SDL_QUIT)
     {
       isRunning = false;
@@ -129,10 +133,62 @@ void Game::handleEvents()
         pickupTargets.push_back(GroundPickupTarget{instanceId, true, entity});
       }
 
+
       if (pickUpSystem.handleMouseClick(mouseX, mouseY, pickupTargets, sendQueue))
       {
         return;
       }
+
+
+      bool clickedNpc = false;
+
+      for (auto &npcEntity : manager.getGroup(groupNPC))
+      {
+        if (npcEntity == nullptr)
+          continue;
+
+        if (!npcEntity->hasComponent<SpriteComponent>())
+          continue;
+
+        const SDL_Rect &npcRect =
+            npcEntity->getComponent<SpriteComponent>().getDestRect();
+
+        const bool inside = mouseX >= npcRect.x && mouseX < npcRect.x + npcRect.w &&
+                            mouseY >= npcRect.y && mouseY < npcRect.y + npcRect.h;
+
+        if (!inside)
+          continue;
+
+        clickedNpc = true;
+
+        if (npcEntity->hasComponent<NpcTypeComponent>())
+        {
+          NpcType t = npcEntity->getComponent<NpcTypeComponent>().type;
+
+          if (t == NpcType::PRIEST)
+          {
+            miniChat.appendLine("Sacerdote: /curar /resucitar /comprar <item> /lista", ChatMsgType::INFO);
+          }
+          else if (t == NpcType::MERCHANT)
+          {
+            miniChat.appendLine("Comerciante: /comprar <item> /vender <item> /lista", ChatMsgType::INFO);
+          }
+          else if (t == NpcType::BANKER)
+          {
+            miniChat.appendLine("Banquero: /depositar /retirar", ChatMsgType::INFO);
+          }
+        }
+
+        break;
+      }
+
+      if (clickedNpc)
+      {
+        miniChat.setFocused(true);
+        return;
+      }
+
+      if (isLocalPlayerDead())
 
       std::vector<AttackTarget> attackTargets;
 
@@ -156,6 +212,13 @@ void Game::handleEvents()
       attackSystem.handleMouseClick(mouseX, mouseY, camera, attackTargets,
                                     sendQueue, player, equippedWeapon);
     }
+
+    if (event.type == SDL_KEYDOWN &&
+        event.key.keysym.sym == SDLK_RETURN &&
+        !miniChat.isFocused())
+    {
+      miniChat.setFocused(true);
+    }
   }
 }
 
@@ -172,11 +235,17 @@ void Game::update()
   }
   catch (const ClosedQueue &)
   {
-    std::cerr << "[Game] receiveQueue cerrada, el server se desconectó."
-              << std::endl;
     isRunning = false;
     return;
   }
+
+  if (pendingGhostReapply)
+  {
+    pendingGhostReapply = false;
+    localGhostStateApplied = false;
+    applyLocalPlayerGhostState(false);
+  }
+
   Vector2D playerPos = player->getComponent<TransformComponent>().position;
   camera.x = static_cast<int>(playerPos.x) - 450;
   camera.y = static_cast<int>(playerPos.y) - 343;
@@ -197,10 +266,18 @@ void Game::update()
   prevCamera = camera;
 
   UpdateContext updateContext{SDL_GetKeyboardState(nullptr), sendQueue, camera,
-                              cameraMoved};
+                              cameraMoved, miniChat.isFocused()};
   manager.refresh();
   manager.update(updateContext);
 
+  if (miniChat.hasPendingInput())
+  {
+    std::string text = miniChat.consumeInput();
+    // targetId = 0: el servidor lo ignora para chat general y comandos.
+    // Para /curar, /depositar etc. el servidor busca NPC adyacente.
+    sendQueue->try_push(
+        std::make_shared<const ChatMessage>(std::move(text), 0u));
+  }
   attackSystem.update();
   if (isLocalPlayerDead())
   {
@@ -217,11 +294,7 @@ void Game::update()
 
 void Game::render()
 {
-
-  // Limpia la pantalla antes de dibujar el nuevo frame.
   SDL_RenderClear(renderer);
-
-  // Limita el dibujado al área del mapa, para que no invada el HUD.
   SDL_Rect mapArea = {0, 33, 900, 687};
   SDL_RenderSetClipRect(renderer, &mapArea);
 
@@ -230,36 +303,129 @@ void Game::render()
   for (auto &t : manager.getGroup(groupMap))
     t->draw(renderContext);
 
-  for (auto &p : manager.getGroup(groupPlayers))
+  if (map != nullptr)
   {
-    drawEquippedEntity(p, renderContext);
+    map->renderLayer(renderer, camera, mapArea, false);
+  }
+
+  struct RenderObject
+  {
+    int yFootprint;
+    std::function<void()> drawFunc;
+  };
+
+  std::vector<RenderObject> ySorted;
+  ySorted.reserve(512);
+
+  if (map != nullptr)
+  {
+    const int hudOffsetY = 133;
+    map->forEachVisibleTopTile(camera, mapArea, [this, hudOffsetY, &ySorted](const TileEntry &t)
+                               {
+    RenderObject obj;
+    obj.yFootprint = t.groundY;
+    obj.drawFunc = [this, hudOffsetY, t]() {
+        SDL_Rect dst = {
+            t.destRect.x - camera.x,
+            t.destRect.y - camera.y + hudOffsetY,
+            t.destRect.w,
+            t.destRect.h
+        };
+        SDL_RenderCopy(renderer, t.texture, const_cast<SDL_Rect*>(&t.srcRect), &dst);
+    };
+    ySorted.push_back(std::move(obj)); });
+  }
+  {
+    auto &transform = player->getComponent<TransformComponent>();
+    RenderObject obj;
+
+    int playerHeight = transform.height * transform.scale;
+    obj.yFootprint = static_cast<int>(transform.position.y) + playerHeight;
+
+    obj.drawFunc = [this, &renderContext]()
+    {
+      drawEquippedEntity(player, renderContext);
+    };
+    ySorted.push_back(std::move(obj));
+  }
+
+  if (clientWorld != nullptr)
+  {
+    for (Entity *remoteEntity : clientWorld->getRemotePlayerEntities())
+    {
+      if (remoteEntity == nullptr)
+        continue;
+      auto &transform = remoteEntity->getComponent<TransformComponent>();
+      RenderObject obj;
+
+      obj.yFootprint = static_cast<int>(transform.position.y + (transform.height * transform.scale));
+
+      obj.drawFunc = [remoteEntity, &renderContext]()
+      {
+        if (remoteEntity->hasComponent<EquipmentComponent>())
+          remoteEntity->getComponent<EquipmentComponent>().drawBehind(renderContext);
+        if (remoteEntity->hasComponent<SpriteComponent>())
+          remoteEntity->getComponent<SpriteComponent>().draw(renderContext);
+        if (remoteEntity->hasComponent<EquipmentComponent>())
+          remoteEntity->getComponent<EquipmentComponent>().drawFront(renderContext);
+      };
+      ySorted.push_back(std::move(obj));
+    }
   }
 
   for (const auto &[enemyId, enemy] : enemies)
   {
     if (enemy == nullptr || attackSystem.isEnemyDead(enemyId))
       continue;
-    enemy->draw(renderContext);
+    auto &transform = enemy->getComponent<TransformComponent>();
+    RenderObject obj;
+
+    obj.yFootprint = static_cast<int>(transform.position.y + (transform.height * transform.scale));
+
+    obj.drawFunc = [enemy, &renderContext]()
+    {
+      enemy->draw(renderContext);
+    };
+    ySorted.push_back(std::move(obj));
   }
 
-  for (auto &t : manager.getGroup(groupMapTop))
-    t->draw(renderContext);
-
-  for (auto &n : manager.getGroup(groupNPC))
+  for (auto &npcEntity : manager.getGroup(groupNPC))
   {
-    n->draw(renderContext);
+    if (npcEntity == nullptr)
+      continue;
+
+    auto &transform = npcEntity->getComponent<TransformComponent>();
+    RenderObject obj;
+
+    int screenY = static_cast<int>(transform.position.y - camera.y) + 133;
+
+    int spriteHeightOnScreen = 46 * transform.scale;
+
+    obj.yFootprint = screenY + spriteHeightOnScreen;
+
+    obj.drawFunc = [npcEntity, &renderContext]()
+    {
+      npcEntity->draw(renderContext);
+    };
+    ySorted.push_back(std::move(obj));
   }
   for (auto&item:manager.getGroup(groupItems)) {
     item->draw(renderContext);
   }
 
-  renderEnemyHealthBars();
+  std::stable_sort(ySorted.begin(), ySorted.end(),
+                   [](const RenderObject &a, const RenderObject &b)
+                   {
+                     return a.yFootprint < b.yFootprint;
+                   });
 
+  for (const auto &obj : ySorted)
+    obj.drawFunc();
+
+  renderEnemyHealthBars();
   attackSystem.render(renderer, *assets, camera);
   SDL_RenderSetClipRect(renderer, nullptr);
 
-  // PERF: statusMessage usa textura cacheada (creada en showStatusMessage).
-  // Solo SDL_SetTextureAlphaMod() por frame para el fade — sin alloc.
   if (!statusMessage.empty() && statusMessageTexture != nullptr)
   {
     const Uint32 elapsed = SDL_GetTicks() - statusMessageTimer;
@@ -284,8 +450,47 @@ void Game::render()
       statusMessageTexture = nullptr;
     }
   }
+  if (resurrectionEndTime > 0)
+  {
+    const Uint32 now = SDL_GetTicks();
+    if (now < resurrectionEndTime)
+    {
+      const Uint32 remainingMs = resurrectionEndTime - now;
+      const int seconds = (remainingMs / 1000) + 1;
 
+      std::string countdownText = "Resucitando en " + std::to_string(seconds) + "s...";
+
+      TTF_Font *resFont = assets->GetFont("ao_regular");
+      SDL_Color yellow = {255, 220, 60, 255};
+
+      SDL_Surface *surf = TTF_RenderUTF8_Blended(resFont, countdownText.c_str(), yellow);
+      if (surf)
+      {
+        SDL_Texture *tex = SDL_CreateTextureFromSurface(renderer, surf);
+        if (tex)
+        {
+          SDL_Rect dest = {(900 - surf->w) / 2, (687 - surf->h) / 2, surf->w, surf->h};
+
+          SDL_Rect bg = {dest.x - 10, dest.y - 5, dest.w + 20, dest.h + 10};
+          SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+          SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
+          SDL_RenderFillRect(renderer, &bg);
+          SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
+          SDL_RenderCopy(renderer, tex, nullptr, &dest);
+          SDL_DestroyTexture(tex);
+        }
+        SDL_FreeSurface(surf);
+      }
+    }
+    else
+    {
+      resurrectionEndTime = 0;
+    }
+  }
   renderHUD();
+  TTF_Font *chatFont = assets->GetFont("ao_regular");
+  miniChat.render(renderer, chatFont);
   SDL_RenderPresent(renderer);
 }
 
@@ -313,8 +518,6 @@ void Game::clean()
   // Son propiedad de main().
   renderer = nullptr;
   window = nullptr;
-
-  std::cout << "Game cleaned." << std::endl;
 }
 
 void Game::showStatusMessage(const std::string &msg)
@@ -793,6 +996,8 @@ void Game::loadAssets()
   assets->AddTexture("tile_cavern_vertical_wall", "assets/sprites/MapAssets/cavern_vertical_wall.png");
   assets->AddTexture("tile_cavern_horizontal_wall", "assets/sprites/MapAssets/cavern_horizontal_wall.png");
   assets->AddTexture("tile_dungeon_floor", "assets/sprites/MapAssets/dungeon_floor.png");
+  assets->AddTexture("tile_dungeon_vertical_wall", "assets/sprites/MapAssets/dungeon_vertical_wall.png");
+  assets->AddTexture("tile_dungeon_horizontal_wall", "assets/sprites/MapAssets/dungeon_horizontal_wall.png");
   assets->AddTexture("tile_exit", "assets/sprites/MapAssets/exit.png");
 
   assets->AddTexture("npc_priest", "assets/sprites/npcs/priest.png");
@@ -1064,7 +1269,6 @@ void Game::renderEquippedArmor()
 {
   if (isLocalPlayerDead())
   {
-    showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
   // Si no hay armadura equipada, no dibujamos nada.
@@ -1156,7 +1360,6 @@ void Game::refreshPlayerBodySprite()
 {
   if (isLocalPlayerDead())
   {
-    showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
   // Obtenemos el SpriteComponent del jugador local.
@@ -1197,7 +1400,6 @@ void Game::refreshPlayerEquipmentVisuals()
 {
   if (isLocalPlayerDead())
   {
-    showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
   // Obtenemos el SpriteComponent del jugador local.
@@ -1230,7 +1432,6 @@ void Game::renderEquippedWeapon()
 {
   if (isLocalPlayerDead())
   {
-    showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
 
@@ -1283,7 +1484,6 @@ void Game::renderEquippedShield()
 {
   if (isLocalPlayerDead())
   {
-    showStatusMessage("No puedes usar objetos estando muerto");
     return;
   }
   if (!equipmentState.shield.has_value())
@@ -1418,13 +1618,10 @@ bool Game::isLocalPlayerDead() const
   return playerState.hp <= 0;
 }
 
-void Game::applyLocalPlayerGhostState()
+void Game::applyLocalPlayerGhostState(bool showMessage)
 {
-  // Evita repetir esta lógica todos los frames.
   if (localGhostStateApplied)
-  {
     return;
-  }
 
   localGhostStateApplied = true;
   playerState.isDead = true;
@@ -1434,7 +1631,6 @@ void Game::applyLocalPlayerGhostState()
   if (player != nullptr && player->hasComponent<EquipmentComponent>())
   {
     auto &equipment = player->getComponent<EquipmentComponent>();
-
     equipment.setWeapon(std::nullopt);
     equipment.setShield(std::nullopt);
     equipment.setArmor(std::nullopt);
@@ -1442,9 +1638,9 @@ void Game::applyLocalPlayerGhostState()
   }
 
   assets->applyGhostAppearance(*player);
-  // Mensaje temporal para confirmar el estado.
-  showStatusMessage("Has muerto");
 
+  if (showMessage)
+    showStatusMessage("Has muerto");
 }
 
 void Game::reviveLocalPlayer(int newHp)
@@ -1743,9 +1939,9 @@ void Game::handleEntityMove(const EntityMoveMessage &moveMsg)
                                       moving);
   }
 }
+
 void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg)
 {
-  // ID del jugador muerto enviado por el server.
   const uint32_t deadPlayerId = diedMsg.getId();
 
 
@@ -1755,16 +1951,25 @@ void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg)
     playerState.isDead = true;
     playerState.hp = 0;
     playerState.mana = 0;
+
+    for (auto &slot : inventoryState.slots)
+      slot = std::nullopt;
+
+    equipmentState.weapon = std::nullopt;
+    equipmentState.helmet = std::nullopt;
+    equipmentState.armor = std::nullopt;
+    equipmentState.shield = std::nullopt;
+
     applyLocalPlayerGhostState();
     return;
   }
 
-  // Si murió otro jugador, hay que actualizar su entidad remota.
   if (clientWorld != nullptr)
   {
     clientWorld->applyRemotePlayerGhostState(deadPlayerId);
   }
 }
+
 void Game::handlePlayerStats(const PlayerStatsMessage &stats)
 {
   const int serverHp = stats.getHp();
@@ -1824,14 +2029,12 @@ void Game::handleEntitySpawn(const EntitySpawnMessage &spawnMsg)
 }
 void Game::handleInventoryUpdate(const InventoryUpdateMessage &inventoryMsg)
 {
-
   applyInventoryUpdate(inventoryMsg);
 
-  std::cout << "[CLIENT] MSG_INVENTORY_UPDATE recibido. items="
-            << inventoryMsg.getItems().size() << std::endl;
   if (playerState.isDead || playerState.hp <= 0)
   {
-    applyLocalPlayerGhostState();
+    localGhostStateApplied = false;
+    applyLocalPlayerGhostState(false);
   }
 }
 
@@ -1878,7 +2081,16 @@ void Game::processServerMessage(const Message &msg)
   case ServerOpCode::MSG_NPC_MOVE:
     handleNpcMove(static_cast<const NpcMoveMessage &>(msg));
     return;
+  case ServerOpCode::MSG_ERROR:
+  {
+    const auto &err = static_cast<const ErrorMessage &>(msg);
+    showStatusMessage(err.getReason());
+    std::cerr << "[Game] Error del servidor: " << err.getReason() << std::endl;
+    return;
+  }
   case ServerOpCode::MSG_PLAYER_RESURRECTED:
+    resurrectionEndTime = 0;
+    std::cout << "[CLIENT] MSG_PLAYER_RESURRECTED recibido" << std::endl;
     handlePlayerResurrected(static_cast<const PlayerResurrectedMessage &>(msg));
     return;
   case ServerOpCode::MSG_MAP_CHANGED:
@@ -1896,10 +2108,42 @@ void Game::processServerMessage(const Message &msg)
     handleItemPicked(static_cast<const ItemPickedMessage &>(msg));
     return;
 
+  case ServerOpCode::MSG_CHAT_MESSAGE:
+    handleChatNotification(
+        static_cast<const ChatNotificationMessage &>(msg));
+    return;
+  case ServerOpCode::MSG_RESURRECTION_STARTED:
+  {
+    const auto &resMsg = static_cast<const ResurrectionStartedMessage &>(msg);
+    resurrectionEndTime = SDL_GetTicks() + resMsg.getDelayMs();
+    return;
+  }
+  case ServerOpCode::MSG_COMBAT_LOG:
+  {
+    const auto &combatMsg = static_cast<const CombatLogMessage &>(msg);
+    uint32_t targetId = static_cast<uint32_t>(std::stoul(combatMsg.getText()));
+
+    Entity *targetEntity = nullptr;
+    auto it = enemies.find(targetId);
+    if (it != enemies.end())
+      targetEntity = it->second;
+    else if (clientWorld != nullptr)
+      targetEntity = clientWorld->getRemotePlayerEntity(targetId);
+
+    bool isMagic = equipmentState.weapon.has_value() &&
+                   equipmentState.weapon->type == ClientItemType::MagicWeapon;
+
+    if (targetEntity != nullptr)
+      attackSystem.triggerAttackEffect(targetId, targetEntity, camera, isMagic);
+    return;
+  }
+
     default:
       return;
   }
 }
+
+
 std::optional<ClientEquipmentSlot>
 Game::toClientEquipmentSlot(int index) const
 {
@@ -2252,7 +2496,30 @@ void Game::handleMapChanged(const MapChangedMessage &msg)
   map = new Map(manager, *assets, "terrain", 3, 32);
   map->LoadMap(msg.getMapPath());
 
+  if (playerState.isDead)
+  {
+    pendingGhostReapply = true;
+  }
+
   std::cout << "[Game] ¡Nuevo mapa cargado exitosamente!" << std::endl;
+}
+
+void Game::handleChatNotification(const ChatNotificationMessage &msg)
+{
+  const std::string &text = msg.getText();
+  const ChatMsgType type = msg.getMsgType();
+
+  std::string::size_type start = 0;
+  std::string::size_type pos;
+  while ((pos = text.find('\n', start)) != std::string::npos)
+  {
+    const std::string line = text.substr(start, pos - start);
+    if (!line.empty())
+      miniChat.appendLine(line, type);
+    start = pos + 1;
+  }
+  if (start < text.size())
+    miniChat.appendLine(text.substr(start), type);
 }
 
 

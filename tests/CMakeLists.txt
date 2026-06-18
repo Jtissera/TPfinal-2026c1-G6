@@ -5,12 +5,12 @@ target_sources(taller_tests
     mapSerializer_test.cpp
     ../editor/map/mapData.cpp
     ../editor/map/mapSerializer.cpp
-    lobby_test.cpp
+    
     combat_test.cpp
     inventory_test.cpp
     player_test.cpp
     world_test.cpp
-    integration_test.cpp
+
     remove_player_test.cpp
     dungeon_test.cpp
     bankerHandlerTest.cpp

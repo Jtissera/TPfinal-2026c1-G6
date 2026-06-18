@@ -1,123 +1,152 @@
 #pragma once
 
-#include <string>
-#include <vector>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <string>
+#include <vector>
+#include <optional>
 
 #include "Screen.h"
-#include "../../network/clientProtocolFactory.h"
+#include "../../../common/network/protocol/protocol.h"
 #include "../../../common/network/messages/server/lobby/gameListMessage.h"
 #include "../../../common/dtos/gameTypes.h"
 
-// AR-79 — LobbyScreen
-// Pantalla de lobby visual completa: lista de partidas, crear partida, unirse.
-class PlaceholderLobbyScreen : public Screen {
-public:
-    PlaceholderLobbyScreen(SDL_Renderer* renderer, int windowW, int windowH,
-                            const std::string& fontPath,
-                            Protocol& protocol,
-                            const std::string& username);
-    ~PlaceholderLobbyScreen() override;
+struct MapEntry
+{
+    std::string path;
+    std::string name;
+    uint16_t width = 0;
+    uint16_t height = 0;
+};
 
-    ScreenResult run() override;
-    const PlayerDto& getJoinedPlayerDto() const;
+struct GameEntry
+{
+    uint32_t id;
+    std::string name;
+    int players;
+    int maxPlayers;
+    std::string mapPath;
+};
+
+class PlaceholderLobbyScreen
+{
+public:
+    PlaceholderLobbyScreen(SDL_Renderer *, int windowW, int windowH,
+                           const std::string &fontPath,
+                           Protocol &, const std::string &username);
+    ~PlaceholderLobbyScreen();
+
+    ScreenResult run();
+    const PlayerDto &getJoinedPlayerDto() const;
+
+    std::string getChosenMapPath() const { return chosenMapPath; }
+
 private:
-    // ----------------- Red -----------------
+    int gamesScrollOffset = 0;
+    int hoveredGame = -1;
+
+    std::string chosenMapPath;
+    SDL_Renderer *renderer;
+    int windowW, windowH;
+    TTF_Font *fontTitle = nullptr, *fontMedium = nullptr, *fontSmall = nullptr;
+
+    Protocol &protocol;
+    std::string username;
+    PlayerDto joinedPlayerDto{};
+    bool _readyToPlay = false;
+
+    std::vector<GameEntry> games;
+    int selectedGame = -1;
+
+    std::string newGameName;
+    bool typingNewGame = false;
+
+    std::vector<MapEntry> maps;
+    int selectedMap = 0;
+    int hoveredMap = -1;
+    int mapScrollOffset = 0;
+
+    std::string errorMsg;
+    std::string statusMsg;
+
+    SDL_Rect panel{}, listArea{}, createRow{}, mapsArea{}, buttonArea{};
+    SDL_Rect mapListArea{};
+
+    bool hoverJoin = false, hoverRefresh = false, hoverBack = false, hoverCreate = false;
+
+    void computeLayout();
+
     void fetchGameList();
     void tryCreateGame();
     void tryJoinSelected();
 
-    // ----------------- Loop / input -----------------
-    void render();
-    bool handleEvent(const SDL_Event& e, ScreenResult& out);
+    void scanMaps();
 
-    // ----------------- Render helpers -----------------
+    // Scroll / paginado de listas
+    void clampScrollOffsets();
+    int visibleGamesCount() const;
+    int visibleMapsCount() const;
+
+    bool handleEvent(const SDL_Event &, ScreenResult &);
+    void render();
     void renderBackground();
     void renderPanel();
     void renderHeader();
     void renderGameList();
     void renderCreateSection();
+    void renderMapList();
     void renderStatusBar();
 
-    void drawFilledRoundRect(const SDL_Rect& r, SDL_Color color, int radius = 6);
-    void drawBorderRoundRect(const SDL_Rect& r, SDL_Color color, int radius = 6);
-    void drawButton(const SDL_Rect& r, const char* label,
+    void drawFilledRoundRect(const SDL_Rect &, SDL_Color, int radius = 6);
+    void drawBorderRoundRect(const SDL_Rect &, SDL_Color, int radius = 6);
+    void drawButton(const SDL_Rect &, const char *label,
                     SDL_Color bg, SDL_Color border, bool hovered);
+    SDL_Texture *makeText(const std::string &, TTF_Font *, SDL_Color, SDL_Rect &out);
+    void drawTex(SDL_Texture *, const SDL_Rect &);
+    void drawRect(const SDL_Rect &, SDL_Color, bool fill);
 
-    SDL_Texture* makeText(const std::string& text, TTF_Font* font,
-                          SDL_Color color, SDL_Rect& out);
-    void         drawTex(SDL_Texture* tex, const SDL_Rect& dst);
-    void         drawRect(const SDL_Rect& r, SDL_Color color, bool fill = true);
+    // ── Layout de listas (partidas y mapas) ─────────────────────────────
+    static constexpr int SCROLLBAR_W = 6;
+    static constexpr int SCROLLBAR_GAP = 6;
 
-    // ----------------- Estado -----------------
-    SDL_Renderer* renderer;
-    TTF_Font*     fontTitle  = nullptr;
-    TTF_Font*     fontMedium = nullptr;
-    TTF_Font*     fontSmall  = nullptr;
-    int windowW, windowH;
+    static constexpr int GAME_ROW_H = 36;
+    static constexpr int GAME_ROW_SP = 4;
+    static constexpr int GAME_LIST_HEADER_GAP = 34;
+    static constexpr int GAME_LIST_BOTTOM_PAD = 8;
 
-    Protocol&   protocol;
-    std::string username;
+    static constexpr int MAP_ROW_H = 44;
+    static constexpr int MAP_ROW_SP = 6;
+    static constexpr int MAP_LIST_HEADER_GAP = 34;
+    static constexpr int MAP_LIST_BOTTOM_PAD = 8;
 
-    struct GameEntry {
-        uint32_t    id;
-        std::string name;
-        uint8_t     players;
-        uint8_t     maxPlayers;
-    };
-    std::vector<GameEntry> games;
-    int selectedGame  = -1;
-    int hoveredGame   = -1;
+    static constexpr int CREATE_INPUT_Y_OFFSET = 32;
 
-    std::string newGameName;
-    bool        typingNewGame = false;
-
-    std::string errorMsg;
-    std::string statusMsg;
-    bool        _readyToPlay = false;
-
-    // DTO real del jugador recibido desde el servidor al entrar a una partida.
-    PlayerDto joinedPlayerDto{};
-
-    // Hover sobre botones principales
-    bool hoverJoin    = false;
-    bool hoverRefresh = false;
-    bool hoverBack    = false;
-    bool hoverCreate  = false;
-
-    // Layout — calculado en el constructor
-    SDL_Rect panel{};       // panel central
-    SDL_Rect listArea{};    // zona de la lista de partidas
-    SDL_Rect createArea{};  // zona de crear partida
-    SDL_Rect buttonArea{};  // zona de botones principales
-
-    void computeLayout();
-
-    // ─-----------------─ Paleta -----------------
-    static constexpr SDL_Color C_BG         = {10,  8,   22,  255};
-    static constexpr SDL_Color C_PANEL      = {18,  15,  40,  230};
-    static constexpr SDL_Color C_PANEL_BORD = {55,  45,  100, 255};
-    static constexpr SDL_Color C_TITLE      = {220, 185, 80,  255};
-    static constexpr SDL_Color C_SUBTITLE   = {140, 120, 60,  255};
-    static constexpr SDL_Color C_TEXT       = {215, 215, 215, 255};
-    static constexpr SDL_Color C_DIM        = {110, 105, 130, 255};
-    static constexpr SDL_Color C_SEL        = {255, 230, 100, 255};
-    static constexpr SDL_Color C_SEL_BG     = {55,  42,  12,  180};
-    static constexpr SDL_Color C_HOV        = {255, 240, 150, 255};
-    static constexpr SDL_Color C_HOV_BG     = {40,  32,  8,   120};
-    static constexpr SDL_Color C_ROW_EVEN   = {22,  18,  48,  200};
-    static constexpr SDL_Color C_ROW_ODD    = {26,  22,  55,  200};
-    static constexpr SDL_Color C_ROW_BORD   = {50,  44,  85,  255};
-    static constexpr SDL_Color C_FULL       = {160, 55,  55,  255};
-    static constexpr SDL_Color C_AVAIL      = {70,  160, 90,  255};
-    static constexpr SDL_Color C_INPUT_BG   = {20,  16,  45,  220};
-    static constexpr SDL_Color C_INPUT_ACT  = {40,  32,  10,  220};
-    static constexpr SDL_Color C_BTN_JOIN   = {30,  70,  130, 210};
-    static constexpr SDL_Color C_BTN_REF    = {55,  55,  25,  210};
-    static constexpr SDL_Color C_BTN_BACK   = {90,  25,  25,  210};
-    static constexpr SDL_Color C_BTN_CRE    = {30,  100, 50,  210};
-    static constexpr SDL_Color C_ERROR      = {220, 65,  65,  255};
-    static constexpr SDL_Color C_STATUS     = {100, 200, 120, 255};
-    static constexpr SDL_Color C_DIVIDER    = {55,  45,  100, 180};
+    // ── Paleta ───────────────────────────────────────────────────────────
+    static constexpr SDL_Color C_BG = {18, 18, 35, 255};
+    static constexpr SDL_Color C_PANEL = {28, 28, 50, 245};
+    static constexpr SDL_Color C_PANEL_BORD = {80, 60, 140, 200};
+    static constexpr SDL_Color C_TITLE = {220, 200, 100, 255};
+    static constexpr SDL_Color C_SUBTITLE = {140, 120, 200, 255};
+    static constexpr SDL_Color C_TEXT = {220, 220, 220, 255};
+    static constexpr SDL_Color C_DIM = {130, 120, 150, 255};
+    static constexpr SDL_Color C_DIVIDER = {60, 50, 90, 180};
+    static constexpr SDL_Color C_SEL = {100, 160, 255, 255};
+    static constexpr SDL_Color C_SEL_BG = {30, 50, 90, 200};
+    static constexpr SDL_Color C_HOV = {180, 200, 255, 255};
+    static constexpr SDL_Color C_HOV_BG = {40, 40, 70, 180};
+    static constexpr SDL_Color C_ROW_EVEN = {32, 30, 52, 220};
+    static constexpr SDL_Color C_ROW_ODD = {26, 24, 44, 220};
+    static constexpr SDL_Color C_ROW_BORD = {55, 45, 85, 160};
+    static constexpr SDL_Color C_FULL = {220, 80, 80, 255};
+    static constexpr SDL_Color C_AVAIL = {80, 200, 100, 255};
+    static constexpr SDL_Color C_ERROR = {240, 80, 80, 255};
+    static constexpr SDL_Color C_STATUS = {100, 200, 120, 255};
+    static constexpr SDL_Color C_INPUT_BG = {22, 22, 40, 255};
+    static constexpr SDL_Color C_INPUT_ACT = {28, 28, 55, 255};
+    static constexpr SDL_Color C_BTN_JOIN = {30, 60, 110, 255};
+    static constexpr SDL_Color C_BTN_REF = {70, 70, 30, 255};
+    static constexpr SDL_Color C_BTN_BACK = {90, 30, 30, 255};
+    static constexpr SDL_Color C_BTN_CRE = {30, 80, 50, 255};
+    static constexpr SDL_Color C_MAP_SEL = {60, 100, 200, 255};
+    static constexpr SDL_Color C_MAP_SEL_BG = {20, 40, 80, 220};
 };

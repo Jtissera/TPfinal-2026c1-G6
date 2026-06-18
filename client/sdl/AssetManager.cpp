@@ -77,7 +77,7 @@ static SpriteSheetConfig configForNPC(NpcType type)
     case NpcType::PRIEST:
     case NpcType::MERCHANT:
     case NpcType::BANKER:
-        return SpriteSheetConfig{32, 48, 2, 0, 0};
+        return SpriteSheetConfig{27, 46, 2, 0, 0};
 
     default:
         return SpriteSheetConfig{64, 64, 2, 0, 0};
@@ -87,8 +87,11 @@ static SpriteSheetConfig configForNPC(NpcType type)
 Entity *AssetManager::CreateNpc(const NPCData &data)
 {
     auto &npc = manager->addEntity();
+    npc.addComponent<NpcTypeComponent>(data.type);
 
-    npc.addComponent<TransformComponent>(data.x, data.y, 48, 48, 2);
+    const float centeredX = data.x + 48.0f;
+    const float centeredY = data.y + 86.0f;
+    npc.addComponent<TransformComponent>(centeredX, centeredY, 48, 48, 2);
 
     std::map<std::string, Animation> npcAnims;
     npcAnims.emplace("IdleDown", Animation(0, 1, 200));

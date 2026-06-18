@@ -1,7 +1,8 @@
 #include "helpers/testHelpers.h"
 #include <gtest/gtest.h>
 
-TEST(CombatSystemTest, AttackReducesTargetHp) {
+TEST(CombatSystemTest, AttackReducesTargetHp)
+{
   CombatSystem combat(makeConfig());
   Player attacker = makePlayer(1, 0, 0);
   Player target = makePlayer(2, 0, 1);
@@ -13,12 +14,14 @@ TEST(CombatSystemTest, AttackReducesTargetHp) {
   auto result = combat.attack(attacker, target);
 
   EXPECT_TRUE(result.valid);
-  if (!result.dodged) {
+  if (!result.dodged)
+  {
     EXPECT_LT(target.getHp(), hpBefore);
   }
 }
 
-TEST(CombatSystemTest, AttackOutOfRangeIsInvalid) {
+TEST(CombatSystemTest, AttackOutOfRangeIsInvalid)
+{
   CombatSystem combat(makeConfig());
   Player attacker = makePlayer(1, 0, 0);
   Player target = makePlayer(2, 5, 5);
@@ -30,7 +33,8 @@ TEST(CombatSystemTest, AttackOutOfRangeIsInvalid) {
   EXPECT_FALSE(result.valid);
 }
 
-TEST(CombatSystemTest, RangedAttackReachesDistantTarget) {
+TEST(CombatSystemTest, RangedAttackReachesDistantTarget)
+{
   CombatSystem combat(makeConfig());
   Player attacker = makePlayer(1, 0, 0);
   Player target = makePlayer(2, 8, 0);
@@ -42,7 +46,8 @@ TEST(CombatSystemTest, RangedAttackReachesDistantTarget) {
   EXPECT_TRUE(result.valid);
 }
 
-TEST(CombatSystemTest, DeadAttackerCannotAttack) {
+TEST(CombatSystemTest, DeadAttackerCannotAttack)
+{
   CombatSystem combat(makeConfig());
   Player attacker = makePlayer(1, 0, 0, 1);
   Player target = makePlayer(2, 0, 1);
@@ -52,17 +57,19 @@ TEST(CombatSystemTest, DeadAttackerCannotAttack) {
   EXPECT_FALSE(result.valid);
 }
 
-TEST(CombatSystemTest, DeadTargetCannotBeAttacked) {
+TEST(CombatSystemTest, DeadTargetCannotBeAttacked)
+{
   CombatSystem combat(makeConfig());
   Player attacker = makePlayer(1, 0, 0);
   Player target = makePlayer(2, 0, 1, 1);
 
-  target.die(0); 
+  target.die(0);
   auto result = combat.attack(attacker, target);
   EXPECT_FALSE(result.valid);
 }
 
-TEST(CombatSystemTest, ArmorReducesDamage) {
+TEST(CombatSystemTest, ArmorReducesDamage)
+{
   CombatSystem combat(makeConfig());
   Player attacker = makePlayer(1, 0, 0);
   Player noArmor = makePlayer(2, 0, 1);
@@ -81,12 +88,14 @@ TEST(CombatSystemTest, ArmorReducesDamage) {
   attacker2.getInventory().equipItem(1);
   auto r2 = combat.attack(attacker2, withArmor);
 
-  if (r1.valid && !r1.dodged && r2.valid && !r2.dodged) {
+  if (r1.valid && !r1.dodged && r2.valid && !r2.dodged)
+  {
     EXPECT_GE(r1.damage, r2.damage);
   }
 }
 
-TEST(CombatSystemTest, NpcAttacksPlayer) {
+TEST(CombatSystemTest, NpcAttacksPlayer)
+{
   CombatSystem combat(makeConfig());
   static NpcStats stats = makeNpcStats(50, 10, 10);
   Npc npc(1, stats, 0, 0);
@@ -96,7 +105,8 @@ TEST(CombatSystemTest, NpcAttacksPlayer) {
   EXPECT_TRUE(result.valid);
 }
 
-TEST(CombatSystemTest, PlayerAttacksNpc) {
+TEST(CombatSystemTest, PlayerAttacksNpc)
+{
   CombatSystem combat(makeConfig());
   Player attacker = makePlayer(1, 0, 0);
   static NpcStats stats = makeNpcStats(50, 1, 2);
@@ -109,14 +119,17 @@ TEST(CombatSystemTest, PlayerAttacksNpc) {
   EXPECT_TRUE(result.valid);
 }
 
-TEST(CombatSystemTest, PvPRestrictedBelowLevel12) {
+TEST(CombatSystemTest, PvPRestrictedBelowLevel12)
+{
   CombatSystem combat(makeConfig());
   Player attacker = makePlayer(1, 0, 0);
   Player target = makePlayer(2, 0, 1);
 
+  auto world = makeTestWorld();
+
   attacker.getInventory().addItem(makeWeapon(10, 10));
   attacker.getInventory().equipItem(1);
 
-  auto result = combat.attackPlayer(attacker, target);
+  auto result = combat.attackPlayer(attacker, target, *world);
   EXPECT_FALSE(result.valid);
 }

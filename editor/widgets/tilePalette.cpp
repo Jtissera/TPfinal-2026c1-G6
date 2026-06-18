@@ -1,16 +1,28 @@
 #include "tilePalette.h"
 #include <QButtonGroup>
 
+#include <QScrollArea> // <-- Asegúrate de agregar este include
+
 TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
 {
-    auto *mainLayout = new QVBoxLayout(this);
+    setFixedWidth(250);
+
+    auto *outerLayout = new QVBoxLayout(this);
+    outerLayout->setContentsMargins(0, 0, 0, 0);
+
+    auto *scrollArea = new QScrollArea(this);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    auto *scrollContent = new QWidget(scrollArea);
+    auto *mainLayout = new QVBoxLayout(scrollContent);
     mainLayout->setAlignment(Qt::AlignTop);
-    setFixedWidth(160);
+    mainLayout->setContentsMargins(5, 5, 5, 5);
+    mainLayout->setSpacing(8);
 
-    // ── Terreno ───────────────────────────────────────────
-    auto *terrainGroup = new QGroupBox("Terreno", this);
+    auto *terrainGroup = new QGroupBox("Terreno", scrollContent);
     auto *terrainLayout = new QVBoxLayout(terrainGroup);
-
     _rbGrass = new QRadioButton("🌿 Pasto", terrainGroup);
     _rbSand = new QRadioButton("🏜 Arena", terrainGroup);
     _rbWater = new QRadioButton("💧 Agua", terrainGroup);
@@ -24,11 +36,9 @@ TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
     }
     mainLayout->addWidget(terrainGroup);
 
-    // ── Estructuras ───────────────────────────────────────
-    auto *structGroup = new QGroupBox("Estructuras", this);
+    auto *structGroup = new QGroupBox("Estructuras", scrollContent);
     auto *structLayout = new QVBoxLayout(structGroup);
-
-    _rbForest = new QRadioButton("🌲 Arbol", structGroup);
+    _rbForest = new QRadioButton("🌲 Árbol", structGroup);
     _rbCactus = new QRadioButton("🌵 Cactus", structGroup);
     _rbStone = new QRadioButton("🪨 Piedra", structGroup);
 
@@ -40,10 +50,8 @@ TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
     }
     mainLayout->addWidget(structGroup);
 
-    // ── Ciudad ────────────────────────────────────────────
-    auto *cityGroup = new QGroupBox("Ciudad", this);
+    auto *cityGroup = new QGroupBox("Ciudad", scrollContent);
     auto *cityLayout = new QVBoxLayout(cityGroup);
-
     _rbCityFloor = new QRadioButton("🏙 Piso ciudad", cityGroup);
     _rbHouse = new QRadioButton("🏠 Casa", cityGroup);
     _rbChurch = new QRadioButton("⛪ Iglesia", cityGroup);
@@ -57,32 +65,29 @@ TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
     }
     mainLayout->addWidget(cityGroup);
 
-    // ── Subterráneo (NUEVO) ───────────────────────────────────
-    auto *subGroup = new QGroupBox("Subterráneo", this);
+    auto *subGroup = new QGroupBox("Subterráneo", scrollContent);
     auto *subLayout = new QVBoxLayout(subGroup);
-
     _rbCavernFloor = new QRadioButton("🟫 Piso Caverna", subGroup);
     _rbCavernWallH = new QRadioButton("➖ Pared Cav H", subGroup);
     _rbCavernWallV = new QRadioButton("🦺 Pared Cav V", subGroup);
     _rbDungeonFloor = new QRadioButton("⬛ Piso Mazmo", subGroup);
     _rbDungeonWallH = new QRadioButton("➖ Pared Maz H", subGroup);
-    _rbDungeonWallV = new QRadioButton("🪵 Pared Maz V", subGroup);
+    _rbDungeonWallV = new QRadioButton("🦺 Pared Maz V", subGroup);
 
     auto *subBtns = new QButtonGroup(this);
-    for (auto *rb : {_rbCavernFloor, _rbCavernWallH, _rbCavernWallV, _rbDungeonFloor, _rbDungeonWallH, _rbDungeonWallV})
+    for (auto *rb : {_rbCavernFloor, _rbCavernWallH, _rbCavernWallV, _rbDungeonFloor,
+                     _rbDungeonWallH, _rbDungeonWallV})
     {
         subBtns->addButton(rb);
         subLayout->addWidget(rb);
     }
     mainLayout->addWidget(subGroup);
 
-    // ── Especiales ────────────────────────────────────────
-    auto *specGroup = new QGroupBox("Especiales", this);
+    auto *specGroup = new QGroupBox("Especiales", scrollContent);
     auto *specLayout = new QVBoxLayout(specGroup);
-
     _rbDungeonEntrance = new QRadioButton("⬛ Entrada Mazmorra", specGroup);
     _rbCavernEntrance = new QRadioButton("🕳 Entrada Caverna", specGroup);
-    _rbExit = new QRadioButton("🔼 Salida instancia", specGroup);
+    _rbExit = new QRadioButton("🔼 Salida Instancia", specGroup);
 
     auto *specBtns = new QButtonGroup(this);
     for (auto *rb : {_rbDungeonEntrance, _rbCavernEntrance, _rbExit})
@@ -92,17 +97,8 @@ TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
     }
     mainLayout->addWidget(specGroup);
 
-    // Un único ButtonGroup para todos los tiles (exclusión global)
-    auto *allTileBtns = new QButtonGroup(this);
-    allTileBtns->setExclusive(true);
-    for (auto *g : {terrainBtns, structBtns, specBtns, cityBtns, subBtns})
-        for (auto *b : g->buttons())
-            allTileBtns->addButton(b);
-
-    // ── Zona ──────────────────────────────────────────────
-    auto *zoneGroup = new QGroupBox("Zona", this);
+    auto *zoneGroup = new QGroupBox("Zona", scrollContent);
     auto *zoneLayout = new QVBoxLayout(zoneGroup);
-
     _rbZoneSafe = new QRadioButton("🛡 Segura", zoneGroup);
     _rbZoneCombat = new QRadioButton("⚔ Combate", zoneGroup);
     _rbZoneCombat->setChecked(true);
@@ -115,26 +111,43 @@ TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
     }
     mainLayout->addWidget(zoneGroup);
 
-    // ── Propiedades ───────────────────────────────────────
-    auto *propGroup = new QGroupBox("Propiedades", this);
+    auto *propGroup = new QGroupBox("Propiedades", scrollContent);
     auto *propLayout = new QVBoxLayout(propGroup);
-
     _cbWalkable = new QCheckBox("Caminable", propGroup);
     _cbWalkable->setChecked(true);
     propLayout->addWidget(_cbWalkable);
     mainLayout->addWidget(propGroup);
 
-    // ── Señales ───────────────────────────────────────────
-    connect(allTileBtns,
-            static_cast<void (QButtonGroup::*)(QAbstractButton *)>(
-                &QButtonGroup::buttonClicked),
+    scrollArea->setWidget(scrollContent);
+    outerLayout->addWidget(scrollArea);
+
+    auto *allTileBtns = new QButtonGroup(this);
+    allTileBtns->setExclusive(true);
+    for (auto *g : {terrainBtns, structBtns, specBtns, cityBtns, subBtns})
+    {
+        for (auto *b : g->buttons())
+        {
+            allTileBtns->addButton(b);
+        }
+    }
+
+    connect(allTileBtns, static_cast<void (QButtonGroup::*)(QAbstractButton *)>(&QButtonGroup::buttonClicked),
             this, &TilePalette::selectionChanged);
-    connect(zoneBtns,
-            static_cast<void (QButtonGroup::*)(QAbstractButton *)>(
-                &QButtonGroup::buttonClicked),
+    connect(zoneBtns, static_cast<void (QButtonGroup::*)(QAbstractButton *)>(&QButtonGroup::buttonClicked),
             this, &TilePalette::selectionChanged);
-    connect(_cbWalkable, &QCheckBox::stateChanged, this,
-            &TilePalette::selectionChanged);
+    connect(_cbWalkable, &QCheckBox::stateChanged, this, &TilePalette::selectionChanged);
+}
+
+void TilePalette::setMapType(MapType type)
+{
+    bool isInstanced = (type == MapType::DUNGEON || type == MapType::CAVE);
+    _rbExit->setVisible(isInstanced);
+
+    if (!isInstanced && _rbExit->isChecked())
+    {
+        _rbGrass->setChecked(true);
+        emit selectionChanged();
+    }
 }
 
 TileType TilePalette::selectedTileType() const

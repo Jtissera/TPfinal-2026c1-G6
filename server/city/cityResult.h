@@ -5,4 +5,5 @@ struct CityResult
 {
     bool ok = false;
     std::string message;
+    uint32_t actionDelayMs = 0;
 };

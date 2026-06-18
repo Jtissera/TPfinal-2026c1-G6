@@ -7,6 +7,7 @@ host = "localhost"
 port = 8080
 tick_rate_ms = 22          # milisegundos entre ticks del game loop
 max_clients = 50
+persist_every_n_ticks = 300
 
 
 
@@ -63,10 +64,12 @@ drop_chance_potion   = 0.01
 drop_chance_item     = 0.01
 respawn_ms           = 1000
 
-[clans]
-max_members     = 16
-min_level_found = 6          # nivel minimo para fundar un clan
-clan_bonus_per_member = 0.05 # 5% de bonus de ataque/defensa por miembro cercano
+[clan]
+max_members          = 16
+min_level_found      = 6
+proximity_radius_tiles = 15   # tiles de radio para contar aliados cercanos
+bonus_per_ally       = 0.4   # 40% de bonus por aliado cercano
+max_bonus_multiplier = 6.5    # tope: multiplicador máximo de 6.5x
 
 
 [items]

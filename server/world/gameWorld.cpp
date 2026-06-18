@@ -1,15 +1,18 @@
 #include "gameWorld.h"
+#include "../game/clan/clanManager.h"
 
 GameWorld::GameWorld(const std::string &mapPath,
                      NpcFactory &npcFactory,
                      ItemRepository &itemRepo,
-                     const toml::table &config)
+                     const toml::table &config,
+                     ClanManager &clanManager)
     : mapData(MapSerializer::load(mapPath)),
       collision(mapData),
       occupancy(),
       formulas(config),
       npcManager(npcFactory, collision, mapData),
       itemRepo(itemRepo),
+      clanManager(clanManager),
       bankRepo(),
       resurrectionSystem(),
       priestHandler(itemRepo, resurrectionSystem, mapData, config),
@@ -28,13 +31,15 @@ GameWorld::GameWorld(const std::string &mapPath,
 GameWorld::GameWorld(MapData mapData,
                      NpcFactory &npcFactory,
                      ItemRepository &itemRepo,
-                     const toml::table &config)
+                     const toml::table &config,
+                     ClanManager &clanManager)
     : mapData(std::move(mapData)),
       collision(this->mapData),
       occupancy(),
       formulas(config),
       npcManager(npcFactory, collision, this->mapData),
       itemRepo(itemRepo),
+      clanManager(clanManager),
       bankRepo(),
       resurrectionSystem(),
       priestHandler(itemRepo, resurrectionSystem, this->mapData, config),
@@ -224,15 +229,9 @@ GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t a
         giveExperience(attackerId, killExp);
     }
 
-    // Guardamos el oro antes de morir para saber cuánto tenía realmente.
     const uint32_t victimGoldBefore = target.getGold();
-
-    // Calculamos cuánto oro puede conservar el muerto según su nivel.
     const uint32_t safeGold = formulas.calcMaxGold(target.getLevel());
 
-    // Procesamos la muerte.
-    // Esta función deja al muerto con safeGold como máximo
-    // y devuelve el oro excedente.
     const uint32_t excessGold = target.die(safeGold);
 
     std::cout << "[PVP GOLD BEFORE DIE] victimId="
@@ -485,12 +484,19 @@ GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds)
 {
     WorldTickResult result;
 
+    result.resurrectionStarted = std::move(pendingResurrectionStarts);
+    pendingResurrectionStarts.clear();
+
     float deltaMs = deltaSeconds * 1000.0f;
-    resurrectionSystem.tick(deltaMs, [this](uint32_t pid, int tx, int ty)
+    resurrectionSystem.tick(deltaMs, [this, &result](uint32_t pid, int tx, int ty)
                             {
-        Player &p = getPlayer(pid);
-        p.stopResurrection();
-        resurrectPlayer(pid, tx, ty); });
+                                Player &p = getPlayer(pid);
+                                p.stopResurrection();
+                                resurrectPlayer(pid, tx, ty);
+
+                                result.playersResurrected.push_back({pid,
+                                                                     static_cast<uint16_t>(p.getTileX()),
+                                                                     static_cast<uint16_t>(p.getTileY())});  result.playersChanged.push_back(pid); });
 
     tickPlayers(deltaSeconds, result);
     tickNpcs(result);
@@ -593,16 +599,19 @@ void GameWorld::tickPlayers(float deltaSeconds, WorldTickResult &result)
                                ? formulas.calcManaRegenMeditating(player.getCls(), player.getRace(), deltaSeconds)
                                : formulas.calcManaRegen(player.getRace(), deltaSeconds);
 
-        player.tick(hpGained, manaGained);
-        result.playersChanged.push_back(id);
+        // PERF: solo notifica si HP o mana cambiaron realmente este tick.
+        const bool changed = player.tick(hpGained, manaGained);
+        if (changed)
+            result.playersChanged.push_back(id);
     }
 
     for (auto &[id, player] : players)
     {
-        if (!player.isAlive() || player.isGhost() || player.getHp() == 0)
+        if (player.isMeditating())
         {
             continue;
         }
+
         const Tile &tile = mapData.at(
             static_cast<uint16_t>(player.getTileX()),
             static_cast<uint16_t>(player.getTileY()));
@@ -673,6 +682,13 @@ void GameWorld::tickNpcs(WorldTickResult &result)
         // Registramos hit y cambio de stats para que GameLoop mande HUD actualizado.
         result.playerHits.push_back({attack.targetPlayerId, attack.damage});
         result.playersChanged.push_back(attack.targetPlayerId);
+
+        if (!target.getClanName().empty())
+        {
+            result.clanAllyHits.push_back({target.getClanName(),
+                                           target.getName(),
+                                           attack.targetPlayerId});
+        }
 
         // Si murió con este golpe, avisamos que murio
         if (target.getHp() == 0)
@@ -785,21 +801,8 @@ bool GameWorld::damageNpc(uint32_t npcId, int16_t damage, uint32_t attackerPlaye
 
     if (!damaged)
     {
-        std::cout << "[GameWorld] damageNpc: npcManager.damageNpc devolvió false id="
-                  << npcId
-                  << std::endl;
         return false;
     }
-
-    std::cout << "[GameWorld] damageNpc id="
-              << npcId
-              << " damage="
-              << damage
-              << " hp="
-              << hpBefore
-              << " -> "
-              << npc->getHp()
-              << std::endl;
 
     // Si murió, no lo borramos del NpcManager.
     // Lo dejamos en RESPAWNING y liberamos su tile.
@@ -827,10 +830,12 @@ const std::unordered_map<uint32_t, Player> &GameWorld::getPlayers() const { retu
 void GameWorld::loadInitialInventoryForPlayer(Player &player)
 {
 
-    if (!player.getInventory().getItems().empty())
+    if (player.hasReceivedInitialInventory())
     {
         return;
     }
+
+    player.markInitialInventoryGiven();
 
     const std::string &className = player.getCls().name;
 
@@ -948,7 +953,13 @@ CityResult GameWorld::handleCityInteraction(uint32_t playerId,
 CityResult GameWorld::handleRemoteResurrect(uint32_t playerId)
 {
     Player &player = getPlayer(playerId);
-    return priestHandler.handleRemoteResurrect(player);
+    CityResult res = priestHandler.handleRemoteResurrect(player);
+
+    if (res.ok && res.actionDelayMs > 0)
+    {
+        pendingResurrectionStarts.push_back({playerId, res.actionDelayMs});
+    }
+    return res;
 }
 
 std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const
@@ -1026,4 +1037,59 @@ NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
               << std::endl;
 
     return dropResult;
+}
+
+
+std::optional<uint32_t> GameWorld::findPlayerIdByName(const std::string &name) const
+{
+    for (const auto &[id, player] : players)
+    {
+        if (player.getName() == name)
+            return id;
+    }
+    return std::nullopt;
+}
+
+int GameWorld::countClanAlliesNear(const Player &player, int radiusTiles) const
+{
+    auto playerClanInfo = clanManager.findClanInfoForMember(player.getName());
+    if (!playerClanInfo)
+        return 0; // No tiene clan, no tiene aliados cerca
+
+    const std::string &playerClan = playerClanInfo->first;
+    int count = 0;
+
+    for (const auto &[id, other] : players)
+    {
+        if (id == player.getId() || !other.isAlive())
+            continue;
+
+        auto otherClanInfo = clanManager.findClanInfoForMember(other.getName());
+        if (otherClanInfo && otherClanInfo->first == playerClan)
+        {
+            const int dx = std::abs(other.getTileX() - player.getTileX());
+            const int dy = std::abs(other.getTileY() - player.getTileY());
+            if (dx <= radiusTiles && dy <= radiusTiles)
+                count++;
+        }
+    }
+    return count;
+}
+
+std::vector<uint32_t> GameWorld::getOnlineClanMemberIds(const std::string &clanName) const
+{
+    std::vector<uint32_t> clanMembers;
+
+    for (const auto &[id, other] : players)
+    {
+        if (!other.isAlive())
+            continue;
+
+        auto otherClanInfo = clanManager.findClanInfoForMember(other.getName());
+        if (otherClanInfo && otherClanInfo->first == clanName)
+        {
+            clanMembers.push_back(id);
+        }
+    }
+    return clanMembers;
 }

@@ -18,10 +18,12 @@
 #include "server/npc/npcStats.h"
 #include "server/world/CollisionSystem.h"
 #include "server/world/OccupancySystem.h"
+#include "server/game/clan/clanManager.h"
 #include "server/world/gameWorld.h"
 #include <toml++/toml.h>
 
-[[maybe_unused]] static toml::table makeConfig() {
+[[maybe_unused]] static toml::table makeConfig()
+{
   return toml::parse(R"(
         [races.human]
         health       = 1.0
@@ -82,23 +84,27 @@
     )");
 }
 
-[[maybe_unused]] static Inventory makeInventory() {
+[[maybe_unused]] static Inventory makeInventory()
+{
   static auto config = makeConfig();
   return Inventory(config);
 }
 
-[[maybe_unused]] static RaceStats makeRace() {
+[[maybe_unused]] static RaceStats makeRace()
+{
   RaceRepository r(makeConfig());
   return r.get("human");
 }
 
-[[maybe_unused]] static ClassStats makeClass() {
+[[maybe_unused]] static ClassStats makeClass()
+{
   ClassRepository c(makeConfig());
   return c.get("warrior");
 }
 
 [[maybe_unused]] static Player makePlayer(uint32_t id, int tx, int ty,
-                                          int16_t hp = 100) {
+                                          int16_t hp = 100)
+{
   static auto race = makeRace();
   static auto cls = makeClass();
   static auto config = makeConfig();
@@ -110,7 +116,8 @@
 }
 
 [[maybe_unused]] static Item makeWeaponWithId(uint32_t id, uint16_t dmgMin,
-                                              uint16_t dmgMax) {
+                                              uint16_t dmgMax)
+{
   Item item;
   item.catalogId = id;
   item.typeName = "espada";
@@ -122,10 +129,12 @@
   return item;
 }
 
-[[maybe_unused]] static MapData makeWalkableMap(int w = 10, int h = 10) {
+[[maybe_unused]] static MapData makeWalkableMap(int w = 10, int h = 10)
+{
   MapData m(w, h);
   for (int y = 0; y < h; y++)
-    for (int x = 0; x < w; x++) {
+    for (int x = 0; x < w; x++)
+    {
       Tile t;
       t.walkable = true;
       m.at(x, y) = t;
@@ -133,12 +142,14 @@
   return m;
 }
 
-[[maybe_unused]] static ClassStats makeMageClass() {
+[[maybe_unused]] static ClassStats makeMageClass()
+{
   ClassRepository c(makeConfig());
   return c.get("mage");
 }
 
-[[maybe_unused]] static Player makeMagePlayer(uint32_t id, int tx, int ty) {
+[[maybe_unused]] static Player makeMagePlayer(uint32_t id, int tx, int ty)
+{
   static auto race = makeRace();
   static auto cls = makeMageClass();
   static auto config = makeConfig();
@@ -149,7 +160,8 @@
 
 [[maybe_unused]] static NpcStats
 makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
-             int detRange = 5, int homeRange = 10) {
+             int detRange = 5, int homeRange = 10)
+{
   NpcStats s;
   s.typeName = "test_npc";
   s.maxHp = hp;
@@ -166,15 +178,18 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 }
 
 [[maybe_unused]] static Npc makeNpc(uint32_t id, int tx, int ty,
-                                    int16_t hp = 50) {
+                                    int16_t hp = 50)
+{
   static NpcStats stats = makeNpcStats(hp);
   return Npc(id, stats, tx, ty);
 }
 
-[[maybe_unused]] static MapData makeMap(int w, int h, bool walkable = true) {
+[[maybe_unused]] static MapData makeMap(int w, int h, bool walkable = true)
+{
   MapData m(w, h);
   for (int y = 0; y < h; y++)
-    for (int x = 0; x < w; x++) {
+    for (int x = 0; x < w; x++)
+    {
       Tile t;
       t.walkable = walkable;
       m.at(x, y) = t;
@@ -183,10 +198,11 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 }
 
 [[maybe_unused]] static Item makeWeapon(uint16_t dmgMin, uint16_t dmgMax,
-                                        bool ranged = false) {
+                                        bool ranged = false)
+{
   Item item;
   item.catalogId = 1;
-  item.instanceId = 1;  
+  item.instanceId = 1;
   item.typeName = "sword";
   item.slot = ItemSlot::WEAPON;
   item.effect = ItemEffect::NONE;
@@ -196,7 +212,8 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
   return item;
 }
 
-[[maybe_unused]] static Item makeArmor(uint16_t defMin, uint16_t defMax) {
+[[maybe_unused]] static Item makeArmor(uint16_t defMin, uint16_t defMax)
+{
   Item item;
   item.catalogId = 2;
   item.instanceId = 2;
@@ -210,7 +227,8 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 [[maybe_unused]] static Item makeStaff(uint32_t id, ItemEffect effect,
                                        uint16_t dmgMin = 0, uint16_t dmgMax = 0,
                                        uint16_t healAmt = 0,
-                                       uint16_t manaCost = 0) {
+                                       uint16_t manaCost = 0)
+{
   Item item;
   item.catalogId = id;
   item.typeName =
@@ -226,7 +244,8 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 }
 
 [[maybe_unused]] static Item makePotion(uint32_t id, uint16_t healAmt,
-                                        uint16_t manaAmt) {
+                                        uint16_t manaAmt)
+{
   Item item;
   item.catalogId = id;
   item.typeName = healAmt > 0 ? "pocion_vida" : "pocion_mana";
@@ -235,4 +254,16 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
   item.stats.healAmount = healAmt;
   item.stats.manaAmount = manaAmt;
   return item;
+}
+
+[[maybe_unused]] static std::unique_ptr<GameWorld> makeTestWorld()
+{
+  static auto config = makeConfig();
+  static MapData map = makeWalkableMap(20, 20);
+  static ItemRepository itemRepo(config);
+  static NpcRepository npcRepo(config);
+  static NpcFactory npcFactory(npcRepo);
+  static ClanManager clanManager;
+
+  return std::make_unique<GameWorld>(map, npcFactory, itemRepo, config, clanManager);
 }

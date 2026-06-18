@@ -324,3 +324,28 @@ void ClientGameWorld::updateRemotePlayerLevel(
               << newLevel
               << std::endl;
 }
+
+std::vector<Entity *> ClientGameWorld::getRemotePlayerEntities() const
+{
+    std::vector<Entity *> result;
+    result.reserve(remotePlayers.size());
+
+    for (const auto &[id, remotePlayer] : remotePlayers)
+    {
+        Entity *entity = const_cast<RemotePlayer &>(remotePlayer).getEntity();
+        if (entity != nullptr)
+        {
+            result.push_back(entity);
+        }
+    }
+
+    return result;
+}
+
+Entity *ClientGameWorld::getRemotePlayerEntity(uint32_t entityId) const
+{
+    auto it = remotePlayers.find(entityId);
+    if (it == remotePlayers.end())
+        return nullptr;
+    return const_cast<RemotePlayer &>(it->second).getEntity();
+}

@@ -30,16 +30,23 @@
 #include "common/network/messages/server/npc/npcHealthMessage.h"
 #include "common/network/messages/server/npc/npcMoveMessage.h"
 #include "common/network/messages/server/player/levelUpMessage.h"
+#include "common/network/messages/server/player/resurrectionStartedMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
 #include "common/network/messages/server/player/playerResurrectedMessage.h"
 #include "common/network/messages/client/inventory/unequipSlotMessage.h"
+#include "MiniChat.h"
+#include "common/network/messages/server/chat/chatNotificationMessage.h"
+#include "common/network/messages/client/chat/chatMessage.h"
 #include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/inventory/goldOnGroundMessage.h"
 #include "common/network/messages/server/inventory/itemOnGroundMessage.h"
 #include "common/network/messages/server/inventory/itemPickedMessage.h"
 #include "common/network/messages/server/system/mapChangedMessage.h"
+#include "common/network/messages/server/error/errorMessage.h"
+#include "common/network/messages/server/combat/combatLogMessage.h"
+
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
 #include "sdl/GroupLabels.h"
@@ -51,11 +58,11 @@ public:
     Game();
     ~Game() = default;
 
-    void init(SDL_Window *window,
-              SDL_Renderer *renderer,
+    void init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
               Queue<std::shared_ptr<const Message>> &sendQ,
               Queue<std::shared_ptr<const Message>> &receiveQ,
-              const PlayerDto &pDto);
+              const PlayerDto &pDto,
+              const std::string &mapPath);
 
     void handleEvents();
     void update();
@@ -71,6 +78,9 @@ private:
     SDL_Renderer *renderer = nullptr;
     SDL_Event event{};
     Manager manager;
+
+    Uint32 resurrectionEndTime = 0;
+    bool pendingGhostReapply = false;
 
     std::unique_ptr<TextureManager> textureManager;
     std::unique_ptr<AssetManager> assets;
@@ -100,6 +110,7 @@ private:
     InventoryViewState inventoryState;
     EquipmentViewState equipmentState;
     ItemCatalog itemCatalog;
+    MiniChat miniChat;
 
     std::string statusMessage;
     Uint32 statusMessageTimer = 0;
@@ -178,12 +189,12 @@ private:
     void refreshPlayerEquipmentVisuals();
     void renderEnemyHealthBars();
     bool isLocalPlayerDead() const;
-    void applyLocalPlayerGhostState();
+    void applyLocalPlayerGhostState(bool showMessage = true);
     void reviveLocalPlayer(int newHp);
     std::optional<ClientEquipmentSlot> toClientEquipmentSlot(int index) const;
     EquipSlot toServerEquipSlot(ClientEquipmentSlot slot) const;
 
-    // esto debe pasar a otra clase que maneje estos mensajes.
+    void handleChatNotification(const ChatNotificationMessage &msg);
     void processServerMessage(const Message &msg);
     void handleEntityMove(const EntityMoveMessage &msg);
     void handlePlayerDied(const PlayerDiedMessage &msg);

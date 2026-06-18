@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include "common/network/messages/client/combat/attackMessage.h"
+#include "world/RemotePlayer.h"
 
 void AttackSystem::handleMouseClick(
     int screenX,
@@ -42,12 +43,6 @@ void AttackSystem::handleMouseClick(
 
         if (!clickedTarget) continue;
 
-        const int attackRange = attackRangeForWeapon(equippedWeapon);
-
-        if (!isTargetInRange(player, *target.entity, attackRange)) {
-            std::cout << "[ATTACK] fuera de rango visual. "
-                      << "Se manda igual; server valida. Rango=" << attackRange << std::endl;
-        }
 
         sendAttackMessage(target.id, sendQueue);
 

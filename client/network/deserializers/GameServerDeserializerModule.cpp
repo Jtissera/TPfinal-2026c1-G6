@@ -15,6 +15,9 @@
 #include "common/network/messages/server/npc/npcHealthMessage.h"
 #include "common/network/messages/server/npc/npcMoveMessage.h"
 #include "common/network/messages/server/player/EntityDespawnMessage.h"
+#include "common/network/messages/server/chat/chatNotificationMessage.h"
+#include "common/network/messages/server/player/resurrectionStartedMessage.h"
+#include "common/network/messages/server/combat/combatLogMessage.h"
 #include "common/network/protocol/clientOpCode.h"
 
 void GameServerDeserializersModule::registerDeserializers(Registry &registry) const
@@ -248,6 +251,40 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
         {
             const uint32_t id = reader.readUint32();
             return std::make_unique<EntityDespawnMessage>(id);
+        });
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ServerOpCode::MSG_ERROR),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+            std::string errorMsg = reader.readString();
+            std::cout << "[CLIENT PROTOCOL] Deserializado MSG_ERROR: " << errorMsg << std::endl;
+            return std::make_unique<ErrorMessage>(std::move(errorMsg));
+        });
+
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ServerOpCode::MSG_CHAT_MESSAGE),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+            std::string text = reader.readString();
+            auto type = static_cast<ChatMsgType>(reader.readUint8());
+            return std::make_unique<ChatNotificationMessage>(
+                std::move(text), type);
+        });
+
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ServerOpCode::MSG_RESURRECTION_STARTED),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+            const uint32_t delayMs = reader.readUint32();
+            return std::make_unique<ResurrectionStartedMessage>(delayMs);
+        });
+
+    registry.registerDeserializer(
+        static_cast<uint8_t>(ServerOpCode::MSG_COMBAT_LOG),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+            std::string text = reader.readString();
+            return std::make_unique<CombatLogMessage>(std::move(text));
         });
 
     registry.registerDeserializer(

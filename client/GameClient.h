@@ -12,13 +12,14 @@
 #include "common/network/messages/message.h"
 #include "common/queue.h"
 #include "network/clientProtocolFactory.h"
-
-class GameClient {
+class GameClient
+{
 
 public:
   GameClient(Socket &socket, uint32_t idPlayer, const PlayerDto &playerDto,
-             SDL_Window *window, SDL_Renderer *renderer);
+             SDL_Window *window, SDL_Renderer *renderer, const std::string &mapPath);
   void run();
+  bool wasDisconnectedByServer() const { return connectionLost; }
 
 private:
   Socket &socket;
@@ -40,6 +41,10 @@ private:
   ClientReceiver receiver;
 
   Game gameLoop;
+  std::string mapPath;
+
+  std::atomic<bool> connectionLost{false};
+  bool checkSocketStatus();
 };
 
 #endif // TALLER_TP_GAMECLIENT_H

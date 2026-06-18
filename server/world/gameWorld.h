@@ -18,21 +18,26 @@
 #include "../city/merchantHandler.h"
 #include "../city/bankerHandler.h"
 #include "../city/cityNpcDispatcher.h"
+#include "server/game/clan/clanManager.h"
 #include <iostream>
 #include <map>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+#include <cstdlib>
+class ClanManager;
 
 class GameWorld
 {
 public:
   explicit GameWorld(const std::string &mapPath, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config);
+                     ItemRepository &itemRepo, const toml::table &config,
+                     ClanManager &clanManager);
 
   explicit GameWorld(MapData mapData, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config);
+                     ItemRepository &itemRepo, const toml::table &config,
+                     ClanManager &clanManager);
 
   struct InstanceEntry
   {
@@ -75,7 +80,31 @@ public:
     std::vector<PlayerHit> playerHits;
     std::vector<InstanceEntry> instanceTransitions;
     std::vector<NpcSpawnEvent> spawnedNpcs;
+
     std::vector<std::pair<uint32_t, DeathResult>> playerDeathsByNpc;
+
+    struct PlayerResurrection
+    {
+      uint32_t playerId;
+      uint16_t tileX;
+      uint16_t tileY;
+    };
+
+    struct ResurrectStartedInfo
+    {
+      uint32_t playerId;
+      uint32_t delayMs;
+    };
+    std::vector<PlayerResurrection> playersResurrected;
+    std::vector<ResurrectStartedInfo> resurrectionStarted;
+
+    struct ClanAllyHit
+    {
+      std::string clanName;
+      std::string targetName;
+      uint32_t targetId;
+    };
+    std::vector<ClanAllyHit> clanAllyHits;
   };
 
   void addPlayer(Player player);
@@ -120,12 +149,14 @@ public:
   NpcDropResult handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId);
   bool hasPlayer(uint32_t playerId) const;
 
-  Npc& getNpc(uint32_t npcId);
-  const Npc& getNpc(uint32_t npcId) const;
+  std::optional<uint32_t> findPlayerIdByName(const std::string &name) const;
+
+  Npc &getNpc(uint32_t npcId);
+  const Npc &getNpc(uint32_t npcId) const;
 
   // Devuelve una vista de solo lectura de los jugadores del mundo.
   // Se usa para enviar spawns al cliente que acaba de entrar.
-  const std::unordered_map<uint32_t, Player>& getPlayers() const;
+  const std::unordered_map<uint32_t, Player> &getPlayers() const;
   std::pair<int, int> findSafeSpawnNear(int tileX, int tileY) const;
 
   CityResult handleCityInteraction(uint32_t playerId, NpcType npcType,
@@ -133,8 +164,11 @@ public:
   CityResult handleRemoteResurrect(uint32_t playerId);
   std::optional<NpcType> getNpcTypeAtTile(int tileX, int tileY) const;
 
+  int countClanAlliesNear(const Player &player, int radiusTiles) const;
+  std::vector<uint32_t> getOnlineClanMemberIds(const std::string &clanName) const;
+
 private:
-  static constexpr int TILE_SIZE = 96; // a toml
+  static constexpr int TILE_SIZE = 96;            // a toml
   static constexpr float PLAYER_MOVE_STEP = 8.0f; // a toml
 
   MapData mapData;
@@ -143,6 +177,7 @@ private:
   GameFormulas formulas;
   NpcManager npcManager;
   ItemRepository &itemRepo;
+  ClanManager &clanManager;
 
   BankRepository bankRepo;
   ResurrectionSystem resurrectionSystem;
@@ -155,10 +190,13 @@ private:
   GroundManager groundManager;
   SpawnManager spawnManager;
 
+  std::vector<WorldTickResult::ResurrectStartedInfo> pendingResurrectionStarts;
+
   int tileSize;
   float npcRespawnDelayMs = 5000.0f; // toml
 
-  struct GroundItem {
+  struct GroundItem
+  {
     Item item;
     int tileX, tileY;
   };
@@ -182,5 +220,5 @@ private:
   static constexpr int MAX_NPCS = 20; // toml
   static constexpr int SPAWN_BATCH_SIZE = 4; // toml
 
-  std::vector<std::pair<std::string, std::pair<int,int>>> spawnPoints;
+  std::vector<std::pair<std::string, std::pair<int, int>>> spawnPoints;
 };

@@ -2,88 +2,98 @@
 #include "../../Game.h"
 #include "common/network/messages/client/movement/moveMessage.h"
 
+KeyboardController::KeyboardController(Queue<std::shared_ptr<const Message>> &sendQueue)
+    : sendQueue(sendQueue) {}
 
-KeyboardController::KeyboardController(Queue<std::shared_ptr<const Message>>& sendQueue)
-    : sendQueue(sendQueue){}
-
-void KeyboardController::init() {
+void KeyboardController::init()
+{
     transform = &entity->getComponent<TransformComponent>();
-    sprite    = &entity->getComponent<SpriteComponent>();
+    sprite = &entity->getComponent<SpriteComponent>();
 }
 
-void KeyboardController::update(UpdateContext& context) {
-    const Uint8* keys = context.keyboardState;
+void KeyboardController::update(UpdateContext &context)
+{
+    const Uint8 *keys = context.keyboardState;
+
+    const bool canMove = !context.chatFocused;
 
     // Leemos el estado actual del teclado.
-    movingUp    = keys[SDL_SCANCODE_W];
-    movingDown  = keys[SDL_SCANCODE_S];
-    movingLeft  = keys[SDL_SCANCODE_A];
+    movingUp = keys[SDL_SCANCODE_W];
+    movingDown = keys[SDL_SCANCODE_S];
+    movingLeft = keys[SDL_SCANCODE_A];
     movingRight = keys[SDL_SCANCODE_D];
+    if (canMove)
+    {
+        if (movingUp)
+        {
+            lastDirection = FacingDirection::Up;
+            sendMoveIfReady(Direction::UP);
+            sprite->Play("WalkUp");
+            wasMoving = true;
+            return;
+        }
 
-    if (movingUp) {
-        lastDirection = FacingDirection::Up;
-        sendMoveIfReady(Direction::UP);
-        sprite->Play("WalkUp");
-        wasMoving = true;
-        return;
-    }
+        if (movingDown)
+        {
+            lastDirection = FacingDirection::Down;
 
-    if (movingDown) {
-        lastDirection = FacingDirection::Down;
+            sendMoveIfReady(Direction::DOWN);
+            sprite->Play("WalkDown");
 
-        sendMoveIfReady(Direction::DOWN);
-        sprite->Play("WalkDown");
+            wasMoving = true;
+            return;
+        }
 
-        wasMoving = true;
-        return;
-    }
+        if (movingLeft)
+        {
+            lastDirection = FacingDirection::Left;
 
-    if (movingLeft) {
-        lastDirection = FacingDirection::Left;
+            sendMoveIfReady(Direction::LEFT);
+            sprite->Play("WalkLeft");
 
-        sendMoveIfReady(Direction::LEFT);
-        sprite->Play("WalkLeft");
+            wasMoving = true;
+            return;
+        }
 
-        wasMoving = true;
-        return;
-    }
+        if (movingRight)
+        {
+            lastDirection = FacingDirection::Right;
 
-    if (movingRight) {
-        lastDirection = FacingDirection::Right;
+            sendMoveIfReady(Direction::RIGHT);
+            sprite->Play("WalkRight");
 
-        sendMoveIfReady(Direction::RIGHT);
-        sprite->Play("WalkRight");
-
-        wasMoving = true;
-        return;
+            wasMoving = true;
+            return;
+        }
     }
 
     // Si llegamos acá, no hay tecla de movimiento presionada.
     // Primero actualizamos la animación local a Idle.
-    switch (lastDirection) {
-        case FacingDirection::Up:
-            sprite->Play("IdleUp");
-            break;
+    switch (lastDirection)
+    {
+    case FacingDirection::Up:
+        sprite->Play("IdleUp");
+        break;
 
-        case FacingDirection::Down:
-            sprite->Play("IdleDown");
-            break;
+    case FacingDirection::Down:
+        sprite->Play("IdleDown");
+        break;
 
-        case FacingDirection::Left:
-            sprite->Play("IdleLeft");
-            break;
+    case FacingDirection::Left:
+        sprite->Play("IdleLeft");
+        break;
 
-        case FacingDirection::Right:
-            sprite->Play("IdleRight");
-            break;
+    case FacingDirection::Right:
+        sprite->Play("IdleRight");
+        break;
     }
-    if (wasMoving) {
+    if (wasMoving)
+    {
         const Direction stopDirection = toNetworkDirection(lastDirection);
 
         sendQueue.try_push(std::make_shared<const MoveMessage>(
             stopDirection,
-            false
-        ));
+            false));
 
         std::cout << "[CLIENT INPUT] STOP enviado. direction="
                   << static_cast<int>(stopDirection)
@@ -93,9 +103,11 @@ void KeyboardController::update(UpdateContext& context) {
     }
 }
 
-void KeyboardController::sendMoveIfReady(Direction direction) {
+void KeyboardController::sendMoveIfReady(Direction direction)
+{
     const Uint32 now = SDL_GetTicks();
-    if (now - lastMoveSentAt < moveCooldownMs) {
+    if (now - lastMoveSentAt < moveCooldownMs)
+    {
         return;
     }
 
@@ -105,19 +117,21 @@ void KeyboardController::sendMoveIfReady(Direction direction) {
     sendQueue.try_push(std::make_shared<const MoveMessage>(direction, true));
 }
 
-Direction KeyboardController::toNetworkDirection(FacingDirection facing) const {
-    switch (facing) {
-        case FacingDirection::Up:
-            return Direction::UP;
+Direction KeyboardController::toNetworkDirection(FacingDirection facing) const
+{
+    switch (facing)
+    {
+    case FacingDirection::Up:
+        return Direction::UP;
 
-        case FacingDirection::Down:
-            return Direction::DOWN;
+    case FacingDirection::Down:
+        return Direction::DOWN;
 
-        case FacingDirection::Left:
-            return Direction::LEFT;
+    case FacingDirection::Left:
+        return Direction::LEFT;
 
-        case FacingDirection::Right:
-            return Direction::RIGHT;
+    case FacingDirection::Right:
+        return Direction::RIGHT;
     }
     return Direction::DOWN;
 }

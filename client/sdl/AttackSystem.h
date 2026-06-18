@@ -9,13 +9,17 @@
 #include <unordered_set>
 #include <vector>
 #include <cmath>
-#include "state/ItemView.h"
 
+#include "state/ItemView.h"
+#include "world/RemotePlayer.h"
+
+// Representa un efecto visual de ataque activo.
+// Por ahora solo guarda posición, tiempo de creación y duración.
 struct AttackEffect {
-    int x;
-    int y;
-    Uint32 createdAt;
-    Uint32 durationMs = 500;
+    int x;                  // Posición X en coordenadas de mundo.
+    int y;                  // Posición Y en coordenadas de mundo.
+    Uint32 createdAt;       // Momento en que se creó el efecto.
+    Uint32 durationMs = 500;// Duración total del efecto.
 };
 
 struct AttackTarget {
@@ -23,7 +27,21 @@ struct AttackTarget {
     Entity* entity;
 };
 
-class AttackSystem {
+// Resultado de la actualización de persecución de enemigos.
+// Sirve para que Game sepa si el jugador murió durante el ataque enemigo.
+enum class EnemyChaseResult
+{
+    PlayerStillAlive, // El enemigo actualizó persecución/ataque y el jugador sigue vivo.
+    PlayerDied        // Algún enemigo atacó y la vida del jugador llegó a 0.
+};
+
+// Sistema encargado de:
+// - detectar clicks sobre enemigos
+// - crear efectos visuales de ataque
+// - renderizar dichos efectos
+// - más adelante, enviar mensaje real de ataque al servidor
+class AttackSystem
+{
 public:
     AttackSystem() = default;
 
@@ -45,8 +63,15 @@ public:
     // Elimina efectos vencidos.
     void update();
 
-    // Dibuja efectos activos.
-    void render(SDL_Renderer* renderer, AssetManager& assets, const SDL_Rect& camera);
+    // Dibuja los efectos activos.
+    void render(SDL_Renderer* renderer,AssetManager& assets,const SDL_Rect& camera);
+
+    // Indica si el enemigo está muerto temporalmente.
+    bool isEnemyDead(uint32_t enemyId) const;
+
+    // Actualiza respawns de enemigos muertos.
+    // Recibe enemies para poder restaurar la posición original del enemigo.
+    void updateRespawns(std::map<uint32_t, Entity *> &enemies);
 
     // Vida actual del enemigo.
     int getEnemyHealth(uint32_t enemyId) const;
@@ -59,6 +84,11 @@ public:
 
     // Actualiza la vida del enemigo desde el servidor.
     void setEnemyHealth(uint32_t enemyId, int hp, int maxHp);
+
+    void handleMouseClick(int screenX, int screenY, const SDL_Rect &camera, const std::vector<AttackTarget> &targets, Queue<std::shared_ptr<const Message>> *sendQueue, Entity *player, const ItemView *equippedWeapon);
+
+    void triggerAttackEffect(uint32_t targetId, Entity *targetEntity,
+                             const SDL_Rect &camera, bool isMagicWeapon);
 
 private:
     std::vector<AttackEffect> attackEffects;

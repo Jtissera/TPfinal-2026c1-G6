@@ -22,31 +22,36 @@
 #include "common/network/messages/server/player/levelUpMessage.h"
 #include "common/network/messages/server/player/playerDiedMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
+#include "server/game/chat/chatHandler.h"
+#include "common/network/messages/client/chat/chatMessage.h"
 
 #include "../../city/cityCommandParser.h"
 #include "../../city/cityResult.h"
 #include "../../../common/network/messages/client/city/interactNpcMessage.h"
 #include "../../../common/network/messages/server/city/npcResponseMessage.h"
 #include "../../../common/network/messages/server/error/errorMessage.h"
+class ClanManager;
 
 class ActionDispatcher
 {
 private:
-  using ActionHandler = void (ActionDispatcher::*)(uint32_t, const Message &,GameWorld &, Monitor &);
+  using ActionHandler = void (ActionDispatcher::*)(uint32_t, const Message &, GameWorld &, Monitor &);
   std::unordered_map<uint8_t, ActionHandler> handlers;
 
   CombatSystem combat;
   ItemEffectHandler effects;
   GameFormulas formulas;
   CombatHandler combatHandler;
+  ChatHandler chatHandler;
+  ClanManager &clanManager;
 
   void handleMove(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
 
-  void handlePickItem (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
-  void handleDropItem (uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
-  void handleEquipItem(uint32_t id, const Message& msg, GameWorld& world, Monitor& monitor);
-  void handleUnequipSlot(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
-  void handleUseItem(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
+  void handlePickItem(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleDropItem(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleEquipItem(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleUnequipSlot(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleUseItem(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
 
   void handleMeditate(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
   void handleResurrect(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
@@ -58,12 +63,15 @@ private:
   void sendInventory(uint32_t id, Player &p, Monitor &monitor);
   void sendDeath(uint32_t id, Player &dead, Monitor &monitor);
 
-  void handleAttackPlayer(uint32_t attackerid,uint32_t targetId,GameWorld& world,Monitor& monitor);
-  void handleAttackNpc(uint32_t attackerid,uint32_t targetId,GameWorld& world,Monitor& monitor);
-  void sendLevelUpIfNeeded(uint32_t playerId,Player& player, Monitor& monitor);
-  void handleAttack(uint32_t id,const Message& msg,GameWorld& world,Monitor& monitor);
+  void handleAttackPlayer(uint32_t attackerid, uint32_t targetId, GameWorld &world, Monitor &monitor);
+  void handleAttackNpc(uint32_t attackerid, uint32_t targetId, GameWorld &world, Monitor &monitor);
+  void sendLevelUpIfNeeded(uint32_t playerId, Player &player, Monitor &monitor);
+  void handleAttack(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  void handleChat(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+
+  void handleClanSync(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
 
 public:
-  explicit ActionDispatcher(const toml::table &config);
+  explicit ActionDispatcher(const toml::table &config, ClanManager &clanManager);
   void dispatch(const ClientMessage &msg, GameWorld &world, Monitor &monitor);
 };

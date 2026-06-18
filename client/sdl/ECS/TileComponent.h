@@ -7,12 +7,14 @@
 #include "client/sdl/AssetManager.h"
 #include <string>
 
-class TileComponent : public Component {
+class TileComponent : public Component
+{
 public:
   SDL_Texture *texture = nullptr;
   SDL_Rect srcRect{};
   SDL_Rect destRect{};
   Vector2D position;
+  int getWorldFootprintY() const;
 
   TileComponent() = default;
   TileComponent(AssetManager &assets, int srcX, int srcY, int xpos, int ypos,
@@ -21,6 +23,12 @@ public:
 
   void update(UpdateContext &context) override;
   void draw(RenderContext &context) override;
+
+  const SDL_Rect &getDestRect() const { return destRect; }
+  const SDL_Rect &getSrcRect() const { return srcRect; }
+
+private:
+  int mapScale = 3;
 };
 
 #endif // PRUEBA_SDL_TILECOMPONENT_H

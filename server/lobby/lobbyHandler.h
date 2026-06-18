@@ -13,9 +13,9 @@
 #include "../common/network/messages/server/lobby/gameListMessage.h"
 #include "../common/network/messages/server/lobby/joinOkMessage.h"
 #include "../common/network/messages/server/lobby/leaveOkMessage.h"
-#include "../common/network/messages/server/world/EntitySpawnMessage.h"
 #include "../common/network/messages/server/player/EntityMoveMessage.h"
 #include "../common/network/messages/server/system/mapChangedMessage.h"
+#include "../common/network/messages/server/world/EntitySpawnMessage.h"
 #include "../common/network/protocol/clientOpCode.h"
 #include "../common/queue.h"
 #include "../common/thread.h"
@@ -24,43 +24,51 @@
 #include "../monitorQueues.h"
 #include "../network/receiver.h"
 #include "../network/receiverRegistry.h"
+#include "../persistence/characterArchive.h" // ← faltaba
+#include "../persistence/playerArchive.h"    // ← faltaba
 #include "leaveEvent.h"
 #include "playerRepository.h"
 
-class LobbyHandler : public Thread
-{
+class LobbyHandler : public Thread {
 public:
-    LobbyHandler(Queue<ClientMessage> &lobbyQueue,
-                 Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
-                 Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
-                 Monitor &lobbyMonitor, GameManager &gameManager,
-                 ReceiverRegistry &receiverRegistry, PlayerRepository &playerRepo,
-                 PlayerFactory &playerFactory);
+  LobbyHandler(Queue<ClientMessage> &lobbyQueue,
+               Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
+               Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
+               Monitor &lobbyMonitor, GameManager &gameManager,
+               ReceiverRegistry &receiverRegistry, PlayerRepository &playerRepo,
+               PlayerFactory &playerFactory, PlayerArchive &archive,
+               CharacterArchive &characterArchive, // ← coma, no punto y coma
+               const toml::table &config);
 
-    void run() override;
-    void stop() override;
+  void run() override;
+  void stop() override;
 
 private:
-    Queue<ClientMessage> &lobbyQueue;
-    Queue<std::shared_ptr<LeaveEvent>> &leaveQueue;
-    Monitor &lobbyMonitor;
-    GameManager &gameManager;
-    ReceiverRegistry &receiverRegistry;
-    PlayerRepository &playerRepo;
-    PlayerFactory &playerFactory;
-    Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue;
-    void handleInstanceTransition(InstanceTransitionEvent &event);
+  Queue<ClientMessage> &lobbyQueue;
+  Queue<std::shared_ptr<LeaveEvent>> &leaveQueue;
+  Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue;
+  Monitor &lobbyMonitor;
+  GameManager &gameManager;
+  ReceiverRegistry &receiverRegistry;
+  PlayerRepository &playerRepo;
+  PlayerFactory &playerFactory;
+  PlayerArchive &archive;
+  CharacterArchive &characterArchive;
+  const toml::table &config;
 
-    using Handler = std::function<void(uint32_t, const Message &)>;
-    std::unordered_map<uint8_t, Handler> handlers;
+  std::unordered_map<uint32_t, std::string> pendingCharacterNames;
 
-    void initHandlers();
+  using Handler = std::function<void(uint32_t, const Message &)>;
+  std::unordered_map<uint8_t, Handler> handlers;
 
-    void handleConnect(uint32_t clientId, const Message &message);
-    void handleCreateChar(uint32_t clientId, const Message &message);
-    void handleListGames(uint32_t clientId, const Message &message);
-    void handleCreateGame(uint32_t clientId, const Message &message);
-    void handleJoinGame(uint32_t clientId, const Message &message);
-    void handleLeaveGame(LeaveEvent &leaveEvent);
-    PlayerDto buildPlayerDto(const Player &player) const;
+  void initHandlers();
+  void handleConnect(uint32_t clientId, const Message &message);
+  void handleCreateChar(uint32_t clientId, const Message &message);
+  void handleListGames(uint32_t clientId, const Message &message);
+  void handleCreateGame(uint32_t clientId, const Message &message);
+  void handleJoinGame(uint32_t clientId, const Message &message);
+  void handleLeaveGame(LeaveEvent &leaveEvent);
+  void handleLogin(uint32_t clientId, const Message &message);
+  void handleInstanceTransition(InstanceTransitionEvent &event);
+  PlayerDto buildPlayerDto(const Player &player) const;
 };

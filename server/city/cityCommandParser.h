@@ -13,6 +13,7 @@ struct CityCommand
         SELL,
         DEPOSIT,
         WITHDRAW,
+        LIST,
     };
 
     Type type;

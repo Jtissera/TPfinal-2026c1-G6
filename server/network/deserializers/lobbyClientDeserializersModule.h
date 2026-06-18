@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../../common/network/messages/client/auth/loginMessage.h"
 #include "../../../common/network/messages/client/lobby/createGameMessage.h"
 #include "../../../common/network/messages/client/lobby/joinGameMessage.h"
 #include "../../../common/network/messages/client/lobby/leaveGameMessage.h"

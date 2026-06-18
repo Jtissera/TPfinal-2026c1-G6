@@ -1,4 +1,3 @@
-
 #ifndef PRUEBA_SDL_ECS_H
 #define PRUEBA_SDL_ECS_H
 #include <iostream>
@@ -134,19 +133,24 @@ public:
     }
 
     void refresh() {
-        for (auto i(0u);i < maxGroups;i++) {
+        // PERF: solo limpiar grupos que tienen entidades — evita iterar
+        // los 32 grupos vacíos cada frame (960 iteraciones vacías/seg a 30fps).
+        for (auto i(0u); i < maxGroups; i++) {
             auto& v(groupedEntities[i]);
-            v.erase(std::remove_if(std::begin(v),std::end(v),
-                [i](Entity* mEntity){
-                return !mEntity->isActive()|| !mEntity->hasGroup(i);
-            }),
-            std::end(v));
+            if (v.empty()) continue;  // skip inmediato si el grupo está vacío
+            v.erase(std::remove_if(std::begin(v), std::end(v),
+                [i](Entity* mEntity) {
+                    return !mEntity->isActive() || !mEntity->hasGroup(i);
+                }),
+                std::end(v));
         }
 
-        entities.erase(std::remove_if(std::begin(entities),std::end(entities),
-            [](const std::unique_ptr<Entity>&mEntity) {
-                return !mEntity->isActive();
-            }),std::end(entities));
+        entities.erase(
+            std::remove_if(std::begin(entities), std::end(entities),
+                [](const std::unique_ptr<Entity>& mEntity) {
+                    return !mEntity->isActive();
+                }),
+            std::end(entities));
     }
     void AddToGroup(Entity* mEntity,Group mGroup) {
         groupedEntities[mGroup].emplace_back(mEntity);

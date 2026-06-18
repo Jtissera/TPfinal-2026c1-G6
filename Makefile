@@ -26,7 +26,12 @@ test: build
 	./$(BUILD_DIR)/taller_tests
 
 valgrind: build
-	valgrind --leak-check=full --error-exitcode=1 ./$(BUILD_DIR)/taller_tests
+	valgrind --leak-check=full \
+         --show-leak-kinds=all \
+         --track-origins=yes \
+         --verbose \
+         --error-exitcode=1 \
+         ./$(BUILD_DIR)/taller_tests
 
 install: setup test
 	cmake --install $(BUILD_DIR) --prefix $(HOME)

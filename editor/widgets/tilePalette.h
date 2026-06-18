@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../map/tile.h"
+#include "../map/mapData.h"
 #include <QAbstractButton>
 #include <QButtonGroup>
 #include <QCheckBox>
@@ -19,6 +20,7 @@ public:
     TileType selectedTileType() const;
     ZoneType selectedZoneType() const;
     bool selectedWalkable() const;
+    void setMapType(MapType type);
 
 signals:
     void selectionChanged();

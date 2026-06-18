@@ -14,6 +14,7 @@ struct GameInfo
     std::string gameName;
     uint8_t playerCount;
     uint8_t maxPlayers;
+    std::string mapPath;
 };
 
 class GameListMessage : public Message

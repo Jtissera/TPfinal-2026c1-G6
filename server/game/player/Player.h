@@ -43,12 +43,19 @@ public:
   void toggleInfiniteMana();
   bool hasInfiniteHp() const { return infiniteHp; }
   bool hasInfiniteMana() const { return infiniteMana; }
-  void tick(float hpGained, float manaGained);
+  bool tick(float hpGained, float manaGained);
 
   std::vector<Item> purgeInventoryOnDeath();
 
   void setTilePos(int tx, int ty);
   void setPixelPos(float tx, float ty);
+  void setHp(int16_t newHp);
+  void setMana(int16_t newMana);
+  void setLevel(uint8_t newLevel);
+  void setGold(uint32_t newGold);
+  void setExp(uint32_t newExp);
+  void forceGhostState();
+  void setClientId(uint32_t id);
 
   int getTileX() const override { return static_cast<int>(pixelX) / TILE_SIZE; }
   int getTileY() const override { return static_cast<int>(pixelY) / TILE_SIZE; }
@@ -65,6 +72,8 @@ public:
   uint8_t getAgility() const override;
   uint8_t getStrength() const override;
   int getAttackRange() const override;
+  bool hasReceivedInitialInventory() const { return initialInventoryGiven; }
+  void markInitialInventoryGiven() { initialInventoryGiven = true; }
 
   // Devuelve la posición X real en píxeles.
   float getPixelX() const;
@@ -89,6 +98,11 @@ public:
   void stopResurrection() { resurrecting = false; }
   bool canInteract() const { return !isGhost() && !resurrecting; }
 
+  const std::string &getClanName() const { return clanName; }
+  void setClanName(std::string name) { clanName = std::move(name); }
+  bool isClanFounder() const { return clanFounder; }
+  void setClanFounder(bool founder) { clanFounder = founder; }
+
   const RaceStats &getRace() const;
   const ClassStats &getCls() const;
 
@@ -101,6 +115,7 @@ public:
   Player &operator=(Player &&) = default;
 
 private:
+  bool initialInventoryGiven = false;
   bool resurrecting = false;
 
   uint32_t clientId;
@@ -129,6 +144,9 @@ private:
   bool didLevelUp = false;
   bool infiniteHp = false;
   bool infiniteMana = false;
+
+  std::string clanName;
+  bool clanFounder = false;
 
   Inventory inventory;
 };
