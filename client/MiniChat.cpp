@@ -1,5 +1,7 @@
 #include "MiniChat.h"
 #include <algorithm>
+#include <ostream>
+#include <iostream>
 
 SDL_Color MiniChat::colorFor(ChatMsgType type)
 {
@@ -23,6 +25,9 @@ SDL_Color MiniChat::colorFor(ChatMsgType type)
 
 void MiniChat::appendLine(const std::string &text, ChatMsgType type)
 {
+
+        std::cout << "[MINICHAT] appendLine type=" << static_cast<int>(type)
+              << " text='" << text << "'" << std::endl;
     lines.push_back({text, type});
 
     if (static_cast<int>(lines.size()) > HISTORY_MAX_LINES)

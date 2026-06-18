@@ -7,6 +7,7 @@
 #include <string>
 #include <toml++/toml.hpp>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <optional>
 
@@ -16,6 +17,8 @@
 #include "../../lobby/instanceTransitionEvent.h"
 #include "../../lobby/leaveEvent.h"
 #include "../../persistence/gameArchive.h"
+#include "../../persistence/clanArchive.h"
+#include "../../persistence/characterArchive.h"
 #include "../player/Player.h"
 #include "gameRoom.h"
 #include "server/game/clan/clanManager.h"
@@ -27,7 +30,9 @@ public:
               Queue<std::shared_ptr<LeaveEvent>> &,
               Queue<std::shared_ptr<InstanceTransitionEvent>> &,
               const toml::table &, PlayerArchive &archive,
-              GameArchive &gameArchive);
+              GameArchive &gameArchive,
+              ClanArchive &clanArchive,
+              CharacterArchive &characterArchive);
 
   uint32_t createGame(const std::string &gameName, uint8_t maxPlayers,
                       const std::string &mapPath = "");
@@ -54,6 +59,11 @@ public:
   std::string getRoomMapPath(uint32_t gameId) const;
   void restoreFromArchive();
 
+  // ── Control de sesión única por personaje ──────────────────────────────
+  bool tryMarkOnline(uint32_t clientId, const std::string &characterName);
+  void markOffline(uint32_t clientId);
+
+  // ── Clan / mensajería dirigida ──────────────────────────────────────────
   void sendToClient(uint32_t clientId, const std::shared_ptr<const Message> &msg);
   std::optional<uint32_t> findOnlineClientByNick(const std::string &nick) const;
   void updatePlayerClanState(const std::string &nick, const std::string &clanName, bool isFounder);
@@ -74,6 +84,9 @@ private:
 
   std::unordered_map<uint32_t, std::unique_ptr<GameRoom>> rooms;
   std::unordered_map<uint32_t, uint32_t> clientRoom;
+
+  std::unordered_set<std::string> onlineCharacters;
+  std::unordered_map<uint32_t, std::string> clientToCharacter;
 
   std::unordered_map<uint32_t, std::string> clientNick;
   std::unordered_map<std::string, uint32_t> nickToClient;

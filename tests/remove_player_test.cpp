@@ -10,7 +10,12 @@ protected:
   NpcRepository npcRepo{config};
   NpcFactory npcFact{npcRepo};
   ItemRepository itemRepo{config};
-  ClanManager clanManager;
+  
+  std::string tempDir = std::filesystem::temp_directory_path().string();
+
+  ClanArchive clanArchive{tempDir + "/test_clans.dat", tempDir + "/test_clans.idx"};
+  CharacterArchive characterArchive{tempDir + "/test_chars.dat", tempDir + "/test_chars.idx"};
+  ClanManager clanManager{clanArchive, characterArchive};
 };
 TEST_F(ExtractPlayerTest, RemoveReturnsPlayerWithCorrectId)
 {

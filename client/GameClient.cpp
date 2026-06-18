@@ -2,16 +2,17 @@
 
 GameClient::GameClient(Socket &socket, uint32_t idPlayer,
                        const PlayerDto &playerDto, SDL_Window *window,
-                       SDL_Renderer *renderer, const std::string &mapPath)
-    : socket(socket), idPlayer(idPlayer), playerDto(playerDto), window(window),
+                       SDL_Renderer *renderer, const std::string &mapPath,
+                       std::shared_ptr<const Message> pendingMessage)
+    : pendingMessage(std::move(pendingMessage)),
+      socket(socket), idPlayer(idPlayer), playerDto(playerDto), window(window),
       renderer(renderer), factory(),
       senderProtocol(factory.createProtocol(socket)),
       receiverProtocol(factory.createProtocol(socket)),
       sender(senderProtocol, sendQueue),
       receiver(receiverProtocol, receiveQueue), gameLoop(),
       mapPath(mapPath)
-{
-}
+{}
 
 void GameClient::run()
 {
@@ -53,6 +54,10 @@ void GameClient::run()
   const int frameDelay = 1000 / FPS;
 
   gameLoop.init(window, renderer, sendQueue, receiveQueue, playerDto, mapPath);
+
+  if (pendingMessage) {
+    receiveQueue.try_push(std::move(pendingMessage));
+}
 
   while (gameLoop.running())
   {

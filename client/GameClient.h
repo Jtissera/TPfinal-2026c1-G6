@@ -17,11 +17,17 @@ class GameClient
 
 public:
   GameClient(Socket &socket, uint32_t idPlayer, const PlayerDto &playerDto,
-             SDL_Window *window, SDL_Renderer *renderer, const std::string &mapPath);
+           SDL_Window *window, SDL_Renderer *renderer,
+           const std::string &mapPath,
+           std::shared_ptr<const Message> pendingMessage = nullptr);
   void run();
   bool wasDisconnectedByServer() const { return connectionLost; }
+  void pushPendingMessage(std::shared_ptr<const Message> msg) {
+    if (msg) receiveQueue.try_push(std::move(msg));
+}
 
 private:
+  std::shared_ptr<const Message> pendingMessage;
   Socket &socket;
   const uint32_t idPlayer;
   const PlayerDto playerDto;

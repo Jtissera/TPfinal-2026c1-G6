@@ -24,8 +24,8 @@
 #include "../monitorQueues.h"
 #include "../network/receiver.h"
 #include "../network/receiverRegistry.h"
-#include "../persistence/characterArchive.h" // ← faltaba
-#include "../persistence/playerArchive.h"    // ← faltaba
+#include "../persistence/characterArchive.h" 
+#include "../persistence/playerArchive.h"
 #include "leaveEvent.h"
 #include "playerRepository.h"
 
@@ -37,7 +37,7 @@ public:
                Monitor &lobbyMonitor, GameManager &gameManager,
                ReceiverRegistry &receiverRegistry, PlayerRepository &playerRepo,
                PlayerFactory &playerFactory, PlayerArchive &archive,
-               CharacterArchive &characterArchive, // ← coma, no punto y coma
+               CharacterArchive &characterArchive, 
                const toml::table &config);
 
   void run() override;

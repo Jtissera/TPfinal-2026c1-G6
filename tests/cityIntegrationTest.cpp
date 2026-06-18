@@ -8,6 +8,7 @@
 #include "editor/map/mapData.h"
 #include "editor/map/tile.h"
 #include "common/npcType.h"
+#include <filesystem>
 
 // ---------------------------------------------------------------------------
 // Fixture: mundo 10x10 todo walkable, zona SAFE, con NPCs de ciudad pintados
@@ -20,7 +21,12 @@ protected:
     ItemRepository itemRepo{config};
     NpcRepository npcRepo{config};
     NpcFactory npcFactory{npcRepo};
-    ClanManager clanManager;
+
+    std::string tempDir = std::filesystem::temp_directory_path().string();
+
+    ClanArchive clanArchive{tempDir + "/test_clans.dat", tempDir + "/test_clans.idx"};
+    CharacterArchive characterArchive{tempDir + "/test_chars.dat", tempDir + "/test_chars.idx"};
+    ClanManager clanManager{clanArchive, characterArchive};
 
     // Construimos el mundo con un MapData que tiene los NPCs de ciudad
     GameWorld makeWorld()

@@ -111,7 +111,7 @@ bool CreateCharScreen::handleEvent(const SDL_Event& e, ScreenResult& out) {
         if (isClickOn(btnOk, mx, my)) {
             focus = Focus::CONFIRM;
             out = confirm();
-            return true;
+            return (out != ScreenResult::STAY);
         }
         if (isClickOn(btnBack, mx, my)) {
             out = ScreenResult::GO_MAIN_MENU;
@@ -144,7 +144,7 @@ void CreateCharScreen::handleKeyDown(SDL_Keycode key, ScreenResult& out, bool& d
                 done = true;
             } else {
                 out = confirm();
-                done = true;
+                done = (out != ScreenResult::STAY);
             }
             break;
         case SDLK_ESCAPE:
@@ -199,7 +199,7 @@ ScreenResult CreateCharScreen::confirm() {
     if (username.empty()) {
         errorMsg = "El nombre no puede estar vacio.";
         focus = Focus::NAME;
-        return ScreenResult::QUIT;
+        return ScreenResult::STAY;
     }
 
     return ScreenResult::GO_LOBBY;

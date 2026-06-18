@@ -112,12 +112,24 @@ bool Player::tick(float hpGained, float manaGained) {
   const int16_t prevHp = hp;
   const int16_t prevMana = mana;
 
-  if (isAlive())
-    heal(static_cast<int16_t>(hpGained));
-  if (cls.canUseMagic && !infiniteMana)
-    restoreMana(static_cast<int16_t>(manaGained));
+  if (isAlive()) {
+    hpAccumulator += hpGained;
+    if (hpAccumulator >= 1.0f) {
+      int16_t wholeHp = static_cast<int16_t>(hpAccumulator);
+      hpAccumulator -= static_cast<float>(wholeHp);
+      heal(wholeHp);
+    }
+  }
 
-  // Solo notifica al cliente si algo realmente cambió.
+  if (cls.canUseMagic && !infiniteMana) {
+    manaAccumulator += manaGained;
+    if (manaAccumulator >= 1.0f) {
+      int16_t wholeMana = static_cast<int16_t>(manaAccumulator);
+      manaAccumulator -= static_cast<float>(wholeMana);
+      restoreMana(wholeMana);
+    }
+  }
+
   return (hp != prevHp || mana != prevMana);
 }
 

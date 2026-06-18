@@ -26,12 +26,12 @@ public:
   void enqueue(PlayerSnapshot snap, uint32_t gameId);
 
   std::optional<Player> load(const std::string &name, uint32_t gameId);
+  std::optional<PlayerSnapshot> loadSnapshot(const std::string &name, uint32_t gameId) const;
 
   bool exists(const std::string &name) const;
 
   PlayerSnapshot toSnapshot(const Player &, const std::string &mapId,
-                            uint32_t gameId) const;
-
+                          uint32_t gameId, uint32_t originGameId) const;
   void run() override;
   void stop() override;
 

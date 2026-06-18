@@ -9,16 +9,15 @@ target_sources(taller_tests
     combat_test.cpp
     inventory_test.cpp
     player_test.cpp
-    world_test.cpp
-
     remove_player_test.cpp
     dungeon_test.cpp
     bankerHandlerTest.cpp
-    cityCommandParserTest.cpp
     merchantHandlerTest.cpp
     priestHandlerTest.cpp
     priestLocatorTest.cpp
     resurrectionSystemTest.cpp
     safeZoneTest.cpp
+    cityCommandParserTest.cpp
     cityIntegrationTest.cpp
+    world_test.cpp
 )

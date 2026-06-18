@@ -160,29 +160,16 @@ void ClientGameWorld::updateRemotePlayerEquipment(uint32_t entityId, const Equip
 }
 
 void ClientGameWorld::appendRemoteAttackTargets(
-    std::vector<AttackTarget> &targets,
-    uint8_t localPlayerLevel)
+    std::vector<AttackTarget> &targets)
 {
     for (auto &[remotePlayerId, remotePlayer] : remotePlayers)
     {
         if (remotePlayer.isGhost())
-        {
             continue;
-        }
-
-        const uint8_t remoteLevel = remotePlayer.getLevel();
-
-        if (!canAttackByFairPlay(localPlayerLevel, remoteLevel))
-        {
-            continue;
-        }
 
         Entity *entity = remotePlayer.getEntity();
-
         if (entity == nullptr)
-        {
             continue;
-        }
 
         targets.push_back(AttackTarget{remotePlayerId, entity});
     }

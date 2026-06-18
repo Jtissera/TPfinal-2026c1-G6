@@ -7,7 +7,7 @@ host = "localhost"
 port = 8080
 tick_rate_ms = 22          # milisegundos entre ticks del game loop
 max_clients = 50
-persist_every_n_ticks = 300
+persist_every_n_ticks = 70
 
 
 

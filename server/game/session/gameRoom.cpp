@@ -14,7 +14,7 @@ GameRoom::GameRoom(
       isInstance(isInstance), originRoomId(originRoomId), mapPath(mapPath),
       leaveQueue(leaveQueue), world(mapPath, npcFactory, itemRepo, config, clanManager),
       gameLoop(gameQueue, monitor, world, leaveQueue, transitionQueue, gameId,
-               config, archive, mapPath, clanManager),
+               config, archive, mapPath, clanManager, originRoomId),
       archive(archive), clanManager(clanManager) {}
 
 void GameRoom::addClient(uint32_t clientId,
