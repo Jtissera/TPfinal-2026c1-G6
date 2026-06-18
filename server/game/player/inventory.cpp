@@ -8,8 +8,10 @@ Inventory::Inventory()
 }
 
 Inventory::Inventory(const toml::table& config)
-    : maxItems(config["player"]["max_inventory_items"].value_or<std::size_t>(
-          static_cast<std::size_t>(MAX_INVENTORY_SLOTS))) {
+: maxItems(std::min(
+      config["player"]["max_inventory_items"].value_or<std::size_t>(
+          static_cast<std::size_t>(MAX_INVENTORY_SLOTS)),
+      static_cast<std::size_t>(MAX_INVENTORY_SLOTS))) {
   equipped.fill(EMPTY_SLOT);
   inventorySlots.fill(EMPTY_SLOT);
 }
@@ -30,27 +32,34 @@ std::optional<EquipSlot> toEquipSlot(ItemSlot slot)
 
 bool Inventory::addItem(Item item)
 {
-  if (items.size() >= MAX_INVENTORY_SLOTS)
-    return false;
 
-  // Poner en el primer slot libre del array de slots
+  // Esta es la verdadera condición para saber si entra un nuevo ítem.
   auto slotIdx = findFirstFreeInventorySlot();
+
+
   if (!slotIdx)
     return false;
 
   items.push_back(std::move(item));
+
   inventorySlots[*slotIdx] = items.back().instanceId;
+
   return true;
 }
 
 std::optional<std::size_t> Inventory::findFirstFreeInventorySlot() const
 {
-  for (std::size_t i = 0; i < MAX_INVENTORY_SLOTS; ++i)
-    if (inventorySlots[i] == EMPTY_SLOT)
+  // Recorremos solo hasta maxItems.
+  // Los slots restantes existen en el array, pero quedan fuera de la capacidad lógica.
+  for (std::size_t i = 0; i < maxItems; ++i) {
+
+    if (inventorySlots[i] == EMPTY_SLOT) {
       return i;
+    }
+  }
+
   return std::nullopt;
 }
-
 void Inventory::removeFromInventorySlots(uint32_t itemId)
 {
   for (auto &slot : inventorySlots) {
