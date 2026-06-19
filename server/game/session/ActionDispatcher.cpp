@@ -145,6 +145,9 @@ void ActionDispatcher::handlePickItem(uint32_t id, const Message& msg,GameWorld&
         return;
     }
 
+    if (!p.getInventory().canAddItem()) {
+        return;
+    }
     auto item = world.pickItemById(pickMsg.getInstanceId());
     if (item && p.getInventory().addItem(std::move(*item))) {
         sendInventory(id, p, monitor);
@@ -574,7 +577,6 @@ void ActionDispatcher::handleAttackPlayer(
                        "¡Fuiste asesinado por " + attacker.getName() + "!",
                        ChatMsgType::DAMAGE_TAKEN, monitor);
 
-        world.handlePlayerDeath(targetId, attackerId);
         for (const Item& item : deathResult.droppedItems) {
             monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(
                 item,
