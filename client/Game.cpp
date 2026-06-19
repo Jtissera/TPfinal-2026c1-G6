@@ -321,7 +321,7 @@ void Game::render()
   SDL_Rect mapArea = {0, 33, 900, 687};
   SDL_RenderSetClipRect(renderer, &mapArea);
 
-  RenderContext renderContext{renderer, camera, mapArea, *textureManager, 133};
+  RenderContext renderContext{renderer, camera, mapArea, *textureManager,*assets, 133};
 
   for (auto &t : manager.getGroup(groupMap))
     t->draw(renderContext);
@@ -383,14 +383,15 @@ void Game::render()
 
       obj.yFootprint = static_cast<int>(transform.position.y + (transform.height * transform.scale));
 
-      obj.drawFunc = [remoteEntity, &renderContext]()
+      obj.drawFunc = [this,remoteEntity, &renderContext]()
       {
-        if (remoteEntity->hasComponent<EquipmentComponent>())
-          remoteEntity->getComponent<EquipmentComponent>().drawBehind(renderContext);
-        if (remoteEntity->hasComponent<SpriteComponent>())
-          remoteEntity->getComponent<SpriteComponent>().draw(renderContext);
-        if (remoteEntity->hasComponent<EquipmentComponent>())
-          remoteEntity->getComponent<EquipmentComponent>().drawFront(renderContext);
+        // if (remoteEntity->hasComponent<EquipmentComponent>())
+        //   remoteEntity->getComponent<EquipmentComponent>().drawBehind(renderContext);
+        // if (remoteEntity->hasComponent<SpriteComponent>())
+        //   remoteEntity->getComponent<SpriteComponent>().draw(renderContext);
+        // if (remoteEntity->hasComponent<EquipmentComponent>())
+        //   remoteEntity->getComponent<EquipmentComponent>().drawFront(renderContext);
+        drawEquippedEntity(remoteEntity,renderContext);
       };
       ySorted.push_back(std::move(obj));
     }
@@ -2424,6 +2425,10 @@ void Game::drawEquippedEntity(Entity *entity, RenderContext &context)
   if (entity->hasComponent<EquipmentComponent>())
   {
     entity->getComponent<EquipmentComponent>().drawFront(context);
+  }
+
+  if (entity->hasComponent<NameplateComponent>()) {
+    entity->getComponent<NameplateComponent>().draw(context);
   }
 }
 

@@ -149,25 +149,13 @@ Entity *AssetManager::CreatePlayer(const PlayerDto &data)
     player.addComponent<TransformComponent>(data.xpos, data.ypos);
     player.addComponent<SpriteComponent>(*this, bodyTextureId, true, playerAnims, bodyConfig);
     player.getComponent<SpriteComponent>().setHeadTexture(headTextureId, data.headId);
+    player.addComponent<NameplateComponent>(data.nombre,data.clase,data.level,"",NameplateType::LocalPlayer);
     player.addComponent<EquipmentComponent>(*this, data.raza);
     player.addComponent<KeyboardController>(sendQueue);
     player.addComponent<ColliderComponent>("player");
 
     player.addGroup(groupPlayers);
 
-    std::cout << "[PLAYER] race=" << data.raza
-              << " bodyTextureId=" << bodyTextureId
-              << " headTextureId=" << headTextureId
-              << " headId=" << data.headId
-              << std::endl;
-
-    std::cout << "[PLAYER] body texture ptr="
-              << GetTexture(bodyTextureId)
-              << " head texture ptr="
-              << GetTexture(headTextureId)
-              << std::endl;
-
-    std::cout << "[DEBUG] raza raw='" << data.raza << "'" << std::endl;
     return &player;
 }
 
