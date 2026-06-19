@@ -219,6 +219,18 @@ private:
     void handleItemOnGround(const ItemOnGroundMessage &msg);
     void handleGoldOnGround(const GoldOnGroundMessage &msg);
     void handleItemPicked(const ItemPickedMessage &msg);
+
+
+struct EnemyMoveInterp
+{
+    float startX, startY;
+    float targetX, targetY;
+    Uint32 startTime;
+    Uint32 durationMs;
+};
+
+std::unordered_map<uint32_t, EnemyMoveInterp> enemyMoveInterp;
+std::unordered_map<uint32_t, NpcType> enemyNpcTypes; // para saber la duración de cada uno
 };
 
 #endif // PRUEBA_SDL_GAME_H

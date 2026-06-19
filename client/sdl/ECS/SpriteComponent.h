@@ -65,7 +65,12 @@ public:
     void setBody(const std::string& textureId, const SpriteSheetConfig& config);
     void clearHead();
 
+    void setManualAnimation(bool manual);
+    void StepFrame();
+
 private:
+    bool isManualAnimation = false;
+    int manualFrameIndex = 0;
 
 
     AssetManager& assets;

@@ -53,6 +53,7 @@ static SpriteSheetConfig configForNPC(NpcType type)
     switch (type)
     {
     case NpcType::SKELETON:
+        return SpriteSheetConfig{95, 98, 1, 0, 0};
     case NpcType::ZOMBIE:
     case NpcType::GUARD:
     case NpcType::SPIDER_DESERT:
@@ -114,7 +115,10 @@ Entity *AssetManager::CreateEnemy(const NPCData &data)
     SpriteSheetConfig cfg = configForNPC(data.type);
 
     std::map<std::string, Animation> enemyAnims;
-    enemyAnims.emplace("Idle", Animation(0, 1, 200));
+    enemyAnims.emplace("IdleDown", Animation(4, 1, 150));
+    
+    // Para caminar hacia abajo: usa la fila 4, abarcando 5 frames (las 5 columnas).
+    enemyAnims.emplace("WalkDown", Animation(4, 5, 100));
 
     auto &enemy = manager->addEntity();
     enemy.addComponent<TransformComponent>(data.x, data.y);
@@ -566,3 +570,4 @@ Entity * AssetManager::CreateGroundItem(const ItemView &itemView, int worldX, in
 
     return &groundItem;
 }
+

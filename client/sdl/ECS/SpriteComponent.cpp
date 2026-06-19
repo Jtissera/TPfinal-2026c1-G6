@@ -62,6 +62,7 @@ void SpriteComponent::Play(const char *animName)
     frames = animations[name].frames;
     animationIndex = animations[name].index;
     speed = animations[name].speed;
+    manualFrameIndex = 0;
 }
 
 void SpriteComponent::init()
@@ -78,8 +79,15 @@ void SpriteComponent::update(UpdateContext &context)
 {
     if (animated && frames > 0)
     {
-        int currentFrame = static_cast<int>((SDL_GetTicks() / speed) % frames);
-        srcRect.x = startX + currentFrame * frameWidth;
+        if (isManualAnimation)
+        {
+            srcRect.x = startX + (manualFrameIndex * frameWidth);
+        }
+        else
+        {
+            int currentFrame = static_cast<int>((SDL_GetTicks() / speed) % frames);
+            srcRect.x = startX + currentFrame * frameWidth;
+        }
     }
     else
     {
@@ -87,17 +95,13 @@ void SpriteComponent::update(UpdateContext &context)
     }
 
     srcRect.y = startY + animationIndex * frameHeight;
-
     srcRect.w = frameWidth;
     srcRect.h = frameHeight;
 
-    // Coordenadas de mundo -> pantalla.
     destRect.x = static_cast<int>(transform->position.x) - context.camera.x -
                  (frameWidth * scale / 2);
     destRect.y = static_cast<int>(transform->position.y) - context.camera.y +
                  133 - (frameHeight * scale);
-
-    // Tamaño visual.
     destRect.w = frameWidth * scale;
     destRect.h = frameHeight * scale;
 }
@@ -324,4 +328,17 @@ void SpriteComponent::clearHead()
     headTexture = nullptr;
     hasHead = false;
     headIndex = 0;
+}
+
+void SpriteComponent::setManualAnimation(bool manual)
+{
+    isManualAnimation = manual;
+}
+
+void SpriteComponent::StepFrame()
+{
+    if (frames > 0)
+    {
+        manualFrameIndex = (manualFrameIndex + 1) % frames;
+    }
 }

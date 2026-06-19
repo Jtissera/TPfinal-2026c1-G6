@@ -2,7 +2,7 @@
   "textures": [
     {
       "id": "skeleton",
-      "path": "assets/sprites/enemies/skeleton.png"
+      "path": "assets/sprites/enemies/skeleton/skeleton.png"
     },
     {
       "id": "goblin",
