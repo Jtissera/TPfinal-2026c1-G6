@@ -31,7 +31,7 @@ void JoinOkMessage::serializeBody(PacketWriter &writer) const
 
     // Datos completos del jugador.
     writer.writeString(playerDto.nombre);
-    writer.writeUint8(playerDto.playerID);
+    writer.writeUint32(playerDto.playerID);
     writer.writeString(playerDto.raza);
     writer.writeString(playerDto.clase);
 

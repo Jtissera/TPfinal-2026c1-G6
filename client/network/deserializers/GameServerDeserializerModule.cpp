@@ -71,7 +71,7 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
             PlayerDto dto;
 
             dto.nombre = reader.readString();
-            dto.playerID = reader.readUint8();
+            dto.playerID = reader.readUint32();
             dto.raza = reader.readString();
             dto.clase = reader.readString();
 

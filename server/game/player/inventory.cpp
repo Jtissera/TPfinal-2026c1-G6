@@ -8,10 +8,11 @@ Inventory::Inventory()
 }
 
 Inventory::Inventory(const toml::table& config)
-: maxItems(std::min(
-      config["player"]["max_inventory_items"].value_or<std::size_t>(
-          static_cast<std::size_t>(MAX_INVENTORY_SLOTS)),
-      static_cast<std::size_t>(MAX_INVENTORY_SLOTS))) {
+
+    : maxItems(std::min(
+          config["player"]["max_inventory_items"].value_or<std::size_t>(
+              static_cast<std::size_t>(MAX_INVENTORY_SLOTS)),
+          static_cast<std::size_t>(MAX_INVENTORY_SLOTS))) {
   equipped.fill(EMPTY_SLOT);
   inventorySlots.fill(EMPTY_SLOT);
 }
@@ -30,34 +31,45 @@ std::optional<EquipSlot> toEquipSlot(ItemSlot slot)
   return it->second;
 }
 
+
+bool Inventory::canAddItem() const
+{
+  return findFirstFreeInventorySlot().has_value();
+}
+
 bool Inventory::addItem(Item item)
 {
 
-  // Esta es la verdadera condición para saber si entra un nuevo ítem.
+  if (!canAddItem()) {
+    return false;
+  }
+
+  // Buscamos el primer slot libre dentro del límite maxItems.
   auto slotIdx = findFirstFreeInventorySlot();
 
-
-  if (!slotIdx)
+  if (!slotIdx) {
     return false;
+  }
 
+  // Guardamos el item en la colección real del jugador.
+  // Esta colección incluye tanto mochila como equipamiento.
   items.push_back(std::move(item));
 
   inventorySlots[*slotIdx] = items.back().instanceId;
 
   return true;
 }
-
 std::optional<std::size_t> Inventory::findFirstFreeInventorySlot() const
 {
-  // Recorremos solo hasta maxItems.
-  // Los slots restantes existen en el array, pero quedan fuera de la capacidad lógica.
+  // olo los slots habilitados por maxItems.
   for (std::size_t i = 0; i < maxItems; ++i) {
-
+    // Si el slot está vacío, devolvemos su índice.
     if (inventorySlots[i] == EMPTY_SLOT) {
       return i;
     }
   }
 
+  // Si no encontramos ningún slot libre, la mochila está llena.
   return std::nullopt;
 }
 void Inventory::removeFromInventorySlots(uint32_t itemId)

@@ -16,7 +16,7 @@ void EntitySpawnMessage::serializeBody(PacketWriter& writer) const {
     // Mismo formato que JoinOkMessage para PlayerDto, pero sin datos de partida.
 
     writer.writeString(playerDto.nombre);
-    writer.writeUint8(playerDto.playerID);
+    writer.writeUint32(playerDto.playerID);
     writer.writeString(playerDto.raza);
     writer.writeString(playerDto.clase);
 

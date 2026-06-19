@@ -370,7 +370,7 @@ PlayerDto LobbyHandler::buildPlayerDto(const Player &player) const
 {
   PlayerDto dto{};
 
-  dto.playerID = static_cast<uint8_t>(player.getClientId());
+  dto.playerID = player.getClientId();
   dto.nombre = player.getName();
   dto.raza = player.getRace().name;
   dto.clase = player.getCls().name;

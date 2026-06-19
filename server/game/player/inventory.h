@@ -25,6 +25,7 @@ public:
   // Constructor nuevo compatible con el flujo de dev/TOML.
   explicit Inventory(const toml::table& config);
 
+  bool canAddItem() const;
   bool addItem(Item item);
   bool equipItem(uint32_t itemId);
   bool unequipSlot(EquipSlot slot);
@@ -44,6 +45,7 @@ public:
   Item *findItem(uint32_t itemId);
   const Item *findItem(uint32_t itemId) const;
   bool hasItem(const std::string &name) const;
+
 
 private:
   std::size_t maxItems = MAX_INVENTORY_SLOTS;

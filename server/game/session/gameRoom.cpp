@@ -135,7 +135,7 @@ PlayerDto GameRoom::buildPlayerDto(const Player &player) const {
   PlayerDto dto{};
 
   // Identidad del jugador.
-  dto.playerID = static_cast<uint8_t>(player.getClientId());
+  dto.playerID = player.getClientId();
 
   // Nombre visible.
   dto.nombre = player.getName();
