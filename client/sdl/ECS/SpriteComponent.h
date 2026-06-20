@@ -71,7 +71,7 @@ public:
     std::string oneShotReturnAnim = "IdleDown";
     Uint32 oneShotEndTime = 0;
 
-    void setAttackTexture(const std::string &id, int frameW, int frameH);
+    void setAttackTexture(const std::string &id, const SpriteSheetConfig &config);
 
 private:
     bool isManualAnimation = false;
@@ -84,6 +84,7 @@ private:
 
     SDL_Texture* bodyTexture = nullptr;
     SDL_Texture* headTexture = nullptr;
+    SpriteSheetConfig attackConfig{};
 
     SDL_Rect srcRect{};
     SDL_Rect destRect{};

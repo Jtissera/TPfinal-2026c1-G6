@@ -17,3 +17,4 @@ private:
     NpcStats parse(const std::string &name, const toml::table &entry) const;
     const toml::table &config;
 };
+

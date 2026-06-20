@@ -13,6 +13,7 @@
 #include "ECS/SpriteSheetConfig.h"
 #include "state/ItemView.h"
 #include "state/PlayerViewState.h"
+#include <unordered_map>
 
 struct AttackConfig {
     std::string textureId;
@@ -20,6 +21,20 @@ struct AttackConfig {
     int frameHeight;
     int framesPerRow;
     int rows;
+};
+
+
+struct AnimationDef
+{
+    int row = 0;
+    int frames = 1;
+    int speed = 150;
+};
+
+struct SpriteDefinition
+{
+    SpriteSheetConfig config;
+    std::map<std::string, AnimationDef> animations;
 };
 
 class AssetManager
@@ -63,6 +78,8 @@ private:
     std::string bodyTextureForRace(const std::string& race) const;
     std::string headTextureForRace(const std::string& race) const;
     void LoadBodiesFromJson(const std::string& path);
+    const SpriteDefinition *GetSpriteDefinition(const std::string &id) const;
+    std::unordered_map<std::string, SpriteDefinition> spriteDefinitions;
 };
 
 #endif

@@ -261,7 +261,7 @@ void MapCanvas::drawNpcIndicator(QPainter &painter, const QRect &r,
         color = QColor(150, 200, 50);
         label = "Z";
         break;
-    case NpcType::GUARD:
+    case NpcType::ORC:
         color = Qt::blue;
         label = "Gu";
         break;

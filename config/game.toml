@@ -568,8 +568,8 @@ attack_cooldown_ms = 1700
 move_cooldown_ms   = 950
 zones              = ["COMBAT"]
 
-[npcs.guard]
-name = "Guardia"
+[npcs.orc]
+name = "Orco"
 level = 5
 max_hp = 100
 damage_min = 8

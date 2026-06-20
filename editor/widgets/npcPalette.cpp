@@ -37,15 +37,15 @@ NpcPalette::NpcPalette(QWidget *parent) : QWidget(parent)
     _rbGoblin = new QRadioButton("Goblin", mobGroup);
     _rbSkeleton = new QRadioButton("Esqueleto", mobGroup);
     _rbZombie = new QRadioButton("Zombie", mobGroup);
-    _rbGuard = new QRadioButton("Guardia", mobGroup);
+    _rbOrc = new QRadioButton("Orco", mobGroup);
     _group->addButton(_rbGoblin);
     _group->addButton(_rbSkeleton);
     _group->addButton(_rbZombie);
-    _group->addButton(_rbGuard);
+    _group->addButton(_rbOrc);
     mobLayout->addWidget(_rbGoblin);
     mobLayout->addWidget(_rbSkeleton);
     mobLayout->addWidget(_rbZombie);
-    mobLayout->addWidget(_rbGuard);
+    mobLayout->addWidget(_rbOrc);
     mainLayout->addWidget(mobGroup);
 
     auto *cavernGroup = new QGroupBox("Caverna", this);
@@ -109,8 +109,8 @@ NpcType NpcPalette::selectedNpc() const
         return NpcType::SKELETON;
     if (_rbZombie->isChecked())
         return NpcType::ZOMBIE;
-    if (_rbGuard->isChecked())
-        return NpcType::GUARD;
+    if (_rbOrc->isChecked())
+        return NpcType::ORC;
     if (_rbGoblinCave->isChecked())
         return NpcType::GOBLIN_CAVE;
     if (_rbSkeletonCave->isChecked())
