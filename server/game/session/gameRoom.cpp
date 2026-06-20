@@ -192,7 +192,7 @@ void GameRoom::sendExistingNpcsTo(uint32_t clientId)
                                  npcId, npc.getType(), npc.getName(),
                                  static_cast<uint16_t>(npc.getTileX() * 96),
                                  static_cast<uint16_t>(npc.getTileY() * 96),
-                                 npc.getHp(), npc.getMaxHp(), npc.isHostile()));
+                                 npc.getHp(), npc.getMaxHp(),npc.getLevel(), npc.isHostile()));
 
     std::cout << "[GameRoom] enviado NPC id=" << npcId
               << " a clientId=" << clientId << std::endl;

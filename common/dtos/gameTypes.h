@@ -25,6 +25,7 @@ struct PlayerDto {
     uint32_t playerID;
     std::string  raza;
     std::string  clase;
+    std::string clanName;
     int headId;
     uint8_t level;
     int hp;
@@ -46,12 +47,13 @@ struct PlayerDto {
 
 struct NPCData {
     std::string nombre;
-    uint8_t npcID;
+    uint32_t npcID;
     NpcType type;
     uint16_t x;
     uint16_t y;
     int      hp;
     int      hpMax;
+    uint16_t level = 0;
     bool estaVivo;
     bool estaMoviendo;
     bool hostile;

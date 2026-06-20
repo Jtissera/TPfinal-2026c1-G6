@@ -157,6 +157,7 @@ void ClientGameWorld::updateRemotePlayerEquipment(uint32_t entityId, const Equip
 
     remotePlayer.setEquipment(equipment, itemCatalog);
 
+
 }
 
 void ClientGameWorld::appendRemoteAttackTargets(
@@ -295,11 +296,6 @@ void ClientGameWorld::updateRemotePlayerLevel(
 
     if (it == remotePlayers.end())
     {
-        std::cout << "[REMOTE_LEVEL] ignorado, no existe id="
-                  << playerId
-                  << " level="
-                  << newLevel
-                  << std::endl;
         return;
     }
 

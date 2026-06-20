@@ -577,6 +577,7 @@ GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds)
                                       static_cast<uint16_t>(npc->getTileY() * tileSize),
                                       static_cast<uint16_t>(npc->getHp()),
                                       static_cast<uint16_t>(npc->getMaxHp()),
+                                      static_cast<uint16_t>(npc->getStats().level),
                                       npc->isHostile()});
 
         std::cout << "[GameWorld] NPC respawn mismo id="

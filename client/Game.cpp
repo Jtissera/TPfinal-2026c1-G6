@@ -1024,6 +1024,7 @@ void Game::loadAssets()
   assets->AddFont("ao_regular",
                   "assets/sprites/ui/fonts/Alegreya-Sans-AO-Regular.ttf", 14);
   assets->AddFont("cardo", "assets/sprites/ui/fonts/Cardo-Regular.ttf", 14);
+  assets->AddFont("eagle_lake", "assets/sprites/ui/fonts/EagleLake-Regular.ttf", 12);
 
   statusFont = assets->GetFont("ao_bold");
 
@@ -2299,12 +2300,14 @@ void Game::handleLevelUp(const LevelUpMessage &msg)
   if (updatedPlayerId == static_cast<uint32_t>(playerDto.playerID))
   {
     playerState.level = newLevel;
+    player->getComponent<NameplateComponent>().setLevel(newLevel);
     audioManager.playEffect("levelup");
     return;
   }
 
   if (clientWorld != nullptr)
   {
+    clientWorld->updateRemotePlayerLevel(updatedPlayerId, newLevel);
     clientWorld->updateRemotePlayerLevel(updatedPlayerId, newLevel);
   }
 }

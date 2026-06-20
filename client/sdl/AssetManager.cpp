@@ -141,12 +141,8 @@ Entity *AssetManager::CreateNpc(const NPCData &data)
         npcAnims.emplace("IdleDown", Animation(0, 1, 200));
     }
 
-    npc.addComponent<SpriteComponent>(
-        *this,
-        textureId,
-        true,
-        npcAnims,
-        npcConfig);
+    npc.addComponent<SpriteComponent>(*this,textureId,true,npcAnims,npcConfig);
+    npc.addComponent<NameplateComponent>(data.nombre,"",0,"",NameplateType::PassiveNpc,"eagle_lake");
     npc.addComponent<ColliderComponent>("npc");
     npc.addGroup(groupNPC);
 
@@ -202,7 +198,7 @@ Entity *AssetManager::CreateEnemy(const NPCData &data)
     enemy.addComponent<TransformComponent>(data.x, data.y);
     enemy.addComponent<SpriteComponent>(*this, bodyTextureId,
                                         true, enemyAnims, cfg);
-
+    enemy.addComponent<NameplateComponent>(data.nombre,"",data.level,"",NameplateType::Enemy,"eagle_lake");
     if (!atkCfg.textureId.empty())
     {
         SpriteSheetConfig attackSheetCfg = (attackDef != nullptr)
@@ -243,7 +239,7 @@ Entity *AssetManager::CreatePlayer(const PlayerDto &data)
     player.addComponent<TransformComponent>(data.xpos, data.ypos);
     player.addComponent<SpriteComponent>(*this, bodyTextureId, true, playerAnims, bodyConfig);
     player.getComponent<SpriteComponent>().setHeadTexture(headTextureId, data.headId);
-    player.addComponent<NameplateComponent>(data.nombre,data.clase,data.level,"",NameplateType::LocalPlayer);
+    player.addComponent<NameplateComponent>(data.nombre,data.clase,data.level,"",NameplateType::LocalPlayer,"eagle_lake");
     player.addComponent<EquipmentComponent>(*this, data.raza);
     player.addComponent<KeyboardController>(sendQueue);
     player.addComponent<ColliderComponent>("player");
@@ -645,6 +641,7 @@ Entity *AssetManager::CreateRemotePlayer(const PlayerDto &data)
 
     // Cabeza del jugador remoto.
     remotePlayer.getComponent<SpriteComponent>().setHeadTexture(headTextureId, data.headId);
+    remotePlayer.addComponent<NameplateComponent>(data.nombre,data.clase,data.level,"",NameplateType::RemotePlayer,"eagle_lake");
     remotePlayer.addComponent<EquipmentComponent>(*this, data.raza);
     remotePlayer.addComponent<ColliderComponent>("remote_player");
     remotePlayer.addGroup(groupPlayers);

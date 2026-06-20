@@ -5,7 +5,6 @@
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
 #include "common/network/messages/server/chat/chatNotificationMessage.h"
 #include "common/network/messages/server/npc/npcMoveMessage.h"
-#include "common/network/messages/server/npc/npcSpawnMessage.h"
 #include "common/network/messages/server/player/playerResurrectedMessage.h"
 #include "common/network/messages/server/npc/npcAttackMessage.h"
 
@@ -196,8 +195,15 @@ void GameLoop::worldUpdate(float deltaSeconds)
   for (const auto &npcSpawn : result.spawnedNpcs)
   {
     monitor.broadcast(std::make_shared<const NpcSpawnMessage>(
-        npcSpawn.npcId, npcSpawn.type, npcSpawn.name, npcSpawn.x, npcSpawn.y,
-        npcSpawn.hp, npcSpawn.maxHp, npcSpawn.hostile));
+        npcSpawn.npcId,
+        npcSpawn.type,
+        npcSpawn.name,
+        npcSpawn.x,
+        npcSpawn.y,
+        npcSpawn.hp,
+        npcSpawn.maxHp,
+        npcSpawn.level,
+        npcSpawn.hostile));
 
     std::cout << "[GameLoop] broadcast NPC respawn id=" << npcSpawn.npcId
               << " name=" << npcSpawn.name << std::endl;

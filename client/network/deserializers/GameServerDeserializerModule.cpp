@@ -191,14 +191,15 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
         [](PacketReader &reader) -> std::unique_ptr<Message>
         {
             const uint32_t npcId = reader.readUint32();
-            const auto type = static_cast<NpcType>(reader.readUint8());
+            const NpcType type = static_cast<NpcType>(reader.readUint8());
             const std::string name = reader.readString();
-
             const uint16_t x = reader.readUint16();
             const uint16_t y = reader.readUint16();
-
             const uint16_t hp = reader.readUint16();
             const uint16_t hpMax = reader.readUint16();
+
+            // Nuevo campo: debe leerse en el mismo orden en que el server lo escribe.
+            const uint16_t level = reader.readUint16();
 
             const bool hostile = reader.readUint8() != 0;
 
@@ -210,6 +211,7 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
                 y,
                 hp,
                 hpMax,
+                level,
                 hostile);
         });
     registry.registerDeserializer(

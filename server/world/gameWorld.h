@@ -56,6 +56,7 @@ public:
     uint16_t y;
     uint16_t hp;
     uint16_t maxHp;
+    uint16_t level;
     bool hostile;
   };
   struct DeathResult

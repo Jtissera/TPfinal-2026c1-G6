@@ -15,7 +15,8 @@
 enum class NameplateType {
     LocalPlayer,
     RemotePlayer,
-    Enemy
+    Enemy,
+    PassiveNpc
 };
 
 class NameplateComponent : public Component {
@@ -30,23 +31,24 @@ private:
     uint32_t level = 1;
     std::string clan;
 
+
     // Tipo de entidad: jugador local, remoto o enemigo.
     NameplateType type = NameplateType::RemotePlayer;
+    std::string fontId = "ao_regular";
 
-    // Textura cacheada del texto.
-    // No queremos recrear textura en cada frame si el texto no cambió.
-    SDL_Texture* textTexture = nullptr;
+    struct TextLine {
+        SDL_Texture* texture = nullptr;
+        int width = 0;
+        int height = 0;
+    };
 
-    // Tamaño de la textura cacheada.
-    int textWidth = 0;
-    int textHeight = 0;
+    std::vector<TextLine> textLines;
 
     // Indica si hay que reconstruir la textura.
     bool dirty = true;
 
-private:
     // Arma el texto contiguo que se va a mostrar.
-    std::string buildText() const;
+    std::vector<std::string> buildLines() const;
 
     // Elige color según el tipo de entidad.
     SDL_Color textColor() const;
@@ -62,7 +64,8 @@ public:
                        std::string className,
                        uint32_t level,
                        std::string clan,
-                       NameplateType type);
+                       NameplateType type,
+                       std::string fontId);
 
     ~NameplateComponent() override;
 

@@ -10,6 +10,7 @@ NpcSpawnMessage::NpcSpawnMessage(
     uint16_t y,
     uint16_t hp,
     uint16_t hpMax,
+    uint16_t level,
     bool hostile
 )
     : npcId(npcId),
@@ -19,6 +20,7 @@ NpcSpawnMessage::NpcSpawnMessage(
       y(y),
       hp(hp),
       hpMax(hpMax),
+      level(level),
       hostile(hostile) {}
 
 uint8_t NpcSpawnMessage::opCode() const {
@@ -33,6 +35,7 @@ void NpcSpawnMessage::serializeBody(PacketWriter& writer) const {
     writer.writeUint16(y);
     writer.writeUint16(hp);
     writer.writeUint16(hpMax);
+    writer.writeUint16(level);
     writer.writeUint8(hostile ? 1 : 0);
 }
 
@@ -66,4 +69,7 @@ uint16_t NpcSpawnMessage::getHpMax() const {
 
 bool NpcSpawnMessage::isHostile() const {
     return hostile;
+}
+uint16_t NpcSpawnMessage::getLevel() const {
+    return level;
 }

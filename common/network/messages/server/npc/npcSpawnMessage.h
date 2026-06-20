@@ -22,10 +22,19 @@ private:
     uint16_t y;
     uint16_t hp;
     uint16_t hpMax;
+    uint16_t level;
     bool hostile;
 
 public:
-    NpcSpawnMessage(uint32_t npcId,NpcType type,std::string name,uint16_t x,uint16_t y,uint16_t hp,uint16_t hpMax,bool hostil);
+    NpcSpawnMessage(uint32_t npcId,
+                NpcType type,
+                std::string name,
+                uint16_t x,
+                uint16_t y,
+                uint16_t hp,
+                uint16_t hpMax,
+                uint16_t level,
+                bool hostil);
 
     uint8_t opCode() const override;
     void serializeBody(PacketWriter& writer) const override;
@@ -37,6 +46,7 @@ public:
     uint16_t getY() const;
     uint16_t getHp() const;
     uint16_t getHpMax() const;
+    uint16_t getLevel() const;
     bool isHostile() const;
 };
 
