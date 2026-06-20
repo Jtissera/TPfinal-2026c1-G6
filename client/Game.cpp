@@ -474,9 +474,7 @@ void Game::render()
     RenderObject obj;
 
     int screenY = static_cast<int>(transform.position.y - camera.y) + 133;
-
     int spriteHeightOnScreen = 46 * transform.scale;
-
     obj.yFootprint = screenY + spriteHeightOnScreen;
 
     obj.drawFunc = [npcEntity, &renderContext]()
@@ -485,7 +483,9 @@ void Game::render()
     };
     ySorted.push_back(std::move(obj));
   }
-  for (auto&item:manager.getGroup(groupItems)) {
+
+  for (auto &item : manager.getGroup(groupItems))
+  {
     item->draw(renderContext);
   }
 
@@ -498,9 +498,13 @@ void Game::render()
   for (const auto &obj : ySorted)
     obj.drawFunc();
 
-  renderEnemyHealthBars();
   attackSystem.render(renderer, *assets, camera);
+
+  // Liberamos el clip antes de dibujar las barras
+  // para que no queden cortadas por el área del mapa.
   SDL_RenderSetClipRect(renderer, nullptr);
+
+  renderEnemyHealthBars();
 
   if (!statusMessage.empty() && statusMessageTexture != nullptr)
   {
@@ -526,6 +530,7 @@ void Game::render()
       statusMessageTexture = nullptr;
     }
   }
+
   if (resurrectionEndTime > 0)
   {
     const Uint32 now = SDL_GetTicks();
@@ -564,11 +569,14 @@ void Game::render()
       resurrectionEndTime = 0;
     }
   }
+
   renderHUD();
   TTF_Font *chatFont = assets->GetFont("ao_regular");
   miniChat.render(renderer, chatFont);
   SDL_RenderPresent(renderer);
 }
+
+
 
 void Game::clean()
 {

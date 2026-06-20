@@ -108,6 +108,15 @@ static AttackConfig attackConfigForNPC(NpcType type)
         return {"zombie_attack", 128, 128, 4, 4};
     case NpcType::ORC:
         return {"orc_attack", 128, 128, 4, 4};
+    case NpcType::GOBLIN:
+        return {"goblin_attack", 30, 70, 4, 3};
+
+    case NpcType::GOBLIN_CAVE:
+        return {"cavern_goblin_attack", 30, 70, 4, 3};
+    case NpcType::GOBLIN_DUNGEON:
+        return {"dungeon_goblin_attack", 30, 70, 4, 3};
+    case NpcType::GOBLIN_DESERT:
+        return {"desert_goblin_attack", 30, 70, 4, 3};
     default:
         return {"", 0, 0, 0, 0};  // sin ataque
     }
@@ -331,7 +340,7 @@ std::string AssetManager::textureForNPC(NpcType type)
 
     // Caverna
     case NpcType::GOBLIN_CAVE:
-        return "goblin";
+        return "cavern_goblin";
     case NpcType::SKELETON_CAVE:
         return "dungeon_skeleton";
     case NpcType::SPIDER_CAVE:
@@ -341,7 +350,7 @@ std::string AssetManager::textureForNPC(NpcType type)
 
     // Mazmorra
     case NpcType::GOBLIN_DUNGEON:
-        return "goblin";
+        return "dungeon_goblin";
     case NpcType::SKELETON_DUNGEON:
         return "dungeon_skeleton";
     case NpcType::SPIDER_DUNGEON:
@@ -351,7 +360,7 @@ std::string AssetManager::textureForNPC(NpcType type)
 
     // Desierto
     case NpcType::GOBLIN_DESERT:
-        return "goblin";
+        return "desert_goblin";
     case NpcType::SKELETON_DESERT:
         return "dungeon_skeleton";
     case NpcType::SPIDER_DESERT:
