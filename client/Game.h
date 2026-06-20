@@ -47,6 +47,7 @@
 #include "common/network/messages/server/system/mapChangedMessage.h"
 #include "common/network/messages/server/error/errorMessage.h"
 #include "common/network/messages/server/combat/combatLogMessage.h"
+#include "common/network/messages/server/npc/npcAttackMessage.h"
 
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
@@ -211,6 +212,7 @@ private:
     void handleNpcHealth(const NpcHealthMessage &msg);
     void handleNpcMove(const NpcMoveMessage &msg);
     void handlePlayerResurrected(const PlayerResurrectedMessage &msg);
+    void handleNpcAttack(const NpcAttackMessage &msg);
 
     void handleEntityDespawn(const EntityDespawnMessage &msg);
     void clearCurrentScene();

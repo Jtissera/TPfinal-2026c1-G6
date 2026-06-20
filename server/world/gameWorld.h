@@ -107,6 +107,14 @@ public:
       uint32_t targetId;
     };
     std::vector<ClanAllyHit> clanAllyHits;
+
+    struct NpcAttackAnim
+    {
+      uint32_t npcId;
+      Direction direction;
+    };
+    
+    std::vector<NpcAttackAnim> npcAttacksForAnim;
   };
 
   void addPlayer(Player player);

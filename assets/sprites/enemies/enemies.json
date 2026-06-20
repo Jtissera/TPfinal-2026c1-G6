@@ -5,6 +5,10 @@
       "path": "assets/sprites/enemies/skeleton/skeleton.png"
     },
     {
+      "id": "skeleton_attack",
+      "path": "assets/sprites/enemies/skeleton/skeleton_attack.png"
+    },
+    {
       "id": "goblin",
       "path": "assets/sprites/enemies/goblin.png"
     },
@@ -50,7 +54,11 @@
     },
     {
       "id": "dungeon_skeleton",
-      "path": "assets/sprites/enemies/dungeon_skeleton.png"
+      "path": "assets/sprites/enemies/skeleton/dungeon_skeleton.png"
+    },
+    {
+      "id": "dungeon_skeleton_attack",
+      "path": "assets/sprites/enemies/skeleton/dungeon_skeleton_attack.png"
     },
     {
       "id": "dungeon_spider",

@@ -717,6 +717,21 @@ for (auto &intent : npcResult.moveIntents)
         result.playerHits.push_back({attack.targetPlayerId, attack.damage});
         result.playersChanged.push_back(attack.targetPlayerId);
 
+        if (npcManager.hasNpc(attack.npcId))    
+        {
+            const Npc &attackerNpc = npcManager.getNpc(attack.npcId);
+            const int dx = target.getTileX() - attackerNpc.getTileX();
+            const int dy = target.getTileY() - attackerNpc.getTileY();
+
+            Direction dir;
+            if (std::abs(dx) > std::abs(dy))
+                dir = (dx > 0) ? Direction::RIGHT : Direction::LEFT;
+            else
+                dir = (dy > 0) ? Direction::DOWN : Direction::UP;
+
+            result.npcAttacksForAnim.push_back({attack.npcId, dir});
+        }
+
         if (!target.getClanName().empty())
         {
             result.clanAllyHits.push_back({target.getClanName(),

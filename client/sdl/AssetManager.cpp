@@ -53,7 +53,7 @@ static SpriteSheetConfig configForNPC(NpcType type)
     switch (type)
     {
     case NpcType::SKELETON:
-        return SpriteSheetConfig{95, 98, 1, 0, 0};
+        return SpriteSheetConfig{100, 98, 1, 0, 0};
     case NpcType::ZOMBIE:
     case NpcType::GUARD:
     case NpcType::SPIDER_DESERT:
@@ -67,6 +67,7 @@ static SpriteSheetConfig configForNPC(NpcType type)
 
     case NpcType::SKELETON_CAVE:
     case NpcType::SKELETON_DUNGEON:
+        return SpriteSheetConfig{100, 98, 1, 0, 0};
     case NpcType::SKELETON_DESERT:
     case NpcType::SPIDER_CAVE:
     case NpcType::SPIDER_DUNGEON:
@@ -82,6 +83,20 @@ static SpriteSheetConfig configForNPC(NpcType type)
 
     default:
         return SpriteSheetConfig{64, 64, 2, 0, 0};
+    }
+}
+
+static AttackConfig attackConfigForNPC(NpcType type)
+{
+    switch (type)
+    {
+    case NpcType::SKELETON:
+        return {"skeleton_attack", 103, 104, 4, 4};
+    case NpcType::SKELETON_DUNGEON:
+        return {"dungeon_skeleton_attack", 124, 94, 2, 4};
+    // agregás cada tipo con su propia config
+    default:
+        return {"", 0, 0, 0, 0};  // sin ataque
     }
 }
 
@@ -109,24 +124,38 @@ Entity *AssetManager::CreateNpc(const NPCData &data)
 
     return &npc;
 }
-
 Entity *AssetManager::CreateEnemy(const NPCData &data)
 {
     SpriteSheetConfig cfg = configForNPC(data.type);
+    AttackConfig atkCfg = attackConfigForNPC(data.type);
 
     std::map<std::string, Animation> enemyAnims;
-    enemyAnims.emplace("IdleDown", Animation(0, 1, 150));
-    
-    // Para caminar hacia abajo: usa la fila 4, abarcando 5 frames (las 5 columnas).
-    enemyAnims.emplace("WalkDown", Animation(4, 5, 100));
+    enemyAnims.emplace("IdleDown",  Animation(0, 1, 150));
+    enemyAnims.emplace("WalkDown",  Animation(4, 5, 100));
     enemyAnims.emplace("IdleUp",    Animation(0, 1, 150));
     enemyAnims.emplace("WalkUp",    Animation(5, 5, 100));
     enemyAnims.emplace("IdleRight", Animation(3, 1, 150));
     enemyAnims.emplace("WalkRight", Animation(7, 5, 100));
 
+    if (!atkCfg.textureId.empty())
+    {
+        enemyAnims.emplace("AttackDown",  Animation(0, atkCfg.framesPerRow, 150));
+        enemyAnims.emplace("AttackUp",    Animation(1, atkCfg.framesPerRow, 150));
+        enemyAnims.emplace("AttackLeft",  Animation(2, atkCfg.framesPerRow, 150));
+        enemyAnims.emplace("AttackRight", Animation(3, atkCfg.framesPerRow, 150));
+    }
+
     auto &enemy = manager->addEntity();
     enemy.addComponent<TransformComponent>(data.x, data.y);
-    enemy.addComponent<SpriteComponent>(*this, textureForNPC(data.type), true, enemyAnims, cfg);
+    enemy.addComponent<SpriteComponent>(*this, textureForNPC(data.type),
+                                        true, enemyAnims, cfg);
+
+    if (!atkCfg.textureId.empty())
+    {
+        enemy.getComponent<SpriteComponent>()
+             .setAttackTexture(atkCfg.textureId, atkCfg.frameWidth, atkCfg.frameHeight);
+    }
+
     enemy.addComponent<ColliderComponent>("enemy");
     enemy.addGroup(groupEnemies);
     return &enemy;

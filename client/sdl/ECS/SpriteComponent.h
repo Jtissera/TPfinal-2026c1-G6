@@ -1,4 +1,3 @@
-
 #ifndef PRUEBA_SDL_SPRITECOMPONENT_H
 #define PRUEBA_SDL_SPRITECOMPONENT_H
 
@@ -20,7 +19,6 @@ public:
     const SDL_Rect& getSrcRect() const;
     const SDL_Rect& getDestRect() const;
 
-
     SpriteComponent(
         AssetManager& assets,
         const std::string& id,
@@ -35,43 +33,49 @@ public:
     void setHeadTexture(const std::string& textureId, int selectedHeadIndex);
 
     void Play(const char* animName);
+    void PlayOnce(const char* animName, const std::string& returnAnim);
+    void setAttackTexture(const std::string& id);
 
     void init() override;
     void update(UpdateContext& context) override;
     void draw(RenderContext& context) override;
+
     int getStartX() const;
     int getStartY() const;
-
-    void setSpriteTextureAndConfig(const std::string& newTextureId,const SpriteSheetConfig& newConfig);
-    void setRenderOffset(int offsetX, int offsetY);
-    // Equipa visualmente un casco/capucha.
-    void setHelmetTexture(const std::string& textureId,
-    int offsetX,
-    int offsetY,
-    int srcW,
-    int srcH,
-    int downSrcX,
-    int downSrcY,
-    int leftSrcX,
-    int leftSrcY,
-    int rightSrcX,
-    int rightSrcY,
-    int upSrcX,
-    int upSrcY
-);
-    // Quita visualmente el casco/capucha.
-    void clearHelmet();
     int getAnimationIndex() const { return animationIndex; }
+
+    void setSpriteTextureAndConfig(const std::string& newTextureId, const SpriteSheetConfig& newConfig);
+    void setRenderOffset(int offsetX, int offsetY);
+    void setHelmetTexture(const std::string& textureId,
+        int offsetX, int offsetY,
+        int srcW, int srcH,
+        int downSrcX, int downSrcY,
+        int leftSrcX, int leftSrcY,
+        int rightSrcX, int rightSrcY,
+        int upSrcX, int upSrcY);
+    void clearHelmet();
     void setBody(const std::string& textureId, const SpriteSheetConfig& config);
     void clearHead();
-
     void setManualAnimation(bool manual);
     void StepFrame();
+
+    // attack
+    SDL_Texture* attackTexture = nullptr;
+    int attackFrameWidth;
+    int attackFrameHeight;
+    bool usingAttackTexture = false;
+    int animStartX = 0;
+
+    // one-shot
+    bool isOneShot = false;
+    std::string oneShotReturnAnim = "IdleDown";
+    Uint32 oneShotEndTime = 0;
+
+    void setAttackTexture(const std::string &id, int frameW, int frameH);
 
 private:
     bool isManualAnimation = false;
     int manualFrameIndex = 0;
-
 
     AssetManager& assets;
     TransformComponent* transform = nullptr;
@@ -95,7 +99,6 @@ private:
     int startY = 0;
 
     bool hasHead = false;
-
     int headIndex = 0;
     int headFrameWidth = 16;
     int headFrameHeight = 16;
@@ -106,14 +109,8 @@ private:
     int renderOffsetX = 0;
     int renderOffsetY = 0;
 
-    // Textura del casco/capucha equipada.
-    // Se dibuja encima de la cabeza.
     SDL_Texture* helmetTexture = nullptr;
-
-    // Indica si hay casco visual equipado.
     bool hasHelmet = false;
-
-    // Offset visual del casco respecto de la cabeza.
     int helmetOffsetX = 0;
     int helmetOffsetY = 0;
     int helmetSrcX = 0;
@@ -130,9 +127,7 @@ private:
     int helmetUpSrcY = 0;
 
     std::string currentAnim = "";
-
-
-
+    
 };
 
 #endif

@@ -47,22 +47,17 @@ void SpriteComponent::setHeadTexture(const std::string &textureId,
 void SpriteComponent::Play(const char *animName)
 {
     std::string name(animName);
+    if (animations.count(name) == 0) return;
+    if (currentAnim == name) return;
 
-    if (animations.count(name) == 0)
-    {
-        return;
-    }
-
-    if (currentAnim == name)
-    {
-        return;
-    }
-
+    isOneShot = false;
+    usingAttackTexture = false;
     currentAnim = name;
     frames = animations[name].frames;
     animationIndex = animations[name].index;
     speed = animations[name].speed;
     manualFrameIndex = 0;
+    animStartX = startX; 
 }
 
 void SpriteComponent::init()
@@ -75,23 +70,27 @@ void SpriteComponent::init()
     srcRect.h = frameHeight;
 }
 
+// SpriteComponent.cpp
 void SpriteComponent::update(UpdateContext &context)
 {
+    // check one-shot terminado
+    if (isOneShot && SDL_GetTicks() >= oneShotEndTime)
+    {
+        isOneShot = false;
+        usingAttackTexture = false;
+        currentAnim = "";
+        animStartX = startX;
+        Play(oneShotReturnAnim.c_str());
+    }
+
     if (animated && frames > 0)
     {
-        if (isManualAnimation)
-        {
-            srcRect.x = startX + (manualFrameIndex * frameWidth);
-        }
-        else
-        {
-            int currentFrame = static_cast<int>((SDL_GetTicks() / speed) % frames);
-            srcRect.x = startX + currentFrame * frameWidth;
-        }
+        int currentFrame = static_cast<int>((SDL_GetTicks() / speed) % frames);
+        srcRect.x = animStartX + currentFrame * frameWidth;
     }
     else
     {
-        srcRect.x = startX;
+        srcRect.x = animStartX;
     }
 
     srcRect.y = startY + animationIndex * frameHeight;
@@ -106,20 +105,26 @@ void SpriteComponent::update(UpdateContext &context)
     destRect.h = frameHeight * scale;
 }
 
+
 void SpriteComponent::draw(RenderContext &context)
 {
-
-    if (bodyTexture == nullptr)
+    if (bodyTexture == nullptr && !(usingAttackTexture && attackTexture != nullptr))
     {
         return;
     }
 
-    SDL_Rect bodyDest = destRect;
+    SDL_Texture *texToDraw = (usingAttackTexture && attackTexture != nullptr)
+                              ? attackTexture : bodyTexture;
 
+    SDL_Rect bodyDest = destRect;
     bodyDest.x += renderOffsetX * scale;
     bodyDest.y += renderOffsetY * scale;
 
-    context.textureManager.Draw(bodyTexture, srcRect, bodyDest, spriteFlip);
+    context.textureManager.Draw(texToDraw, srcRect, bodyDest, spriteFlip);
+
+    // Si estamos en animación de ataque no dibujamos cabeza ni casco
+    if (usingAttackTexture)
+        return;
 
     if (hasHead && headTexture != nullptr)
     {
@@ -129,23 +134,10 @@ void SpriteComponent::draw(RenderContext &context)
         headSrc.x = headStartX + headIndex * headStepX;
 
         int headDirectionRow = 0;
-
-        if (animationIndex == 0)
-        {
-            headDirectionRow = 0;
-        }
-        else if (animationIndex == 1)
-        {
-            headDirectionRow = 1;
-        }
-        else if (animationIndex == 2)
-        {
-            headDirectionRow = 2;
-        }
-        else if (animationIndex == 3)
-        {
-            headDirectionRow = 3;
-        }
+        if (animationIndex == 0)      headDirectionRow = 0;
+        else if (animationIndex == 1) headDirectionRow = 1;
+        else if (animationIndex == 2) headDirectionRow = 2;
+        else if (animationIndex == 3) headDirectionRow = 3;
 
         headSrc.y = headStartY + headDirectionRow * headStepY;
         headSrc.w = headFrameWidth;
@@ -176,6 +168,7 @@ void SpriteComponent::draw(RenderContext &context)
         }
 
         context.textureManager.Draw(headTexture, headSrc, headDst, spriteFlip);
+
         if (hasHelmet && helmetTexture != nullptr)
         {
             SDL_Rect helmetSrc{};
@@ -207,20 +200,17 @@ void SpriteComponent::draw(RenderContext &context)
             helmetSrc.h = helmetSrcH;
 
             SDL_Rect helmetDst{};
-
             helmetDst.w = helmetSrcW * 8 / 5;
             helmetDst.h = helmetSrcH * 8 / 5;
-
             helmetDst.x = headDst.x + (headDst.w / 2) - (helmetDst.w / 2) + helmetOffsetX;
             helmetDst.y = headDst.y + (headDst.h / 2) - (helmetDst.h / 2) + helmetOffsetY;
 
-            SDL_RendererFlip helmetFlip = SDL_FLIP_NONE;
-
-            context.textureManager.Draw(helmetTexture, helmetSrc, helmetDst, helmetFlip);
-
+            context.textureManager.Draw(helmetTexture, helmetSrc, helmetDst, SDL_FLIP_NONE);
         }
     }
 }
+
+
 const SDL_Rect &SpriteComponent::getSrcRect() const { return srcRect; }
 
 const SDL_Rect &SpriteComponent::getDestRect() const { return destRect; }
@@ -341,4 +331,31 @@ void SpriteComponent::StepFrame()
     {
         manualFrameIndex = (manualFrameIndex + 1) % frames;
     }
+}
+
+void SpriteComponent::PlayOnce(const char *animName, const std::string &returnAnim)
+{
+    std::string name(animName);
+    if (animations.count(name) == 0) return;
+
+    currentAnim = "";
+    
+    isOneShot = true;
+    oneShotReturnAnim = returnAnim;
+    usingAttackTexture = (attackTexture != nullptr);
+    
+    // aplicamos la animación
+    currentAnim = name;
+    frames = animations[name].frames;
+    animationIndex = animations[name].index;
+    speed = animations[name].speed;
+    manualFrameIndex = 0;
+    animStartX = 0; // attack sheet siempre empieza en 0
+    
+    oneShotEndTime = SDL_GetTicks() + static_cast<Uint32>(frames * speed);
+}
+
+void SpriteComponent::setAttackTexture(const std::string &id, int frameW, int frameH)
+{
+    attackTexture = assets.GetTexture(id);
 }

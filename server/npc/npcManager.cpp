@@ -65,9 +65,10 @@ NpcManager::tick(const std::unordered_map<uint32_t, Player> &players)
         else if (intent.type == NpcIntent::Type::ATTACK && npc.canAttack())
         {
             result.attacks.push_back({
-                intent.targetId,
-                rollDamage(npc.getStats()),
-                npc.getStats().xpMultiplier
+            id,                          
+            intent.targetId,
+            rollDamage(npc.getStats()),
+            npc.getStats().xpMultiplier
             });
 
             npc.resetAttackCooldown();

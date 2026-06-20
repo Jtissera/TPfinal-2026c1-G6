@@ -12,6 +12,7 @@
 #include "common/network/messages/server/inventory/goldOnGroundMessage.h"
 #include "common/network/messages/server/inventory/itemOnGroundMessage.h"
 
+
 Game::Game() {}
 
 void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
@@ -2158,6 +2159,10 @@ void Game::processServerMessage(const Message &msg)
   case ServerOpCode::MSG_NPC_MOVE:
     handleNpcMove(static_cast<const NpcMoveMessage &>(msg));
     return;
+  case ServerOpCode::MSG_NPC_ATTACK:
+    handleNpcAttack(static_cast<const NpcAttackMessage &>(msg));
+    return;
+
   case ServerOpCode::MSG_ERROR:
   {
     const auto &err = static_cast<const ErrorMessage &>(msg);
@@ -2397,6 +2402,36 @@ void Game::handleNpcHealth(const NpcHealthMessage &msg)
   }
 }
 
+void Game::handleNpcAttack(const NpcAttackMessage &msg)
+{
+    auto it = enemies.find(msg.getNpcId());
+    if (it == enemies.end() || it->second == nullptr) return;
+    if (!it->second->hasComponent<SpriteComponent>()) return;
+
+    auto &sprite = it->second->getComponent<SpriteComponent>();
+
+    switch (msg.getDirection())
+    {
+    case Direction::DOWN:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.PlayOnce("AttackDown", "IdleDown");
+        break;
+    case Direction::UP:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.PlayOnce("AttackUp", "IdleDown");
+        break;
+    case Direction::LEFT:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.PlayOnce("AttackLeft", "IdleDown");
+        break;
+    case Direction::RIGHT:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.PlayOnce("AttackRight", "IdleDown");
+        break;
+    case Direction::NONE:
+        break;
+    }
+}
 
 void Game::handleNpcMove(const NpcMoveMessage &msg)
 {
