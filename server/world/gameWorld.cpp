@@ -635,28 +635,62 @@ void GameWorld::tickNpcs(WorldTickResult &result)
 {
     auto npcResult = npcManager.tick(players);
 
-    for (auto &intent : npcResult.moveIntents)
+for (auto &intent : npcResult.moveIntents)
+{
+    int toX = intent.toX;
+    int toY = intent.toY;
+
+    if (!collision.isWalkable(toX, toY))
     {
-        if (!collision.isWalkable(intent.toX, intent.toY))
-            continue;
+        
+        const int dx[4] = {1, -1, 0, 0};
+        const int dy[4] = {0, 0, 1, -1};
+        int order[4] = {0, 1, 2, 3};
 
-        const Npc &npc = npcManager.getNpcs().at(intent.npcId);
-        if (!npcManager.isSameZone(intent.toX, intent.toY, npc.getStats().homeZone))
-            continue;
 
-        if (!occupancy.move(intent.fromX, intent.fromY,
-                            intent.toX, intent.toY, intent.npcId))
-            continue;
+        for (int i = 3; i > 0; --i)
+        {
+            int j = std::rand() % (i + 1);
+            std::swap(order[i], order[j]);
+        }
 
-        const Tile &destTile = mapData.at(
-            static_cast<uint16_t>(intent.toX),
-            static_cast<uint16_t>(intent.toY));
-        if (destTile.zone == ZoneType::SAFE)
-            continue;
+        bool foundAlternative = false;
+        for (int k = 0; k < 4; ++k)
+        {
+            const int idx = order[k];
+            const int rx = intent.fromX + dx[idx];
+            const int ry = intent.fromY + dy[idx];
 
-        npcManager.applyMove(intent.npcId, intent.toX, intent.toY);
-        result.npcsMoved.push_back(intent.npcId);
+            if (collision.isWalkable(rx, ry))
+            {
+                toX = rx;
+                toY = ry;
+                foundAlternative = true;
+                break;
+            }
+        }
+
+        if (!foundAlternative)
+        {
+            continue; // Las 4 direcciones están bloqueadas, no se mueve este tick.
+        }
     }
+
+    const Npc &npc = npcManager.getNpcs().at(intent.npcId);
+    if (!npcManager.isSameZone(toX, toY, npc.getStats().homeZone))
+        continue;
+
+    if (!occupancy.move(intent.fromX, intent.fromY, toX, toY, intent.npcId))
+        continue;
+
+    const Tile &destTile = mapData.at(
+        static_cast<uint16_t>(toX), static_cast<uint16_t>(toY));
+    if (destTile.zone == ZoneType::SAFE)
+        continue;
+
+    npcManager.applyMove(intent.npcId, toX, toY);
+    result.npcsMoved.push_back(intent.npcId);
+}
 
     for (auto &attack : npcResult.attacks)
     {

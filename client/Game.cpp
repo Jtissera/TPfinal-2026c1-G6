@@ -2396,6 +2396,8 @@ void Game::handleNpcHealth(const NpcHealthMessage &msg)
     }
   }
 }
+
+
 void Game::handleNpcMove(const NpcMoveMessage &msg)
 {
   const uint32_t npcId = msg.getNpcId();
@@ -2407,6 +2409,7 @@ void Game::handleNpcMove(const NpcMoveMessage &msg)
   if (enemyEntity == nullptr) return;
 
   auto &transform = enemyEntity->getComponent<TransformComponent>();
+  
 
   const float newX = static_cast<float>(msg.getX());
   const float newY = static_cast<float>(msg.getY());
@@ -2418,7 +2421,70 @@ void Game::handleNpcMove(const NpcMoveMessage &msg)
   if (enemyEntity->hasComponent<SpriteComponent>())
   {
     auto &sprite = enemyEntity->getComponent<SpriteComponent>();
-    sprite.Play(isMoving ? "WalkDown" : "IdleDown");
+
+    if (isMoving)
+    {
+      // Elegimos la dirección dominante (el eje con mayor desplazamiento).
+      if (std::abs(deltaX) > std::abs(deltaY))
+      {
+        if (deltaX > 0)
+        {
+          enemyFacing[npcId] = FacingDirection::Right;
+          sprite.spriteFlip = SDL_FLIP_NONE;
+        }
+        else
+        {
+          enemyFacing[npcId] = FacingDirection::Left;
+          sprite.spriteFlip = SDL_FLIP_HORIZONTAL; // mirror de la fila "Right"
+        }
+        sprite.Play("WalkRight"); // misma fila para left/right, con flip
+      }
+      else
+      {
+        if (deltaY > 0)
+        {
+          enemyFacing[npcId] = FacingDirection::Down;
+          sprite.spriteFlip = SDL_FLIP_NONE;
+          sprite.Play("WalkDown");
+        }
+        else
+        {
+          enemyFacing[npcId] = FacingDirection::Up;
+          sprite.spriteFlip = SDL_FLIP_NONE;
+          sprite.Play("WalkUp");
+        }
+      }
+    }
+    else
+    {
+      // Quieto: mostramos el Idle de la última dirección conocida.
+      FacingDirection facing = FacingDirection::Down;
+      auto facingIt = enemyFacing.find(npcId);
+      if (facingIt != enemyFacing.end())
+      {
+        facing = facingIt->second;
+      }
+
+      switch (facing)
+      {
+      case FacingDirection::Up:
+        sprite.Play("IdleUp");
+        break;
+      case FacingDirection::Left:
+        sprite.spriteFlip = SDL_FLIP_HORIZONTAL;
+        sprite.Play("IdleRight");
+        break;
+      case FacingDirection::Right:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.Play("IdleRight");
+        break;
+      case FacingDirection::Down:
+      default:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.Play("IdleDown");
+        break;
+      }
+    }
   }
 
   if (isMoving)
@@ -2446,7 +2512,6 @@ void Game::handleNpcMove(const NpcMoveMessage &msg)
     enemyMoveInterp.erase(npcId);
   }
 }
-
 void Game::handlePlayerResurrected(const PlayerResurrectedMessage &msg)
 {
   const uint32_t resurrectedId = msg.getPlayerId();

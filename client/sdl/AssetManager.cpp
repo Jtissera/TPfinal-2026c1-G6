@@ -115,10 +115,14 @@ Entity *AssetManager::CreateEnemy(const NPCData &data)
     SpriteSheetConfig cfg = configForNPC(data.type);
 
     std::map<std::string, Animation> enemyAnims;
-    enemyAnims.emplace("IdleDown", Animation(4, 1, 150));
+    enemyAnims.emplace("IdleDown", Animation(0, 1, 150));
     
     // Para caminar hacia abajo: usa la fila 4, abarcando 5 frames (las 5 columnas).
     enemyAnims.emplace("WalkDown", Animation(4, 5, 100));
+    enemyAnims.emplace("IdleUp",    Animation(0, 1, 150));
+    enemyAnims.emplace("WalkUp",    Animation(5, 5, 100));
+    enemyAnims.emplace("IdleRight", Animation(3, 1, 150));
+    enemyAnims.emplace("WalkRight", Animation(7, 5, 100));
 
     auto &enemy = manager->addEntity();
     enemy.addComponent<TransformComponent>(data.x, data.y);

@@ -26,6 +26,8 @@
 #include <unordered_map>
 #include <vector>
 #include <cstdlib>
+#include <algorithm>
+
 class ClanManager;
 
 class GameWorld
