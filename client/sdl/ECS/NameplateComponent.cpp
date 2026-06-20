@@ -48,12 +48,12 @@ std::vector<std::string> NameplateComponent::buildLines() const
 
     // Enemigo hostil: nombre + nivel.
     if (type == NameplateType::Enemy) {
-        lines.push_back(name + " | Nivel " + std::to_string(level));
+        lines.push_back(name + "  Nivel - " + std::to_string(level));
         return lines;
     }
 
     // Jugadores: nombre + nivel.
-    lines.push_back(name + " | Nivel " + std::to_string(level));
+    lines.push_back(name + "  Nivel - " + std::to_string(level));
 
     // Segunda línea: clase.
     if (!className.empty()) {
@@ -186,8 +186,8 @@ void NameplateComponent::draw(RenderContext& context)
 
     const int entityWidth = transform->width * transform->scale;
 
-    constexpr int lineSpacing = 1;
-    constexpr int marginAboveHead = 10;
+    constexpr int lineSpacing = 0;
+    constexpr int marginAboveHead = 100;
 
     int totalHeight = 0;
 

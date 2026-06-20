@@ -499,7 +499,7 @@ void Game::render()
   for (const auto &obj : ySorted)
     obj.drawFunc();
 
-  renderEnemyHealthBars();
+  // renderEnemyHealthBars();
   attackSystem.render(renderer, *assets, camera);
   SDL_RenderSetClipRect(renderer, nullptr);
 
@@ -2331,6 +2331,16 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg)
 
       attackSystem.setEnemyHealth(msg.getNpcId(), static_cast<int>(msg.getHp()),
                                   static_cast<int>(msg.getHpMax()));
+      auto it = enemies.find(msg.getNpcId());
+
+      if (it != enemies.end() && it->second != nullptr &&
+          it->second->hasComponent<HealthBarComponent>())
+      {
+        it->second->getComponent<HealthBarComponent>().setHealth(
+            msg.getHp(),
+            msg.getHpMax()
+        );
+      }
 
 
       return;
@@ -2351,7 +2361,7 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg)
 
   npcData.hp = static_cast<int>(msg.getHp());
   npcData.hpMax = static_cast<int>(msg.getHpMax());
-
+  npcData.level = static_cast<int>(msg.getLevel());
   npcData.estaVivo = msg.getHp() > 0;
   npcData.estaMoviendo = false;
   npcData.hostile = msg.isHostile();
@@ -2389,21 +2399,31 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg)
   }
 }
 
+
+
 void Game::handleNpcHealth(const NpcHealthMessage &msg)
 {
+  // ID del NPC cuya vida cambió.
   const uint32_t npcId = msg.getNpcId();
 
   attackSystem.setEnemyHealth(npcId, msg.getHp(), msg.getMaxHp());
 
-  if (msg.getHp() <= 0)
-  {
-    auto it = enemies.find(npcId);
+  auto it = enemies.find(npcId);
 
-    if (it != enemies.end())
-    {
-      enemies.erase(it);
-    }
+  // Si existe la entidad y tiene HealthBarComponent,
+  // actualizamos su barra de vida visual.
+  if (it != enemies.end() &&
+      it->second != nullptr &&
+      it->second->hasComponent<HealthBarComponent>())
+  {
+    it->second->getComponent<HealthBarComponent>().setHealth(
+        static_cast<int>(msg.getHp()),
+        static_cast<int>(msg.getMaxHp())
+    );
   }
+
+  // Si hp <= 0, HealthBarComponent no dibuja la barra
+  // y AttackSystem ya lo marca como muerto.
 }
 
 void Game::handleNpcAttack(const NpcAttackMessage &msg)

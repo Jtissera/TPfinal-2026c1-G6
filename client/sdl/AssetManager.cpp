@@ -199,6 +199,7 @@ Entity *AssetManager::CreateEnemy(const NPCData &data)
     enemy.addComponent<SpriteComponent>(*this, bodyTextureId,
                                         true, enemyAnims, cfg);
     enemy.addComponent<NameplateComponent>(data.nombre,"",data.level,"",NameplateType::Enemy,"eagle_lake");
+    enemy.addComponent<HealthBarComponent>(data.hp,data.hpMax,80,10,100);
     if (!atkCfg.textureId.empty())
     {
         SpriteSheetConfig attackSheetCfg = (attackDef != nullptr)
@@ -642,6 +643,7 @@ Entity *AssetManager::CreateRemotePlayer(const PlayerDto &data)
     // Cabeza del jugador remoto.
     remotePlayer.getComponent<SpriteComponent>().setHeadTexture(headTextureId, data.headId);
     remotePlayer.addComponent<NameplateComponent>(data.nombre,data.clase,data.level,"",NameplateType::RemotePlayer,"eagle_lake");
+    remotePlayer.addComponent<HealthBarComponent>(data.hp,data.hpMax,80,10,100);
     remotePlayer.addComponent<EquipmentComponent>(*this, data.raza);
     remotePlayer.addComponent<ColliderComponent>("remote_player");
     remotePlayer.addGroup(groupPlayers);

@@ -12,5 +12,6 @@
 #include "EquipmentComponent.h"
 #include "NpcTypeComponent.h"
 #include "NameplateComponent.h"
+#include "HealthBarComponent.h"
 
 #endif // PRUEBA_SDL_COMPONENTS_H_H
