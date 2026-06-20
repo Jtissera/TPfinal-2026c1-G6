@@ -7,7 +7,7 @@ host = "localhost"
 port = 8080
 tick_rate_ms = 22          # milisegundos entre ticks del game loop
 max_clients = 50
-persist_every_n_ticks = 300
+persist_every_n_ticks = 70
 
 
 
@@ -568,8 +568,8 @@ attack_cooldown_ms = 1700
 move_cooldown_ms   = 950
 zones              = ["COMBAT"]
 
-[npcs.guard]
-name = "Guardia"
+[npcs.orc]
+name = "Orco"
 level = 5
 max_hp = 100
 damage_min = 8

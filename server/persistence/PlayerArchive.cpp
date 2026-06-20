@@ -13,14 +13,23 @@ static constexpr std::size_t INDEX_KEY_LEN = 48;
 static constexpr std::size_t INDEX_ENTRY_SIZE =
     INDEX_KEY_LEN + sizeof(uint64_t);
 
-// ─── helper ──────────────────────────────────────────────────────────────────
 
 static std::string makeKey(const std::string &name, uint32_t gameId) {
   return name + "@" + std::to_string(gameId);
 }
 
-// ─── constructor / destructor
-// ─────────────────────────────────────────────────
+// Al escribir, la clave del índice usa siempre la sala pública (originGameId
+// si está en una instancia, gameId si está en sala pública). Así load() con
+// el publicGameId siempre encuentra al jugador aunque la instancia haya
+// desaparecido tras un restart.
+static std::string makeKeyForIndex(const PlayerSnapshot &snap) {
+  std::string name(snap.name, strnlen(snap.name, sizeof(snap.name)));
+  uint32_t keyId =
+      (snap.originGameId != 0) ? snap.originGameId : snap.gameId;
+  return name + "@" + std::to_string(keyId);
+}
+
+
 
 PlayerArchive::PlayerArchive(const std::string &datPath,
                              const std::string &indexPath,
@@ -57,9 +66,6 @@ PlayerArchive::~PlayerArchive() {
   }
 }
 
-// ─── índice
-// ───────────────────────────────────────────────────────────────────
-
 void PlayerArchive::loadIndex() {
   std::ifstream f(indexPath_, std::ios::binary);
   if (!f.is_open())
@@ -83,12 +89,10 @@ uint64_t PlayerArchive::allocateSlot(const std::string &key) {
   return offset;
 }
 
-// ─── snapshot
-// ─────────────────────────────────────────────────────────────────
-
 PlayerSnapshot PlayerArchive::toSnapshot(const Player &player,
                                          const std::string &mapId,
-                                         uint32_t gameId) const {
+                                         uint32_t gameId,
+                                         uint32_t originGameId) const {
   PlayerSnapshot snap;
   std::memset(&snap, 0, sizeof(snap));
   snap.version = SNAPSHOT_VERSION;
@@ -108,6 +112,8 @@ PlayerSnapshot PlayerArchive::toSnapshot(const Player &player,
   snap.gold = player.getGold();
   snap.experience = player.getExp();
   snap.gameId = gameId;
+  snap.originGameId = originGameId;
+  snap.isGhost = player.isGhost() ? 1 : 0;
 
   const auto &invItems = player.getInventory().getItems();
   snap.itemCount =
@@ -138,21 +144,17 @@ PlayerSnapshot PlayerArchive::toSnapshot(const Player &player,
     snap.equipped[i].slot = static_cast<uint8_t>(i);
   }
 
-  std::cout << "[Archive] toSnapshot key='" << makeKey(player.getName(), gameId)
-            << "' mapId='" << mapId << "'" << std::endl;
+  std::cout << "[Archive] toSnapshot key='" << makeKeyForIndex(snap)
+            << "' mapId='" << mapId << "' originGameId=" << originGameId
+            << std::endl;
   return snap;
 }
 
-// ─── hilo worker
-// ──────────────────────────────────────────────────────────────
 
 void PlayerArchive::enqueue(PlayerSnapshot snap, uint32_t gameId) {
   snap.gameId = gameId;
-  std::cout << "[Archive] enqueue key='"
-            << makeKey(std::string(snap.name,
-                                   strnlen(snap.name, sizeof(snap.name))),
-                       gameId)
-            << "'" << std::endl;
+  std::cout << "[Archive] enqueue key='" << makeKeyForIndex(snap) << "'"
+            << std::endl;
   snapQueue.try_push(std::move(snap));
 }
 
@@ -163,13 +165,11 @@ void PlayerArchive::run() {
       writeSnapshot(snap);
     }
   } catch (const ClosedQueue &) {
-    PlayerSnapshot snap;
-    while (snapQueue.try_pop(snap))
-      writeSnapshot(snap);
-    dat_.flush();
+
   } catch (const std::exception &e) {
-    std::cerr << "[PlayerArchive] error: " << e.what() << std::endl;
+    std::cerr << "[PlayerArchive] error inesperado: " << e.what() << std::endl;
   }
+  dat_.flush();
 }
 
 void PlayerArchive::stop() {
@@ -177,8 +177,6 @@ void PlayerArchive::stop() {
   snapQueue.close();
 }
 
-// ─── escritura
-// ────────────────────────────────────────────────────────────────
 
 void PlayerArchive::writeSnapshot(const PlayerSnapshot &snap) {
   std::string name(snap.name, strnlen(snap.name, sizeof(snap.name)));
@@ -189,7 +187,7 @@ void PlayerArchive::writeSnapshot(const PlayerSnapshot &snap) {
     return;
   }
 
-  std::string key = makeKey(name, snap.gameId);
+  std::string key = makeKeyForIndex(snap);
 
   if (key.size() >= INDEX_KEY_LEN) {
     std::cerr << "[Archive] ERROR: clave '" << key << "' supera los "
@@ -232,8 +230,34 @@ void PlayerArchive::writeSnapshot(const PlayerSnapshot &snap) {
   }
 }
 
-// ─── lectura
-// ──────────────────────────────────────────────────────────────────
+
+std::optional<PlayerSnapshot> PlayerArchive::loadSnapshot(
+    const std::string &name, uint32_t gameId) const {
+
+  std::string key = makeKey(name, gameId);
+
+  uint64_t offset = 0;
+  {
+    std::shared_lock lock(indexMutex);
+    auto it = index_.find(key);
+    if (it == index_.end())
+      return std::nullopt;
+    offset = it->second;
+  }
+
+  std::ifstream reader(datPath_, std::ios::binary);
+  if (!reader.is_open())
+    return std::nullopt;
+
+  reader.seekg(static_cast<std::streamoff>(offset));
+  PlayerSnapshot snap;
+  reader.read(reinterpret_cast<char *>(&snap), sizeof(PlayerSnapshot));
+  if (!reader)
+    return std::nullopt;
+
+  return snap;
+}
+
 
 std::optional<Player> PlayerArchive::load(const std::string &name,
                                           uint32_t gameId) {
@@ -286,8 +310,9 @@ std::optional<Player> PlayerArchive::load(const std::string &name,
 
   player.markInitialInventoryGiven();
 
-  if (player.getHp() <= 0)
+  if (snap.isGhost == 1) {
     player.forceGhostState();
+  }
 
   for (uint8_t i = 0; i < snap.itemCount; ++i) {
     const ItemSnapshot &src = snap.items[i];
@@ -303,16 +328,22 @@ std::optional<Player> PlayerArchive::load(const std::string &name,
   }
 
   for (std::size_t i = 0; i < 4; ++i) {
-    const EquipSlotSnapshot &eq = snap.equipped[i];
-    if (eq.catalogId == 0)
-      continue;
-    auto optItem = itemRepo.findByCatalogId(eq.catalogId);
-    if (!optItem)
-      continue;
-    uint32_t instanceId = optItem->instanceId;
-    player.getInventory().addItem(std::move(*optItem));
-    player.getInventory().equipItem(instanceId);
-  }
+      const EquipSlotSnapshot &eq = snap.equipped[i];
+      if (eq.catalogId == 0)
+        continue;
+
+      const Item *found = nullptr;
+      for (const Item &item : player.getInventory().getItems()) {
+        if (item.catalogId == eq.catalogId) {
+          found = &item;
+          break;
+        }
+      }
+
+      if (found) {
+        player.getInventory().equipItem(found->instanceId);
+      }
+    }
 
   std::cout << "[Archive::load] key='" << key << "' hp=" << player.getHp()
             << " pixelX=" << player.getPixelX()

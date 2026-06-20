@@ -31,7 +31,7 @@ private:
     QRadioButton *_rbGoblin;
     QRadioButton *_rbSkeleton;
     QRadioButton *_rbZombie;
-    QRadioButton *_rbGuard;
+    QRadioButton *_rbOrc;
     QButtonGroup *_group;
 
     // Caverna

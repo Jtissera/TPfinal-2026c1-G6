@@ -27,7 +27,9 @@ public:
            Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
            Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
            uint32_t gameId, const toml::table &config, PlayerArchive &archive,
-           const std::string &mapId, ClanManager &clanManager);
+           const std::string &mapId, ClanManager &clanManager,
+           uint32_t originRoomId);
+
   void run() override;
   void stop() override;
 
@@ -37,6 +39,7 @@ public:
 private:
   PlayerArchive &archive;
   std::string mapId;
+  const uint32_t originRoomId;
   uint32_t persistTickCounter = 0;
   uint32_t persistEveryNTicks = 0;
   Queue<ClientMessage> &gameQueue;

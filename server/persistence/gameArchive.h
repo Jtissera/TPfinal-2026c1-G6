@@ -24,10 +24,8 @@ public:
   void save(uint32_t gameId, const std::string &gameName,
             const std::string &mapPath, uint8_t maxPlayers);
 
-  // Devuelve todas las partidas guardadas (para restaurar al arrancar).
   std::vector<GameRecord> loadAll() const;
 
-  // Devuelve el mayor gameId guardado (para restaurar nextGameId).
   uint32_t maxGameId() const;
 
 private:

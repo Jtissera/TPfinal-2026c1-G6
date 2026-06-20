@@ -509,12 +509,26 @@ void ActionDispatcher::handleAttackPlayer(
         }
         else if (result.failReason == CombatSystem::Result::FailReason::LEVEL_TOO_LOW)
         {
+            std::cout << "[COMBAT] attackerId=" << attackerId
+          << " level=" << attacker.getLevel()
+          << " targetId=" << targetId  
+          << " level=" << target.getLevel()
+          << " failReason=" << static_cast<int>(result.failReason)
+          << std::endl;
+
             sendCombatChat(attackerId,
                            "No podés atacar a jugadores de nivel bajo.",
                            ChatMsgType::INFO, monitor);
         }
         else if (result.failReason == CombatSystem::Result::FailReason::LEVEL_DIFF_TOO_HIGH)
         {
+            std::cout << "[COMBAT] attackerId=" << attackerId
+          << " level=" << attacker.getLevel()
+          << " targetId=" << targetId  
+          << " level=" << target.getLevel()
+          << " failReason=" << static_cast<int>(result.failReason)
+          << std::endl;
+          
             sendCombatChat(attackerId,
                            "La diferencia de nivel es demasiado grande para atacar.",
                            ChatMsgType::INFO, monitor);

@@ -145,6 +145,9 @@ private:
   bool infiniteHp = false;
   bool infiniteMana = false;
 
+  float hpAccumulator = 0.f;
+  float manaAccumulator = 0.f;
+
   std::string clanName;
   bool clanFounder = false;
 

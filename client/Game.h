@@ -47,6 +47,7 @@
 #include "common/network/messages/server/system/mapChangedMessage.h"
 #include "common/network/messages/server/error/errorMessage.h"
 #include "common/network/messages/server/combat/combatLogMessage.h"
+#include "common/network/messages/server/npc/npcAttackMessage.h"
 
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
@@ -211,6 +212,7 @@ private:
     void handleNpcHealth(const NpcHealthMessage &msg);
     void handleNpcMove(const NpcMoveMessage &msg);
     void handlePlayerResurrected(const PlayerResurrectedMessage &msg);
+    void handleNpcAttack(const NpcAttackMessage &msg);
 
     void handleEntityDespawn(const EntityDespawnMessage &msg);
     void clearCurrentScene();
@@ -219,6 +221,20 @@ private:
     void handleItemOnGround(const ItemOnGroundMessage &msg);
     void handleGoldOnGround(const GoldOnGroundMessage &msg);
     void handleItemPicked(const ItemPickedMessage &msg);
+
+
+    struct EnemyMoveInterp
+    {
+        float startX, startY;
+        float targetX, targetY;
+        Uint32 startTime;
+        Uint32 durationMs;
+    };
+
+    std::unordered_map<uint32_t, EnemyMoveInterp> enemyMoveInterp;
+    std::unordered_map<uint32_t, NpcType> enemyNpcTypes; // para saber la duración de cada uno
+
+    std::unordered_map<uint32_t, FacingDirection> enemyFacing;
 };
 
 #endif // PRUEBA_SDL_GAME_H

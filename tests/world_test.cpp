@@ -78,7 +78,12 @@ protected:
   NpcRepository npcRepo{config};
   NpcFactory npcFact{npcRepo};
   ItemRepository itemRepo{toml::parse(R"([items])")};
-  ClanManager clanManager;
+  
+  std::string tempDir = std::filesystem::temp_directory_path().string();
+
+  ClanArchive clanArchive{tempDir + "/test_clans.dat", tempDir + "/test_clans.idx"};
+  CharacterArchive characterArchive{tempDir + "/test_chars.dat", tempDir + "/test_chars.idx"};
+  ClanManager clanManager{clanArchive, characterArchive};
 
   MapData makeWalkableMap()
   {

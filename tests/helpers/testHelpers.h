@@ -20,7 +20,10 @@
 #include "server/world/OccupancySystem.h"
 #include "server/game/clan/clanManager.h"
 #include "server/world/gameWorld.h"
+#include "server/persistence/characterArchive.h"
+#include "server/persistence/clanArchive.h"
 #include <toml++/toml.h>
+#include <filesystem>
 
 [[maybe_unused]] static toml::table makeConfig()
 {
@@ -65,6 +68,10 @@
         damage_min = 10
         damage_max = 10
 
+        # --- ARREGLA GameWorldTest e impide excepciones de fallback ---
+        [initial_inventory.warrior]
+        items = []
+
         [world]
         tile_size = 96
 
@@ -81,6 +88,18 @@
         [player]
         newbie_max_level    = 12
         max_inventory_items = 20
+
+        [items.pocion_vida]
+        catalog_id = 2
+        slot = "CONSUMABLE"
+        heal_amount = 100
+
+        # --- ARREGLA ExtractPlayerTest.RemovePreservesPlayerState ---
+        [items.item_test_remocion]
+        catalog_id = 10
+        slot = "WEAPON"
+        damage_min = 10
+        damage_max = 10
     )");
 }
 
@@ -115,17 +134,30 @@
   return p;
 }
 
-[[maybe_unused]] static Item makeWeaponWithId(uint32_t id, uint16_t dmgMin,
-                                              uint16_t dmgMax)
+[[maybe_unused]] static Item makeWeaponWithId(uint32_t id, uint16_t dmgMin, uint16_t dmgMax, 
+                                              const toml::table& config = makeConfig())
 {
   Item item;
   item.catalogId = id;
-  item.typeName = "espada";
   item.slot = ItemSlot::WEAPON;
-  item.effect = ItemEffect::NONE;
   item.stats.damageMin = dmgMin;
   item.stats.damageMax = dmgMax;
   item.stats.isRanged = false;
+
+  item.typeName = "item_desconocido"; 
+  if (auto items = config["items"].as_table()) {
+    for (const auto& [key, value] : *items) {
+      if (auto itemTable = value.as_table()) {
+        // Usamos ->get() para obtener el valor numérico real del puntero
+        if (auto catIdNode = itemTable->get("catalog_id")->as_integer()) {
+          if (catIdNode->get() == static_cast<int64_t>(id)) {
+            item.typeName = std::string(key.str());
+            break;
+          }
+        }
+      }
+    }
+  }
   return item;
 }
 
@@ -197,18 +229,35 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
   return m;
 }
 
-[[maybe_unused]] static Item makeWeapon(uint16_t dmgMin, uint16_t dmgMax,
-                                        bool ranged = false)
+[[maybe_unused]] static Item makeWeapon(uint16_t dmgMin, uint16_t dmgMax, bool ranged = false, 
+                                        const toml::table& config = makeConfig())
 {
   Item item;
-  item.catalogId = 1;
   item.instanceId = 1;
-  item.typeName = "sword";
   item.slot = ItemSlot::WEAPON;
-  item.effect = ItemEffect::NONE;
   item.stats.damageMin = dmgMin;
   item.stats.damageMax = dmgMax;
   item.stats.isRanged = ranged;
+  
+  item.catalogId = 1;
+  item.typeName = "espada";
+
+  if (auto items = config["items"].as_table()) {
+    for (const auto& [key, value] : *items) {
+      if (auto itemTable = value.as_table()) {
+        // Usamos ->get() para obtener el std::string real del nodo y compararlo correctamente
+        if (auto slotNode = itemTable->get("slot")->as_string()) {
+          if (slotNode->get() == "WEAPON") {
+            if (auto catIdNode = itemTable->get("catalog_id")->as_integer()) {
+              item.catalogId = static_cast<uint32_t>(catIdNode->get());
+            }
+            item.typeName = std::string(key.str());
+            break;
+          }
+        }
+      }
+    }
+  }
   return item;
 }
 
@@ -217,7 +266,7 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
   Item item;
   item.catalogId = 2;
   item.instanceId = 2;
-  item.typeName = "armor";
+  item.typeName = "armadura";
   item.slot = ItemSlot::ARMOR;
   item.stats.defenseMin = defMin;
   item.stats.defenseMax = defMax;
@@ -258,12 +307,27 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 
 [[maybe_unused]] static std::unique_ptr<GameWorld> makeTestWorld()
 {
+
   static auto config = makeConfig();
+  
+  //esto es para usar usar un directorio tempora y testear tranqui sin llenar todo de archivos,
+  //se puede sacar y hacer que queden en una carpeta fija igual 
+  static std::string tempDir = std::filesystem::temp_directory_path().string();
+  
+  static std::string clanDat = tempDir + "/test_clans.dat";
+  static std::string clanIdx = tempDir + "/test_clans.idx";
+  static std::string charDat = tempDir + "/test_chars.dat";
+  static std::string charIdx = tempDir + "/test_chars.idx";
+
   static MapData map = makeWalkableMap(20, 20);
   static ItemRepository itemRepo(config);
   static NpcRepository npcRepo(config);
   static NpcFactory npcFactory(npcRepo);
-  static ClanManager clanManager;
+
+  static ClanArchive clanArchive(clanDat, clanIdx);          
+  static CharacterArchive characterArchive(charDat, charIdx); 
+
+  static ClanManager clanManager(clanArchive, characterArchive);
 
   return std::make_unique<GameWorld>(map, npcFactory, itemRepo, config, clanManager);
 }

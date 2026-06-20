@@ -19,6 +19,16 @@ AssetManager::~AssetManager()
 {
 }
 
+static std::map<std::string, Animation> animationsFromDefinition(const SpriteDefinition &def)
+{
+    std::map<std::string, Animation> anims;
+    for (const auto &[name, animDef] : def.animations)
+    {
+        anims.emplace(name, Animation(animDef.row, animDef.frames, animDef.speed));
+    }
+    return anims;
+}
+
 void AssetManager::CreateProjectile(Vector2D pos, Vector2D vel, int range, int speed, std::string id)
 {
     auto &projectile(manager->addEntity());
@@ -44,7 +54,7 @@ void AssetManager::CreateProjectile(Vector2D pos, Vector2D vel, int range, int s
 }
 
 // Devuelve la config de spritesheet correcta según el tipo de NPC/enemigo.
-// 1024x1024, frame 128x128, escala 1: skeleton, zombie, guard, desert_spider.
+// 1024x1024, frame 128x128, escala 1: skeleton, zombie, orc, desert_spider.
 // 1024x1024, frame 64x64,  escala 2: goblin y variantes de zona.
 // 512x512,   frame 64x64,  escala 2: arañas, golems y skeletons de variante.
 // Ciudad 256x256, frame 64x64, escala 2: priest, merchant, banker.
@@ -53,8 +63,9 @@ static SpriteSheetConfig configForNPC(NpcType type)
     switch (type)
     {
     case NpcType::SKELETON:
+        return SpriteSheetConfig{100, 98, 1, 0, 0};
     case NpcType::ZOMBIE:
-    case NpcType::GUARD:
+    case NpcType::ORC:
     case NpcType::SPIDER_DESERT:
         return SpriteSheetConfig{128, 128, 1, 0, 0};
 
@@ -66,6 +77,7 @@ static SpriteSheetConfig configForNPC(NpcType type)
 
     case NpcType::SKELETON_CAVE:
     case NpcType::SKELETON_DUNGEON:
+        return SpriteSheetConfig{100, 98, 1, 0, 0};
     case NpcType::SKELETON_DESERT:
     case NpcType::SPIDER_CAVE:
     case NpcType::SPIDER_DUNGEON:
@@ -84,6 +96,23 @@ static SpriteSheetConfig configForNPC(NpcType type)
     }
 }
 
+static AttackConfig attackConfigForNPC(NpcType type)
+{
+    switch (type)
+    {
+    case NpcType::SKELETON:
+        return {"skeleton_attack", 103, 104, 4, 4};
+    case NpcType::SKELETON_DUNGEON:
+        return {"dungeon_skeleton_attack", 124, 94, 2, 4};
+    case NpcType::ZOMBIE:
+        return {"zombie_attack", 128, 128, 4, 4};
+    case NpcType::ORC:
+        return {"orc_attack", 128, 128, 4, 4};
+    default:
+        return {"", 0, 0, 0, 0};  // sin ataque
+    }
+}
+
 Entity *AssetManager::CreateNpc(const NPCData &data)
 {
     auto &npc = manager->addEntity();
@@ -93,13 +122,28 @@ Entity *AssetManager::CreateNpc(const NPCData &data)
     const float centeredY = data.y + 86.0f;
     npc.addComponent<TransformComponent>(centeredX, centeredY, 48, 48, 2);
 
-    std::map<std::string, Animation> npcAnims;
-    npcAnims.emplace("IdleDown", Animation(0, 1, 200));
+    std::string textureId = textureForNPC(data.type);
+    const SpriteDefinition *def = GetSpriteDefinition(textureId);
 
-    SpriteSheetConfig npcConfig = configForNPC(data.type);
+    std::map<std::string, Animation> npcAnims;
+    SpriteSheetConfig npcConfig;
+
+    if (def != nullptr)
+    {
+        npcConfig = def->config;
+        npcAnims = animationsFromDefinition(*def);
+        if (npcAnims.count("IdleDown") == 0)
+            npcAnims.emplace("IdleDown", Animation(0, 1, 200));
+    }
+    else
+    {
+        npcConfig = configForNPC(data.type);
+        npcAnims.emplace("IdleDown", Animation(0, 1, 200));
+    }
+
     npc.addComponent<SpriteComponent>(
         *this,
-        textureForNPC(data.type),
+        textureId,
         true,
         npcAnims,
         npcConfig);
@@ -111,14 +155,64 @@ Entity *AssetManager::CreateNpc(const NPCData &data)
 
 Entity *AssetManager::CreateEnemy(const NPCData &data)
 {
-    SpriteSheetConfig cfg = configForNPC(data.type);
+    std::string bodyTextureId = textureForNPC(data.type);
+    const SpriteDefinition *bodyDef = GetSpriteDefinition(bodyTextureId);
+
+    SpriteSheetConfig cfg = (bodyDef != nullptr) ? bodyDef->config : configForNPC(data.type);
 
     std::map<std::string, Animation> enemyAnims;
-    enemyAnims.emplace("Idle", Animation(0, 1, 200));
+    if (bodyDef != nullptr && !bodyDef->animations.empty())
+    {
+        enemyAnims = animationsFromDefinition(*bodyDef);
+    }
+    else
+    {
+        enemyAnims.emplace("IdleDown",  Animation(0, 1, 150));
+        enemyAnims.emplace("WalkDown",  Animation(4, 5, 100));
+        enemyAnims.emplace("IdleUp",    Animation(0, 1, 150));
+        enemyAnims.emplace("WalkUp",    Animation(5, 5, 100));
+        enemyAnims.emplace("IdleRight", Animation(3, 1, 150));
+        enemyAnims.emplace("WalkRight", Animation(7, 5, 100));
+    }
+
+    AttackConfig atkCfg = attackConfigForNPC(data.type);
+    const SpriteDefinition *attackDef = atkCfg.textureId.empty()
+        ? nullptr
+        : GetSpriteDefinition(atkCfg.textureId);
+
+    if (!atkCfg.textureId.empty())
+    {
+        if (attackDef != nullptr && !attackDef->animations.empty())
+        {
+            for (const auto &[name, animDef] : attackDef->animations)
+            {
+                enemyAnims.emplace(name, Animation(animDef.row, animDef.frames, animDef.speed));
+            }
+        }
+        else
+        {
+            enemyAnims.emplace("AttackDown",  Animation(0, atkCfg.framesPerRow, 150));
+            enemyAnims.emplace("AttackUp",    Animation(1, atkCfg.framesPerRow, 150));
+            enemyAnims.emplace("AttackLeft",  Animation(2, atkCfg.framesPerRow, 150));
+            enemyAnims.emplace("AttackRight", Animation(3, atkCfg.framesPerRow, 150));
+        }
+    }
 
     auto &enemy = manager->addEntity();
     enemy.addComponent<TransformComponent>(data.x, data.y);
-    enemy.addComponent<SpriteComponent>(*this, textureForNPC(data.type), true, enemyAnims, cfg);
+    enemy.addComponent<SpriteComponent>(*this, bodyTextureId,
+                                        true, enemyAnims, cfg);
+
+    if (!atkCfg.textureId.empty())
+    {
+        SpriteSheetConfig attackSheetCfg = (attackDef != nullptr)
+            ? attackDef->config
+            : SpriteSheetConfig{atkCfg.frameWidth, atkCfg.frameHeight, cfg.scale, 0, 0};
+
+        enemy.getComponent<SpriteComponent>()
+             .setAttackTexture(atkCfg.textureId, attackSheetCfg);
+    }
+
     enemy.addComponent<ColliderComponent>("enemy");
     enemy.addGroup(groupEnemies);
     return &enemy;
@@ -220,8 +314,8 @@ std::string AssetManager::textureForNPC(NpcType type)
         return "skeleton";
     case NpcType::ZOMBIE:
         return "zombie";
-    case NpcType::GUARD:
-        return "skeleton"; // fallback hasta tener sprite propio
+    case NpcType::ORC:
+        return "orc";
 
     // Caverna
     case NpcType::GOBLIN_CAVE:
@@ -355,7 +449,66 @@ void AssetManager::LoadTexturesFromJson(const std::string &jsonPath)
         std::cout << "Textura cargada: "
                   << id << " -> " << path << std::endl;
     }
+
+    // Geometría y animaciones por textura. Si una textura no aparece acá,
+    // queda sin SpriteDefinition y el caller debe hacer fallback al switch viejo.
+    if (data.contains("_sprite_info") && data["_sprite_info"].is_object())
+    {
+        for (auto it = data["_sprite_info"].begin(); it != data["_sprite_info"].end(); ++it)
+        {
+            const std::string &id = it.key();
+            const auto &info = it.value();
+
+            if (!info.contains("frame_width") || !info.contains("frame_height"))
+            {
+                std::cerr << "[SPRITE_INFO] '" << id
+                          << "' sin frame_width/frame_height, se ignora." << std::endl;
+                continue;
+            }
+
+            SpriteDefinition def;
+            def.config.frameWidth = info.at("frame_width").get<int>();
+            def.config.frameHeight = info.at("frame_height").get<int>();
+            def.config.scale = info.value("scale", 1);
+            def.config.startX = info.value("start_x", 0);
+            def.config.startY = info.value("start_y", 0);
+            def.config.renderOffsetX = info.value("render_offset_x", 0);
+            def.config.renderOffsetY = info.value("render_offset_y", 0);
+
+            if (info.contains("animations") && info["animations"].is_object())
+            {
+                for (auto animIt = info["animations"].begin();
+                     animIt != info["animations"].end(); ++animIt)
+                {
+                    const auto &animJson = animIt.value();
+                    AnimationDef anim;
+                    anim.row = animJson.value("row", 0);
+                    anim.frames = animJson.value("frames", 1);
+                    anim.speed = animJson.value("speed_ms", 150);
+                    def.animations.emplace(animIt.key(), anim);
+                }
+            }
+
+            spriteDefinitions[id] = def;
+
+            std::cout << "[SPRITE_INFO] cargado: " << id
+                      << " frame=(" << def.config.frameWidth << "x"
+                      << def.config.frameHeight << ") scale="
+                      << def.config.scale << " anims="
+                      << def.animations.size() << std::endl;
+        }
+    }
 }
+
+const SpriteDefinition *AssetManager::GetSpriteDefinition(const std::string &id) const
+{
+    auto it = spriteDefinitions.find(id);
+    if (it == spriteDefinitions.end())
+        return nullptr;
+    return &it->second;
+}
+
+
 void AssetManager::LoadBodiesFromJson(const std::string &path)
 {
     std::ifstream file(path);
@@ -554,3 +707,4 @@ Entity * AssetManager::CreateGroundItem(const ItemView &itemView, int worldX, in
 
     return &groundItem;
 }
+

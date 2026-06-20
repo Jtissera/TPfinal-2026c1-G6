@@ -5,13 +5,16 @@ GameManager::GameManager(
     NpcFactory &npcFactory, ItemRepository &itemRepo,
     Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
     Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
-    const toml::table &config, PlayerArchive &archive, GameArchive &gameArchive)
+    const toml::table &config, PlayerArchive &archive, GameArchive &gameArchive,
+    ClanArchive &clanArchive, CharacterArchive &characterArchive)
     : npcFactory(npcFactory), itemRepo(itemRepo), leaveQueue(leaveQueue),
       transitionQueue(transitionQueue), config(config), archive(archive),
+      clanManager(clanArchive, characterArchive),
       gameArchive(gameArchive)
 {
   clanManager.bindGameManager(this);
 }
+
 
 uint32_t GameManager::createGame(const std::string &gameName,
                                  uint8_t maxPlayers,
@@ -179,71 +182,6 @@ void GameManager::addPlayerToGame(uint32_t gameId, Player player)
   }
 }
 
-void GameManager::removeClient(uint32_t clientId)
-{
-  std::unique_lock<std::mutex> lock(mutex);
-
-  auto it = clientRoom.find(clientId);
-  if (it == clientRoom.end())
-    return;
-
-  uint32_t gameId = it->second;
-  clientRoom.erase(it);
-
-  std::string playerName;
-  std::string playerClan;
-  bool hadClan = false;
-
-  auto roomIt = rooms.find(gameId);
-  if (roomIt != rooms.end())
-  {
-    const Player *p = roomIt->second->findPlayer(clientId);
-    if (p != nullptr)
-    {
-      playerName = p->getName();
-      // Buscamos el clan desde el ClanManager en lugar de p->getClanName()
-      auto clanInfo = clanManager.findClanInfoForMember(playerName);
-      if (clanInfo)
-      {
-        playerClan = clanInfo->first;
-        hadClan = true;
-      }
-    }
-    roomIt->second->removeClient(clientId);
-  }
-
-  auto nickIt = clientNick.find(clientId);
-  if (nickIt != clientNick.end())
-  {
-    nickToClient.erase(nickIt->second);
-    clientNick.erase(nickIt);
-  }
-
-  cleanEmptyInstances();
-
-  if (hadClan && roomIt != rooms.end())
-  {
-    auto chatMsg = std::make_shared<ChatNotificationMessage>(
-        "Tu aliado " + playerName + " ha salido de Argentum.", ChatMsgType::CLAN);
-
-    for (const auto &[cId, rId] : clientRoom)
-    {
-      if (rId == gameId)
-      {
-        auto targetNickIt = clientNick.find(cId);
-        if (targetNickIt != clientNick.end())
-        {
-          auto targetClan = clanManager.findClanInfoForMember(targetNickIt->second);
-          if (targetClan && targetClan->first == playerClan)
-          {
-            roomIt->second->sendTo(cId, chatMsg);
-          }
-        }
-      }
-    }
-  }
-}
-
 std::vector<GameInfo> GameManager::listGames() const
 {
   std::unique_lock<std::mutex> lock(mutex);
@@ -327,19 +265,20 @@ void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId)
 
 void GameManager::restoreFromArchive()
 {
+  clanManager.restoreFromArchive();
+ 
   auto records = gameArchive.loadAll();
-
-  // nextGameId arranca después del mayor id conocido
+ 
   uint32_t maxId = gameArchive.maxGameId();
   if (maxId >= nextGameId)
     nextGameId = maxId + 1;
-
+ 
   for (const auto &rec : records)
   {
     std::string mapPath(rec.mapPath, strnlen(rec.mapPath, sizeof(rec.mapPath)));
     std::string gameName(rec.gameName,
                          strnlen(rec.gameName, sizeof(rec.gameName)));
-
+ 
     std::ifstream check(mapPath, std::ios::binary);
     if (!check.good())
     {
@@ -348,13 +287,13 @@ void GameManager::restoreFromArchive()
                 << std::endl;
       continue;
     }
-
+ 
     auto room = std::make_unique<GameRoom>(rec.gameId, gameName, mapPath, false,
                                            0, npcFactory, itemRepo, leaveQueue,
                                            transitionQueue, config, archive, clanManager);
     room->start();
     rooms.emplace(rec.gameId, std::move(room));
-
+ 
     std::cout << "[GameManager] restore gameId=" << rec.gameId << " name='"
               << gameName << "'" << std::endl;
   }
@@ -374,6 +313,107 @@ std::string GameManager::getRoomMapPath(uint32_t gameId) const
   else
   {
     return it->second->getMapPath();
+  }
+}
+
+
+
+bool GameManager::tryMarkOnline(uint32_t clientId, const std::string &characterName)
+{
+  std::unique_lock<std::mutex> lock(mutex);
+
+  if (onlineCharacters.find(characterName) != onlineCharacters.end())
+  {
+    return false; 
+  }
+
+  onlineCharacters.insert(characterName);
+  clientToCharacter[clientId] = characterName;
+
+  std::cout << "[GameManager] tryMarkOnline OK character='" << characterName
+            << "' clientId=" << clientId << std::endl;
+
+  return true;
+}
+
+void GameManager::markOffline(uint32_t clientId)
+{
+  std::unique_lock<std::mutex> lock(mutex);
+
+  auto it = clientToCharacter.find(clientId);
+  if (it == clientToCharacter.end())
+    return;
+
+  std::cout << "[GameManager] markOffline character='" << it->second
+            << "' clientId=" << clientId << std::endl;
+
+  onlineCharacters.erase(it->second);
+  clientToCharacter.erase(it);
+}
+
+void GameManager::removeClient(uint32_t clientId)
+{
+  markOffline(clientId);
+
+  std::unique_lock<std::mutex> lock(mutex);
+
+  auto it = clientRoom.find(clientId);
+  if (it == clientRoom.end())
+    return;
+
+  uint32_t gameId = it->second;
+  clientRoom.erase(it);
+
+  std::string playerName;
+  std::string playerClan;
+  bool hadClan = false;
+
+  auto roomIt = rooms.find(gameId);
+  if (roomIt != rooms.end())
+  {
+    const Player *p = roomIt->second->findPlayer(clientId);
+    if (p != nullptr)
+    {
+      playerName = p->getName();
+      auto clanInfo = clanManager.findClanInfoForMember(playerName);
+      if (clanInfo)
+      {
+        playerClan = clanInfo->first;
+        hadClan = true;
+      }
+    }
+    roomIt->second->removeClient(clientId);
+  }
+
+  auto nickIt = clientNick.find(clientId);
+  if (nickIt != clientNick.end())
+  {
+    nickToClient.erase(nickIt->second);
+    clientNick.erase(nickIt);
+  }
+
+  cleanEmptyInstances();
+
+  if (hadClan && roomIt != rooms.end())
+  {
+    auto chatMsg = std::make_shared<ChatNotificationMessage>(
+        "Tu aliado " + playerName + " ha salido de Argentum.", ChatMsgType::CLAN);
+
+    for (const auto &[cId, rId] : clientRoom)
+    {
+      if (rId == gameId)
+      {
+        auto targetNickIt = clientNick.find(cId);
+        if (targetNickIt != clientNick.end())
+        {
+          auto targetClan = clanManager.findClanInfoForMember(targetNickIt->second);
+          if (targetClan && targetClan->first == playerClan)
+          {
+            roomIt->second->sendTo(cId, chatMsg);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -472,10 +512,8 @@ void GameManager::joinAndAddPlayer(uint32_t gameId, uint32_t clientId,
     player.setClanFounder(clanInfo->second);
   }
 
-  // Primero agregamos al mundo
   it->second->addPlayer(std::move(player));
 
-  // Luego al Monitor — en el mismo lock, sin ventana
   it->second->addClient(clientId, clientQueue);
 
   clientNick[playerId] = playerName;

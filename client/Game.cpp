@@ -7,9 +7,11 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_set>
+#include <cmath>
 
 #include "common/network/messages/server/inventory/goldOnGroundMessage.h"
 #include "common/network/messages/server/inventory/itemOnGroundMessage.h"
+
 
 Game::Game() {}
 
@@ -79,6 +81,29 @@ void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
   audioManager.loadEffect("meditate",     "assets/audio/sfx_meditate.ogg");
   audioManager.loadEffect("npc_interact", "assets/audio/sfx_npc_interact.ogg");
   audioManager.playMusic();
+}
+
+static Uint32 moveDurationForNpcType(NpcType type)
+{
+    switch (type)
+    {
+    case NpcType::GOBLIN:           return 500;
+    case NpcType::SKELETON:         return 600;
+    case NpcType::ZOMBIE:           return 800;
+    case NpcType::GOBLIN_CAVE:      return 450;
+    case NpcType::SKELETON_CAVE:    return 550;
+    case NpcType::SPIDER_CAVE:      return 300;
+    case NpcType::GOLEM_CAVE:       return 900;
+    case NpcType::GOBLIN_DUNGEON:   return 400;
+    case NpcType::SKELETON_DUNGEON: return 500;
+    case NpcType::SPIDER_DUNGEON:   return 250;
+    case NpcType::GOLEM_DUNGEON:    return 1200;
+    case NpcType::GOBLIN_DESERT:    return 400;
+    case NpcType::SKELETON_DESERT:  return 550;
+    case NpcType::SPIDER_DESERT:    return 280;
+    case NpcType::GOLEM_DESERT:     return 950;
+    default:                        return 500;
+    }
 }
 
 void Game::handleEvents()
@@ -224,7 +249,7 @@ void Game::handleEvents()
       if (clientWorld != nullptr)
       {
         clientWorld->appendRemoteAttackTargets(
-            attackTargets, static_cast<uint8_t>(playerState.level));
+            attackTargets);
       }
 
       attackSystem.handleMouseClick(mouseX, mouseY, camera, attackTargets,
@@ -247,7 +272,6 @@ void Game::handleEvents()
 
 void Game::update()
 {
-
   std::shared_ptr<const Message> msg;
   try
   {
@@ -281,23 +305,52 @@ void Game::update()
   if (camera.y > 100 * 96 - 687)
     camera.y = 100 * 96 - 687;
 
-  // PERF: detecta si la cámara se movió este frame.
-  // TileComponent::update() usa este flag para saltear 300 recálculos
-  // cuando el jugador está quieto.
   const bool cameraMoved =
       (camera.x != prevCamera.x || camera.y != prevCamera.y);
   prevCamera = camera;
 
   UpdateContext updateContext{SDL_GetKeyboardState(nullptr), sendQueue, camera,
                               cameraMoved, miniChat.isFocused()};
+
   manager.refresh();
+
+  // --- Movimiento suave de enemigos a velocidad constante ---
+const Uint32 nowTicks = SDL_GetTicks();
+for (auto interpIt = enemyMoveInterp.begin(); interpIt != enemyMoveInterp.end(); )
+{
+  auto enemyIt = enemies.find(interpIt->first);
+  if (enemyIt == enemies.end() || enemyIt->second == nullptr)
+  {
+    interpIt = enemyMoveInterp.erase(interpIt);
+    continue;
+  }
+
+  auto &enemyTransform = enemyIt->second->getComponent<TransformComponent>();
+  const EnemyMoveInterp &interp = interpIt->second;
+
+  float t = static_cast<float>(nowTicks - interp.startTime) /
+            static_cast<float>(interp.durationMs);
+
+  if (t >= 1.0f)
+  {
+    enemyTransform.position.x = interp.targetX;
+    enemyTransform.position.y = interp.targetY;
+    interpIt = enemyMoveInterp.erase(interpIt);
+  }
+  else
+  {
+    enemyTransform.position.x = interp.startX + (interp.targetX - interp.startX) * t;
+    enemyTransform.position.y = interp.startY + (interp.targetY - interp.startY) * t;
+    ++interpIt;
+  }
+}
+  // --- Fin movimiento de enemigos ---
+
   manager.update(updateContext);
 
   if (miniChat.hasPendingInput())
   {
     std::string text = miniChat.consumeInput();
-    // targetId = 0: el servidor lo ignora para chat general y comandos.
-    // Para /curar, /depositar etc. el servidor busca NPC adyacente.
     sendQueue->try_push(
         std::make_shared<const ChatMessage>(std::move(text), 0u));
   }
@@ -2107,6 +2160,10 @@ void Game::processServerMessage(const Message &msg)
   case ServerOpCode::MSG_NPC_MOVE:
     handleNpcMove(static_cast<const NpcMoveMessage &>(msg));
     return;
+  case ServerOpCode::MSG_NPC_ATTACK:
+    handleNpcAttack(static_cast<const NpcAttackMessage &>(msg));
+    return;
+
   case ServerOpCode::MSG_ERROR:
   {
     const auto &err = static_cast<const ErrorMessage &>(msg);
@@ -2311,6 +2368,7 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg)
     }
 
     enemies[msg.getNpcId()] = npcEntity;
+    enemyNpcTypes[msg.getNpcId()] = npcData.type;
 
     attackSystem.setEnemyHealth(msg.getNpcId(), npcData.hp, npcData.hpMax);
   }
@@ -2345,39 +2403,151 @@ void Game::handleNpcHealth(const NpcHealthMessage &msg)
   }
 }
 
+void Game::handleNpcAttack(const NpcAttackMessage &msg)
+{
+    auto it = enemies.find(msg.getNpcId());
+    if (it == enemies.end() || it->second == nullptr) return;
+    if (!it->second->hasComponent<SpriteComponent>()) return;
+
+    auto &sprite = it->second->getComponent<SpriteComponent>();
+
+    switch (msg.getDirection())
+    {
+    case Direction::DOWN:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.PlayOnce("AttackDown", "IdleDown");
+        break;
+    case Direction::UP:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.PlayOnce("AttackUp", "IdleDown");
+        break;
+    case Direction::LEFT:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.PlayOnce("AttackLeft", "IdleDown");
+        break;
+    case Direction::RIGHT:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.PlayOnce("AttackRight", "IdleDown");
+        break;
+    case Direction::NONE:
+        break;
+    }
+}
+
 void Game::handleNpcMove(const NpcMoveMessage &msg)
 {
   const uint32_t npcId = msg.getNpcId();
 
-  // Buscamos el enemigo en el mapa visual.
   auto it = enemies.find(npcId);
-
-  // Si no existe en cliente, no podemos moverlo.
-  // En ese caso debería llegar primero un NpcSpawnMessage.
-  if (it == enemies.end())
-  {
-
-    return;
-  }
+  if (it == enemies.end()) return;
 
   Entity *enemyEntity = it->second;
-
-  if (enemyEntity == nullptr)
-  {
-
-    return;
-  }
+  if (enemyEntity == nullptr) return;
 
   auto &transform = enemyEntity->getComponent<TransformComponent>();
+  
 
   const float newX = static_cast<float>(msg.getX());
   const float newY = static_cast<float>(msg.getY());
 
-  // Actualizamos posición visual.
-  transform.position.x = newX;
-  transform.position.y = newY;
-}
+  const float deltaX = newX - transform.position.x;
+  const float deltaY = newY - transform.position.y;
+  const bool isMoving = (std::abs(deltaX) > 0.5f || std::abs(deltaY) > 0.5f);
 
+  if (enemyEntity->hasComponent<SpriteComponent>())
+  {
+    auto &sprite = enemyEntity->getComponent<SpriteComponent>();
+
+    if (isMoving)
+    {
+      // Elegimos la dirección dominante (el eje con mayor desplazamiento).
+      if (std::abs(deltaX) > std::abs(deltaY))
+      {
+        if (deltaX > 0)
+        {
+          enemyFacing[npcId] = FacingDirection::Right;
+          sprite.spriteFlip = SDL_FLIP_NONE;
+        }
+        else
+        {
+          enemyFacing[npcId] = FacingDirection::Left;
+          sprite.spriteFlip = SDL_FLIP_HORIZONTAL; // mirror de la fila "Right"
+        }
+        sprite.Play("WalkRight"); // misma fila para left/right, con flip
+      }
+      else
+      {
+        if (deltaY > 0)
+        {
+          enemyFacing[npcId] = FacingDirection::Down;
+          sprite.spriteFlip = SDL_FLIP_NONE;
+          sprite.Play("WalkDown");
+        }
+        else
+        {
+          enemyFacing[npcId] = FacingDirection::Up;
+          sprite.spriteFlip = SDL_FLIP_NONE;
+          sprite.Play("WalkUp");
+        }
+      }
+    }
+    else
+    {
+      // Quieto: mostramos el Idle de la última dirección conocida.
+      FacingDirection facing = FacingDirection::Down;
+      auto facingIt = enemyFacing.find(npcId);
+      if (facingIt != enemyFacing.end())
+      {
+        facing = facingIt->second;
+      }
+
+      switch (facing)
+      {
+      case FacingDirection::Up:
+        sprite.Play("IdleUp");
+        break;
+      case FacingDirection::Left:
+        sprite.spriteFlip = SDL_FLIP_HORIZONTAL;
+        sprite.Play("IdleRight");
+        break;
+      case FacingDirection::Right:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.Play("IdleRight");
+        break;
+      case FacingDirection::Down:
+      default:
+        sprite.spriteFlip = SDL_FLIP_NONE;
+        sprite.Play("IdleDown");
+        break;
+      }
+    }
+  }
+
+  if (isMoving)
+  {
+    Uint32 durationMs = 500;
+    auto typeIt = enemyNpcTypes.find(npcId);
+    if (typeIt != enemyNpcTypes.end())
+    {
+      durationMs = moveDurationForNpcType(typeIt->second);
+    }
+
+    EnemyMoveInterp interp;
+    interp.startX = transform.position.x;
+    interp.startY = transform.position.y;
+    interp.targetX = newX;
+    interp.targetY = newY;
+    interp.startTime = SDL_GetTicks();
+    interp.durationMs = durationMs;
+    enemyMoveInterp[npcId] = interp;
+  }
+  else
+  {
+    transform.position.x = newX;
+    transform.position.y = newY;
+    enemyMoveInterp.erase(npcId);
+  }
+}
 void Game::handlePlayerResurrected(const PlayerResurrectedMessage &msg)
 {
   const uint32_t resurrectedId = msg.getPlayerId();
@@ -2536,6 +2706,10 @@ void Game::handleMapChanged(const MapChangedMessage &msg)
 
 void Game::handleChatNotification(const ChatNotificationMessage &msg)
 {
+
+    std::cout << "[CHAT DEBUG] type=" << static_cast<int>(msg.getMsgType())
+            << " text='" << msg.getText() << "'" << std::endl;
+
   const std::string &text = msg.getText();
   const ChatMsgType type = msg.getMsgType();
 
@@ -2625,3 +2799,4 @@ void Game::handleItemPicked(const ItemPickedMessage &msg) {
     std::cout << "[GROUND GOLD] removido instanceId=" << itemId << std::endl;
   }
 }
+

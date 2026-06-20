@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <iostream>
 
 #include "common/network/messages/server/chat/chatNotificationMessage.h"
 #include "server/game/session/gameManager.h"
@@ -18,10 +19,29 @@ namespace
     }
 }
 
+ClanManager::ClanManager(ClanArchive &clanArchive,
+                         CharacterArchive &characterArchive)
+    : clanArchive(clanArchive), characterArchive(characterArchive) {}
+
 void ClanManager::bindGameManager(GameManager *gm)
 {
     std::lock_guard<std::mutex> lock(mutex);
     gameManager = gm;
+}
+
+void ClanManager::restoreFromArchive()
+{
+    auto loaded = clanArchive.loadAll();
+
+    std::lock_guard<std::mutex> lock(mutex);
+    for (auto &clan : loaded)
+    {
+        std::string key = toLower(clan.getName());
+        std::cout << "[ClanManager] restore clan='" << clan.getName()
+                  << "' founder='" << clan.getFounderNick()
+                  << "' members=" << clan.getMembers().size() << std::endl;
+        clans.emplace(key, std::move(clan));
+    }
 }
 
 Clan *ClanManager::findClanByNameUnlocked(const std::string &name)
@@ -62,6 +82,12 @@ ClanManager::Result ClanManager::foundClan(const std::string &clanName,
 
     Clan clan(clanName, founderNick);
     clan.addMember(founderNick);
+
+    // Persistir ANTES de mover el clan al mapa, así tenemos una copia
+    // estable para pasarle al archive.
+    clanArchive.save(clan);
+    characterArchive.updateClan(founderNick, clanName);
+
     clans.emplace(toLower(clanName), std::move(clan));
     return Result::OK;
 }
@@ -88,6 +114,11 @@ ClanManager::Result ClanManager::applyToJoin(const std::string &clanName,
         return Result::ALREADY_APPLIED;
 
     clan->addApplicant(applicantNick);
+
+    // applicants no afecta CharacterRecord (el personaje no tiene clan
+    // todavía), pero sí cambia el estado del Clan en sí.
+    clanArchive.save(*clan);
+
     return Result::OK;
 }
 
@@ -109,6 +140,10 @@ ClanManager::Result ClanManager::acceptApplicant(const std::string &founderNick,
     clan->removeApplicant(targetNick);
     clan->addMember(targetNick);
     removeApplicantEverywhereUnlocked(targetNick);
+
+    clanArchive.save(*clan);
+    characterArchive.updateClan(targetNick, clan->getName());
+
     return Result::OK;
 }
 
@@ -126,6 +161,10 @@ ClanManager::Result ClanManager::rejectApplicant(const std::string &founderNick,
         return Result::NOT_AN_APPLICANT;
 
     clan->removeApplicant(targetNick);
+
+    // El rechazado nunca fue miembro, así que el CharacterRecord no cambia.
+    clanArchive.save(*clan);
+
     return Result::OK;
 }
 
@@ -140,7 +179,15 @@ ClanManager::Result ClanManager::banPlayer(const std::string &founderNick,
     if (clan->getFounderNick() != founderNick)
         return Result::NOT_FOUNDER;
 
+    bool wasMember = clan->isMember(targetNick);
+
     clan->banPlayer(targetNick);
+
+    clanArchive.save(*clan);
+    // Si era miembro y lo baneamos, también pierde el clan en su registro.
+    if (wasMember)
+        characterArchive.updateClan(targetNick, "");
+
     return Result::OK;
 }
 
@@ -160,6 +207,10 @@ ClanManager::Result ClanManager::kickMember(const std::string &founderNick,
         return Result::NOT_A_MEMBER;
 
     clan->removeMember(targetNick);
+
+    clanArchive.save(*clan);
+    characterArchive.updateClan(targetNick, "");
+
     return Result::OK;
 }
 
@@ -174,6 +225,10 @@ ClanManager::Result ClanManager::leaveClan(const std::string &nick)
         return Result::FOUNDER_CANNOT_LEAVE;
 
     clan->removeMember(nick);
+
+    clanArchive.save(*clan);
+    characterArchive.updateClan(nick, "");
+
     return Result::OK;
 }
 

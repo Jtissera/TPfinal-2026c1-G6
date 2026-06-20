@@ -9,6 +9,7 @@ enum class ScreenResult {
     GO_CONFIG,
     GO_LOBBY,
     GO_MAIN_MENU,
+    STAY
 };
 
 class Screen {

@@ -8,14 +8,20 @@
 #include <vector>
 
 #include "clan.h"
+#include "../../persistence/clanArchive.h"
+#include "../../persistence/characterArchive.h"
 
 class GameManager;
 
 class ClanManager
 {
 public:
-    ClanManager() = default;
+    ClanManager(ClanArchive &clanArchive, CharacterArchive &characterArchive);
     void bindGameManager(GameManager *gameManager);
+
+    // Carga todos los clanes persistidos. Llamar una vez al arrancar el
+    // servidor, antes de aceptar conexiones.
+    void restoreFromArchive();
 
     enum class Result
     {
@@ -68,4 +74,7 @@ private:
     mutable std::mutex mutex;
     std::unordered_map<std::string, Clan> clans;
     GameManager *gameManager = nullptr;
+
+    ClanArchive &clanArchive;
+    CharacterArchive &characterArchive;
 };

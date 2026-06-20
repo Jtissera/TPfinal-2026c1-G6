@@ -311,6 +311,24 @@ void PlaceholderLobbyScreen::tryJoinSelected()
                 static_cast<const JoinOkMessage &>(*response).getPlayerDto();
 
             this->chosenMapPath = games[selectedGame].mapPath;
+
+            // Si el jugador reconecta desde una instancia, el servidor manda
+            // un MapChangedMessage inmediatamente después del JoinOk.
+            // Lo consumimos acá para inicializar Game con el mapa correcto.
+            auto next = protocol.receive();
+            if (next->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_MAP_CHANGED))
+            {
+                const auto &mapMsg = static_cast<const MapChangedMessage &>(*next);
+                this->chosenMapPath = mapMsg.getMapPath();
+                std::cout << "[LOBBY] reconexión a instancia, mapa="
+                          << this->chosenMapPath << std::endl;
+            }
+            else
+            {
+                // No era MapChanged — lo guardamos para que GameClient lo procese.
+                pendingMessage = std::move(next);
+            }
+
             _readyToPlay = true;
         }
         else if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR))

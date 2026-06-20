@@ -16,7 +16,7 @@ enum class NpcType : uint8_t
   GOBLIN = 10,
   SKELETON = 11,
   ZOMBIE = 12,
-  GUARD = 13,
+  ORC = 13,
 
   // Caverna
   GOBLIN_CAVE = 20,
@@ -55,8 +55,8 @@ inline std::string npcTypeName(NpcType type)
     return "Esqueleto";
   case NpcType::ZOMBIE:
     return "Zombie";
-  case NpcType::GUARD:
-    return "Guardia";
+  case NpcType::ORC:
+    return "Orc";
   case NpcType::GOBLIN_CAVE:
     return "Goblin de Caverna";
   case NpcType::SKELETON_CAVE:
@@ -96,8 +96,8 @@ inline std::string npcTypeKey(NpcType type)
     return "skeleton";
   case NpcType::ZOMBIE:
     return "zombie";
-  case NpcType::GUARD:
-    return "guard";
+  case NpcType::ORC:
+    return "orc";
   case NpcType::PRIEST:
     return "priest";
   case NpcType::MERCHANT:
@@ -152,7 +152,7 @@ inline NpcType npcTypeFromKey(const std::string& key) {
   if (key == "goblin")           return NpcType::GOBLIN;
   if (key == "skeleton")         return NpcType::SKELETON;
   if (key == "zombie")           return NpcType::ZOMBIE;
-  if (key == "guard")            return NpcType::GUARD;
+  if (key == "orc")              return NpcType::ORC;
   if (key == "goblin_cave")      return NpcType::GOBLIN_CAVE;
   if (key == "skeleton_cave")    return NpcType::SKELETON_CAVE;
   if (key == "spider_cave")      return NpcType::SPIDER_CAVE;

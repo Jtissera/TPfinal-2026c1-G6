@@ -19,6 +19,7 @@
 #include "common/network/messages/server/player/resurrectionStartedMessage.h"
 #include "common/network/messages/server/combat/combatLogMessage.h"
 #include "common/network/protocol/clientOpCode.h"
+#include "common/network/messages/server/npc/npcAttackMessage.h"
 
 void GameServerDeserializersModule::registerDeserializers(Registry &registry) const
 {
@@ -321,5 +322,14 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
             const uint32_t itemId = reader.readUint32();
             return std::make_unique<ItemPickedMessage>(clientId, itemId);
         });
+
+    registry.registerDeserializer(
+    static_cast<uint8_t>(ServerOpCode::MSG_NPC_ATTACK),
+    [](PacketReader &reader) -> std::unique_ptr<Message>
+    {
+        const uint32_t npcId = reader.readUint32();
+        const auto direction = static_cast<Direction>(reader.readUint8());
+        return std::make_unique<NpcAttackMessage>(npcId, direction);
+    });
 }
 

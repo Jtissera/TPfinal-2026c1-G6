@@ -13,6 +13,7 @@ struct NpcMoveIntent
 
 struct NpcAttack
 {
+    uint32_t npcId;
     uint32_t targetPlayerId;
     int16_t damage;
     float xpMultiplier = 1.0f;

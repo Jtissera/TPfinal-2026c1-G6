@@ -59,18 +59,17 @@ bool CharacterArchive::save(const std::string &name, const std::string &race,
   std::strncpy(rec.name, name.c_str(), sizeof(rec.name) - 1);
   std::strncpy(rec.race, race.c_str(), sizeof(rec.race) - 1);
   std::strncpy(rec.cls, cls.c_str(), sizeof(rec.cls) - 1);
+  // rec.clanName queda vacío (sin clan al crear el personaje)
 
   uint64_t offset =
       static_cast<uint64_t>(index_.size()) * sizeof(CharacterRecord);
   index_[name] = offset;
 
-  // Escribir registro en dat
   std::fstream dat(datPath_, std::ios::binary | std::ios::in | std::ios::out);
   dat.seekp(static_cast<std::streamoff>(offset));
   dat.write(reinterpret_cast<const char *>(&rec), sizeof(rec));
   dat.flush();
 
-  // Escribir entrada en índice
   std::ofstream idx(indexPath_, std::ios::binary | std::ios::app);
   char nameBuf[CHAR_IDX_NAME_LEN] = {};
   std::strncpy(nameBuf, name.c_str(), CHAR_IDX_NAME_LEN - 1);
@@ -105,4 +104,41 @@ CharacterArchive::load(const std::string &name) const {
     return std::nullopt;
 
   return rec;
+}
+
+void CharacterArchive::overwriteRecord(uint64_t offset,
+                                       const CharacterRecord &rec) {
+  std::fstream dat(datPath_, std::ios::binary | std::ios::in | std::ios::out);
+  dat.seekp(static_cast<std::streamoff>(offset));
+  dat.write(reinterpret_cast<const char *>(&rec), sizeof(rec));
+  dat.flush();
+}
+
+bool CharacterArchive::updateClan(const std::string &name,
+                                  const std::string &clanName) {
+  std::unique_lock lock(mutex_);
+
+  auto it = index_.find(name);
+  if (it == index_.end()) {
+    std::cerr << "[CharacterArchive] updateClan: '" << name
+              << "' no existe." << std::endl;
+    return false;
+  }
+
+  uint64_t offset = it->second;
+
+  std::ifstream dat(datPath_, std::ios::binary);
+  CharacterRecord rec;
+  dat.seekg(static_cast<std::streamoff>(offset));
+  dat.read(reinterpret_cast<char *>(&rec), sizeof(rec));
+  dat.close();
+
+  std::memset(rec.clanName, 0, sizeof(rec.clanName));
+  std::strncpy(rec.clanName, clanName.c_str(), sizeof(rec.clanName) - 1);
+
+  overwriteRecord(offset, rec);
+
+  std::cout << "[CharacterArchive] '" << name << "' clan actualizado a '"
+            << (clanName.empty() ? "(ninguno)" : clanName) << "'" << std::endl;
+  return true;
 }

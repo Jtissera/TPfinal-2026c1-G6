@@ -7,20 +7,23 @@
 #include "common/network/messages/server/npc/npcMoveMessage.h"
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
 #include "common/network/messages/server/player/playerResurrectedMessage.h"
+#include "common/network/messages/server/npc/npcAttackMessage.h"
 
 GameLoop::GameLoop(Queue<ClientMessage> &q, Monitor &m, GameWorld &w,
                    Queue<std::shared_ptr<LeaveEvent>> &leaveQ,
                    Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQ,
                    uint32_t gameId, const toml::table &config,
                    PlayerArchive &archive, const std::string &mapId,
-                   ClanManager &clanManager)
+                   ClanManager &clanManager,
+                   uint32_t originRoomId)
     : gameQueue(q), monitor(m), world(w), leaveQueue(leaveQ),
       transitionQueue(transitionQ), gameId(gameId), dispatcher(config, clanManager),
       statManager(config),
       tickRateMs(config["server"]["tick_rate_ms"].value_or(33)),
       archive(archive), mapId(mapId),
       persistEveryNTicks(
-          config["server"]["persist_every_n_ticks"].value_or(300)) {}
+          config["server"]["persist_every_n_ticks"].value_or(300)),
+      originRoomId(originRoomId) {}
 
 void GameLoop::run()
 {
@@ -172,6 +175,13 @@ void GameLoop::worldUpdate(float deltaSeconds)
               << " tile=(" << res.tileX << ", " << res.tileY << ")"
               << std::endl;
   }
+
+
+  for (const auto &atk : result.npcAttacksForAnim)
+  {
+    monitor.broadcast(std::make_shared<const NpcAttackMessage>(atk.npcId, atk.direction));
+  }
+
   // Si algún NPC se movió, avisamos al cliente con un mensaje específico.
   // Esto NO crea NPCs. Solo actualiza su posición visual.
   for (uint32_t npcId : result.npcsMoved)
@@ -205,7 +215,7 @@ void GameLoop::worldUpdate(float deltaSeconds)
     persistTickCounter = 0;
     for (const auto &[clientId, player] : world.getPlayers())
     {
-      archive.enqueue(archive.toSnapshot(player, mapId, gameId), gameId);
+      archive.enqueue(archive.toSnapshot(player, mapId, gameId, originRoomId), gameId);
     }
   }
 }
@@ -215,7 +225,7 @@ void GameLoop::handleLeaveGame(uint32_t clientId)
   if (world.hasPlayer(clientId))
   {
     const Player &player = world.getPlayer(clientId);
-    // archive.enqueue(archive.toSnapshot(player, mapId, gameId), gameId);
+    // archive.enqueue(archive.toSnapshot(player, mapId, gameId), gameId); no deberia ser necesario 
   }
 
   auto player = world.removePlayer(clientId);
