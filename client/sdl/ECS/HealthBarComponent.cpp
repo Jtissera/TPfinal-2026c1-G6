@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <iostream>
 
-#include "cmake-build-debug/_deps/sdl2_ttf-src/SDL_ttf.h"
+#include <SDL2/SDL_ttf.h>
 
 HealthBarComponent::HealthBarComponent(int hp, int hpMax)
     : hp(hp), hpMax(hpMax) {}
