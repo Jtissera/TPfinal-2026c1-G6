@@ -2231,6 +2231,9 @@ void Game::processServerMessage(const Message &msg)
       handlePlayerAttackVisual(static_cast<const PlayerAttackVisualMessage &>(msg));
       return;
 
+    case ServerOpCode::MSG_PLAYER_HEALTH:
+      handlePlayerHeathVisual(static_cast<const PlayerHealthMessage&>(msg));
+      return;
     default:
       return;
   }
@@ -2632,6 +2635,10 @@ void Game::drawEquippedEntity(Entity *entity, RenderContext &context)
   if (entity->hasComponent<NameplateComponent>()) {
     entity->getComponent<NameplateComponent>().draw(context);
   }
+  if (entity->hasComponent<HealthBarComponent>())
+  {
+    entity->getComponent<HealthBarComponent>().draw(context);
+  }
 }
 
 void Game::handleEntityDespawn(const EntityDespawnMessage &msg)
@@ -2872,4 +2879,22 @@ void Game::handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg)
   {
     attackSystem.triggerMagicEffect(targetId, targetEntity, camera);
   }
+}
+
+
+void Game::handlePlayerHeathVisual(const PlayerHealthMessage &msg) {
+  const uint32_t playerId = msg.getPlayerId();
+
+
+  if (playerId == static_cast<uint32_t>(playerDto.playerID))
+  {
+    return;
+  }
+
+  if (clientWorld == nullptr)
+  {
+    return;
+  }
+
+  clientWorld->updateRemotePlayerHealth(playerId,msg.getHp(),msg.getHpMax());
 }

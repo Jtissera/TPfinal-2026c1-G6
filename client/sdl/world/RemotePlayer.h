@@ -35,6 +35,7 @@ private:
     void setLevel(uint32_t newLevel);
     void setClan(const std::string& newClan);
 
+
 public:
     // Constructor: asocia un id remoto con una entidad visual.
     RemotePlayer(uint32_t id, Entity* entity, const PlayerDto& dto);
@@ -62,6 +63,7 @@ public:
     void updateDto(const PlayerDto& newDto);
     uint8_t getLevel() const;
     void setLevel(uint8_t newLevel);
+    void setHealth(int hp, int hpMax);
 };
 
 

@@ -175,3 +175,15 @@ void RemotePlayer::setClan(const std::string& newClan)
         entity->getComponent<NameplateComponent>().setClan(newClan);
     }
 }
+
+void RemotePlayer::setHealth(int hp, int hpMax)
+{
+    if (entity == nullptr)
+    {
+        return;
+    }
+    if (entity->hasComponent<HealthBarComponent>())
+    {
+        entity->getComponent<HealthBarComponent>().setHealth(hp, hpMax);
+    }
+}

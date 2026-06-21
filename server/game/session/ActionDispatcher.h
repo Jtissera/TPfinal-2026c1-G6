@@ -25,7 +25,7 @@
 #include "common/network/messages/server/player/playerAttackVisualMessage.h"
 #include "server/game/chat/chatHandler.h"
 #include "common/network/messages/client/chat/chatMessage.h"
-
+#include "common/network/messages/server/player/playerHealthMessage.h"
 #include "../../city/cityCommandParser.h"
 #include "../../city/cityResult.h"
 #include "../../../common/network/messages/client/city/interactNpcMessage.h"
@@ -61,6 +61,7 @@ private:
   void handleInteractNpc(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
 
   void sendStats(uint32_t id, Player &p, Monitor &monitor);
+
   void sendInventory(uint32_t id, Player &p, Monitor &monitor);
   void sendDeath(uint32_t id, Player &dead, Monitor &monitor);
 

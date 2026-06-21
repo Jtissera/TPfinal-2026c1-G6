@@ -332,3 +332,20 @@ Entity *ClientGameWorld::getRemotePlayerEntity(uint32_t entityId) const
         return nullptr;
     return const_cast<RemotePlayer &>(it->second).getEntity();
 }
+
+void ClientGameWorld::updateRemotePlayerHealth(uint32_t entityId,
+                                               int hp,
+                                               int hpMax)
+{
+    // Buscamos al jugador remoto por ID.
+    auto it = remotePlayers.find(entityId);
+
+    // Si no existe como remoto, no hacemos nada.
+    if (it == remotePlayers.end())
+    {
+        return;
+    }
+
+    // Delegamos la actualización al RemotePlayer.
+    it->second.setHealth(hp, hpMax);
+}

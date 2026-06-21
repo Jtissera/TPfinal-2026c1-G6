@@ -21,6 +21,7 @@
 #include "common/network/protocol/clientOpCode.h"
 #include "common/network/messages/server/npc/npcAttackMessage.h"
 #include "common/network/messages/server/player/playerAttackVisualMessage.h"
+#include "common/network/messages/server/player/playerHealthMessage.h"
 
 void GameServerDeserializersModule::registerDeserializers(Registry &registry) const
 {
@@ -345,6 +346,14 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
 
         return std::make_unique<PlayerAttackVisualMessage>(attackerId,targetId,visualType);
     });
+    registry.registerDeserializer(static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_HEALTH),
+[](PacketReader &reader) -> std::unique_ptr<Message>
+{
+    const uint32_t playerId = reader.readUint32();
+    const uint16_t hp = reader.readUint16();
+    const uint16_t hpMax = reader.readUint16();
+    return std::make_unique<PlayerHealthMessage>(playerId,hp,hpMax);
+});
 
 }
 

@@ -49,6 +49,7 @@
 #include "common/network/messages/server/combat/combatLogMessage.h"
 #include "common/network/messages/server/npc/npcAttackMessage.h"
 #include "common/network/messages/server/player/playerAttackVisualMessage.h"
+#include "common/network/messages/server/player/playerHealthMessage.h"
 
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
@@ -223,6 +224,7 @@ private:
     void handleGoldOnGround(const GoldOnGroundMessage &msg);
     void handleItemPicked(const ItemPickedMessage &msg);
     void handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg);
+    void handlePlayerHeathVisual(const PlayerHealthMessage &msg);
 
 
     struct EnemyMoveInterp

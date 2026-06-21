@@ -430,11 +430,6 @@ void ActionDispatcher::handleAttack(uint32_t id, const Message &msg, GameWorld &
 }
 
 void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,GameWorld &world,Monitor &monitor){
-    std::cout << "[SERVER PVP] attackerId="
-              << attackerId
-              << " targetId="
-              << targetId
-              << std::endl;
 
     if (attackerId == targetId)
     {
@@ -471,22 +466,6 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
     }
 
     auto result = combat.attackPlayer(attacker, target, world);
-
-    std::cout << "[SERVER PVP RESULT] valid="
-              << result.valid
-              << " dodged="
-              << result.dodged
-              << " killed="
-              << result.killed
-              << " attackerMana="
-              << attacker.getMana()
-              << "/"
-              << attacker.getMaxMana()
-              << " targetHp="
-              << target.getHp()
-              << "/"
-              << target.getMaxHp()
-              << std::endl;
 
     if (!result.valid)
     {
@@ -548,9 +527,7 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
 
     if (result.valid && !result.dodged)
     {
-        monitor.sendTo(attackerId,
-                       std::make_shared<const CombatLogMessage>(
-                           std::to_string(targetId)));
+        monitor.sendTo(attackerId,std::make_shared<const CombatLogMessage>(std::to_string(targetId)));
 
         broadcastPlayerAttackVisual(attackerId, targetId, attacker, monitor);
     }
@@ -594,9 +571,11 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
 
         sendStats(attackerId, attacker, monitor);
         sendLevelUpIfNeeded(attackerId, attacker, monitor);
-
         sendInventory(targetId, target, monitor);
         sendDeath(targetId, target, monitor);
+        monitor.broadcast(std::make_shared<const PlayerHealthMessage>(targetId,
+            static_cast<uint16_t>(target.getHp()),
+            static_cast<uint16_t>(target.getMaxHp())));
 
         return;
     }
@@ -615,6 +594,7 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
     sendStats(attackerId, attacker, monitor);
     sendStats(targetId, target, monitor);
     sendLevelUpIfNeeded(attackerId, attacker, monitor);
+    monitor.broadcast(std::make_shared<const PlayerHealthMessage>(targetId,target.getHp(),target.getMaxHp()));
 }
 void ActionDispatcher::handleAttackNpc(uint32_t attackerId,uint32_t npcId,GameWorld &world,Monitor &monitor){
     Player &attacker = world.getPlayer(attackerId);

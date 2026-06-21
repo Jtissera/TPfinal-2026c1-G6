@@ -124,6 +124,17 @@ void GameLoop::worldUpdate(float deltaSeconds)
   for (uint32_t id : result.playersChanged)
   {
     statManager.sendPlayerStats(id, world, monitor);
+
+    if (world.hasPlayer(id))
+    {
+      Player &player = world.getPlayer(id);
+
+      monitor.broadcast(std::make_shared<const PlayerHealthMessage>(
+          id,
+          static_cast<uint16_t>(player.getHp()),
+          static_cast<uint16_t>(player.getMaxHp())
+      ));
+    }
   }
 
   for (auto &[playerId, deathResult] : result.playerDeathsByNpc)
@@ -150,7 +161,10 @@ void GameLoop::worldUpdate(float deltaSeconds)
                                   victim.getInventory().getItems(),
                                   victim.getInventory().getInventorySlots(),
                                   victim.getInventory().getEquippedArray()));
-
+    monitor.broadcast(std::make_shared<const PlayerHealthMessage>(
+                                playerId,
+                                static_cast<uint16_t>(victim.getHp()),
+                                static_cast<uint16_t>(victim.getMaxHp())));
     std::cout << "[GameLoop] inventario purgado enviado a victima playerId="
               << playerId << std::endl;
   }

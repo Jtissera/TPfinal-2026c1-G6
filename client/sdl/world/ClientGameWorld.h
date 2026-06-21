@@ -72,6 +72,8 @@ public:
     void updateRemotePlayerLevel(uint32_t playerId, uint8_t newLevel);
 
     Entity *getRemotePlayerEntity(uint32_t entityId) const;
+
+    void updateRemotePlayerHealth(uint32_t entityId, int hp, int hpMax);
 };
 
 #endif // TALLER_TP_CLIENTGAMEWORLD_H
