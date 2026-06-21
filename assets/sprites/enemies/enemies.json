@@ -162,7 +162,7 @@
         "orc": {
       "sheet_width": 1024,
       "sheet_height": 1024,
-      "frame_width": 128,
+      "frame_width": 160,
       "frame_height": 129,
       "scale": 1,
       "animations": {
@@ -175,8 +175,8 @@
       }
     },
     "orc_attack": {
-      "frame_width": 128,
-      "frame_height": 128,
+      "frame_width": 160,
+      "frame_height": 196,
       "scale": 1,
       "animations": {
         "AttackDown":  { "row": 0, "frames": 4, "speed_ms": 150 },
@@ -190,7 +190,7 @@
       "sheet_width": 161,
       "sheet_height": 498,
       "frame_width": 32,
-      "frame_height": 54,
+      "frame_height": 64,
       "scale": 2,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
@@ -202,8 +202,8 @@
       }
     },
     "desert_goblin_attack": {
-      "frame_width": 40,
-      "frame_height": 63,
+      "frame_width": 32,
+      "frame_height": 64,
       "scale": 2,
       "animations": {
         "AttackDown":  { "row": 0, "frames": 3, "speed_ms": 150 },
@@ -216,8 +216,8 @@
       "dungeon_goblin": {
       "sheet_width": 167,
       "sheet_height": 509,
-      "frame_width": 33,
-      "frame_height": 63,
+      "frame_width": 32,
+      "frame_height": 54,
       "scale": 2,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
@@ -271,7 +271,7 @@
       "sheet_width": 161,
       "sheet_height": 513,
       "frame_width": 32,
-      "frame_height": 64,
+      "frame_height": 54,
       "scale": 2,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
@@ -284,7 +284,7 @@
     },
     "cavern_goblin_attack": {
       "frame_width": 32,
-      "frame_height": 64,
+      "frame_height": 63,
       "scale": 2,
       "animations": {
         "AttackDown":  { "row": 0, "frames": 3, "speed_ms": 150 },
@@ -294,10 +294,10 @@
       },
       "note": "scale asumido igual al body (1), no confirmado contra el sheet original."
     },
-      "golem": {
-      "sheet_width": 650,
+      "cavern_golem": {
+      "sheet_width": 1024,
       "sheet_height": 1024,
-      "frame_width": 170,
+      "frame_width": 161,
       "frame_height": 160,
       "scale": 2,
       "animations": {
@@ -310,9 +310,9 @@
       }
     },
       "dungeon_golem": {
-      "sheet_width": 650,
-      "sheet_height": 1021,
-      "frame_width": 145,
+      "sheet_width": 1024,
+      "sheet_height": 1024,
+      "frame_width": 161,
       "frame_height": 160,
       "scale": 2,
       "animations": {
@@ -325,10 +325,10 @@
       }
     },
       "desert_golem": {
-      "sheet_width": 392,
-      "sheet_height": 507,
-      "frame_width": 82,
-      "frame_height": 130,
+      "sheet_width": 390,
+      "sheet_height": 510,
+      "frame_width": 78,
+      "frame_height": 96,
       "scale": 2,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },

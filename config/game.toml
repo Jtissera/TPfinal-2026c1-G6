@@ -423,7 +423,7 @@ detection_range    = 6
 home_range         = 8
 attack_cooldown_ms = 900
 move_cooldown_ms   = 450
-zones              = ["CAVERN"]
+zones              = ["COMBAT"]
 
 [npcs.skeleton_cave]
 hp                 = 120
@@ -436,7 +436,7 @@ detection_range    = 6
 home_range         = 8
 attack_cooldown_ms = 1100
 move_cooldown_ms   = 550
-zones              = ["CAVERN"]
+zones              = ["COMBAT"]
 
 [npcs.spider_cave]
 hp                 = 60
@@ -449,7 +449,7 @@ detection_range    = 7
 home_range         = 8
 attack_cooldown_ms = 700
 move_cooldown_ms   = 300
-zones              = ["CAVERN"]
+zones              = ["COMBAT"]
 
 [npcs.golem_cave]
 hp                 = 200
@@ -462,7 +462,7 @@ detection_range    = 4
 home_range         = 6
 attack_cooldown_ms = 1800
 move_cooldown_ms   = 900
-zones              = ["CAVERN"]
+zones              = ["COMBAT"]
 
 [npcs.goblin_dungeon]
 hp                 = 150
@@ -475,7 +475,7 @@ detection_range    = 8
 home_range         = 10
 attack_cooldown_ms = 800
 move_cooldown_ms   = 400
-zones              = ["DUNGEON"]
+zones              = ["COMBAT"]
 
 [npcs.skeleton_dungeon]
 hp                 = 220
@@ -488,7 +488,7 @@ detection_range    = 8
 home_range         = 10
 attack_cooldown_ms = 1000
 move_cooldown_ms   = 500
-zones              = ["DUNGEON"]
+zones              = ["COMBAT"]
 
 [npcs.spider_dungeon]
 hp                 = 130
@@ -501,7 +501,7 @@ detection_range    = 10
 home_range         = 10
 attack_cooldown_ms = 600
 move_cooldown_ms   = 250
-zones              = ["DUNGEON"]
+zones              = ["COMBAT"]
 
 [npcs.golem_dungeon]
 hp                 = 400
@@ -514,7 +514,7 @@ detection_range    = 5
 home_range         = 8
 attack_cooldown_ms = 2000
 move_cooldown_ms   = 1200
-zones              = ["DUNGEON"]
+zones              = ["COMBAT"]
 
 [npcs.goblin_desert]
 hp                 = 70
