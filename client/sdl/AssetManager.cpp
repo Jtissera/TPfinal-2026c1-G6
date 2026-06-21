@@ -108,8 +108,17 @@ static AttackConfig attackConfigForNPC(NpcType type)
         return {"zombie_attack", 128, 128, 4, 4};
     case NpcType::ORC:
         return {"orc_attack", 128, 128, 4, 4};
+    case NpcType::GOBLIN:
+        return {"goblin_attack", 30, 70, 4, 3};
+
+    case NpcType::GOBLIN_CAVE:
+        return {"cavern_goblin_attack", 32, 64, 4, 3};
+    case NpcType::GOBLIN_DUNGEON:
+        return {"dungeon_goblin_attack", 32, 64, 4, 3};
+    case NpcType::GOBLIN_DESERT:
+        return {"desert_goblin_attack", 32, 64, 4, 3};
     default:
-        return {"", 0, 0, 0, 0};  // sin ataque
+        return {"", 0, 0, 0, 0}; // sin ataque
     }
 }
 
@@ -163,18 +172,18 @@ Entity *AssetManager::CreateEnemy(const NPCData &data)
     }
     else
     {
-        enemyAnims.emplace("IdleDown",  Animation(0, 1, 150));
-        enemyAnims.emplace("WalkDown",  Animation(4, 5, 100));
-        enemyAnims.emplace("IdleUp",    Animation(0, 1, 150));
-        enemyAnims.emplace("WalkUp",    Animation(5, 5, 100));
+        enemyAnims.emplace("IdleDown", Animation(0, 1, 150));
+        enemyAnims.emplace("WalkDown", Animation(4, 5, 100));
+        enemyAnims.emplace("IdleUp", Animation(0, 1, 150));
+        enemyAnims.emplace("WalkUp", Animation(5, 5, 100));
         enemyAnims.emplace("IdleRight", Animation(3, 1, 150));
         enemyAnims.emplace("WalkRight", Animation(7, 5, 100));
     }
 
     AttackConfig atkCfg = attackConfigForNPC(data.type);
     const SpriteDefinition *attackDef = atkCfg.textureId.empty()
-        ? nullptr
-        : GetSpriteDefinition(atkCfg.textureId);
+                                            ? nullptr
+                                            : GetSpriteDefinition(atkCfg.textureId);
 
     if (!atkCfg.textureId.empty())
     {
@@ -187,9 +196,9 @@ Entity *AssetManager::CreateEnemy(const NPCData &data)
         }
         else
         {
-            enemyAnims.emplace("AttackDown",  Animation(0, atkCfg.framesPerRow, 150));
-            enemyAnims.emplace("AttackUp",    Animation(1, atkCfg.framesPerRow, 150));
-            enemyAnims.emplace("AttackLeft",  Animation(2, atkCfg.framesPerRow, 150));
+            enemyAnims.emplace("AttackDown", Animation(0, atkCfg.framesPerRow, 150));
+            enemyAnims.emplace("AttackUp", Animation(1, atkCfg.framesPerRow, 150));
+            enemyAnims.emplace("AttackLeft", Animation(2, atkCfg.framesPerRow, 150));
             enemyAnims.emplace("AttackRight", Animation(3, atkCfg.framesPerRow, 150));
         }
     }
@@ -203,11 +212,11 @@ Entity *AssetManager::CreateEnemy(const NPCData &data)
     if (!atkCfg.textureId.empty())
     {
         SpriteSheetConfig attackSheetCfg = (attackDef != nullptr)
-            ? attackDef->config
-            : SpriteSheetConfig{atkCfg.frameWidth, atkCfg.frameHeight, cfg.scale, 0, 0};
+                                               ? attackDef->config
+                                               : SpriteSheetConfig{atkCfg.frameWidth, atkCfg.frameHeight, cfg.scale, 0, 0};
 
         enemy.getComponent<SpriteComponent>()
-             .setAttackTexture(atkCfg.textureId, attackSheetCfg);
+            .setAttackTexture(atkCfg.textureId, attackSheetCfg);
     }
 
     enemy.addComponent<ColliderComponent>("enemy");
@@ -316,7 +325,7 @@ std::string AssetManager::textureForNPC(NpcType type)
 
     // Caverna
     case NpcType::GOBLIN_CAVE:
-        return "goblin";
+        return "cavern_goblin";
     case NpcType::SKELETON_CAVE:
         return "dungeon_skeleton";
     case NpcType::SPIDER_CAVE:
@@ -326,7 +335,7 @@ std::string AssetManager::textureForNPC(NpcType type)
 
     // Mazmorra
     case NpcType::GOBLIN_DUNGEON:
-        return "goblin";
+        return "dungeon_goblin";
     case NpcType::SKELETON_DUNGEON:
         return "dungeon_skeleton";
     case NpcType::SPIDER_DUNGEON:
@@ -336,7 +345,7 @@ std::string AssetManager::textureForNPC(NpcType type)
 
     // Desierto
     case NpcType::GOBLIN_DESERT:
-        return "goblin";
+        return "desert_goblin";
     case NpcType::SKELETON_DESERT:
         return "dungeon_skeleton";
     case NpcType::SPIDER_DESERT:
@@ -504,7 +513,6 @@ const SpriteDefinition *AssetManager::GetSpriteDefinition(const std::string &id)
         return nullptr;
     return &it->second;
 }
-
 
 void AssetManager::LoadBodiesFromJson(const std::string &path)
 {
@@ -685,11 +693,12 @@ void AssetManager::applyRemotePlayerAppearance(Entity &entity, const PlayerDto &
               << std::endl;
 }
 
-Entity * AssetManager::CreateGroundItem(const ItemView &itemView, int worldX, int worldY) {
+Entity *AssetManager::CreateGroundItem(const ItemView &itemView, int worldX, int worldY)
+{
 
     auto &groundItem = manager->addEntity();
 
-    groundItem.addComponent<TransformComponent>(worldX,worldY,itemView.iconSrcH,itemView.iconSrcW,1);
+    groundItem.addComponent<TransformComponent>(worldX, worldY, itemView.iconSrcH, itemView.iconSrcW, 1);
 
     std::map<std::string, Animation> itemAnimatation;
     itemAnimatation.emplace("Idle", Animation(0, 1, 1));
@@ -701,9 +710,8 @@ Entity * AssetManager::CreateGroundItem(const ItemView &itemView, int worldX, in
     itemConfig.startX = itemView.iconSrcX;
     itemConfig.startY = itemView.iconSrcY;
 
-    groundItem.addComponent<SpriteComponent>(*this,itemView.textureId,false,itemAnimatation,itemConfig);
+    groundItem.addComponent<SpriteComponent>(*this, itemView.textureId, false, itemAnimatation, itemConfig);
     groundItem.addGroup(groupItems);
 
     return &groundItem;
 }
-

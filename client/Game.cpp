@@ -476,9 +476,7 @@ void Game::render()
     RenderObject obj;
 
     int screenY = static_cast<int>(transform.position.y - camera.y) + 133;
-
     int spriteHeightOnScreen = 46 * transform.scale;
-
     obj.yFootprint = screenY + spriteHeightOnScreen;
 
     obj.drawFunc = [npcEntity, &renderContext]()
@@ -528,6 +526,7 @@ void Game::render()
       statusMessageTexture = nullptr;
     }
   }
+
   if (resurrectionEndTime > 0)
   {
     const Uint32 now = SDL_GetTicks();
@@ -566,11 +565,14 @@ void Game::render()
       resurrectionEndTime = 0;
     }
   }
+
   renderHUD();
   TTF_Font *chatFont = assets->GetFont("ao_regular");
   miniChat.render(renderer, chatFont);
   SDL_RenderPresent(renderer);
 }
+
+
 
 void Game::clean()
 {

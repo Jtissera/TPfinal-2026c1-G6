@@ -9,16 +9,26 @@
     { "id": "dungeon_spider", "path": "assets/sprites/enemies/spider/dungeon_spider.png" },
     { "id": "cavern_spider", "path": "assets/sprites/enemies/spider/cavern_spider.png" },
     { "id": "desert_spider", "path": "assets/sprites/enemies/spider/desert_spider.png" },
+
     { "id": "orc", "path": "assets/sprites/enemies/orc/orc.png" },
     { "id": "orc_attack", "path": "assets/sprites/enemies/orc/orc_attack.png" },
 
-    { "id": "goblin", "path": "assets/sprites/enemies/goblin.png" },
-    { "id": "golem", "path": "assets/sprites/enemies/golem.png" },
-    { "id": "cavern_golem", "path": "assets/sprites/enemies/cavern_golem.png" },
-    { "id": "desert_golem", "path": "assets/sprites/enemies/desert_golem.png" },
-    { "id": "dungeon_golem", "path": "assets/sprites/enemies/dungeon_golem.png" },
+    { "id": "goblin", "path": "assets/sprites/enemies/goblin/goblin.png" },
+    { "id": "goblin_attack", "path": "assets/sprites/enemies/goblin/goblin_attack.png" },
+    { "id": "desert_goblin", "path": "assets/sprites/enemies/goblin/desert_goblin.png" },
+    { "id": "desert_goblin_attack", "path": "assets/sprites/enemies/goblin/desert_goblin_attack.png" },
+    { "id": "dungeon_goblin", "path": "assets/sprites/enemies/goblin/dungeon_goblin.png" },
+    { "id": "dungeon_goblin_attack", "path": "assets/sprites/enemies/goblin/dungeon_goblin_attack.png" },
+    { "id": "cavern_goblin", "path": "assets/sprites/enemies/goblin/cavern_goblin.png" },
+    { "id": "cavern_goblin_attack", "path": "assets/sprites/enemies/goblin/cavern_goblin_attack.png" },
 
-    { "id": "dungeon_spider", "path": "assets/sprites/enemies/dungeon_spider.png" }
+
+    { "id": "golem", "path": "assets/sprites/enemies/golem/cavern_golem.png" },
+    { "id": "cavern_golem", "path": "assets/sprites/enemies/golem/cavern_golem.png" },
+    { "id": "desert_golem", "path": "assets/sprites/enemies/golem/desert_golem.png" },
+    { "id": "dungeon_golem", "path": "assets/sprites/enemies/golem/dungeon_golem.png" }
+
+
   ],
   "_sprite_info": {
     "skeleton": {
@@ -175,6 +185,159 @@
         "AttackRight": { "row": 3, "frames": 4, "speed_ms": 150 }
       },
       "note": "scale asumido igual al body (1), no confirmado contra el sheet original."
+    },
+      "desert_goblin": {
+      "sheet_width": 161,
+      "sheet_height": 498,
+      "frame_width": 32,
+      "frame_height": 54,
+      "scale": 2,
+      "animations": {
+        "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
+        "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },
+        "IdleRight": { "row": 3, "frames": 1, "speed_ms": 150 },
+        "WalkDown":  { "row": 4, "frames": 5, "speed_ms": 100 },
+        "WalkUp":    { "row": 5, "frames": 5, "speed_ms": 100 },
+        "WalkRight": { "row": 7, "frames": 5, "speed_ms": 100 }
+      }
+    },
+    "desert_goblin_attack": {
+      "frame_width": 40,
+      "frame_height": 63,
+      "scale": 2,
+      "animations": {
+        "AttackDown":  { "row": 0, "frames": 3, "speed_ms": 150 },
+        "AttackUp":    { "row": 1, "frames": 3, "speed_ms": 150 },
+        "AttackLeft":  { "row": 2, "frames": 3, "speed_ms": 150 },
+        "AttackRight": { "row": 3, "frames": 3, "speed_ms": 150 }
+      },
+      "note": "scale asumido igual al body (1), no confirmado contra el sheet original."
+    },
+      "dungeon_goblin": {
+      "sheet_width": 167,
+      "sheet_height": 509,
+      "frame_width": 33,
+      "frame_height": 63,
+      "scale": 2,
+      "animations": {
+        "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
+        "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },
+        "IdleRight": { "row": 3, "frames": 1, "speed_ms": 150 },
+        "WalkDown":  { "row": 4, "frames": 5, "speed_ms": 100 },
+        "WalkUp":    { "row": 5, "frames": 5, "speed_ms": 100 },
+        "WalkRight": { "row": 7, "frames": 5, "speed_ms": 100 }
+      }
+    },
+    "dungeon_goblin_attack": {
+      "frame_width": 33,
+      "frame_height": 63,
+      "scale": 2,
+      "animations": {
+        "AttackDown":  { "row": 0, "frames": 3, "speed_ms": 150 },
+        "AttackUp":    { "row": 1, "frames": 3, "speed_ms": 150 },
+        "AttackLeft":  { "row": 2, "frames": 3, "speed_ms": 150 },
+        "AttackRight": { "row": 3, "frames": 3, "speed_ms": 150 }
+      },
+      "note": "scale asumido igual al body (1), no confirmado contra el sheet original."
+    },
+      "goblin": {
+      "sheet_width": 155,
+      "sheet_height": 513,
+      "frame_width": 31,
+      "frame_height": 64,
+      "scale": 2,
+      "animations": {
+        "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
+        "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },
+        "IdleRight": { "row": 3, "frames": 1, "speed_ms": 150 },
+        "WalkDown":  { "row": 4, "frames": 5, "speed_ms": 100 },
+        "WalkUp":    { "row": 5, "frames": 5, "speed_ms": 100 },
+        "WalkRight": { "row": 7, "frames": 5, "speed_ms": 100 }
+      }
+    },
+    "goblin_attack": {
+      "frame_width": 32,
+      "frame_height": 64,
+      "scale": 2,
+      "animations": {
+        "AttackDown":  { "row": 0, "frames": 3, "speed_ms": 150 },
+        "AttackUp":    { "row": 1, "frames": 3, "speed_ms": 150 },
+        "AttackLeft":  { "row": 2, "frames": 3, "speed_ms": 150 },
+        "AttackRight": { "row": 3, "frames": 3, "speed_ms": 150 }
+      },
+      "note": "scale asumido igual al body (1), no confirmado contra el sheet original."
+    },
+      "cavern_goblin": {
+      "sheet_width": 161,
+      "sheet_height": 513,
+      "frame_width": 32,
+      "frame_height": 64,
+      "scale": 2,
+      "animations": {
+        "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
+        "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },
+        "IdleRight": { "row": 3, "frames": 1, "speed_ms": 150 },
+        "WalkDown":  { "row": 4, "frames": 5, "speed_ms": 100 },
+        "WalkUp":    { "row": 5, "frames": 5, "speed_ms": 100 },
+        "WalkRight": { "row": 7, "frames": 5, "speed_ms": 100 }
+      }
+    },
+    "cavern_goblin_attack": {
+      "frame_width": 32,
+      "frame_height": 64,
+      "scale": 2,
+      "animations": {
+        "AttackDown":  { "row": 0, "frames": 3, "speed_ms": 150 },
+        "AttackUp":    { "row": 1, "frames": 3, "speed_ms": 150 },
+        "AttackLeft":  { "row": 2, "frames": 3, "speed_ms": 150 },
+        "AttackRight": { "row": 3, "frames": 3, "speed_ms": 150 }
+      },
+      "note": "scale asumido igual al body (1), no confirmado contra el sheet original."
+    },
+      "golem": {
+      "sheet_width": 650,
+      "sheet_height": 1024,
+      "frame_width": 170,
+      "frame_height": 160,
+      "scale": 2,
+      "animations": {
+        "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
+        "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },
+        "IdleRight": { "row": 3, "frames": 1, "speed_ms": 150 },
+        "WalkDown":  { "row": 0, "frames": 6, "speed_ms": 100 },
+        "WalkUp":    { "row": 1, "frames": 6, "speed_ms": 100 },
+        "WalkRight": { "row": 3, "frames": 6, "speed_ms": 100 }
+      }
+    },
+      "dungeon_golem": {
+      "sheet_width": 650,
+      "sheet_height": 1021,
+      "frame_width": 145,
+      "frame_height": 160,
+      "scale": 2,
+      "animations": {
+        "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
+        "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },
+        "IdleRight": { "row": 3, "frames": 1, "speed_ms": 150 },
+        "WalkDown":  { "row": 0, "frames": 6, "speed_ms": 100 },
+        "WalkUp":    { "row": 1, "frames": 6, "speed_ms": 100 },
+        "WalkRight": { "row": 3, "frames": 6, "speed_ms": 100 }
+      }
+    },
+      "desert_golem": {
+      "sheet_width": 392,
+      "sheet_height": 507,
+      "frame_width": 82,
+      "frame_height": 130,
+      "scale": 2,
+      "animations": {
+        "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
+        "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },
+        "IdleRight": { "row": 3, "frames": 1, "speed_ms": 150 },
+        "WalkDown":  { "row": 0, "frames": 4, "speed_ms": 100 },
+        "WalkUp":    { "row": 1, "frames": 4, "speed_ms": 100 },
+        "WalkRight": { "row": 3, "frames": 4, "speed_ms": 100 }
+      }
     }
   }
 }

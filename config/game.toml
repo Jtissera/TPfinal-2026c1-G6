@@ -577,7 +577,7 @@ damage_max = 15
 defense_min = 2
 defense_max = 5
 attack_range = 1
-hostile = false
+zones              = ["COMBAT"]
 exp = 0
 gold = 0
 
