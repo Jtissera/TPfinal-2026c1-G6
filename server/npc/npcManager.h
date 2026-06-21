@@ -12,7 +12,8 @@
 #include <string>
 #include <stdexcept>
 
-class NpcManager {
+class NpcManager
+{
 public:
   NpcManager(NpcFactory &factory, const CollisionSystem &collision, const MapData &mapData);
 
@@ -27,16 +28,15 @@ public:
 
   bool hasNpc(uint32_t npcId) const;
 
-  bool damageNpc(uint32_t npcId,int16_t damage,uint32_t attackerPlayerId);
-  Npc& getNpc(uint32_t npcId);
-  const Npc& getNpc(uint32_t npcId) const;
+  bool damageNpc(uint32_t npcId, int16_t damage, uint32_t attackerPlayerId);
+  Npc &getNpc(uint32_t npcId);
+  const Npc &getNpc(uint32_t npcId) const;
 
-  Npc* findNpc(uint32_t npcId);
-  const Npc* findNpc(uint32_t npcId) const;
+  Npc *findNpc(uint32_t npcId);
+  const Npc *findNpc(uint32_t npcId) const;
 
   void startRespawn(uint32_t npcId, float respawnMs);
   std::vector<uint32_t> tickRespawns(float deltaMs);
-
 
 private:
   NpcFactory &factory;
@@ -46,5 +46,5 @@ private:
   std::unordered_map<uint32_t, Npc> npcs;
 
   int16_t rollDamage(const NpcStats &stats) const;
-  NpcDeathResult buildDeathResult(const Npc &npc,const uint32_t killerPlayerId) const;
+  NpcDeathResult buildDeathResult(const Npc &npc, const uint32_t killerPlayerId) const;
 };

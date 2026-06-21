@@ -209,22 +209,23 @@ void GameWorld::giveExperience(uint32_t playerId, uint32_t exp, float xpMultipli
     p.addExperience(finalExp, limit, newMaxHp, newMaxMana);
 }
 
-GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t attackerId) {
-    Player& target = getPlayer(targetId);
+GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId, uint32_t attackerId)
+{
+    Player &target = getPlayer(targetId);
 
-
-    if (target.isGhost()) {
+    if (target.isGhost())
+    {
         return {0, {}};
     }
 
-    if (attackerId != 0) {
-        Player& attacker = getPlayer(attackerId);
+    if (attackerId != 0)
+    {
+        Player &attacker = getPlayer(attackerId);
 
         uint32_t killExp = formulas.calcExpOnKill(
             target.getMaxHp(),
             attacker.getLevel(),
-            target.getLevel()
-        );
+            target.getLevel());
 
         giveExperience(attackerId, killExp);
     }
@@ -253,7 +254,8 @@ GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t a
 
     // El oro en exceso cae al piso, visible para cualquiera.
     uint32_t goldInstanceId = 0;
-    if (excessGold > 0) {
+    if (excessGold > 0)
+    {
         goldInstanceId = addGoldOnGround(excessGold, tileX, tileY);
 
         std::cout << "[PVP GOLD DROP] victimId="
@@ -269,7 +271,8 @@ GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId,uint32_t a
     std::vector<Item> items = target.purgeInventoryOnDeath();
 
     // Los items del muerto tambien caen al piso.
-    for (const Item& item : items) {
+    for (const Item &item : items)
+    {
         addItemOnGround(item, tileX, tileY);
     }
 
@@ -292,7 +295,7 @@ void GameWorld::addItemOnGround(Item item, int tileX, int tileY)
 
 uint32_t GameWorld::addGoldOnGround(uint32_t amount, int tileX, int tileY)
 {
-    return groundManager.addGold(amount,tileX,tileY);
+    return groundManager.addGold(amount, tileX, tileY);
 }
 
 std::optional<Item> GameWorld::pickItemById(uint32_t instanceId)
@@ -635,62 +638,60 @@ void GameWorld::tickNpcs(WorldTickResult &result)
 {
     auto npcResult = npcManager.tick(players);
 
-for (auto &intent : npcResult.moveIntents)
-{
-    int toX = intent.toX;
-    int toY = intent.toY;
-
-    if (!collision.isWalkable(toX, toY))
+    for (auto &intent : npcResult.moveIntents)
     {
-        
-        const int dx[4] = {1, -1, 0, 0};
-        const int dy[4] = {0, 0, 1, -1};
-        int order[4] = {0, 1, 2, 3};
+        int toX = intent.toX;
+        int toY = intent.toY;
 
-
-        for (int i = 3; i > 0; --i)
+        if (!collision.isWalkable(toX, toY))
         {
-            int j = std::rand() % (i + 1);
-            std::swap(order[i], order[j]);
-        }
 
-        bool foundAlternative = false;
-        for (int k = 0; k < 4; ++k)
-        {
-            const int idx = order[k];
-            const int rx = intent.fromX + dx[idx];
-            const int ry = intent.fromY + dy[idx];
+            const int dx[4] = {1, -1, 0, 0};
+            const int dy[4] = {0, 0, 1, -1};
+            int order[4] = {0, 1, 2, 3};
 
-            if (collision.isWalkable(rx, ry))
+            for (int i = 3; i > 0; --i)
             {
-                toX = rx;
-                toY = ry;
-                foundAlternative = true;
-                break;
+                int j = std::rand() % (i + 1);
+                std::swap(order[i], order[j]);
+            }
+
+            bool foundAlternative = false;
+            for (int k = 0; k < 4; ++k)
+            {
+                const int idx = order[k];
+                const int rx = intent.fromX + dx[idx];
+                const int ry = intent.fromY + dy[idx];
+
+                if (collision.isWalkable(rx, ry))
+                {
+                    toX = rx;
+                    toY = ry;
+                    foundAlternative = true;
+                    break;
+                }
+            }
+
+            if (!foundAlternative)
+            {
+                continue; // Las 4 direcciones están bloqueadas, no se mueve este tick.
             }
         }
 
-        if (!foundAlternative)
-        {
-            continue; // Las 4 direcciones están bloqueadas, no se mueve este tick.
-        }
+        const Npc &npc = npcManager.getNpcs().at(intent.npcId);
+        if (!npcManager.isSameZone(toX, toY, npc.getStats().homeZone))
+            continue;
+
+        const Tile &destTile = mapData.at(static_cast<uint16_t>(toX), static_cast<uint16_t>(toY));
+        if (destTile.zone == ZoneType::SAFE)
+            continue;
+
+        if (!occupancy.move(intent.fromX, intent.fromY, toX, toY, intent.npcId))
+            continue;
+
+        npcManager.applyMove(intent.npcId, toX, toY);
+        result.npcsMoved.push_back(intent.npcId);
     }
-
-    const Npc &npc = npcManager.getNpcs().at(intent.npcId);
-    if (!npcManager.isSameZone(toX, toY, npc.getStats().homeZone))
-        continue;
-
-    if (!occupancy.move(intent.fromX, intent.fromY, toX, toY, intent.npcId))
-        continue;
-
-    const Tile &destTile = mapData.at(
-        static_cast<uint16_t>(toX), static_cast<uint16_t>(toY));
-    if (destTile.zone == ZoneType::SAFE)
-        continue;
-
-    npcManager.applyMove(intent.npcId, toX, toY);
-    result.npcsMoved.push_back(intent.npcId);
-}
 
     for (auto &attack : npcResult.attacks)
     {
@@ -717,7 +718,7 @@ for (auto &intent : npcResult.moveIntents)
         result.playerHits.push_back({attack.targetPlayerId, attack.damage});
         result.playersChanged.push_back(attack.targetPlayerId);
 
-        if (npcManager.hasNpc(attack.npcId))    
+        if (npcManager.hasNpc(attack.npcId))
         {
             const Npc &attackerNpc = npcManager.getNpc(attack.npcId);
             const int dx = target.getTileX() - attackerNpc.getTileX();
@@ -1021,15 +1022,18 @@ std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const
     return t != NpcType::NONE ? std::optional<NpcType>(t) : std::nullopt;
 }
 
-NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId) {
+NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
+{
     NpcDropResult dropResult{};
 
     // Buscamos el NPC muerto.
-    Npc* npc = npcManager.findNpc(npcId);
-    if (npc == nullptr) {
+    Npc *npc = npcManager.findNpc(npcId);
+    if (npc == nullptr)
+    {
         return dropResult;
     }
-    if (npc->isRespawning()) {
+    if (npc->isRespawning())
+    {
         return dropResult;
     }
 
@@ -1045,10 +1049,12 @@ NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
     // Decidimos que dropea segun la zona del NPC.
     const std::string drop = formulas.rollNpcDrop(npc->getStats().homeZone);
 
-    if (drop == "GOLD") {
+    if (drop == "GOLD")
+    {
         const uint32_t goldAmount = formulas.calcNpcGoldDrop(npc->getMaxHp());
 
-        if (goldAmount > 0) {
+        if (goldAmount > 0)
+        {
             const uint32_t goldInstanceId = addGoldOnGround(goldAmount, tileX, tileY);
 
             dropResult.hasGold = true;
@@ -1063,7 +1069,8 @@ NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
         }
     }
 
-    else if (!drop.empty()) {
+    else if (!drop.empty())
+    {
         Item item = itemRepo.createItem(drop);
         addItemOnGround(item, tileX, tileY);
 
@@ -1087,7 +1094,6 @@ NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
 
     return dropResult;
 }
-
 
 std::optional<uint32_t> GameWorld::findPlayerIdByName(const std::string &name) const
 {
