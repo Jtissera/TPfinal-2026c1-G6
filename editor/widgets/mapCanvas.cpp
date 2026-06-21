@@ -577,25 +577,6 @@ void MapCanvas::applyToTile(uint16_t tx, uint16_t ty)
         t.type = _activeTileType;
         t.zone = _activeZoneType;
 
-        // Zona automática según tipo de tile
-        switch (t.type)
-        {
-        case TileType::CAVERN_FLOOR:
-        case TileType::CAVERN_WALL_H:
-        case TileType::CAVERN_WALL_V:
-            t.zone = ZoneType::CAVERN;
-            break;
-
-        case TileType::DUNGEON_FLOOR:
-        case TileType::DUNGEON_WALL_H:
-        case TileType::DUNGEON_WALL_V:
-            t.zone = ZoneType::DUNGEON;
-            break;
-
-        default:
-            break;
-        }
-
         if (t.type == TileType::EXIT)
         {
             t.walkable = true;

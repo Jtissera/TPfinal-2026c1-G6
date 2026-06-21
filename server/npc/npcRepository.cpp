@@ -89,6 +89,13 @@ NpcStats NpcRepository::parse(const std::string &typeName, const toml::table &en
             xpMult = config["dungeon"]["xp_multiplier"].value_or(2.5f);
             itemMult = config["dungeon"]["item_multiplier"].value_or(2.5f);
         }
+        else if (z == "DESERT")
+{
+    homeZone = ZoneType::DESERT;
+    goldMult = config["desert"]["gold_multiplier"].value_or(2.0f);
+    xpMult = config["desert"]["xp_multiplier"].value_or(2.0f);
+    itemMult = config["desert"]["item_multiplier"].value_or(2.0f);
+}
     }
 
     stats.hostile = entry["hostile"].value_or<bool>(true);
