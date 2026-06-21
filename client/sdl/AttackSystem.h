@@ -13,6 +13,12 @@
 #include "state/ItemView.h"
 #include "world/RemotePlayer.h"
 
+
+enum class AttackEffectType {
+    Magic,
+    Blood
+};
+
 // Representa un efecto visual de ataque activo.
 // Por ahora solo guarda posición, tiempo de creación y duración.
 struct AttackEffect {
@@ -20,6 +26,7 @@ struct AttackEffect {
     int y;                  // Posición Y en coordenadas de mundo.
     Uint32 createdAt;       // Momento en que se creó el efecto.
     Uint32 durationMs = 500;// Duración total del efecto.
+    AttackEffectType type = AttackEffectType::Blood;
 };
 
 struct AttackTarget {
@@ -34,6 +41,7 @@ enum class EnemyChaseResult
     PlayerStillAlive, // El enemigo actualizó persecución/ataque y el jugador sigue vivo.
     PlayerDied        // Algún enemigo atacó y la vida del jugador llegó a 0.
 };
+
 
 // Sistema encargado de:
 // - detectar clicks sobre enemigos
@@ -57,7 +65,7 @@ public:
     );
 
     // Crea efecto visual de ataque sobre un enemigo.
-    void createLocalAttackEffect(uint32_t targetId, Entity& target, const SDL_Rect& camera);
+
 
     // Elimina efectos vencidos.
     void update();
@@ -78,8 +86,11 @@ public:
     // Actualiza la vida del enemigo desde el servidor.
     void setEnemyHealth(uint32_t enemyId, int hp, int maxHp);
 
-    void triggerAttackEffect(uint32_t targetId, Entity *targetEntity,
-                         const SDL_Rect &camera, bool isMagicWeapon);
+    void triggerAttackEffect(uint32_t targetId, Entity *targetEntity,const SDL_Rect &camera, bool isMagicWeapon);
+
+    void triggerBloodEffect(uint32_t targetId,Entity* targetEntity,const SDL_Rect& camera);
+
+    void triggerMagicEffect(uint32_t targetId,Entity* targetEntity,const SDL_Rect& camera);
 
 private:
     std::vector<AttackEffect> attackEffects;
@@ -88,10 +99,12 @@ private:
     std::unordered_map<uint32_t, int> enemyMaxHealth;
     std::unordered_set<uint32_t> deadEnemies;
 
+
     void sendAttackMessage(uint32_t targetId, Queue<std::shared_ptr<const Message>>* sendQueue);
     int attackRangeForWeapon(const ItemView* weapon) const;
     bool isTargetInRange(Entity* attacker, Entity& target, int range) const;
     bool shouldCreateVisualEffect(const ItemView* weapon) const;
+    void createAttackEffect(uint32_t targetId,Entity& target,const SDL_Rect& camera, AttackEffectType type);
 };
 
 #endif

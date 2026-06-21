@@ -429,12 +429,7 @@ void ActionDispatcher::handleAttack(uint32_t id, const Message &msg, GameWorld &
     std::cout << "[SERVER ATTACK] target inexistente targetId=" << targetId << " attackerId=" << id << std::endl;
 }
 
-void ActionDispatcher::handleAttackPlayer(
-    uint32_t attackerId,
-    uint32_t targetId,
-    GameWorld &world,
-    Monitor &monitor)
-{
+void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,GameWorld &world,Monitor &monitor){
     std::cout << "[SERVER PVP] attackerId="
               << attackerId
               << " targetId="
@@ -503,9 +498,7 @@ void ActionDispatcher::handleAttackPlayer(
         }
         else if (result.failReason == CombatSystem::Result::FailReason::NO_MANA)
         {
-            sendCombatChat(attackerId,
-                           "No tenés mana suficiente para realizar ese hechizo.",
-                           ChatMsgType::INFO, monitor);
+            sendCombatChat(attackerId,"No tenés mana suficiente para realizar ese hechizo.",ChatMsgType::INFO, monitor);
         }
         else if (result.failReason == CombatSystem::Result::FailReason::LEVEL_TOO_LOW)
         {
@@ -558,8 +551,9 @@ void ActionDispatcher::handleAttackPlayer(
         monitor.sendTo(attackerId,
                        std::make_shared<const CombatLogMessage>(
                            std::to_string(targetId)));
-    }
 
+        broadcastPlayerAttackVisual(attackerId, targetId, attacker, monitor);
+    }
     // Si esquivó, actualizamos stats y terminamos.
     if (result.dodged)
     {
@@ -622,12 +616,7 @@ void ActionDispatcher::handleAttackPlayer(
     sendStats(targetId, target, monitor);
     sendLevelUpIfNeeded(attackerId, attacker, monitor);
 }
-void ActionDispatcher::handleAttackNpc(
-    uint32_t attackerId,
-    uint32_t npcId,
-    GameWorld &world,
-    Monitor &monitor)
-{
+void ActionDispatcher::handleAttackNpc(uint32_t attackerId,uint32_t npcId,GameWorld &world,Monitor &monitor){
     Player &attacker = world.getPlayer(attackerId);
 
     // Jugador muerto/fantasma no puede atacar.
@@ -675,9 +664,8 @@ void ActionDispatcher::handleAttackNpc(
 
     if (!result.dodged)
     {
-        monitor.sendTo(attackerId,
-                       std::make_shared<const CombatLogMessage>(
-                           std::to_string(npcId)));
+        monitor.sendTo(attackerId,std::make_shared<const CombatLogMessage>(std::to_string(npcId)));
+        broadcastPlayerAttackVisual(attackerId,npcId,attacker,monitor);
     }
 
     // Siempre informamos vida nueva del NPC después del ataque válido.
@@ -907,4 +895,46 @@ void ActionDispatcher::handleClanSync(uint32_t id, const Message &msg,
     Player &player = world.getPlayer(id);
     player.setClanName(syncMsg.getClanName());
     player.setClanFounder(syncMsg.getIsFounder());
+}
+
+PlayerAttackVisualType ActionDispatcher::resolveAttackVisualType(
+    const Player& attacker) const
+{
+    // Buscamos el arma equipada en la mano.
+    const Item* weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
+
+    // Sin arma: ataque físico básico.
+    if (weapon == nullptr)
+    {
+        return PlayerAttackVisualType::Physical;
+    }
+
+    // Bastones/varas: ataque mágico.
+    if (weapon->slot == ItemSlot::STAFF)
+    {
+        return PlayerAttackVisualType::Magic;
+    }
+
+    // Arcos u otras armas marcadas como rango desde TOML.
+    if (weapon->stats.isRanged)
+    {
+        return PlayerAttackVisualType::Ranged;
+    }
+
+    // Espadas, hachas, martillos, etc.
+    return PlayerAttackVisualType::Physical;
+}
+
+void ActionDispatcher::broadcastPlayerAttackVisual(uint32_t attackerId,
+                                                   uint32_t targetId,
+                                                   const Player& attacker,
+                                                   Monitor& monitor)
+{
+    const PlayerAttackVisualType visualType =
+        resolveAttackVisualType(attacker);
+
+    monitor.broadcast(std::make_shared<const PlayerAttackVisualMessage>(
+        attackerId,
+        targetId,
+        visualType));
 }

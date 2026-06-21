@@ -22,6 +22,7 @@
 #include "common/network/messages/server/player/levelUpMessage.h"
 #include "common/network/messages/server/player/playerDiedMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
+#include "common/network/messages/server/player/playerAttackVisualMessage.h"
 #include "server/game/chat/chatHandler.h"
 #include "common/network/messages/client/chat/chatMessage.h"
 
@@ -70,6 +71,9 @@ private:
   void handleChat(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
 
   void handleClanSync(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
+  PlayerAttackVisualType resolveAttackVisualType(const Player& attacker) const;
+
+  void broadcastPlayerAttackVisual(uint32_t attackerId,uint32_t targetId,const Player& attacker,Monitor& monitor);
 
 public:
   explicit ActionDispatcher(const toml::table &config, ClanManager &clanManager);

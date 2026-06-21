@@ -20,6 +20,7 @@
 #include "common/network/messages/server/combat/combatLogMessage.h"
 #include "common/network/protocol/clientOpCode.h"
 #include "common/network/messages/server/npc/npcAttackMessage.h"
+#include "common/network/messages/server/player/playerAttackVisualMessage.h"
 
 void GameServerDeserializersModule::registerDeserializers(Registry &registry) const
 {
@@ -333,5 +334,17 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
         const auto direction = static_cast<Direction>(reader.readUint8());
         return std::make_unique<NpcAttackMessage>(npcId, direction);
     });
+
+    registry.registerDeserializer(static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_ATTACK_VISUAL),
+[](PacketReader &reader) -> std::unique_ptr<Message>
+    {
+        const uint32_t attackerId = reader.readUint32();
+        const uint32_t targetId = reader.readUint32();
+
+        const auto visualType = static_cast<PlayerAttackVisualType>(reader.readUint8());
+
+        return std::make_unique<PlayerAttackVisualMessage>(attackerId,targetId,visualType);
+    });
+
 }
 

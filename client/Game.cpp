@@ -11,6 +11,7 @@
 
 #include "common/network/messages/server/inventory/goldOnGroundMessage.h"
 #include "common/network/messages/server/inventory/itemOnGroundMessage.h"
+#include "common/network/messages/server/player/playerAttackVisualMessage.h"
 
 
 Game::Game() {}
@@ -1077,7 +1078,7 @@ void Game::loadAssets()
   assets->AddTexture("tile_dungeon_vertical_wall", "assets/sprites/MapAssets/dungeon_vertical_wall.png");
   assets->AddTexture("tile_dungeon_horizontal_wall", "assets/sprites/MapAssets/dungeon_horizontal_wall.png");
   assets->AddTexture("tile_exit", "assets/sprites/MapAssets/exit.png");
-
+  assets->AddTexture("effect_attack_magic_01","assets/sprites/effects/effect_attack_magic_01.png");
   assets->AddTexture("npc_priest", "assets/sprites/npcs/priest.png");
   assets->AddTexture("npc_shop", "assets/sprites/npcs/shop.png");
   assets->AddTexture("npc_bank", "assets/sprites/npcs/bank.png");
@@ -2221,6 +2222,9 @@ void Game::processServerMessage(const Message &msg)
       attackSystem.triggerAttackEffect(targetId, targetEntity, camera, isMagic);
     return;
   }
+    case ServerOpCode::MSG_PLAYER_ATTACK_VISUAL:
+      handlePlayerAttackVisual(static_cast<const PlayerAttackVisualMessage &>(msg));
+      return;
 
     default:
       return;
@@ -2823,3 +2827,44 @@ void Game::handleItemPicked(const ItemPickedMessage &msg) {
   }
 }
 
+void Game::handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg)
+{
+  const uint32_t targetId = msg.getTargetId();
+
+  Entity *targetEntity = nullptr;
+
+  // Caso 1: el target soy yo.
+  if (targetId == playerDto.playerID)
+  {
+    targetEntity = player;
+  }
+  else
+  {
+    // Caso 2: el target es un enemigo/NPC hostil.
+    auto enemyIt = enemies.find(targetId);
+    if (enemyIt != enemies.end())
+    {
+      targetEntity = enemyIt->second;
+    }
+    // Caso 3: el target es otro jugador remoto.
+    else if (clientWorld != nullptr)
+    {
+      targetEntity = clientWorld->getRemotePlayerEntity(targetId);
+    }
+  }
+
+  if (targetEntity == nullptr)
+  {
+    std::cout << "[CLIENT ATTACK VISUAL] target no encontrado targetId="
+              << targetId
+              << std::endl;
+    return;
+  }
+
+  attackSystem.triggerBloodEffect(targetId, targetEntity, camera);
+
+  if (msg.getVisualType() == PlayerAttackVisualType::Magic)
+  {
+    attackSystem.triggerMagicEffect(targetId, targetEntity, camera);
+  }
+}

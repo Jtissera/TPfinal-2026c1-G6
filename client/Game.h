@@ -48,6 +48,7 @@
 #include "common/network/messages/server/error/errorMessage.h"
 #include "common/network/messages/server/combat/combatLogMessage.h"
 #include "common/network/messages/server/npc/npcAttackMessage.h"
+#include "common/network/messages/server/player/playerAttackVisualMessage.h"
 
 #include "common/network/protocol/serverOpCode.h"
 #include "sdl/state/PlayerViewStateMapper.h"
@@ -221,6 +222,7 @@ private:
     void handleItemOnGround(const ItemOnGroundMessage &msg);
     void handleGoldOnGround(const GoldOnGroundMessage &msg);
     void handleItemPicked(const ItemPickedMessage &msg);
+    void handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg);
 
 
     struct EnemyMoveInterp
