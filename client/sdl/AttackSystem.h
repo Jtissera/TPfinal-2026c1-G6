@@ -15,8 +15,8 @@
 
 
 enum class AttackEffectType {
-    Magic,
-    Blood
+    Blood,
+    Magic
 };
 
 // Representa un efecto visual de ataque activo.

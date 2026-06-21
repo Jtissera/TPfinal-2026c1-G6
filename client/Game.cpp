@@ -1078,10 +1078,15 @@ void Game::loadAssets()
   assets->AddTexture("tile_dungeon_vertical_wall", "assets/sprites/MapAssets/dungeon_vertical_wall.png");
   assets->AddTexture("tile_dungeon_horizontal_wall", "assets/sprites/MapAssets/dungeon_horizontal_wall.png");
   assets->AddTexture("tile_exit", "assets/sprites/MapAssets/exit.png");
-  assets->AddTexture("effect_attack_magic_01","assets/sprites/effects/effect_attack_magic_01.png");
+
   assets->AddTexture("npc_priest", "assets/sprites/npcs/priest.png");
   assets->AddTexture("npc_shop", "assets/sprites/npcs/shop.png");
   assets->AddTexture("npc_bank", "assets/sprites/npcs/bank.png");
+
+  // ================EFECTOS=====================
+  assets->AddTexture("effect_attack_magic_01","assets/sprites/effects/effect_attack_magic_01.png");
+  assets->AddTexture("effect_blood_01","assets/sprites/effects/effect_blood_01.png");
+
 }
 
 int Game::getInventorySlotIndexAt(int mouseX, int mouseY) const
