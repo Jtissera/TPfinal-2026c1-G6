@@ -369,7 +369,6 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
 {
   if (event.targetMap.empty())
   {
-    // Salida de instancia → volver a sala pública de origen.
     uint32_t originId = gameManager.getOriginRoomId(event.fromRoomId);
     if (originId == 0)
       return;
@@ -377,13 +376,10 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
     gameManager.broadcastDespawnInRoom(event.fromRoomId, event.clientId);
     gameManager.unregisterClientForTransition(event.clientId);
 
-    std::string originMapPath = gameManager.getRoomMapPath(originId);
-    event.clientQueue->try_push(
-        std::make_shared<const MapChangedMessage>(originMapPath));
-
     event.player.setTilePos(event.spawnTileX, event.spawnTileY);
 
-    // Al volver a la sala pública, originGameId vuelve a 0.
+    std::string originMapPath = gameManager.getRoomMapPath(originId);
+
     archive.enqueue(
         archive.toSnapshot(event.player, originMapPath, originId, 0),
         originId);
@@ -395,11 +391,13 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
     if (receiver)
       receiver->setQueue(gameManager.getGameQueue(originId));
 
+    event.clientQueue->try_push(
+        std::make_shared<const MapChangedMessage>(originMapPath));
+
     gameManager.syncPlayerJoin(originId, event.clientId);
   }
   else
   {
-    // Entrada a instancia.
     std::string fullMapPath = event.targetMap;
     if (fullMapPath.find("assets/") == std::string::npos)
       fullMapPath = "assets/sprites/MapAssets/worlds" + fullMapPath + ".argmap";
@@ -410,12 +408,8 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
     gameManager.broadcastDespawnInRoom(event.fromRoomId, event.clientId);
     gameManager.unregisterClientForTransition(event.clientId);
 
-    event.clientQueue->try_push(
-        std::make_shared<const MapChangedMessage>(fullMapPath));
-
     event.player.setTilePos(event.spawnTileX, event.spawnTileY);
 
-    // Persistir con originGameId = sala pública de origen (event.fromRoomId).
     archive.enqueue(
         archive.toSnapshot(event.player, fullMapPath, instanceId,
                            event.fromRoomId),
@@ -427,6 +421,9 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
     auto *receiver = receiverRegistry.get(event.clientId);
     if (receiver)
       receiver->setQueue(gameManager.getGameQueue(instanceId));
+
+    event.clientQueue->try_push(
+        std::make_shared<const MapChangedMessage>(fullMapPath));
 
     gameManager.syncPlayerJoin(instanceId, event.clientId);
   }
