@@ -10,22 +10,26 @@ static constexpr std::size_t CLAN_IDX_ENTRY_SIZE =
 
 ClanArchive::ClanArchive(const std::string &datPath,
                          const std::string &indexPath)
-    : datPath_(datPath), indexPath_(indexPath) {
+    : datPath_(datPath), indexPath_(indexPath)
+{
   std::filesystem::path p(datPath_);
   if (p.has_parent_path())
     std::filesystem::create_directories(p.parent_path());
 
-  if (!std::filesystem::exists(datPath_)) {
+  if (!std::filesystem::exists(datPath_))
+  {
     std::ofstream f(datPath_, std::ios::binary);
   }
-  if (!std::filesystem::exists(indexPath_)) {
+  if (!std::filesystem::exists(indexPath_))
+  {
     std::ofstream f(indexPath_, std::ios::binary);
   }
 
   loadIndex();
 }
 
-void ClanArchive::loadIndex() {
+void ClanArchive::loadIndex()
+{
   std::ifstream f(indexPath_, std::ios::binary);
   if (!f.is_open())
     return;
@@ -34,32 +38,37 @@ void ClanArchive::loadIndex() {
   uint64_t offset = 0;
 
   while (f.read(nameBuf, CLAN_IDX_NAME_LEN) &&
-         f.read(reinterpret_cast<char *>(&offset), sizeof(uint64_t))) {
+         f.read(reinterpret_cast<char *>(&offset), sizeof(uint64_t)))
+  {
     std::string name(nameBuf, strnlen(nameBuf, CLAN_IDX_NAME_LEN));
     index_[name] = offset;
   }
 }
 
-bool ClanArchive::exists(const std::string &clanName) const {
+bool ClanArchive::exists(const std::string &clanName) const
+{
   std::shared_lock lock(mutex_);
   return index_.count(clanName) > 0;
 }
 
-ClanRecord ClanArchive::toRecord(const Clan &clan) const {
+ClanRecord ClanArchive::toRecord(const Clan &clan) const
+{
   ClanRecord rec;
   std::memset(&rec, 0, sizeof(rec));
 
   std::strncpy(rec.name, clan.getName().c_str(), sizeof(rec.name) - 1);
   std::strncpy(rec.founderNick, clan.getFounderNick().c_str(),
-              sizeof(rec.founderNick) - 1);
+               sizeof(rec.founderNick) - 1);
 
   const auto &members = clan.getMembers();
   rec.memberCount = static_cast<uint8_t>(
       std::min(members.size(), CLAN_REC_MAX_MEMBERS));
   {
     std::size_t i = 0;
-    for (const auto &nick : members) {
-      if (i >= CLAN_REC_MAX_MEMBERS) break;
+    for (const auto &nick : members)
+    {
+      if (i >= CLAN_REC_MAX_MEMBERS)
+        break;
       std::strncpy(rec.members[i], nick.c_str(), CLAN_REC_NAME_LEN - 1);
       ++i;
     }
@@ -70,8 +79,10 @@ ClanRecord ClanArchive::toRecord(const Clan &clan) const {
       std::min(applicants.size(), CLAN_REC_MAX_APPLICANTS));
   {
     std::size_t i = 0;
-    for (const auto &nick : applicants) {
-      if (i >= CLAN_REC_MAX_APPLICANTS) break;
+    for (const auto &nick : applicants)
+    {
+      if (i >= CLAN_REC_MAX_APPLICANTS)
+        break;
       std::strncpy(rec.applicants[i], nick.c_str(), CLAN_REC_NAME_LEN - 1);
       ++i;
     }
@@ -82,8 +93,10 @@ ClanRecord ClanArchive::toRecord(const Clan &clan) const {
       std::min(banned.size(), CLAN_REC_MAX_BANNED));
   {
     std::size_t i = 0;
-    for (const auto &nick : banned) {
-      if (i >= CLAN_REC_MAX_BANNED) break;
+    for (const auto &nick : banned)
+    {
+      if (i >= CLAN_REC_MAX_BANNED)
+        break;
       std::strncpy(rec.bannedPlayers[i], nick.c_str(), CLAN_REC_NAME_LEN - 1);
       ++i;
     }
@@ -92,24 +105,27 @@ ClanRecord ClanArchive::toRecord(const Clan &clan) const {
   return rec;
 }
 
-Clan ClanArchive::fromRecord(const ClanRecord &rec) const {
+Clan ClanArchive::fromRecord(const ClanRecord &rec) const
+{
   std::string name(rec.name, strnlen(rec.name, sizeof(rec.name)));
   std::string founder(rec.founderNick,
                       strnlen(rec.founderNick, sizeof(rec.founderNick)));
 
-  Clan clan(name, founder);
+  Clan clan(name, founder, CLAN_REC_MAX_MEMBERS);
 
   // El fundador entra como miembro vía el constructor de Clan en
   // ClanManager::foundClan normalmente, pero acá reconstruimos desde
   // cero: agregamos todos los miembros guardados explícitamente
   // (incluye al fundador si estaba en la lista, que siempre debería).
-  for (uint8_t i = 0; i < rec.memberCount; ++i) {
+  for (uint8_t i = 0; i < rec.memberCount; ++i)
+  {
     std::string nick(rec.members[i],
                      strnlen(rec.members[i], CLAN_REC_NAME_LEN));
     clan.addMember(nick);
   }
 
-  for (uint8_t i = 0; i < rec.applicantCount; ++i) {
+  for (uint8_t i = 0; i < rec.applicantCount; ++i)
+  {
     std::string nick(rec.applicants[i],
                      strnlen(rec.applicants[i], CLAN_REC_NAME_LEN));
     clan.addApplicant(nick);
@@ -118,7 +134,8 @@ Clan ClanArchive::fromRecord(const ClanRecord &rec) const {
   // Los banneados no tienen un "addBanned" directo en Clan; usamos
   // banPlayer, que también limpia member/applicant pero como nunca
   // fueron agregados acá no tiene efecto colateral.
-  for (uint8_t i = 0; i < rec.bannedCount; ++i) {
+  for (uint8_t i = 0; i < rec.bannedCount; ++i)
+  {
     std::string nick(rec.bannedPlayers[i],
                      strnlen(rec.bannedPlayers[i], CLAN_REC_NAME_LEN));
     clan.banPlayer(nick);
@@ -127,7 +144,8 @@ Clan ClanArchive::fromRecord(const ClanRecord &rec) const {
   return clan;
 }
 
-void ClanArchive::save(const Clan &clan) {
+void ClanArchive::save(const Clan &clan)
+{
   std::unique_lock lock(mutex_);
 
   const std::string &name = clan.getName();
@@ -137,9 +155,12 @@ void ClanArchive::save(const Clan &clan) {
   bool isNew = false;
 
   auto it = index_.find(name);
-  if (it != index_.end()) {
+  if (it != index_.end())
+  {
     offset = it->second;
-  } else {
+  }
+  else
+  {
     offset = static_cast<uint64_t>(index_.size()) * sizeof(ClanRecord);
     index_[name] = offset;
     isNew = true;
@@ -150,7 +171,8 @@ void ClanArchive::save(const Clan &clan) {
   dat.write(reinterpret_cast<const char *>(&rec), sizeof(rec));
   dat.flush();
 
-  if (isNew) {
+  if (isNew)
+  {
     std::ofstream idx(indexPath_, std::ios::binary | std::ios::app);
     char nameBuf[CLAN_IDX_NAME_LEN] = {};
     std::strncpy(nameBuf, name.c_str(), CLAN_IDX_NAME_LEN - 1);
@@ -163,7 +185,8 @@ void ClanArchive::save(const Clan &clan) {
             << static_cast<int>(rec.memberCount) << std::endl;
 }
 
-std::optional<Clan> ClanArchive::load(const std::string &clanName) const {
+std::optional<Clan> ClanArchive::load(const std::string &clanName) const
+{
   uint64_t offset = 0;
   {
     std::shared_lock lock(mutex_);
@@ -186,7 +209,8 @@ std::optional<Clan> ClanArchive::load(const std::string &clanName) const {
   return fromRecord(rec);
 }
 
-std::vector<Clan> ClanArchive::loadAll() const {
+std::vector<Clan> ClanArchive::loadAll() const
+{
   std::shared_lock lock(mutex_);
 
   std::vector<Clan> result;
@@ -197,7 +221,8 @@ std::vector<Clan> ClanArchive::loadAll() const {
   if (!dat.is_open())
     return result;
 
-  for (const auto &[name, offset] : index_) {
+  for (const auto &[name, offset] : index_)
+  {
     dat.seekg(static_cast<std::streamoff>(offset));
     ClanRecord rec;
     dat.read(reinterpret_cast<char *>(&rec), sizeof(rec));

@@ -675,7 +675,7 @@ void ChatHandler::handleReviewClan(uint32_t senderId,
 
     std::string info = "Clan '" + overview->clanName + "' - Miembros (" +
                        std::to_string(overview->members.size()) + "/" +
-                       std::to_string(Clan::MAX_MEMBERS) + "): ";
+                       std::to_string(overview->maxMembers) + "): ";
     for (size_t i = 0; i < overview->members.size(); ++i)
     {
         if (i > 0)

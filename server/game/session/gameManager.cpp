@@ -9,12 +9,11 @@ GameManager::GameManager(
     ClanArchive &clanArchive, CharacterArchive &characterArchive)
     : npcFactory(npcFactory), itemRepo(itemRepo), leaveQueue(leaveQueue),
       transitionQueue(transitionQueue), config(config), archive(archive),
-      clanManager(clanArchive, characterArchive),
+      clanManager(clanArchive, characterArchive, config),
       gameArchive(gameArchive)
 {
   clanManager.bindGameManager(this);
 }
-
 
 uint32_t GameManager::createGame(const std::string &gameName,
                                  uint8_t maxPlayers,
@@ -266,19 +265,19 @@ void GameManager::syncPlayerJoin(uint32_t gameId, uint32_t playerId)
 void GameManager::restoreFromArchive()
 {
   clanManager.restoreFromArchive();
- 
+
   auto records = gameArchive.loadAll();
- 
+
   uint32_t maxId = gameArchive.maxGameId();
   if (maxId >= nextGameId)
     nextGameId = maxId + 1;
- 
+
   for (const auto &rec : records)
   {
     std::string mapPath(rec.mapPath, strnlen(rec.mapPath, sizeof(rec.mapPath)));
     std::string gameName(rec.gameName,
                          strnlen(rec.gameName, sizeof(rec.gameName)));
- 
+
     std::ifstream check(mapPath, std::ios::binary);
     if (!check.good())
     {
@@ -287,13 +286,13 @@ void GameManager::restoreFromArchive()
                 << std::endl;
       continue;
     }
- 
+
     auto room = std::make_unique<GameRoom>(rec.gameId, gameName, mapPath, false,
                                            0, npcFactory, itemRepo, leaveQueue,
                                            transitionQueue, config, archive, clanManager);
     room->start();
     rooms.emplace(rec.gameId, std::move(room));
- 
+
     std::cout << "[GameManager] restore gameId=" << rec.gameId << " name='"
               << gameName << "'" << std::endl;
   }
@@ -316,15 +315,13 @@ std::string GameManager::getRoomMapPath(uint32_t gameId) const
   }
 }
 
-
-
 bool GameManager::tryMarkOnline(uint32_t clientId, const std::string &characterName)
 {
   std::unique_lock<std::mutex> lock(mutex);
 
   if (onlineCharacters.find(characterName) != onlineCharacters.end())
   {
-    return false; 
+    return false;
   }
 
   onlineCharacters.insert(characterName);
