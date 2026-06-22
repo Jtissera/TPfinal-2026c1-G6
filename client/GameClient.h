@@ -13,6 +13,8 @@
 #include "common/queue.h"
 #include "network/clientProtocolFactory.h"
 #include "sdl/screens/ConfigScreen.h"
+#include "common/network/messages/client/lobby/leaveGameMessage.h"
+
 class GameClient
 {
 

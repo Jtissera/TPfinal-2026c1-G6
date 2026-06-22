@@ -106,7 +106,7 @@ mkdir -p build
 cd build
 cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
-    -DTALLER_EDITOR=OFF \
+    -DTALLER_EDITOR=ON \
     -DTALLER_TESTS=OFF \
     -DTALLER_MAKE_WARNINGS_AS_ERRORS=OFF \
     -DSDL_PIPEWIRE=OFF \
@@ -124,13 +124,20 @@ echo -e "${YELLOW}[4/5] Instalando archivos...${NC}"
 # Binarios → /usr/bin
 sudo cp "$SRC_DIR/build/taller_server" "$BIN_DIR/${GAME_NAME}_server"
 sudo cp "$SRC_DIR/build/taller_client" "$BIN_DIR/${GAME_NAME}_client"
+sudo cp "$SRC_DIR/build/taller_editor" "$BIN_DIR/${GAME_NAME}_editor"
 sudo chmod +x "$BIN_DIR/${GAME_NAME}_server"
 sudo chmod +x "$BIN_DIR/${GAME_NAME}_client"
+sudo chmod +x "$BIN_DIR/${GAME_NAME}_editor"
 
 # Data files (assets) → /var/argentum
 sudo mkdir -p "$INSTALL_DIR"
 sudo cp -r "$SRC_DIR/assets" "$INSTALL_DIR/"
 sudo chmod -R 755 "$INSTALL_DIR"
+
+# El editor guarda mapas nuevos en assets/sprites/MapAssets/worlds/ con el
+# usuario normal (sin sudo). Sin esto, "Guardar mapa" falla por permisos
+# porque todo lo de arriba quedó con dueño root.
+sudo chmod -R 777 "$INSTALL_DIR/assets/sprites/MapAssets/worlds"
 
 # Config → /etc/argentum
 sudo mkdir -p "$CONFIG_DIR"
@@ -146,8 +153,10 @@ sudo cp "$SRC_DIR/config/game.toml" "$INSTALL_DIR/config/game.toml"
 mkdir -p "$DESKTOP_DIR"
 cp "$SRC_DIR/server.sh" "$DESKTOP_DIR/server.sh"
 cp "$SRC_DIR/client.sh" "$DESKTOP_DIR/client.sh"
+cp "$SRC_DIR/editor.sh" "$DESKTOP_DIR/editor.sh"
 chmod +x "$DESKTOP_DIR/server.sh"
 chmod +x "$DESKTOP_DIR/client.sh"
+chmod +x "$DESKTOP_DIR/editor.sh"
 
 echo -e "${GREEN}[4/5] Archivos instalados.${NC}"
 
@@ -156,7 +165,7 @@ echo -e "${GREEN}[4/5] Archivos instalados.${NC}"
 # ------------------------------------------------------------------------------
 echo -e "${YELLOW}[5/5] Verificando instalación...${NC}"
 
-if [ -f "$BIN_DIR/${GAME_NAME}_server" ] && [ -f "$BIN_DIR/${GAME_NAME}_client" ]; then
+if [ -f "$BIN_DIR/${GAME_NAME}_server" ] && [ -f "$BIN_DIR/${GAME_NAME}_client" ] && [ -f "$BIN_DIR/${GAME_NAME}_editor" ]; then
     echo -e "${GREEN}[5/5] Binarios instalados correctamente.${NC}"
 else
     echo -e "${RED}[5/5] Error: no se encontraron los binarios instalados.${NC}"
@@ -175,11 +184,14 @@ echo -e "  Binarios en:        ${BLUE}$BIN_DIR${NC}"
 echo -e "  Assets en:          ${BLUE}$INSTALL_DIR${NC}"
 echo -e "  Configuración en:   ${BLUE}$CONFIG_DIR${NC}"
 echo -e "  Scripts en:         ${BLUE}$DESKTOP_DIR${NC}"
-echo -e "                      (server.sh y client.sh)"
+echo -e "                      (server.sh, client.sh y editor.sh)"
 echo ""
 echo -e "  ${YELLOW}Para jugar:${NC}"
 echo -e "  1. Abrir una terminal y correr: ${GREEN}$DESKTOP_DIR/server.sh${NC}"
 echo -e "  2. Abrir otra terminal y correr: ${GREEN}$DESKTOP_DIR/client.sh${NC}"
+echo ""
+echo -e "  ${YELLOW}Para crear o editar mapas:${NC}"
+echo -e "  Ejecutar: ${GREEN}$DESKTOP_DIR/editor.sh${NC}"
 echo ""
 echo -e "  Para cambiar el puerto, editar los scripts del escritorio."
 echo ""

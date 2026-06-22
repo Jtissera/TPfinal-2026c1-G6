@@ -17,16 +17,47 @@ ServerWatcher::ServerWatcher(const std::string &hostname,
 {
 }
 
+void ServerWatcher::pause() {
+    isPaused = true;
+    std::unique_lock<std::mutex> lck(mtxPause);
+    cvPausedAck.wait(lck, [this] {
+        return isActuallyPaused.load() || !should_keep_running();
+    });
+}
+
+void ServerWatcher::resume() {
+    {
+        std::lock_guard<std::mutex> lck(mtxPause);
+        isPaused = false;
+    }
+    cvPause.notify_one(); 
+}
+
 void ServerWatcher::run()
 {
     bool algunVezConecto = false;
 
     while (should_keep_running())
     {
+        {
+            std::unique_lock<std::mutex> lck(mtxPause);
+            isActuallyPaused = true;
+            cvPausedAck.notify_one();
+
+            cvPause.wait(lck, [this] { 
+                return !isPaused || !should_keep_running(); 
+            });
+
+            isActuallyPaused = false;
+        }
+
+        if (!should_keep_running()) break;
+
         bool conectoAhora = false;
         try
         {
             Socket probe(hostname.c_str(), servname.c_str());
+            probe.close();
 
             conectoAhora = true;
         }

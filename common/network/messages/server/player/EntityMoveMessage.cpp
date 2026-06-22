@@ -2,7 +2,7 @@
 
 #include "EntityMoveMessage.h"
 
-EntityMoveMessage::EntityMoveMessage(uint8_t id,int16_t x,int16_t y,Direction direction,bool moving)
+EntityMoveMessage::EntityMoveMessage(uint32_t id,int16_t x,int16_t y,Direction direction,bool moving)
     : entityId(id),
       x(x),
       y(y),
@@ -16,7 +16,7 @@ uint8_t EntityMoveMessage::opCode() const {
 
 void EntityMoveMessage::serializeBody(PacketWriter& writer) const {
     // Id de la entidad que se movió.
-    writer.writeUint8(entityId);
+    writer.writeUint32(entityId);
 
     // Posición final validada por servidor.
     writer.writeUint16(static_cast<uint16_t>(x));
@@ -29,7 +29,7 @@ void EntityMoveMessage::serializeBody(PacketWriter& writer) const {
     writer.writeUint8(moving ? 1 : 0);
 }
 
-uint8_t EntityMoveMessage::getId() const {
+uint32_t EntityMoveMessage::getId() const {
     return entityId;
 }
 

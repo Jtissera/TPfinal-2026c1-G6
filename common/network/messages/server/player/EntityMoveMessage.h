@@ -10,7 +10,7 @@
 
 class EntityMoveMessage : public Message {
 public:
-    EntityMoveMessage(uint8_t id, int16_t x, int16_t y,Direction direction,bool moving);
+    EntityMoveMessage(uint32_t id, int16_t x, int16_t y,Direction direction,bool moving);
 
     uint8_t opCode() const override;
 
@@ -18,7 +18,7 @@ public:
     void serializeBody(PacketWriter& writer) const override;
 
 
-    uint8_t getId() const;
+    uint32_t getId() const;
     int16_t getX()   const ;
     int16_t getY()   const;
 
@@ -28,7 +28,7 @@ public:
     bool isMoving() const;
 
 private:
-    std::uint8_t entityId;
+    std::uint32_t entityId;
     uint16_t x;
     uint16_t y;
     Direction direction;
