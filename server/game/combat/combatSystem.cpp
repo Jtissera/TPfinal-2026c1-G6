@@ -39,7 +39,7 @@ CombatSystem::Result CombatSystem::attack(Combatant &attacker, Combatant &target
   }
 
   int16_t defense = rollDefense(target, targetAllies);
-  int16_t finalDmg = std::max<int16_t>(0, damage - defense);
+  int16_t finalDmg = std::max<int16_t>(1, damage - defense);
 
   result.damage = finalDmg;
   result.defense = defense;

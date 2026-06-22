@@ -167,13 +167,32 @@ int Player::getAttackRange() const
 uint16_t Player::getWeaponDamageMin() const
 {
   const Item *w = inventory.getEquipped(EquipSlot::HAND);
-  return w ? w->stats.damageMin : 0;
+
+  if (w == nullptr)
+  {
+    return 2;
+  }
+
+  // Si hay arma, usamos el daño mínimo configurado en el item.
+  return w->stats.damageMin;
 }
+
 uint16_t Player::getWeaponDamageMax() const
 {
+
   const Item *w = inventory.getEquipped(EquipSlot::HAND);
-  return w ? w->stats.damageMax : 1;
+
+  // Daño máximo de puño.
+  // Bajo, pero suficiente para matar enemigos iniciales.
+  if (w == nullptr)
+  {
+    return 4;
+  }
+
+  // Si hay arma, usamos el daño máximo configurado en el item.
+  return w->stats.damageMax;
 }
+
 uint16_t Player::getArmorDefenseMin() const
 {
   const Item *a = inventory.getEquipped(EquipSlot::ARMOR);

@@ -732,15 +732,27 @@ void ActionDispatcher::handleAttackNpc(uint32_t attackerId, uint32_t npcId, Game
 
 void ActionDispatcher::sendLevelUpIfNeeded(uint32_t playerId, Player &player, Monitor &monitor)
 {
-
+    // Si el jugador no subió de nivel, no hay nada que sincronizar.
     if (!player.checkAndClearLevelUp())
     {
         return;
     }
 
-    monitor.broadcast(std::make_shared<const LevelUpMessage>(playerId, static_cast<uint8_t>(player.getLevel())));
-}
+    // Avisamos a todos que el nivel público cambió.
+    // Esto lo usan los clientes para actualizar el nameplate.
+    monitor.broadcast(std::make_shared<const LevelUpMessage>(
+        playerId,
+        static_cast<uint8_t>(player.getLevel())
+    ));
 
+    // Avisamos también la vida pública actualizada.
+    // Al subir de nivel puede cambiar hpMax, y la barra remota depende de este mensaje.
+    monitor.broadcast(std::make_shared<const PlayerHealthMessage>(
+        playerId,
+        static_cast<uint16_t>(player.getHp()),
+        static_cast<uint16_t>(player.getMaxHp())
+    ));
+}
 void ActionDispatcher::handleDropItem(uint32_t id, const Message &msg,
                                       GameWorld &world, Monitor &monitor)
 {
