@@ -189,8 +189,8 @@
       "desert_goblin": {
       "sheet_width": 161,
       "sheet_height": 498,
-      "frame_width": 32,
-      "frame_height": 64,
+      "frame_width": 34,
+      "frame_height": 66,
       "scale": 2,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
@@ -203,7 +203,7 @@
     },
     "desert_goblin_attack": {
       "frame_width": 32,
-      "frame_height": 64,
+      "frame_height": 65,
       "scale": 2,
       "animations": {
         "AttackDown":  { "row": 0, "frames": 3, "speed_ms": 150 },
@@ -216,8 +216,8 @@
       "dungeon_goblin": {
       "sheet_width": 167,
       "sheet_height": 509,
-      "frame_width": 32,
-      "frame_height": 54,
+      "frame_width": 33,
+      "frame_height": 64,
       "scale": 2,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
@@ -229,8 +229,8 @@
       }
     },
     "dungeon_goblin_attack": {
-      "frame_width": 33,
-      "frame_height": 63,
+      "frame_width": 41,
+      "frame_height": 64,
       "scale": 2,
       "animations": {
         "AttackDown":  { "row": 0, "frames": 3, "speed_ms": 150 },
@@ -284,7 +284,7 @@
     },
     "cavern_goblin_attack": {
       "frame_width": 43,
-      "frame_height": 68,
+      "frame_height": 67,
       "scale": 2,
       "animations": {
         "AttackDown":  { "row": 0, "frames": 3, "speed_ms": 150 },
