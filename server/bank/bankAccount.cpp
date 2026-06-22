@@ -1,6 +1,16 @@
 #include "bankAccount.h"
 #include <algorithm>
 
+uint32_t BankAccount::getGold() const
+{
+    return gold;
+}
+
+const std::vector<Item> &BankAccount::getItems() const
+{
+    return items;
+}
+
 void BankAccount::depositItem(Item item)
 {
     items.push_back(std::move(item));
@@ -8,14 +18,16 @@ void BankAccount::depositItem(Item item)
 
 std::optional<Item> BankAccount::withdrawItem(const std::string &typeName)
 {
-    auto it = std::find_if(items.begin(), items.end(),
-                           [&](const Item &i)
-                           { return i.typeName == typeName; });
-    if (it == items.end())
-        return std::nullopt;
-    Item found = std::move(*it);
-    items.erase(it);
-    return found;
+    for (std::vector<Item>::iterator it = items.begin(); it != items.end(); ++it)
+    {
+        if (it->typeName == typeName)
+        {
+            Item found = std::move(*it);
+            items.erase(it);
+            return found;
+        }
+    }
+    return std::nullopt;
 }
 
 uint32_t BankAccount::depositGold(uint32_t amount)
