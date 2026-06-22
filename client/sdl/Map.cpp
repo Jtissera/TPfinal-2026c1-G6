@@ -148,7 +148,7 @@ void Map::LoadMap(const std::string &path)
             {
                 AddTile(GetRandomTextureForType(TileType::SAND), x * scaledSize, y * scaledSize, TileType::SAND);
             }
-            else if (t.type == TileType::HOUSE || t.type == TileType::CHURCH || t.type == TileType::MILL)
+            else if (t.type == TileType::HOUSE || t.type == TileType::CHURCH || t.type == TileType::SHOP)
             {
                 AddTile(GetRandomTextureForType(TileType::CITY_FLOOR), x * scaledSize, y * scaledSize, TileType::CITY_FLOOR);
             }
@@ -161,8 +161,7 @@ void Map::LoadMap(const std::string &path)
                 AddTile(GetRandomTextureForType(TileType::DUNGEON_FLOOR), x * scaledSize, y * scaledSize, TileType::DUNGEON_FLOOR);
             }
             else if (t.type == TileType::WELL || t.type == TileType::BANNER ||
-                     t.type == TileType::WITCH_BANNER || t.type == TileType::BOXES ||
-                     t.type == TileType::SHOP)
+                     t.type == TileType::WITCH_BANNER || t.type == TileType::BOXES || t.type == TileType::MILL)
             {
                 AddTile(GetRandomTextureForType(TileType::GRASS), x * scaledSize, y * scaledSize, TileType::GRASS);
             }
