@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include <cmath>
 
+#include "common/network/messages/server/clan/clanUpdateMessage.h"
 #include "common/network/messages/server/inventory/goldOnGroundMessage.h"
 #include "common/network/messages/server/inventory/itemOnGroundMessage.h"
 #include "common/network/messages/server/player/playerAttackVisualMessage.h"
@@ -2259,6 +2260,9 @@ void Game::processServerMessage(const Message &msg)
   case ServerOpCode::MSG_PLAYER_HEALTH:
     handlePlayerHeathVisual(static_cast<const PlayerHealthMessage &>(msg));
     return;
+    case ServerOpCode::MSG_CLAN_UPDATE:
+      handleClanUpdate(static_cast<const ClanUpdateMessage &>(msg));
+      return;
   default:
     return;
   }
@@ -2911,4 +2915,51 @@ void Game::handlePlayerHeathVisual(const PlayerHealthMessage &msg)
   }
 
   clientWorld->updateRemotePlayerHealth(playerId, msg.getHp(), msg.getHpMax());
+}
+
+void Game::handleClanUpdate(const ClanUpdateMessage &msg)
+{
+  std::cout << "[CLIENT CLAN UPDATE] playerId="
+            << msg.getPlayerId()
+            << " clan='"
+            << msg.getClanName()
+            << "' founder="
+            << msg.getIsFounder()
+            << " localId="
+            << playerDto.playerID
+            << std::endl;
+
+  const uint32_t playerId = msg.getPlayerId();
+  const std::string &clanName = msg.getClanName();
+
+  if (playerId == static_cast<uint32_t>(playerDto.playerID))
+  {
+    playerDto.clanName = clanName;
+
+    if (player != nullptr && player->hasComponent<NameplateComponent>())
+    {
+      std::cout << "[CLIENT CLAN UPDATE] actualizo local clan='"
+                << clanName << "'" << std::endl;
+
+      player->getComponent<NameplateComponent>().setClan(clanName);
+    }
+    else
+    {
+      std::cout << "[CLIENT CLAN UPDATE] local sin NameplateComponent" << std::endl;
+    }
+
+    return;
+  }
+
+  if (clientWorld != nullptr)
+  {
+    std::cout << "[CLIENT CLAN UPDATE] actualizo remoto playerId="
+              << playerId
+              << " clan='"
+              << clanName
+              << "'"
+              << std::endl;
+
+    clientWorld->updateRemotePlayerClan(playerId, clanName);
+  }
 }

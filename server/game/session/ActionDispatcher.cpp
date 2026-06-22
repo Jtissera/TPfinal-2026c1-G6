@@ -14,6 +14,7 @@
 #include "server/game/chat/chatHandler.h"
 #include "server/game/clan/clanManager.h"
 #include "common/network/messages/internal/clanSyncMessage.h"
+#include "common/network/messages/server/clan/clanUpdateMessage.h"
 
 static void sendCombatChat(uint32_t clientId,
                            const std::string &text,
@@ -905,18 +906,33 @@ void ActionDispatcher::handleChat(uint32_t id,
                        monitor);
 }
 
-void ActionDispatcher::handleClanSync(uint32_t id, const Message &msg,
-                                      GameWorld &world, Monitor &monitor)
+void ActionDispatcher::handleClanSync(uint32_t id, const Message &msg,GameWorld &world,Monitor &monitor)
 {
-    (void)monitor;
-
     if (!world.hasPlayer(id))
+    {
+        std::cout << "[SERVER CLAN UPDATE] player no existe id=" << id << std::endl;
         return;
+    }
 
     const auto &syncMsg = static_cast<const ClanSyncMessage &>(msg);
+
     Player &player = world.getPlayer(id);
     player.setClanName(syncMsg.getClanName());
     player.setClanFounder(syncMsg.getIsFounder());
+
+    std::cout << "[SERVER CLAN UPDATE] broadcast playerId="
+              << id
+              << " clan='"
+              << syncMsg.getClanName()
+              << "' founder="
+              << syncMsg.getIsFounder()
+              << std::endl;
+
+    monitor.broadcast(std::make_shared<const ClanUpdateMessage>(
+        id,
+        syncMsg.getClanName(),
+        syncMsg.getIsFounder()
+    ));
 }
 
 PlayerAttackVisualType ActionDispatcher::resolveAttackVisualType(

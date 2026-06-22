@@ -349,3 +349,16 @@ void ClientGameWorld::updateRemotePlayerHealth(uint32_t entityId,
     // Delegamos la actualización al RemotePlayer.
     it->second.setHealth(hp, hpMax);
 }
+
+void ClientGameWorld::updateRemotePlayerClan(uint32_t playerId,
+                                             const std::string &clanName)
+{
+    auto it = remotePlayers.find(playerId);
+
+    if (it == remotePlayers.end())
+    {
+        return;
+    }
+
+    it->second.setClan(clanName);
+}

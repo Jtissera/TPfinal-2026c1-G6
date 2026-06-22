@@ -57,12 +57,12 @@ std::vector<std::string> NameplateComponent::buildLines() const
     // Enemigo hostil: nombre + nivel.
     if (type == NameplateType::Enemy)
     {
-        lines.push_back(name + "  Nivel - " + std::to_string(level));
+        lines.push_back(name + "  Nivel " + std::to_string(level));
         return lines;
     }
 
     // Jugadores: nombre + nivel.
-    lines.push_back(name + "  Nivel - " + std::to_string(level));
+    lines.push_back(name + "  Nivel " + std::to_string(level));
 
     // Segunda línea: clase.
     if (!className.empty())
@@ -73,7 +73,7 @@ std::vector<std::string> NameplateComponent::buildLines() const
     // Tercera línea: clan.
     if (!clan.empty())
     {
-        lines.push_back(clan);
+        lines.push_back("<" + clan + ">");
     }
 
     return lines;
@@ -241,24 +241,17 @@ void NameplateComponent::setLevel(uint32_t newLevel)
         return;
     }
 
-    // Guardamos el nuevo nivel.
     level = newLevel;
-
-    // Marcamos la textura como sucia para que se regenere en el próximo draw().
     dirty = true;
 }
 
 void NameplateComponent::setClan(const std::string &newClan)
 {
-    // Si el clan no cambió, no hay que reconstruir la textura.
     if (clan == newClan)
     {
         return;
     }
 
-    // Guardamos el nuevo clan. Si viene vacío, el componente deja de dibujarlo.
     clan = newClan;
-
-    // Marcamos la textura como sucia para regenerar las líneas visibles.
     dirty = true;
 }

@@ -33,7 +33,7 @@ private:
 
     PlayerDto dto;
 
-    void setClan(const std::string &newClan);
+
 
 public:
     // Constructor: asocia un id remoto con una entidad visual.
@@ -62,6 +62,7 @@ public:
     uint8_t getLevel() const;
     void setLevel(uint8_t newLevel);
     void setHealth(int hp, int hpMax);
+    void setClan(const std::string &newClan);
 };
 
 #endif // TALLER_TP_REMOTEPLAYER_H

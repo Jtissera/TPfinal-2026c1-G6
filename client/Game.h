@@ -41,6 +41,7 @@
 #include "common/network/messages/server/chat/chatNotificationMessage.h"
 #include "common/network/messages/client/chat/chatMessage.h"
 #include "common/network/messages/client/inventory/useItemMessage.h"
+#include "common/network/messages/server/clan/clanUpdateMessage.h"
 #include "common/network/messages/server/inventory/goldOnGroundMessage.h"
 #include "common/network/messages/server/inventory/itemOnGroundMessage.h"
 #include "common/network/messages/server/inventory/itemPickedMessage.h"
@@ -226,6 +227,7 @@ private:
     void handleItemPicked(const ItemPickedMessage &msg);
     void handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg);
     void handlePlayerHeathVisual(const PlayerHealthMessage &msg);
+    void  handleClanUpdate(const ClanUpdateMessage &msg);
 
     struct EnemyMoveInterp
     {
