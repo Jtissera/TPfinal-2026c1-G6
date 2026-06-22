@@ -396,9 +396,7 @@ void Game::render()
     t->draw(renderContext);
 
   if (map != nullptr)
-  {
     map->renderLayer(renderer, camera, mapArea, false);
-  }
 
   struct RenderObject
   {
@@ -413,27 +411,27 @@ void Game::render()
   {
     const int hudOffsetY = 133;
     map->forEachVisibleTopTile(camera, mapArea, [this, hudOffsetY, &ySorted](const TileEntry &t)
-                               {
-    RenderObject obj;
-    obj.yFootprint = t.groundY;
-    obj.drawFunc = [this, hudOffsetY, t]() {
+    {
+      RenderObject obj;
+      obj.yFootprint = t.groundY;
+      obj.drawFunc = [this, hudOffsetY, t]() {
         SDL_Rect dst = {
-            t.destRect.x - camera.x,
-            t.destRect.y - camera.y + hudOffsetY,
-            t.destRect.w,
-            t.destRect.h
+          t.destRect.x - camera.x,
+          t.destRect.y - camera.y + hudOffsetY,
+          t.destRect.w,
+          t.destRect.h
         };
         SDL_RenderCopy(renderer, t.texture, const_cast<SDL_Rect*>(&t.srcRect), &dst);
-    };
-    ySorted.push_back(std::move(obj)); });
+      };
+      ySorted.push_back(std::move(obj));
+    });
   }
+
   {
     auto &transform = player->getComponent<TransformComponent>();
     RenderObject obj;
-
     int playerHeight = transform.height * transform.scale;
     obj.yFootprint = static_cast<int>(transform.position.y) + playerHeight;
-
     obj.drawFunc = [this, &renderContext]()
     {
       drawEquippedEntity(player, renderContext);
@@ -445,21 +443,12 @@ void Game::render()
   {
     for (Entity *remoteEntity : clientWorld->getRemotePlayerEntities())
     {
-      if (remoteEntity == nullptr)
-        continue;
+      if (remoteEntity == nullptr) continue;
       auto &transform = remoteEntity->getComponent<TransformComponent>();
       RenderObject obj;
-
       obj.yFootprint = static_cast<int>(transform.position.y + (transform.height * transform.scale));
-
       obj.drawFunc = [this, remoteEntity, &renderContext]()
       {
-        // if (remoteEntity->hasComponent<EquipmentComponent>())
-        //   remoteEntity->getComponent<EquipmentComponent>().drawBehind(renderContext);
-        // if (remoteEntity->hasComponent<SpriteComponent>())
-        //   remoteEntity->getComponent<SpriteComponent>().draw(renderContext);
-        // if (remoteEntity->hasComponent<EquipmentComponent>())
-        //   remoteEntity->getComponent<EquipmentComponent>().drawFront(renderContext);
         drawEquippedEntity(remoteEntity, renderContext);
       };
       ySorted.push_back(std::move(obj));
@@ -468,13 +457,10 @@ void Game::render()
 
   for (const auto &[enemyId, enemy] : enemies)
   {
-    if (enemy == nullptr || attackSystem.isEnemyDead(enemyId))
-      continue;
+    if (enemy == nullptr || attackSystem.isEnemyDead(enemyId)) continue;
     auto &transform = enemy->getComponent<TransformComponent>();
     RenderObject obj;
-
     obj.yFootprint = static_cast<int>(transform.position.y + (transform.height * transform.scale));
-
     obj.drawFunc = [enemy, &renderContext]()
     {
       enemy->draw(renderContext);
@@ -484,37 +470,60 @@ void Game::render()
 
   for (auto &npcEntity : manager.getGroup(groupNPC))
   {
-    if (npcEntity == nullptr)
-      continue;
-
+    if (npcEntity == nullptr) continue;
     auto &transform = npcEntity->getComponent<TransformComponent>();
     RenderObject obj;
-
     int screenY = static_cast<int>(transform.position.y - camera.y) + 133;
     int spriteHeightOnScreen = 46 * transform.scale;
     obj.yFootprint = screenY + spriteHeightOnScreen;
-
     obj.drawFunc = [npcEntity, &renderContext]()
     {
       npcEntity->draw(renderContext);
     };
     ySorted.push_back(std::move(obj));
   }
+
   for (auto &item : manager.getGroup(groupItems))
-  {
     item->draw(renderContext);
-  }
 
   std::stable_sort(ySorted.begin(), ySorted.end(),
-                   [](const RenderObject &a, const RenderObject &b)
-                   {
-                     return a.yFootprint < b.yFootprint;
-                   });
+    [](const RenderObject &a, const RenderObject &b)
+    {
+      return a.yFootprint < b.yFootprint;
+    });
 
   for (const auto &obj : ySorted)
     obj.drawFunc();
 
-  // renderEnemyHealthBars();
+  // --- Segunda pasada: nameplates siempre encima de todo ---
+  if (player != nullptr && player->hasComponent<NameplateComponent>())
+    player->getComponent<NameplateComponent>().draw(renderContext);
+
+  if (clientWorld != nullptr)
+  {
+    for (Entity *remoteEntity : clientWorld->getRemotePlayerEntities())
+    {
+      if (remoteEntity == nullptr) continue;
+      if (remoteEntity->hasComponent<NameplateComponent>())
+        remoteEntity->getComponent<NameplateComponent>().draw(renderContext);
+    }
+  }
+
+  for (const auto &[enemyId, enemy] : enemies)
+  {
+    if (enemy == nullptr || attackSystem.isEnemyDead(enemyId)) continue;
+    if (enemy->hasComponent<NameplateComponent>())
+      enemy->getComponent<NameplateComponent>().draw(renderContext);
+  }
+
+  for (auto &npcEntity : manager.getGroup(groupNPC))
+  {
+    if (npcEntity == nullptr) continue;
+    if (npcEntity->hasComponent<NameplateComponent>())
+      npcEntity->getComponent<NameplateComponent>().draw(renderContext);
+  }
+  // --- Fin segunda pasada nameplates ---
+
   attackSystem.render(renderer, *assets, camera);
   SDL_RenderSetClipRect(renderer, nullptr);
 
@@ -531,8 +540,7 @@ void Game::render()
             255 * (1.0f - static_cast<float>(elapsed - fadeStart) / 500.0f));
       }
       SDL_SetTextureAlphaMod(statusMessageTexture, alpha);
-      SDL_Rect dest = {(900 - statusMessageTexW) / 2, 350, statusMessageTexW,
-                       statusMessageTexH};
+      SDL_Rect dest = {(900 - statusMessageTexW) / 2, 350, statusMessageTexW, statusMessageTexH};
       SDL_RenderCopy(renderer, statusMessageTexture, nullptr, &dest);
     }
     else
@@ -550,12 +558,9 @@ void Game::render()
     {
       const Uint32 remainingMs = resurrectionEndTime - now;
       const int seconds = (remainingMs / 1000) + 1;
-
       std::string countdownText = "Resucitando en " + std::to_string(seconds) + "s...";
-
       TTF_Font *resFont = assets->GetFont("ao_regular");
       SDL_Color yellow = {255, 220, 60, 255};
-
       SDL_Surface *surf = TTF_RenderUTF8_Blended(resFont, countdownText.c_str(), yellow);
       if (surf)
       {
@@ -563,13 +568,11 @@ void Game::render()
         if (tex)
         {
           SDL_Rect dest = {(900 - surf->w) / 2, (687 - surf->h) / 2, surf->w, surf->h};
-
           SDL_Rect bg = {dest.x - 10, dest.y - 5, dest.w + 20, dest.h + 10};
           SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
           SDL_SetRenderDrawColor(renderer, 0, 0, 0, 150);
           SDL_RenderFillRect(renderer, &bg);
           SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-
           SDL_RenderCopy(renderer, tex, nullptr, &dest);
           SDL_DestroyTexture(tex);
         }
@@ -587,7 +590,6 @@ void Game::render()
   miniChat.render(renderer, chatFont);
   SDL_RenderPresent(renderer);
 }
-
 void Game::clean()
 {
   clearTextCache();
@@ -2623,41 +2625,19 @@ void Game::handlePlayerResurrected(const PlayerResurrectedMessage &msg)
 
 void Game::drawEquippedEntity(Entity *entity, RenderContext &context)
 {
-  // Si la entidad no existe, no dibujamos nada.
-  if (entity == nullptr)
-  {
-    return;
-  }
+    if (entity == nullptr) return;
 
-  // Primera capa:
-  // arma/escudo que deben quedar detrás del cuerpo.
-  if (entity->hasComponent<EquipmentComponent>())
-  {
-    entity->getComponent<EquipmentComponent>().drawBehind(context);
-  }
+    if (entity->hasComponent<EquipmentComponent>())
+        entity->getComponent<EquipmentComponent>().drawBehind(context);
 
-  // Segunda capa:
-  // sprite principal del personaje: cuerpo, cabeza, casco.
-  if (entity->hasComponent<SpriteComponent>())
-  {
-    entity->getComponent<SpriteComponent>().draw(context);
-  }
+    if (entity->hasComponent<SpriteComponent>())
+        entity->getComponent<SpriteComponent>().draw(context);
 
-  // Tercera capa:
-  // arma/escudo que deben quedar delante del cuerpo.
-  if (entity->hasComponent<EquipmentComponent>())
-  {
-    entity->getComponent<EquipmentComponent>().drawFront(context);
-  }
+    if (entity->hasComponent<EquipmentComponent>())
+        entity->getComponent<EquipmentComponent>().drawFront(context);
 
-  if (entity->hasComponent<NameplateComponent>())
-  {
-    entity->getComponent<NameplateComponent>().draw(context);
-  }
-  if (entity->hasComponent<HealthBarComponent>())
-  {
-    entity->getComponent<HealthBarComponent>().draw(context);
-  }
+    if (entity->hasComponent<HealthBarComponent>())
+        entity->getComponent<HealthBarComponent>().draw(context);
 }
 
 void Game::handleEntityDespawn(const EntityDespawnMessage &msg)
