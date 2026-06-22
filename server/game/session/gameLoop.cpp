@@ -79,6 +79,24 @@ void GameLoop::processMessage(const ClientMessage &incoming)
     handleLeaveGame(incoming.clientId);
     return;
   }
+
+  // Guard contra la ventana de transición de instancia: el jugador puede
+  // haber sido removido de ESTE world (porque ya está transicionando hacia
+  // otra sala) pero su receiver todavía no fue redirigido por el
+  // LobbyHandler — eso ocurre de forma asíncrona vía transitionQueue, con
+  // latencia de varios ms. Si llega un input del cliente en ese hueco, no
+  // existe en este world y dispatchearlo solo genera un error espurio
+  // ("playerId no encontrado") que deja al cliente congelado o con fondo
+  // gris. Lo descartamos en silencio: el receiver pronto será reapuntado
+  // a la cola de la sala destino y los próximos inputs van a llegar bien.
+  if (!world.hasPlayer(incoming.clientId))
+  {
+    std::cout << "[GameLoop] Mensaje descartado (cliente=" << incoming.clientId
+              << " en transición, no presente en este world, gameId="
+              << gameId << ")" << std::endl;
+    return;
+  }
+
   dispatcher.dispatch(incoming, world, monitor);
 }
 

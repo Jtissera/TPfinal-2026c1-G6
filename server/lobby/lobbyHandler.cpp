@@ -384,6 +384,7 @@ void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
         archive.toSnapshot(event.player, originMapPath, originId, 0),
         originId);
 
+
     gameManager.joinAndAddPlayer(originId, event.clientId,
                                  *event.clientQueue, std::move(event.player));
 
