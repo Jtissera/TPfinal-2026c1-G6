@@ -1,6 +1,7 @@
 #pragma once
 
-enum class EquipSlot {
+enum class EquipSlot
+{
     HAND,
     ARMOR,
     HELMET,

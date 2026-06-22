@@ -1,1 +1,9 @@
-enum class ItemEffect { NONE, HEAL, DAMAGE, MANA };
+#pragma once
+
+enum class ItemEffect
+{
+    NONE,
+    HEAL,
+    DAMAGE,
+    MANA
+};
