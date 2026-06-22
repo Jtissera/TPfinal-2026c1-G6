@@ -140,8 +140,10 @@ void EquipmentComponent::applyArmorToSprite() {
     return;
   }
 
-  sprite.setSpriteTextureAndConfig("body_sheet",
-                                   assets.bodyConfigForRace(race));
+  sprite.setSpriteTextureAndConfig(
+      assets.bodyTextureForRace(race),
+      assets.bodyConfigForRace(race)
+  );
 }
 
 void EquipmentComponent::applyHelmetToSprite() {
@@ -216,22 +218,44 @@ bool EquipmentComponent::isShortRace() const {
          race == "Gnomo" || race == "DWARF" || race == "GNOME";
 }
 
+// SpriteSheetConfig EquipmentComponent::armorSpriteConfig() const {
+//   if (!armor.has_value()) {
+//     return assets.bodyConfigForRace(race);
+//   }
+//
+//   const ItemView &armorItem = armor.value();
+//
+//   return SpriteSheetConfig{27, // ancho frame armadura
+//                            47, // alto frame armadura
+//                            2,  // escala
+//                            0,  // startX
+//                            0,  // startY
+//                            isShortRace() ? armorItem.visualShortOffsetX
+//                                          : armorItem.visualTallOffsetX,
+//                            isShortRace() ? armorItem.visualShortOffsetY
+//                                          : armorItem.visualTallOffsetY};
+// }
+
 SpriteSheetConfig EquipmentComponent::armorSpriteConfig() const {
+  const SpriteSheetConfig baseConfig = assets.bodyConfigForRace(race);
+
   if (!armor.has_value()) {
-    return assets.bodyConfigForRace(race);
+    return baseConfig;
   }
 
   const ItemView &armorItem = armor.value();
 
-  return SpriteSheetConfig{27, // ancho frame armadura
-                           47, // alto frame armadura
-                           2,  // escala
-                           0,  // startX
-                           0,  // startY
-                           isShortRace() ? armorItem.visualShortOffsetX
-                                         : armorItem.visualTallOffsetX,
-                           isShortRace() ? armorItem.visualShortOffsetY
-                                         : armorItem.visualTallOffsetY};
+  return SpriteSheetConfig{
+    baseConfig.frameWidth,
+    baseConfig.frameHeight,
+    baseConfig.scale,
+    0,
+    0,
+    isShortRace() ? armorItem.visualShortOffsetX
+                  : armorItem.visualTallOffsetX,
+    isShortRace() ? armorItem.visualShortOffsetY
+                  : armorItem.visualTallOffsetY
+};
 }
 bool EquipmentComponent::shouldDrawWeaponBehind() const {
   if (entity == nullptr || !entity->hasComponent<SpriteComponent>()) {

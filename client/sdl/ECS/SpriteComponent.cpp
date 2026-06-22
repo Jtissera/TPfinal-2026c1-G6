@@ -229,11 +229,42 @@ int SpriteComponent::getStartX() const { return startX; }
 
 int SpriteComponent::getStartY() const { return startY; }
 
+// void SpriteComponent::setSpriteTextureAndConfig(
+//     const std::string &newTextureId, const SpriteSheetConfig &newConfig)
+// {
+//     setText(newTextureId);
+//
+//     frameWidth = newConfig.frameWidth;
+//     frameHeight = newConfig.frameHeight;
+//     scale = newConfig.scale;
+//
+//     startX = newConfig.startX;
+//     startY = newConfig.startY;
+//
+//     renderOffsetX = newConfig.renderOffsetX;
+//     renderOffsetY = newConfig.renderOffsetY;
+//
+//     srcRect.w = frameWidth;
+//     srcRect.h = frameHeight;
+//     std::cout << "[SPRITE CONFIG] texture=" << newTextureId << " frame=("
+//               << newConfig.frameWidth << "x" << newConfig.frameHeight << ")"
+//               << " start=(" << newConfig.startX << "," << newConfig.startY << ")"
+//               << " offset=(" << newConfig.renderOffsetX << ","
+//               << newConfig.renderOffsetY << ")" << std::endl;
+// }
+
 void SpriteComponent::setSpriteTextureAndConfig(
-    const std::string &newTextureId, const SpriteSheetConfig &newConfig)
+    const std::string &newTextureId,
+    const SpriteSheetConfig &newConfig)
 {
+    // Cambiamos la textura principal del cuerpo.
     setText(newTextureId);
 
+    // Al cambiar cuerpo/armadura, nos aseguramos de volver al sprite normal,
+    // no a una textura temporal de ataque.
+    usingAttackTexture = false;
+
+    // Actualizamos la geometría base del spritesheet.
     frameWidth = newConfig.frameWidth;
     frameHeight = newConfig.frameHeight;
     scale = newConfig.scale;
@@ -244,13 +275,23 @@ void SpriteComponent::setSpriteTextureAndConfig(
     renderOffsetX = newConfig.renderOffsetX;
     renderOffsetY = newConfig.renderOffsetY;
 
+    // Re-sincronizamos la animación actual con el nuevo sheet.
+    // Esto evita que el cuerpo quede invisible o mal posicionado hasta moverse.
+    animStartX = startX;
+
+    srcRect.x = startX;
+    srcRect.y = startY + animationIndex * frameHeight;
     srcRect.w = frameWidth;
     srcRect.h = frameHeight;
-    std::cout << "[SPRITE CONFIG] texture=" << newTextureId << " frame=("
-              << newConfig.frameWidth << "x" << newConfig.frameHeight << ")"
-              << " start=(" << newConfig.startX << "," << newConfig.startY << ")"
+
+    std::cout << "[SPRITE CONFIG] texture=" << newTextureId
+              << " frame=(" << newConfig.frameWidth << "x"
+              << newConfig.frameHeight << ")"
+              << " start=(" << newConfig.startX << ","
+              << newConfig.startY << ")"
               << " offset=(" << newConfig.renderOffsetX << ","
-              << newConfig.renderOffsetY << ")" << std::endl;
+              << newConfig.renderOffsetY << ")"
+              << std::endl;
 }
 
 void SpriteComponent::setRenderOffset(int offsetX, int offsetY)

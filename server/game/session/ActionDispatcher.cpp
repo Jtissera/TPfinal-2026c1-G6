@@ -118,7 +118,7 @@ void ActionDispatcher::handleMove(uint32_t id, const Message &msg, GameWorld &wo
     if (!moving)
     {
         monitor.broadcast(std::make_shared<const EntityMoveMessage>(
-            static_cast<uint32_t>(id),
+            id,
             world.getPixelX(id),
             world.getPixelY(id),
             direction,
@@ -130,7 +130,8 @@ void ActionDispatcher::handleMove(uint32_t id, const Message &msg, GameWorld &wo
     if (world.movePlayer(id, direction))
     {
         monitor.broadcast(std::make_shared<const EntityMoveMessage>(
-            static_cast<uint32_t>(id),
+
+            id,
             world.getPixelX(id),
             world.getPixelY(id),
             direction,

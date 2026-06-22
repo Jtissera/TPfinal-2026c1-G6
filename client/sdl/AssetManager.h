@@ -60,6 +60,7 @@ public:
     void LoadTexturesFromJson(const std::string& jsonPath);
 
     SpriteSheetConfig bodyConfigForRace(const std::string& race) const;
+    std::string bodyTextureForRace(const std::string& race) const;
 
     void applyGhostAppearance(Entity& entity);
     std::string ghostTextureId() const;
@@ -75,7 +76,7 @@ private:
     std::map<std::string, SpriteSheetConfig> bodyConfigs;
 
     std::string textureForNPC(NpcType type);
-    std::string bodyTextureForRace(const std::string& race) const;
+
     std::string headTextureForRace(const std::string& race) const;
     void LoadBodiesFromJson(const std::string& path);
     const SpriteDefinition *GetSpriteDefinition(const std::string &id) const;

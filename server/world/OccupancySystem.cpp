@@ -1,4 +1,4 @@
-#include "OccupancySystem.h"
+    #include "OccupancySystem.h"
 
 bool OccupancySystem::occupy(int tileX, int tileY, uint32_t entityId) {
     uint64_t k = key(tileX, tileY);
@@ -24,11 +24,21 @@ uint32_t OccupancySystem::getOccupant(int tileX, int tileY) const {
     return it->second;
 }
 
-bool OccupancySystem::move(int fromX, int fromY, int toX, int toY, uint32_t entityId) {
-    if (isOccupied(toX, toY)) return false;
-    
+bool OccupancySystem::move(int fromX, int fromY, int toX, int toY, uint32_t entityId)
+{
+    if (fromX == toX && fromY == toY) {
+        return true;
+    }
+
+    const uint32_t destinationOccupant = getOccupant(toX, toY);
+
+    if (destinationOccupant != 0 && destinationOccupant != entityId) {
+        return false;
+    }
+
     free(fromX, fromY);
-    occupy(toX, toY, entityId);
+    occupants[key(toX, toY)] = entityId;
+
     return true;
 }
 
