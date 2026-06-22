@@ -1,17 +1,46 @@
 #include "Player.h"
 #include <algorithm>
 
+#include "Player.h"
+#include <algorithm>
+
 Player::Player(uint32_t clientId, std::string name, const RaceStats &race,
                const ClassStats &cls, int16_t maxHp, int16_t maxMana,
                const toml::table &config)
-    : clientId(clientId), name(std::move(name)), race(race), cls(cls),
-      maxHp(maxHp), maxMana(maxMana), hp(maxHp), mana(maxMana),
+    : clientId(clientId),
+      name(std::move(name)),
+      race(race),
+      cls(cls),
+      maxHp(maxHp),
+      maxMana(maxMana),
+      hp(maxHp),
+      mana(maxMana),
+      tileSize(config["world"]["tile_size"].value_or(96)),
       rangedAttackRange(config["combat"]["ranged_attack_range"].value_or(10)),
-      inventory() {}
+      inventory(config["player"]["max_inventory_items"].value_or<std::size_t>(20))
+{
+}
 
 bool Player::isAlive() const { return state == PlayerState::ALIVE; }
 bool Player::isGhost() const { return state == PlayerState::DEAD; }
 bool Player::isMeditating() const { return state == PlayerState::MEDITATING; }
+bool Player::hasInfiniteHp() const { return infiniteHp; }
+bool Player::hasInfiniteMana() const { return infiniteMana; }
+bool Player::isResurrecting() const { return resurrecting; }
+bool Player::canInteract() const { return !isGhost() && !resurrecting; }
+bool Player::isClanFounder() const { return clanFounder; }
+bool Player::hasReceivedInitialInventory() const { return initialInventoryGiven; }
+
+void Player::startResurrection() { resurrecting = true; }
+void Player::stopResurrection() { resurrecting = false; }
+void Player::markInitialInventoryGiven() { initialInventoryGiven = true; }
+void Player::setClanFounder(bool founder) { clanFounder = founder; }
+
+const std::string &Player::getClanName() const { return clanName; }
+void Player::setClanName(std::string n) { clanName = std::move(n); }
+
+int Player::getTileX() const { return static_cast<int>(pixelX) / tileSize; }
+int Player::getTileY() const { return static_cast<int>(pixelY) / tileSize; }
 
 void Player::takeDamage(int16_t dmg)
 {
@@ -173,7 +202,6 @@ uint16_t Player::getWeaponDamageMin() const
     return 2;
   }
 
-  // Si hay arma, usamos el daño mínimo configurado en el item.
   return w->stats.damageMin;
 }
 
@@ -182,14 +210,11 @@ uint16_t Player::getWeaponDamageMax() const
 
   const Item *w = inventory.getEquipped(EquipSlot::HAND);
 
-  // Daño máximo de puño.
-  // Bajo, pero suficiente para matar enemigos iniciales.
   if (w == nullptr)
   {
     return 4;
   }
 
-  // Si hay arma, usamos el daño máximo configurado en el item.
   return w->stats.damageMax;
 }
 
@@ -270,39 +295,29 @@ void Player::spendGold(uint32_t amount)
 
 float Player::getPixelX() const
 {
-  // Devuelve la posición real en píxeles.
   return pixelX;
 }
 
 float Player::getPixelY() const
 {
-  // Devuelve la posición real en píxeles.
   return pixelY;
 }
 
 void Player::setPixelPos(float x, float y)
 {
-  // Actualiza la posición real del jugador.
   pixelX = x;
   pixelY = y;
-  tileX = static_cast<int>(pixelX) / TILE_SIZE;
-  tileY = static_cast<int>(pixelY) / TILE_SIZE;
+  tileX = static_cast<int>(pixelX) / tileSize;
+  tileY = static_cast<int>(pixelY) / tileSize;
 }
 
 void Player::setTilePos(int tx, int ty)
 {
-  // Guarda el tile lógico.
   tileX = tx;
-
-  // Guarda el tile lógico.
   tileY = ty;
 
-  // Sincroniza la posición real en píxeles.
-  // Esto sirve para spawn, respawn o teletransporte controlado.
-  pixelX = static_cast<float>(tx * TILE_SIZE);
-
-  // Sincroniza la posición real en píxeles.
-  pixelY = static_cast<float>(ty * TILE_SIZE);
+  pixelX = static_cast<float>(tx * tileSize);
+  pixelY = static_cast<float>(ty * tileSize);
 }
 
 void Player::setClientId(uint32_t id) { clientId = id; }
