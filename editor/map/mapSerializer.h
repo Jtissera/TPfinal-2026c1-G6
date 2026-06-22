@@ -27,5 +27,5 @@ public:
 
 private:
     static constexpr uint8_t MAGIC[8] = {'A', 'R', 'G', 'M', 'A', 'P', 0, 0};
-    static constexpr uint16_t VERSION = 3;
+    static constexpr uint16_t VERSION = 4;
 };

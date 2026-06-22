@@ -73,6 +73,43 @@ std::string Map::GetRandomTextureForType(TileType type)
         return stones[rand() % stones.size()];
     }
 
+    case TileType::WELL:
+        return "tile_well";
+
+    case TileType::BANNER:
+    {
+        std::vector<std::string> banners = {
+            "tile_banner_skeleton_1",
+            "tile_banner_skeleton_2",
+            "tile_banner_skeleton_3"};
+        return banners[rand() % banners.size()];
+    }
+
+    case TileType::WITCH_BANNER:
+    {
+        std::vector<std::string> banners = {
+            "tile_banner_witch_1",
+            "tile_banner_witch_2"};
+        return banners[rand() % banners.size()];
+    }
+
+    case TileType::BOXES:
+    {
+        std::vector<std::string> boxes = {
+            "tile_boxes_1",
+            "tile_boxes_2"};
+        return boxes[rand() % boxes.size()];
+    }
+
+    case TileType::SHOP:
+    {
+        std::vector<std::string> shops = {
+            "tile_shop_1",
+            "tile_shop_2",
+            "tile_shop_3"};
+        return shops[rand() % shops.size()];
+    }
+
     default:
         return "grass";
     }
@@ -85,7 +122,7 @@ void Map::LoadMap(const std::string &path)
     width = mapData.width();
     height = mapData.height();
     tiles.clear();
-    tiles.reserve(width * height * 2); // 2 capas por tile como maximo
+    tiles.reserve(width * height * 2);
 
     srand(123456);
 
@@ -96,12 +133,14 @@ void Map::LoadMap(const std::string &path)
             const Tile &t = mapData.at(x, y);
 
             if (t.type == TileType::GRASS || t.type == TileType::WATER ||
-                t.type == TileType::SAND || t.type == TileType::CITY_FLOOR || t.type == TileType::CAVERN_FLOOR || t.type == TileType::DUNGEON_FLOOR)
+                t.type == TileType::SAND || t.type == TileType::CITY_FLOOR ||
+                t.type == TileType::CAVERN_FLOOR || t.type == TileType::DUNGEON_FLOOR)
             {
                 AddTile(GetRandomTextureForType(t.type), x * scaledSize, y * scaledSize, t.type);
             }
             else if (t.type == TileType::FOREST || t.type == TileType::STONE ||
-                     t.type == TileType::DUNGEON_ENTRANCE || t.type == TileType::CAVERN_ENTRANCE || t.type == TileType::EXIT)
+                     t.type == TileType::DUNGEON_ENTRANCE || t.type == TileType::CAVERN_ENTRANCE ||
+                     t.type == TileType::EXIT)
             {
                 AddTile(GetRandomTextureForType(TileType::GRASS), x * scaledSize, y * scaledSize, TileType::GRASS);
             }
@@ -121,6 +160,12 @@ void Map::LoadMap(const std::string &path)
             {
                 AddTile(GetRandomTextureForType(TileType::DUNGEON_FLOOR), x * scaledSize, y * scaledSize, TileType::DUNGEON_FLOOR);
             }
+            else if (t.type == TileType::WELL || t.type == TileType::BANNER ||
+                     t.type == TileType::WITCH_BANNER || t.type == TileType::BOXES ||
+                     t.type == TileType::SHOP)
+            {
+                AddTile(GetRandomTextureForType(TileType::GRASS), x * scaledSize, y * scaledSize, TileType::GRASS);
+            }
         }
     }
 
@@ -136,7 +181,9 @@ void Map::LoadMap(const std::string &path)
                 t.type == TileType::CHURCH || t.type == TileType::MILL ||
                 t.type == TileType::CAVERN_WALL_H || t.type == TileType::CAVERN_WALL_V ||
                 t.type == TileType::DUNGEON_WALL_H || t.type == TileType::DUNGEON_WALL_V ||
-                t.type == TileType::EXIT)
+                t.type == TileType::EXIT || t.type == TileType::WELL ||
+                t.type == TileType::BANNER || t.type == TileType::WITCH_BANNER ||
+                t.type == TileType::BOXES || t.type == TileType::SHOP)
             {
                 std::string randomTexId = GetRandomTextureForType(t.type);
                 AddTile(randomTexId, x * scaledSize, y * scaledSize, t.type);
@@ -192,7 +239,9 @@ void Map::AddTile(const std::string &texId, int x, int y, TileType type)
                         type == TileType::CAVERN_ENTRANCE || type == TileType::HOUSE ||
                         type == TileType::CHURCH || type == TileType::MILL ||
                         type == TileType::CAVERN_WALL_H || type == TileType::CAVERN_WALL_V ||
-                        type == TileType::EXIT);
+                        type == TileType::EXIT || type == TileType::WELL ||
+                        type == TileType::BANNER || type == TileType::WITCH_BANNER ||
+                        type == TileType::BOXES || type == TileType::SHOP);
 
     TileEntry entry;
     entry.texture = tex;

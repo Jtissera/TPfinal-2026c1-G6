@@ -92,6 +92,7 @@
       "frame_width": 190,
       "frame_height": 190,
       "scale": 1,
+      "nameplate_offset_y": 80,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 100 },
         "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 100 },
@@ -108,6 +109,7 @@
       "frame_width": 95,
       "frame_height": 95,
       "scale": 1,
+      "nameplate_offset_y": 40,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 100 },
         "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 100 },
@@ -123,6 +125,7 @@
       "frame_width": 95,
       "frame_height": 95,
       "scale": 1,
+      "nameplate_offset_y": 40,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 100 },
         "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 100 },
@@ -192,6 +195,7 @@
       "frame_width": 32,
       "frame_height": 64,
       "scale": 2,
+      "nameplate_offset_y": 30,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
         "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },
@@ -219,6 +223,7 @@
       "frame_width": 32,
       "frame_height": 54,
       "scale": 2,
+      "nameplate_offset_y": 30,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
         "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },
@@ -246,6 +251,7 @@
       "frame_width": 31,
       "frame_height": 64,
       "scale": 2,
+      "nameplate_offset_y": 30,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
         "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },
@@ -273,6 +279,7 @@
       "frame_width": 32,
       "frame_height": 64,
       "scale": 2,
+      "nameplate_offset_y": 40,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
         "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },

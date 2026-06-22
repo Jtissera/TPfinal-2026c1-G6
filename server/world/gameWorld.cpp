@@ -901,25 +901,15 @@ void GameWorld::loadInitialInventoryForPlayer(Player &player)
 
     if (className == "Cleric")
     {
-        player.getInventory().addItem(itemRepo.createItem("casco_hierro"));
-        player.getInventory().addItem(itemRepo.createItem("gorro_calabaza"));
-        player.getInventory().addItem(itemRepo.createItem("gorro_navidad"));
-        player.getInventory().addItem(itemRepo.createItem("gorro_arlequin"));
-        player.getInventory().addItem(itemRepo.createItem("sombrero_magico"));
         player.getInventory().addItem(itemRepo.createItem("capucha"));
-        player.getInventory().addItem(itemRepo.createItem("espada_maldita"));
-        player.getInventory().addItem(itemRepo.createItem("armadura_sombras"));
-        player.getInventory().addItem(itemRepo.createItem("escudo_maldito"));
-        player.getInventory().addItem(itemRepo.createItem("armadura_placas"));
-        player.getInventory().addItem(itemRepo.createItem("escudo_tortuga"));
         player.getInventory().addItem(itemRepo.createItem("tunica_iniciado"));
-        player.getInventory().addItem(itemRepo.createItem("tunica_azul"));
         player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
+        player.getInventory().addItem(itemRepo.createItem("vara_fresno"));
         return;
     }
     if (className == "Mage")
     {
-        player.getInventory().addItem(itemRepo.createItem("vara_fresno"));
+        player.getInventory().addItem(itemRepo.createItem("baculo_nudoso"));
         player.getInventory().addItem(itemRepo.createItem("capucha"));
         player.getInventory().addItem(itemRepo.createItem("pocion_mana"));
         player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
@@ -930,22 +920,8 @@ void GameWorld::loadInitialInventoryForPlayer(Player &player)
     {
         player.getInventory().addItem(itemRepo.createItem("espada"));
         player.getInventory().addItem(itemRepo.createItem("armadura_placas"));
-        player.getInventory().addItem(itemRepo.createItem("escudo_tortuga"));
-        player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
-        player.getInventory().addItem(itemRepo.createItem("capucha"));
-        player.getInventory().addItem(itemRepo.createItem("pocion_mana"));
-        player.getInventory().addItem(itemRepo.createItem("vara_fresno"));
-        player.getInventory().addItem(itemRepo.createItem("hacha"));
-        player.getInventory().addItem(itemRepo.createItem("martillo"));
         player.getInventory().addItem(itemRepo.createItem("baculo_nudoso"));
-        player.getInventory().addItem(itemRepo.createItem("baculo_engarzado"));
-        player.getInventory().addItem(itemRepo.createItem("arco_simple"));
-        player.getInventory().addItem(itemRepo.createItem("arco_compuesto"));
-        player.getInventory().addItem(itemRepo.createItem("armadura_cuero"));
-        player.getInventory().addItem(itemRepo.createItem("tunica_azul"));
-        player.getInventory().addItem(itemRepo.createItem("escudo_hierro"));
         player.getInventory().addItem(itemRepo.createItem("casco_hierro"));
-        player.getInventory().addItem(itemRepo.createItem("sombrero_magico"));
         player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
         return;
     }
@@ -953,20 +929,8 @@ void GameWorld::loadInitialInventoryForPlayer(Player &player)
     {
 
         player.getInventory().addItem(itemRepo.createItem("casco_hierro"));
-        player.getInventory().addItem(itemRepo.createItem("gorro_calabaza"));
-        player.getInventory().addItem(itemRepo.createItem("gorro_navidad"));
-        player.getInventory().addItem(itemRepo.createItem("gorro_arlequin"));
-        player.getInventory().addItem(itemRepo.createItem("sombrero_magico"));
-        player.getInventory().addItem(itemRepo.createItem("capucha"));
-        player.getInventory().addItem(itemRepo.createItem("espada_maldita"));
-        player.getInventory().addItem(itemRepo.createItem("armadura_sombras"));
-        player.getInventory().addItem(itemRepo.createItem("escudo_maldito"));
         player.getInventory().addItem(itemRepo.createItem("armadura_placas"));
-        player.getInventory().addItem(itemRepo.createItem("escudo_tortuga"));
-        player.getInventory().addItem(itemRepo.createItem("tunica_iniciado"));
-        player.getInventory().addItem(itemRepo.createItem("tunica_azul"));
         player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
-
         return;
     }
 

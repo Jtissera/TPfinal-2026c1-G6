@@ -640,6 +640,7 @@ void ChatHandler::handlePickItem(uint32_t senderId,
                 return;
             }
 
+            uint32_t instanceId = groundItem.item.instanceId;
             auto item = world.pickItemById(groundItem.item.instanceId);
 
             if (!item)
@@ -655,7 +656,7 @@ void ChatHandler::handlePickItem(uint32_t senderId,
             if (p.getInventory().addItem(std::move(*item)))
             {
                 sendInventory(senderId, p, monitor);
-
+                monitor.broadcast(std::make_shared<const ItemPickedMessage>(senderId, instanceId));
                 sendChat(senderId,
                          "Recogiste el objeto.",
                          ChatMsgType::INFO,
@@ -681,6 +682,7 @@ void ChatHandler::handlePickItem(uint32_t senderId,
             groundGold.tileY == p.getTileY())
         {
 
+            uint32_t instanceId = groundGold.instanceId;
             auto gold = world.pickGoldById(groundGold.instanceId);
 
             if (!gold)
@@ -695,7 +697,7 @@ void ChatHandler::handlePickItem(uint32_t senderId,
             p.addGold(*gold);
 
             sendStats(senderId, p, monitor);
-
+            monitor.broadcast(std::make_shared<const ItemPickedMessage>(senderId, instanceId));
             sendChat(senderId,
                      "Recogiste " + std::to_string(*gold) + " oro.",
                      ChatMsgType::INFO,

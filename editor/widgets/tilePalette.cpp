@@ -97,6 +97,22 @@ TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
     }
     mainLayout->addWidget(specGroup);
 
+    auto *decoGroup = new QGroupBox("Decoraciones", scrollContent);
+    auto *decoLayout = new QVBoxLayout(decoGroup);
+    _rbWell = new QRadioButton("🪣 Pozo", decoGroup);
+    _rbBanner = new QRadioButton("💀 Estandarte Esqueleto", decoGroup);
+    _rbWitchBanner = new QRadioButton("🔮 Estandarte Bruja", decoGroup);
+    _rbBoxes = new QRadioButton("📦 Cajas", decoGroup);
+    _rbShop = new QRadioButton("🏪 Tienda", decoGroup);
+
+    auto *decoBtns = new QButtonGroup(this);
+    for (auto *rb : {_rbWell, _rbBanner, _rbWitchBanner, _rbBoxes, _rbShop})
+    {
+        decoBtns->addButton(rb);
+        decoLayout->addWidget(rb);
+    }
+    mainLayout->addWidget(decoGroup);
+
     auto *zoneGroup = new QGroupBox("Zona", scrollContent);
     auto *zoneLayout = new QVBoxLayout(zoneGroup);
     _rbZoneSafe = new QRadioButton("🛡 Segura", zoneGroup);
@@ -123,7 +139,7 @@ TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
 
     auto *allTileBtns = new QButtonGroup(this);
     allTileBtns->setExclusive(true);
-    for (auto *g : {terrainBtns, structBtns, specBtns, cityBtns, subBtns})
+    for (auto *g : {terrainBtns, structBtns, specBtns, cityBtns, subBtns, decoBtns})
     {
         for (auto *b : g->buttons())
         {
@@ -188,6 +204,16 @@ TileType TilePalette::selectedTileType() const
         return TileType::DUNGEON_WALL_H;
     if (_rbDungeonWallV->isChecked())
         return TileType::DUNGEON_WALL_V;
+    if (_rbWell->isChecked())
+        return TileType::WELL;
+    if (_rbBanner->isChecked())
+        return TileType::BANNER;
+    if (_rbWitchBanner->isChecked())
+        return TileType::WITCH_BANNER;
+    if (_rbBoxes->isChecked())
+        return TileType::BOXES;
+    if (_rbShop->isChecked())
+        return TileType::SHOP;
     return TileType::GRASS;
 }
 

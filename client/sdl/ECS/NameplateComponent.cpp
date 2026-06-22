@@ -11,14 +11,16 @@ NameplateComponent::NameplateComponent(std::string name,
                                        uint32_t level,
                                        std::string clan,
                                        NameplateType type,
-                                       std::string fontId)
+                                       std::string fontId,
+                                       int nameplateOffsetY)
     // Movemos strings para evitar copias innecesarias.
     : name(std::move(name)),
       className(std::move(className)),
       level(level),
       clan(std::move(clan)),
       type(type),
-      fontId(fontId)
+      fontId(fontId),
+      nameplateOffsetY(nameplateOffsetY)
 {
 }
 
@@ -200,13 +202,13 @@ void NameplateComponent::draw(RenderContext &context)
         if (dest.w > 0)
         {
             spriteLeft = dest.x;
-            spriteTop = dest.y;
             spriteWidth = dest.w;
+            spriteTop = dest.y + nameplateOffsetY;
         }
     }
 
     constexpr int lineSpacing = 2;
-    constexpr int marginAboveSprite = 6;
+    constexpr int marginAboveSprite = 10;
 
     int totalHeight = 0;
     for (const TextLine &line : textLines)

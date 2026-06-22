@@ -275,11 +275,6 @@ void Game::handleEvents()
 
       attackSystem.handleMouseClick(mouseX, mouseY, camera, attackTargets,
                                     sendQueue, equippedWeapon);
-      if (equippedWeapon != nullptr &&
-          equippedWeapon->type == ClientItemType::MagicWeapon)
-        audioManager.playEffect("magic");
-      else
-        audioManager.playEffect("attack");
     }
 
     if (event.type == SDL_KEYDOWN &&
@@ -1104,6 +1099,18 @@ void Game::loadAssets()
   assets->AddTexture("npc_shop", "assets/sprites/npcs/shop.png");
   assets->AddTexture("npc_bank", "assets/sprites/npcs/bank.png");
 
+  assets->AddTexture("tile_well", "assets/sprites/MapAssets/well.png");
+  assets->AddTexture("tile_banner_skeleton_1", "assets/sprites/MapAssets/banner_skeleton_1.png");
+  assets->AddTexture("tile_banner_skeleton_2", "assets/sprites/MapAssets/banner_skeleton_2.png");
+  assets->AddTexture("tile_banner_skeleton_3", "assets/sprites/MapAssets/banner_skeleton_3.png");
+  assets->AddTexture("tile_banner_witch_1", "assets/sprites/MapAssets/banner_witch_1.png");
+  assets->AddTexture("tile_banner_witch_2", "assets/sprites/MapAssets/banner_witch_2.png");
+  assets->AddTexture("tile_boxes_1", "assets/sprites/MapAssets/boxes_1.png");
+  assets->AddTexture("tile_boxes_2", "assets/sprites/MapAssets/boxes_2.png");
+  assets->AddTexture("tile_shop_1", "assets/sprites/MapAssets/shop_1.png");
+  assets->AddTexture("tile_shop_2", "assets/sprites/MapAssets/shop_2.png");
+  assets->AddTexture("tile_shop_3", "assets/sprites/MapAssets/shop_3.png");
+
   // ================EFECTOS=====================
   assets->AddTexture("effect_attack_magic_01", "assets/sprites/effects/effect_attack_magic_01.png");
   assets->AddTexture("effect_blood_01", "assets/sprites/effects/effect_blood_01.png");
@@ -1479,8 +1486,7 @@ void Game::refreshPlayerBodySprite()
 
   sprite.setSpriteTextureAndConfig(
       assets->bodyTextureForRace(playerState.race),
-      assets->bodyConfigForRace(playerState.race)
-  );
+      assets->bodyConfigForRace(playerState.race));
 }
 
 // helpér
@@ -2865,6 +2871,14 @@ void Game::handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg)
   const uint32_t targetId = msg.getTargetId();
 
   Entity *targetEntity = nullptr;
+
+  if (msg.getAttackerId() == static_cast<uint32_t>(playerDto.playerID))
+  {
+    if (msg.getVisualType() == PlayerAttackVisualType::Magic)
+      audioManager.playEffect("magic");
+    else
+      audioManager.playEffect("attack");
+  }
 
   // Caso 1: el target soy yo.
   if (targetId == playerDto.playerID)

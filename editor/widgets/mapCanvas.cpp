@@ -40,8 +40,19 @@ QRect getStructureBounds(int tx, int ty, TileType type)
     case TileType::CAVERN_WALL_H:
         return QRect(tx - 3, ty - 1, 7, 3);
     case TileType::DUNGEON_WALL_H:
-    case TileType::DUNGEON_WALL_V:
         return QRect(tx, ty, 1, 2);
+    case TileType::DUNGEON_WALL_V:
+        return QRect(tx, ty - 1, 1, 3);
+    case TileType::WELL:
+    case TileType::BOXES:
+        return QRect(tx - 1, ty - 1, 2, 2);
+
+    case TileType::BANNER:
+    case TileType::WITCH_BANNER:
+        return QRect(tx, ty - 2, 2, 3);
+
+    case TileType::SHOP:
+        return QRect(tx - 1, ty - 2, 3, 3);
     default:
         return QRect(tx, ty, 1, 1);
     }
@@ -79,8 +90,21 @@ QRect getStructureCollisionBounds(int tx, int ty, TileType type)
         return QRect(tx - 3, ty - 1, 7, 2);
 
     case TileType::DUNGEON_WALL_H:
-    case TileType::DUNGEON_WALL_V:
         return QRect(tx, ty, 1, 1);
+    case TileType::DUNGEON_WALL_V:
+        return QRect(tx, ty - 1, 1, 3);
+
+    case TileType::WELL:
+        return QRect(tx, ty, 1, 1);
+    case TileType::BOXES:
+        return QRect(tx - 1, ty, 2, 1);
+
+    case TileType::BANNER:
+    case TileType::WITCH_BANNER:
+        return QRect(tx, ty, 1, 1);
+
+    case TileType::SHOP:
+        return QRect(tx - 1, ty, 2, 1);
 
     default:
         return QRect(tx, ty, 1, 1);
@@ -190,6 +214,21 @@ QColor MapCanvas::tileColor(const Tile &tile) const
         base = QColor(40, 45, 50);
         break;
 
+    case TileType::WELL:
+        base = QColor(60, 80, 100);
+        break;
+    case TileType::BANNER:
+        base = QColor(120, 30, 30);
+        break;
+    case TileType::WITCH_BANNER:
+        base = QColor(80, 30, 120);
+        break;
+    case TileType::BOXES:
+        base = QColor(100, 70, 40);
+        break;
+    case TileType::SHOP:
+        base = QColor(140, 100, 60);
+        break;
     default:
         base = QColor(200, 200, 200);
         break;
@@ -504,6 +543,47 @@ void MapCanvas::paintEvent(QPaintEvent *)
                 painter.save();
                 painter.setPen(QPen(QColor(255, 255, 255, 50), 2));
                 painter.drawLine(r.center().x(), r.top(), r.center().x(), r.bottom());
+                painter.restore();
+            }
+
+            if (tile.type == TileType::WELL)
+            {
+                painter.save();
+                painter.setPen(QColor(100, 180, 220));
+                QFont f = painter.font();
+                f.setPixelSize(14);
+                painter.setFont(f);
+                painter.drawText(r, Qt::AlignCenter, "⛲");
+                painter.restore();
+            }
+            if (tile.type == TileType::BANNER || tile.type == TileType::WITCH_BANNER)
+            {
+                painter.save();
+                painter.setPen(tile.type == TileType::BANNER ? QColor(200, 80, 80) : QColor(180, 80, 220));
+                QFont f = painter.font();
+                f.setPixelSize(14);
+                painter.setFont(f);
+                painter.drawText(r, Qt::AlignCenter, "⚑");
+                painter.restore();
+            }
+            if (tile.type == TileType::BOXES)
+            {
+                painter.save();
+                painter.setPen(QColor(180, 140, 80));
+                QFont f = painter.font();
+                f.setPixelSize(14);
+                painter.setFont(f);
+                painter.drawText(r, Qt::AlignCenter, "▪");
+                painter.restore();
+            }
+            if (tile.type == TileType::SHOP)
+            {
+                painter.save();
+                painter.setPen(QColor(220, 180, 80));
+                QFont f = painter.font();
+                f.setPixelSize(14);
+                painter.setFont(f);
+                painter.drawText(r, Qt::AlignCenter, "⛺");
                 painter.restore();
             }
 

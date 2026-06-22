@@ -74,7 +74,7 @@ void GameLoop::processMessage(const ClientMessage &incoming)
   if (incoming.message->opCode() ==
       static_cast<uint8_t>(ClientOpCode::MSG_LEAVE_GAME))
   {
-        std::cout << "ENTRANDO A LEAVE GAME POR MSJ"
+    std::cout << "ENTRANDO A LEAVE GAME POR MSJ"
               << std::endl;
     handleLeaveGame(incoming.clientId);
     return;
@@ -134,8 +134,7 @@ void GameLoop::worldUpdate(float deltaSeconds)
       monitor.broadcast(std::make_shared<const PlayerHealthMessage>(
           id,
           static_cast<uint16_t>(player.getHp()),
-          static_cast<uint16_t>(player.getMaxHp())
-      ));
+          static_cast<uint16_t>(player.getMaxHp())));
     }
   }
 
@@ -160,13 +159,13 @@ void GameLoop::worldUpdate(float deltaSeconds)
 
     Player &victim = world.getPlayer(playerId);
     monitor.sendTo(playerId, std::make_shared<const InventoryUpdateMessage>(
-                                  victim.getInventory().getItems(),
-                                  victim.getInventory().getInventorySlots(),
-                                  victim.getInventory().getEquippedArray()));
+                                 victim.getInventory().getItems(),
+                                 victim.getInventory().getInventorySlots(),
+                                 victim.getInventory().getEquippedArray()));
     monitor.broadcast(std::make_shared<const PlayerHealthMessage>(
-                                playerId,
-                                static_cast<uint16_t>(victim.getHp()),
-                                static_cast<uint16_t>(victim.getMaxHp())));
+        playerId,
+        static_cast<uint16_t>(victim.getHp()),
+        static_cast<uint16_t>(victim.getMaxHp())));
     std::cout << "[GameLoop] inventario purgado enviado a victima playerId="
               << playerId << std::endl;
   }
@@ -174,7 +173,6 @@ void GameLoop::worldUpdate(float deltaSeconds)
   for (uint32_t deadPlayerId : result.playersDied)
   {
     monitor.broadcast(std::make_shared<const PlayerDiedMessage>(deadPlayerId));
-
   }
 
   for (const auto &res : result.playersResurrected)
@@ -183,14 +181,13 @@ void GameLoop::worldUpdate(float deltaSeconds)
         res.playerId, res.tileX, res.tileY));
 
     monitor.broadcast(std::make_shared<const EntityMoveMessage>(
-        static_cast<uint8_t>(res.playerId), world.getPixelX(res.playerId),
+        static_cast<uint32_t>(res.playerId), world.getPixelX(res.playerId),
         world.getPixelY(res.playerId), Direction::DOWN, false));
 
     std::cout << "[GameLoop] broadcast PLAYER_RESURRECTED id=" << res.playerId
               << " tile=(" << res.tileX << ", " << res.tileY << ")"
               << std::endl;
   }
-
 
   for (const auto &atk : result.npcAttacksForAnim)
   {
@@ -247,7 +244,7 @@ void GameLoop::handleLeaveGame(uint32_t clientId)
   if (world.hasPlayer(clientId))
   {
     const Player &player = world.getPlayer(clientId);
-    // archive.enqueue(archive.toSnapshot(player, mapId, gameId), gameId); no deberia ser necesario 
+    // archive.enqueue(archive.toSnapshot(player, mapId, gameId), gameId); no deberia ser necesario
   }
 
   auto player = world.removePlayer(clientId);

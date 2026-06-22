@@ -66,21 +66,21 @@ static SpriteSheetConfig configForNPC(NpcType type)
         return SpriteSheetConfig{100, 98, 1, 0, 0};
     case NpcType::ZOMBIE:
     case NpcType::ORC:
+        return SpriteSheetConfig{128, 128, 1, 0, 0, 0, 0, 0};
     case NpcType::SPIDER_DESERT:
-        return SpriteSheetConfig{128, 128, 1, 0, 0};
-
+        return SpriteSheetConfig{128, 128, 1, 0, 0, 0, 0, 80};
+    case NpcType::SPIDER_CAVE:
+    case NpcType::SPIDER_DUNGEON:
+        return SpriteSheetConfig{64, 64, 2, 0, 0, 0, 0, 40};
     case NpcType::GOBLIN:
     case NpcType::GOBLIN_CAVE:
     case NpcType::GOBLIN_DUNGEON:
     case NpcType::GOBLIN_DESERT:
-        return SpriteSheetConfig{64, 64, 2, 0, 0};
-
+        return SpriteSheetConfig{64, 64, 2, 0, 0, 0, 0, 30};
     case NpcType::SKELETON_CAVE:
     case NpcType::SKELETON_DUNGEON:
         return SpriteSheetConfig{100, 98, 1, 0, 0};
     case NpcType::SKELETON_DESERT:
-    case NpcType::SPIDER_CAVE:
-    case NpcType::SPIDER_DUNGEON:
     case NpcType::GOLEM_CAVE:
     case NpcType::GOLEM_DUNGEON:
     case NpcType::GOLEM_DESERT:
@@ -150,8 +150,8 @@ Entity *AssetManager::CreateNpc(const NPCData &data)
         npcAnims.emplace("IdleDown", Animation(0, 1, 200));
     }
 
-    npc.addComponent<SpriteComponent>(*this,textureId,true,npcAnims,npcConfig);
-    npc.addComponent<NameplateComponent>(data.nombre,"",0,"",NameplateType::PassiveNpc,"eagle_lake");
+    npc.addComponent<SpriteComponent>(*this, textureId, true, npcAnims, npcConfig);
+    npc.addComponent<NameplateComponent>(data.nombre, "", 0, "", NameplateType::PassiveNpc, "eagle_lake");
     npc.addComponent<ColliderComponent>("npc");
     npc.addGroup(groupNPC);
 
@@ -204,11 +204,12 @@ Entity *AssetManager::CreateEnemy(const NPCData &data)
     }
 
     auto &enemy = manager->addEntity();
+    int nameplateOffsetY = cfg.nameplateOffsetY;
     enemy.addComponent<TransformComponent>(data.x, data.y);
     enemy.addComponent<SpriteComponent>(*this, bodyTextureId,
                                         true, enemyAnims, cfg);
-    enemy.addComponent<NameplateComponent>(data.nombre,"",data.level,"",NameplateType::Enemy,"eagle_lake");
-    enemy.addComponent<HealthBarComponent>(data.hp,data.hpMax,80,10,100);
+    enemy.addComponent<NameplateComponent>(data.nombre, "", data.level, "", NameplateType::Enemy, "eagle_lake", nameplateOffsetY);
+    enemy.addComponent<HealthBarComponent>(data.hp, data.hpMax, 80, 10, 100);
     if (!atkCfg.textureId.empty())
     {
         SpriteSheetConfig attackSheetCfg = (attackDef != nullptr)
@@ -249,7 +250,7 @@ Entity *AssetManager::CreatePlayer(const PlayerDto &data)
     player.addComponent<TransformComponent>(data.xpos, data.ypos);
     player.addComponent<SpriteComponent>(*this, bodyTextureId, true, playerAnims, bodyConfig);
     player.getComponent<SpriteComponent>().setHeadTexture(headTextureId, data.headId);
-    player.addComponent<NameplateComponent>(data.nombre,data.clase,data.level,"",NameplateType::LocalPlayer,"eagle_lake");
+    player.addComponent<NameplateComponent>(data.nombre, data.clase, data.level, "", NameplateType::LocalPlayer, "eagle_lake");
     player.addComponent<EquipmentComponent>(*this, data.raza);
     player.addComponent<KeyboardController>(sendQueue);
     player.addComponent<ColliderComponent>("player");
@@ -480,6 +481,7 @@ void AssetManager::LoadTexturesFromJson(const std::string &jsonPath)
             def.config.startY = info.value("start_y", 0);
             def.config.renderOffsetX = info.value("render_offset_x", 0);
             def.config.renderOffsetY = info.value("render_offset_y", 0);
+            def.config.nameplateOffsetY = info.value("nameplate_offset_y", 0);
 
             if (info.contains("animations") && info["animations"].is_object())
             {
@@ -650,8 +652,8 @@ Entity *AssetManager::CreateRemotePlayer(const PlayerDto &data)
 
     // Cabeza del jugador remoto.
     remotePlayer.getComponent<SpriteComponent>().setHeadTexture(headTextureId, data.headId);
-    remotePlayer.addComponent<NameplateComponent>(data.nombre,data.clase,data.level,"",NameplateType::RemotePlayer,"eagle_lake");
-    remotePlayer.addComponent<HealthBarComponent>(data.hp,data.hpMax,80,10,100);
+    remotePlayer.addComponent<NameplateComponent>(data.nombre, data.clase, data.level, "", NameplateType::RemotePlayer, "eagle_lake");
+    remotePlayer.addComponent<HealthBarComponent>(data.hp, data.hpMax, 80, 10, 100);
     remotePlayer.addComponent<EquipmentComponent>(*this, data.raza);
     remotePlayer.addComponent<ColliderComponent>("remote_player");
     remotePlayer.addGroup(groupPlayers);

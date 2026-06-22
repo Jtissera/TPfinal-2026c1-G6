@@ -37,6 +37,7 @@ private:
     // Tipo de entidad: jugador local, remoto o enemigo.
     NameplateType type = NameplateType::RemotePlayer;
     std::string fontId = "ao_regular";
+    int nameplateOffsetY = 0;
 
     struct TextLine
     {
@@ -68,7 +69,8 @@ public:
                        uint32_t level,
                        std::string clan,
                        NameplateType type,
-                       std::string fontId);
+                       std::string fontId,
+                       int nameplateOffsetY = 0);
 
     ~NameplateComponent() override;
 

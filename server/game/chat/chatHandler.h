@@ -2,6 +2,7 @@
 
 #include "chatCommandParser.h"
 #include "common/network/messages/server/chat/chatNotificationMessage.h"
+#include "common/network/messages/server/inventory/itemPickedMessage.h"
 #include "server/monitorQueues.h"
 #include "server/world/gameWorld.h"
 #include "server/game/player/Player.h"

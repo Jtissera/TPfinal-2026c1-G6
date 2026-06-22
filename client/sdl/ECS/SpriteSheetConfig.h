@@ -2,11 +2,11 @@
 #ifndef TALLER_TP_SPRITESHEETCONFIG_H
 #define TALLER_TP_SPRITESHEETCONFIG_H
 
-
 #pragma once
 // Configuración básica de un spritesheet.
 // Define cómo recortar el sprite y cómo ajustarlo visualmente al dibujarlo.
-struct SpriteSheetConfig {
+struct SpriteSheetConfig
+{
     // Ancho real de cada frame dentro del spritesheet.
     int frameWidth;
 
@@ -30,6 +30,7 @@ struct SpriteSheetConfig {
     // Negativo = sube el sprite.
     // Positivo = baja el sprite.
     int renderOffsetY = 0;
+    int nameplateOffsetY = 0;
 };
 
-#endif //TALLER_TP_SPRITESHEETCONFIG_H
+#endif // TALLER_TP_SPRITESHEETCONFIG_H

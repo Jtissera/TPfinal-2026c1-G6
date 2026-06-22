@@ -25,6 +25,11 @@ enum class TileType : uint8_t
     DUNGEON_FLOOR = 19,
     DUNGEON_WALL_H = 20,
     DUNGEON_WALL_V = 21,
+    WELL = 22,
+    BANNER = 23,
+    WITCH_BANNER = 24,
+    BOXES = 25,
+    SHOP = 26,
 };
 
 enum class ZoneType : uint8_t

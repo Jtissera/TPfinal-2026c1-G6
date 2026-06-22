@@ -60,4 +60,10 @@ private:
     QRadioButton *_rbDungeonFloor;
     QRadioButton *_rbDungeonWallH;
     QRadioButton *_rbDungeonWallV;
+
+    QRadioButton *_rbWell = nullptr;
+    QRadioButton *_rbBanner = nullptr;
+    QRadioButton *_rbWitchBanner = nullptr;
+    QRadioButton *_rbBoxes = nullptr;
+    QRadioButton *_rbShop = nullptr;
 };
