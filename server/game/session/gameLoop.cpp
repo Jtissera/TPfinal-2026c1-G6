@@ -79,6 +79,15 @@ void GameLoop::processMessage(const ClientMessage &incoming)
     handleLeaveGame(incoming.clientId);
     return;
   }
+
+  if (!world.hasPlayer(incoming.clientId))
+  {
+    std::cout << "[GameLoop] Mensaje descartado (cliente=" << incoming.clientId
+              << " en transición, no presente en este world, gameId="
+              << gameId << ")" << std::endl;
+    return;
+  }
+
   dispatcher.dispatch(incoming, world, monitor);
 }
 
