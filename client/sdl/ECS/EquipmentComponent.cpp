@@ -10,25 +10,30 @@
 EquipmentComponent::EquipmentComponent(AssetManager &assets, std::string race)
     : assets(assets), race(std::move(race)) {}
 
-void EquipmentComponent::setWeapon(std::optional<ItemView> item) {
+void EquipmentComponent::setWeapon(std::optional<ItemView> item)
+{
   weapon = std::move(item);
 }
 
-void EquipmentComponent::setArmor(std::optional<ItemView> item) {
+void EquipmentComponent::setArmor(std::optional<ItemView> item)
+{
   armor = std::move(item);
   applyArmorToSprite();
 }
 
-void EquipmentComponent::setHelmet(std::optional<ItemView> item) {
+void EquipmentComponent::setHelmet(std::optional<ItemView> item)
+{
   helmet = std::move(item);
   applyHelmetToSprite();
 }
 
-void EquipmentComponent::setShield(std::optional<ItemView> item) {
+void EquipmentComponent::setShield(std::optional<ItemView> item)
+{
   shield = std::move(item);
 }
 
-void EquipmentComponent::clear() {
+void EquipmentComponent::clear()
+{
   weapon.reset();
   armor.reset();
   helmet.reset();
@@ -39,32 +44,40 @@ void EquipmentComponent::clear() {
 }
 
 void EquipmentComponent::setFromDto(const EquipmentDto &dto,
-                                    const ItemCatalog &itemCatalog) {
+                                    const ItemCatalog &itemCatalog)
+{
   std::optional<ItemView> newWeapon;
   std::optional<ItemView> newArmor;
   std::optional<ItemView> newHelmet;
   std::optional<ItemView> newShield;
 
-  try {
-    if (dto.weaponCatalogId != 0) {
+  try
+  {
+    if (dto.weaponCatalogId != 0)
+    {
       newWeapon =
           itemCatalog.requireById(static_cast<int>(dto.weaponCatalogId));
     }
 
-    if (dto.armorCatalogId != 0) {
+    if (dto.armorCatalogId != 0)
+    {
       newArmor = itemCatalog.requireById(static_cast<int>(dto.armorCatalogId));
     }
 
-    if (dto.helmetCatalogId != 0) {
+    if (dto.helmetCatalogId != 0)
+    {
       newHelmet =
           itemCatalog.requireById(static_cast<int>(dto.helmetCatalogId));
     }
 
-    if (dto.shieldCatalogId != 0) {
+    if (dto.shieldCatalogId != 0)
+    {
       newShield =
           itemCatalog.requireById(static_cast<int>(dto.shieldCatalogId));
     }
-  } catch (const std::exception &e) {
+  }
+  catch (const std::exception &e)
+  {
     std::cerr << "[EQUIPMENT_COMPONENT] Error cargando equipo: " << e.what()
               << std::endl;
     return;
@@ -79,58 +92,71 @@ void EquipmentComponent::setFromDto(const EquipmentDto &dto,
   applyHelmetToSprite();
 }
 
-const std::optional<ItemView> &EquipmentComponent::getWeapon() const {
+const std::optional<ItemView> &EquipmentComponent::getWeapon() const
+{
   return weapon;
 }
 
-const std::optional<ItemView> &EquipmentComponent::getArmor() const {
+const std::optional<ItemView> &EquipmentComponent::getArmor() const
+{
   return armor;
 }
 
-const std::optional<ItemView> &EquipmentComponent::getHelmet() const {
+const std::optional<ItemView> &EquipmentComponent::getHelmet() const
+{
   return helmet;
 }
 
-const std::optional<ItemView> &EquipmentComponent::getShield() const {
+const std::optional<ItemView> &EquipmentComponent::getShield() const
+{
   return shield;
 }
 
-std::string EquipmentComponent::visualTextureForRace(const ItemView &item) const {
+std::string EquipmentComponent::visualTextureForRace(const ItemView &item) const
+{
 
-  if (isShortRace() && !item.visualTextureIdShort.empty()) {
+  if (isShortRace() && !item.visualTextureIdShort.empty())
+  {
     return item.visualTextureIdShort;
   }
 
-  if (!isShortRace() && !item.visualTextureIdTall.empty()) {
+  if (!isShortRace() && !item.visualTextureIdTall.empty())
+  {
     return item.visualTextureIdTall;
   }
 
   return item.visualTextureId;
 }
 
-SDL_Point EquipmentComponent::visualOffsetForRace(const ItemView &item) const {
-  if (isShortRace()) {
+SDL_Point EquipmentComponent::visualOffsetForRace(const ItemView &item) const
+{
+  if (isShortRace())
+  {
     return SDL_Point{item.visualShortOffsetX, item.visualShortOffsetY};
   }
 
   return SDL_Point{item.visualTallOffsetX, item.visualTallOffsetY};
 }
 
-void EquipmentComponent::applyArmorToSprite() {
-  if (entity == nullptr || !entity->hasComponent<SpriteComponent>()) {
+void EquipmentComponent::applyArmorToSprite()
+{
+  if (entity == nullptr || !entity->hasComponent<SpriteComponent>())
+  {
     return;
   }
 
   auto &sprite = entity->getComponent<SpriteComponent>();
 
-  if (armor.has_value()) {
+  if (armor.has_value())
+  {
     const ItemView &armorItem = armor.value();
 
     const std::string textureId = visualTextureForRace(armorItem);
 
     SDL_Texture *texture = assets.GetTexture(textureId);
 
-    if (texture == nullptr) {
+    if (texture == nullptr)
+    {
       std::cerr << "[EQUIP ARMOR] textura no cargada: " << textureId
                 << " race=" << race << std::endl;
       return;
@@ -142,18 +168,20 @@ void EquipmentComponent::applyArmorToSprite() {
 
   sprite.setSpriteTextureAndConfig(
       assets.bodyTextureForRace(race),
-      assets.bodyConfigForRace(race)
-  );
+      assets.bodyConfigForRace(race));
 }
 
-void EquipmentComponent::applyHelmetToSprite() {
-  if (entity == nullptr || !entity->hasComponent<SpriteComponent>()) {
+void EquipmentComponent::applyHelmetToSprite()
+{
+  if (entity == nullptr || !entity->hasComponent<SpriteComponent>())
+  {
     return;
   }
 
   auto &sprite = entity->getComponent<SpriteComponent>();
 
-  if (!helmet.has_value()) {
+  if (!helmet.has_value())
+  {
     sprite.clearHelmet();
     return;
   }
@@ -171,20 +199,24 @@ void EquipmentComponent::applyHelmetToSprite() {
                           helmetItem.visualUpSrcY);
 }
 
-void EquipmentComponent::drawEquipmentLayer(RenderContext &context, const ItemView &item) {
-  if (entity == nullptr || !entity->hasComponent<SpriteComponent>()) {
+void EquipmentComponent::drawEquipmentLayer(RenderContext &context, const ItemView &item)
+{
+  if (entity == nullptr || !entity->hasComponent<SpriteComponent>())
+  {
     return;
   }
 
   const std::string textureId = visualTextureForRace(item);
 
-  if (textureId.empty()) {
+  if (textureId.empty())
+  {
     return;
   }
 
   SDL_Texture *texture = assets.GetTexture(textureId);
 
-  if (texture == nullptr) {
+  if (texture == nullptr)
+  {
     std::cerr << "[EQUIPMENT_COMPONENT] Textura no encontrada: " << textureId
               << std::endl;
     return;
@@ -208,12 +240,13 @@ void EquipmentComponent::drawEquipmentLayer(RenderContext &context, const ItemVi
                    sprite.spriteFlip);
 }
 
-void EquipmentComponent::draw(RenderContext &context) {
+void EquipmentComponent::draw(RenderContext &context)
+{
   drawFront(context);
-
 }
 
-bool EquipmentComponent::isShortRace() const {
+bool EquipmentComponent::isShortRace() const
+{
   return race == "Dwarf" || race == "Gnome" || race == "Enano" ||
          race == "Gnomo" || race == "DWARF" || race == "GNOME";
 }
@@ -236,29 +269,32 @@ bool EquipmentComponent::isShortRace() const {
 //                                          : armorItem.visualTallOffsetY};
 // }
 
-SpriteSheetConfig EquipmentComponent::armorSpriteConfig() const {
+SpriteSheetConfig EquipmentComponent::armorSpriteConfig() const
+{
   const SpriteSheetConfig baseConfig = assets.bodyConfigForRace(race);
 
-  if (!armor.has_value()) {
+  if (!armor.has_value())
+  {
     return baseConfig;
   }
 
   const ItemView &armorItem = armor.value();
 
   return SpriteSheetConfig{
-    baseConfig.frameWidth,
-    baseConfig.frameHeight,
-    baseConfig.scale,
-    0,
-    0,
-    isShortRace() ? armorItem.visualShortOffsetX
-                  : armorItem.visualTallOffsetX,
-    isShortRace() ? armorItem.visualShortOffsetY
-                  : armorItem.visualTallOffsetY
-};
+      baseConfig.frameWidth,
+      baseConfig.frameHeight,
+      baseConfig.scale,
+      0,
+      0,
+      isShortRace() ? armorItem.visualShortOffsetX
+                    : armorItem.visualTallOffsetX,
+      isShortRace() ? armorItem.visualShortOffsetY
+                    : armorItem.visualTallOffsetY};
 }
-bool EquipmentComponent::shouldDrawWeaponBehind() const {
-  if (entity == nullptr || !entity->hasComponent<SpriteComponent>()) {
+bool EquipmentComponent::shouldDrawWeaponBehind() const
+{
+  if (entity == nullptr || !entity->hasComponent<SpriteComponent>())
+  {
     return false;
   }
 
@@ -267,8 +303,10 @@ bool EquipmentComponent::shouldDrawWeaponBehind() const {
   return sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 2;
 }
 
-bool EquipmentComponent::shouldDrawShieldBehind() const {
-  if (entity == nullptr || !entity->hasComponent<SpriteComponent>()) {
+bool EquipmentComponent::shouldDrawShieldBehind() const
+{
+  if (entity == nullptr || !entity->hasComponent<SpriteComponent>())
+  {
     return false;
   }
 
@@ -277,22 +315,28 @@ bool EquipmentComponent::shouldDrawShieldBehind() const {
   return sprite.getAnimationIndex() == 1 || sprite.getAnimationIndex() == 3;
 }
 
-void EquipmentComponent::drawBehind(RenderContext &context) {
-  if (shield.has_value() && shouldDrawShieldBehind()) {
+void EquipmentComponent::drawBehind(RenderContext &context)
+{
+  if (shield.has_value() && shouldDrawShieldBehind())
+  {
     drawEquipmentLayer(context, shield.value());
   }
 
-  if (weapon.has_value() && shouldDrawWeaponBehind()) {
+  if (weapon.has_value() && shouldDrawWeaponBehind())
+  {
     drawEquipmentLayer(context, weapon.value());
   }
 }
 
-void EquipmentComponent::drawFront(RenderContext &context) {
-  if (shield.has_value() && !shouldDrawShieldBehind()) {
+void EquipmentComponent::drawFront(RenderContext &context)
+{
+  if (shield.has_value() && !shouldDrawShieldBehind())
+  {
     drawEquipmentLayer(context, shield.value());
   }
 
-  if (weapon.has_value() && !shouldDrawWeaponBehind()) {
+  if (weapon.has_value() && !shouldDrawWeaponBehind())
+  {
     drawEquipmentLayer(context, weapon.value());
   }
 }
