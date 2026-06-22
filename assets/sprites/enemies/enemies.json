@@ -271,7 +271,7 @@
       "sheet_width": 161,
       "sheet_height": 513,
       "frame_width": 32,
-      "frame_height": 54,
+      "frame_height": 64,
       "scale": 2,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
@@ -283,8 +283,8 @@
       }
     },
     "cavern_goblin_attack": {
-      "frame_width": 32,
-      "frame_height": 63,
+      "frame_width": 43,
+      "frame_height": 68,
       "scale": 2,
       "animations": {
         "AttackDown":  { "row": 0, "frames": 3, "speed_ms": 150 },
