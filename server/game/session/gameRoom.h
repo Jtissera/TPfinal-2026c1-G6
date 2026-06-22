@@ -59,6 +59,7 @@ public:
   void removeMonitorOnly(uint32_t clientId);
 
 private:
+  GameFormulas formulas;
   uint32_t gameId;
   std::string gameName;
   uint8_t maxPlayers;
@@ -75,11 +76,11 @@ private:
   uint32_t originRoomId = 0;
   std::string mapPath;
 
-
-    void sendExistingPlayersTo(uint32_t newClientId);
-    void broadcastPlayerSpawn(uint32_t playerId);
-    void sendInventoryTo(uint32_t playerId);
-    PlayerDto buildPlayerDto(const Player& player) const;
-    void sendExistingNpcsTo(uint32_t clientId);
-    void sendExistingGroundItemsTo(uint32_t clientId);
+  void sendExistingPlayersTo(uint32_t newClientId);
+  void broadcastPlayerSpawn(uint32_t playerId);
+  void sendInventoryTo(uint32_t playerId);
+  PlayerDto buildPlayerDto(const Player &player) const;
+  void sendExistingNpcsTo(uint32_t clientId);
+  void sendExistingGroundItemsTo(uint32_t clientId);
+  void sendStatsTo(uint32_t playerId);
 };

@@ -147,24 +147,14 @@ uint8_t RemotePlayer::getLevel() const
 void RemotePlayer::setLevel(uint8_t newLevel)
 {
     dto.level = newLevel;
-}
 
-void RemotePlayer::setLevel(uint32_t newLevel)
-{
-    // Si no hay entidad asociada, no podemos actualizar nada.
-    if (entity == nullptr)
-    {
-        return;
-    }
-
-    // Si la entidad tiene NameplateComponent, actualizamos el nivel visual.
-    if (entity->hasComponent<NameplateComponent>())
+    if (entity != nullptr && entity->hasComponent<NameplateComponent>())
     {
         entity->getComponent<NameplateComponent>().setLevel(newLevel);
     }
 }
 
-void RemotePlayer::setClan(const std::string& newClan)
+void RemotePlayer::setClan(const std::string &newClan)
 {
     if (entity == nullptr)
     {

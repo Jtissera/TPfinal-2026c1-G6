@@ -15,7 +15,7 @@ GameRoom::GameRoom(
       leaveQueue(leaveQueue), world(mapPath, npcFactory, itemRepo, config, clanManager),
       gameLoop(gameQueue, monitor, world, leaveQueue, transitionQueue, gameId,
                config, archive, mapPath, clanManager, originRoomId),
-      archive(archive), clanManager(clanManager) {}
+      archive(archive), clanManager(clanManager), formulas(config) {}
 
 void GameRoom::addClient(uint32_t clientId,
                          Queue<std::shared_ptr<const Message>> &clientQueue)
@@ -100,11 +100,13 @@ void GameRoom::broadcastPlayerSpawn(uint32_t playerId)
   std::cout << "[GameRoom] broadcast spawn playerId=" << playerId << std::endl;
 }
 
-void GameRoom::syncPlayerJoin(uint32_t newPlayerId) {
+void GameRoom::syncPlayerJoin(uint32_t newPlayerId)
+{
   std::cout << "[GameRoom] syncPlayerJoin newPlayerId=" << newPlayerId
             << std::endl;
 
-  if (!world.hasPlayer(newPlayerId)) {
+  if (!world.hasPlayer(newPlayerId))
+  {
     std::cerr << "[GameRoom] syncPlayerJoin jugador inexistente id="
               << newPlayerId << std::endl;
     return;
@@ -115,6 +117,7 @@ void GameRoom::syncPlayerJoin(uint32_t newPlayerId) {
   sendExistingNpcsTo(newPlayerId);
   sendExistingGroundItemsTo(newPlayerId);
   broadcastPlayerSpawn(newPlayerId);
+  sendStatsTo(newPlayerId);
 }
 
 void GameRoom::sendInventoryTo(uint32_t playerId)
@@ -131,7 +134,8 @@ void GameRoom::sendInventoryTo(uint32_t playerId)
             << std::endl;
 }
 
-PlayerDto GameRoom::buildPlayerDto(const Player &player) const {
+PlayerDto GameRoom::buildPlayerDto(const Player &player) const
+{
   PlayerDto dto{};
 
   // Identidad del jugador.
@@ -167,7 +171,7 @@ PlayerDto GameRoom::buildPlayerDto(const Player &player) const {
 
   // Experiencia.
   dto.exp = static_cast<int>(player.getExp());
-  dto.expMax = 1000;
+  dto.expMax = formulas.calcExpLimit(player.getLevel());
 
   // Estado.
   dto.esFantasma = player.isGhost();
@@ -192,14 +196,15 @@ void GameRoom::sendExistingNpcsTo(uint32_t clientId)
                                  npcId, npc.getType(), npc.getName(),
                                  static_cast<uint16_t>(npc.getTileX() * 96),
                                  static_cast<uint16_t>(npc.getTileY() * 96),
-                                 npc.getHp(), npc.getMaxHp(),npc.getLevel(), npc.isHostile()));
+                                 npc.getHp(), npc.getMaxHp(), npc.getLevel(), npc.isHostile()));
 
     std::cout << "[GameRoom] enviado NPC id=" << npcId
               << " a clientId=" << clientId << std::endl;
   }
 }
 
-void GameRoom::sendExistingGroundItemsTo(uint32_t clientId) {
+void GameRoom::sendExistingGroundItemsTo(uint32_t clientId)
+{
   const GroundManager &ground = world.getGroundManager();
   const auto &items = ground.getAllItems();
   const auto &gold = ground.getAllGold();
@@ -208,23 +213,23 @@ void GameRoom::sendExistingGroundItemsTo(uint32_t clientId) {
             << " itemCount=" << items.size()
             << " goldCount=" << gold.size() << std::endl;
 
-  for (const auto &groundItem : items) {
+  for (const auto &groundItem : items)
+  {
     monitor.sendTo(clientId, std::make_shared<const ItemOnGroundMessage>(
                                  groundItem.item,
                                  groundItem.tileX,
                                  groundItem.tileY));
   }
 
-  for (const auto &groundGold : gold) {
+  for (const auto &groundGold : gold)
+  {
     monitor.sendTo(clientId, std::make_shared<const GoldOnGroundMessage>(
                                  groundGold.instanceId,
                                  groundGold.amount,
                                  groundGold.tileX,
                                  groundGold.tileY));
   }
-
 }
-
 
 const Player *GameRoom::findPlayer(uint32_t clientId) const
 {
@@ -241,4 +246,16 @@ void GameRoom::sendTo(uint32_t clientId, const std::shared_ptr<const Message> &m
 void GameRoom::removeMonitorOnly(uint32_t clientId)
 {
   monitor.removeQueue(clientId);
+}
+
+void GameRoom::sendStatsTo(uint32_t playerId)
+{
+  const Player &player = world.getPlayer(playerId);
+  monitor.sendTo(playerId, std::make_shared<const PlayerStatsMessage>(
+                               player.getLevel(),
+                               player.getHp(), player.getMaxHp(),
+                               player.getMana(), player.getMaxMana(),
+                               player.getExp(),
+                               formulas.calcExpLimit(player.getLevel()),
+                               player.getGold()));
 }

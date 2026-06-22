@@ -27,9 +27,11 @@
 #include "sdl/screens/PlaceholderLobbyScreen.h"
 #include "sdl/screens/Screen.h"
 
-static void flushSDLEvents() {
+static void flushSDLEvents()
+{
   SDL_Event e;
-  while (SDL_PollEvent(&e)) {
+  while (SDL_PollEvent(&e))
+  {
   }
 }
 
@@ -41,48 +43,58 @@ Client::Client(const char *hostname, const char *servname,
       config(ClientConfig::load()),
       serverWatcher(hostname, servname, serverShutdownDetected) {}
 
-Client::~Client() {
-  if (serverWatcher.is_alive()) {
+Client::~Client()
+{
+  if (serverWatcher.is_alive())
+  {
     serverWatcher.stop();
     serverWatcher.join();
   }
 }
 
-int Client::run() {
+int Client::run()
+{
   serverWatcher.start();
 
   std::string pendingError;
 
-  auto detenerWatcher = [this]() {
+  auto detenerWatcher = [this]()
+  {
     serverWatcher.stop();
     serverWatcher.join();
   };
 
-  while (true) {
+  while (true)
+  {
+    SDL_GetWindowSize(window, &windowW, &windowH);
     flushSDLEvents();
 
     // ---------------------- 1. Menu principal ----------------------
     ScreenResult menuResult;
     {
       MainMenuScreen menu(renderer, windowW, windowH, FONT_PATH);
-      if (!pendingError.empty()) {
+      if (!pendingError.empty())
+      {
         menu.setError(pendingError);
         pendingError.clear();
       }
       menuResult = menu.run();
     }
 
-    if (menuResult == ScreenResult::QUIT) {
+    if (menuResult == ScreenResult::QUIT)
+    {
       detenerWatcher();
       return 0;
     }
 
     // ---------------------- AR-80: Configuracion ----------------------
-    if (menuResult == ScreenResult::GO_CONFIG) {
+    if (menuResult == ScreenResult::GO_CONFIG)
+    {
       flushSDLEvents();
       ConfigScreen cfg(renderer, window, windowW, windowH, FONT_PATH, config);
       ScreenResult cfgResult = cfg.run();
-      if (cfgResult == ScreenResult::QUIT) {
+      if (cfgResult == ScreenResult::QUIT)
+      {
         detenerWatcher();
         return 0;
       }
@@ -104,7 +116,8 @@ int Client::run() {
       CreateCharScreen charScreen(renderer, windowW, windowH, FONT_PATH, mode);
       ScreenResult charResult = charScreen.run();
 
-      if (charResult == ScreenResult::QUIT) {
+      if (charResult == ScreenResult::QUIT)
+      {
         std::cout << "[Client] Cerrando aplicación..." << std::endl;
         detenerWatcher();
         return 0;
@@ -118,7 +131,8 @@ int Client::run() {
     }
 
     // ---------------------- 3. Conectar al servidor ----------------------
-    try {
+    try
+    {
       Socket socket(hostname.c_str(), servname.c_str());
       ClientProtocolFactory factory;
       Protocol protocol = factory.createProtocol(socket);
@@ -127,25 +141,31 @@ int Client::run() {
 
       auto connectResponse = protocol.receive();
       if (connectResponse->opCode() !=
-          static_cast<uint8_t>(ServerOpCode::MSG_CONNECT_OK)) {
+          static_cast<uint8_t>(ServerOpCode::MSG_CONNECT_OK))
+      {
         pendingError = "Error: el servidor rechazo la conexion.";
         continue;
       }
 
-      if (isCreate) {
+      if (isCreate)
+      {
         protocol.send(CreateCharMessage(username, raza, clase));
         auto createResponse = protocol.receive();
         if (createResponse->opCode() ==
-            static_cast<uint8_t>(ServerOpCode::MSG_ERROR)) {
+            static_cast<uint8_t>(ServerOpCode::MSG_ERROR))
+        {
           const auto &err = static_cast<const ErrorMessage &>(*createResponse);
           pendingError = err.getReason();
           continue;
         }
-      } else {
+      }
+      else
+      {
         protocol.send(LoginMessage(username));
         auto loginResponse = protocol.receive();
         if (loginResponse->opCode() ==
-            static_cast<uint8_t>(ServerOpCode::MSG_ERROR)) {
+            static_cast<uint8_t>(ServerOpCode::MSG_ERROR))
+        {
           const auto &err = static_cast<const ErrorMessage &>(*loginResponse);
           pendingError = err.getReason();
           continue;
@@ -159,23 +179,26 @@ int Client::run() {
                                      protocol, username);
         ScreenResult lobbyResult = lobby.run();
 
-        if (lobbyResult == ScreenResult::QUIT) {
+        if (lobbyResult == ScreenResult::QUIT)
+        {
           detenerWatcher();
           return 0;
         }
         if (lobbyResult == ScreenResult::GO_MAIN_MENU)
           continue;
 
-        if (lobbyResult == ScreenResult::GO_LOBBY) {
+        if (lobbyResult == ScreenResult::GO_LOBBY)
+        {
           PlayerDto playerDto = lobby.getJoinedPlayerDto();
           std::string mapPath = lobby.getChosenMapPath();
-          auto pending = lobby.takePendingMessage(); 
+          auto pending = lobby.takePendingMessage();
 
           GameClient gameClient(socket, playerDto.playerID, playerDto, window,
-                                renderer, mapPath, std::move(pending));
+                                renderer, mapPath, config, std::move(pending));
           gameClient.run();
 
-          if (gameClient.wasDisconnectedByServer() || serverShutdownDetected) {
+          if (gameClient.wasDisconnectedByServer() || serverShutdownDetected)
+          {
             std::cerr << "[Client] Servidor cerró conexión." << std::endl;
             detenerWatcher();
             return 0;
@@ -184,11 +207,15 @@ int Client::run() {
       }
 
       continue;
-    } catch (const ClosedSocket &) {
+    }
+    catch (const ClosedSocket &)
+    {
       std::cerr << "[Client] Conexión perdida, cerrando cliente." << std::endl;
       detenerWatcher();
       return 0;
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception &e)
+    {
       pendingError = std::string("Error fatal: ") + e.what();
       std::cerr << pendingError << std::endl;
       detenerWatcher();

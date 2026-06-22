@@ -28,7 +28,7 @@ ActionDispatcher::ActionDispatcher(const toml::table &config, ClanManager &clanM
     : combat(config),
       formulas(config),
       combatHandler(combat, effects, formulas),
-      chatHandler(clanManager),
+      chatHandler(clanManager, config),
       clanManager(clanManager)
 {
     handlers[static_cast<uint8_t>(ClientOpCode::MSG_MOVE)] = &ActionDispatcher::handleMove;
@@ -77,6 +77,9 @@ void ActionDispatcher::dispatch(const ClientMessage &msg, GameWorld &world,
 
 void ActionDispatcher::sendStats(uint32_t id, Player &p, Monitor &monitor)
 {
+
+    uint32_t limit = formulas.calcExpLimit(p.getLevel());
+
     monitor.sendTo(id, std::make_shared<const PlayerStatsMessage>(
                            p.getLevel(), p.getHp(), p.getMaxHp(), p.getMana(),
                            p.getMaxMana(), p.getExp(),
@@ -101,6 +104,12 @@ void ActionDispatcher::sendDeath(uint32_t id, Player &dead, Monitor &monitor)
 
 void ActionDispatcher::handleMove(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor)
 {
+
+    Player &p = world.getPlayer(id);
+    if (p.isMeditating())
+    {
+        return;
+    }
 
     const auto &moveMsg = static_cast<const MoveMessage &>(msg);
     const Direction direction = moveMsg.getDirection();
@@ -129,29 +138,33 @@ void ActionDispatcher::handleMove(uint32_t id, const Message &msg, GameWorld &wo
     }
 }
 
-void ActionDispatcher::handlePickItem(uint32_t id, const Message& msg,GameWorld& world, Monitor& monitor) {
-    Player& p = world.getPlayer(id);
+void ActionDispatcher::handlePickItem(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor)
+{
+    Player &p = world.getPlayer(id);
 
-    const auto& pickMsg = static_cast<const PickItemMessage&>(msg);
+    const auto &pickMsg = static_cast<const PickItemMessage &>(msg);
 
-    if (pickMsg.getIsGold()) {
+    if (pickMsg.getIsGold())
+    {
         auto gold = world.pickGoldById(pickMsg.getInstanceId());
-        if (gold) {
+        if (gold)
+        {
             p.addGold(*gold);
             sendStats(id, p, monitor);
-            monitor.broadcast(std::make_shared<const ItemPickedMessage>(id,pickMsg.getInstanceId()));
-
+            monitor.broadcast(std::make_shared<const ItemPickedMessage>(id, pickMsg.getInstanceId()));
         }
         return;
     }
 
-    if (!p.getInventory().canAddItem()) {
+    if (!p.getInventory().canAddItem())
+    {
         return;
     }
     auto item = world.pickItemById(pickMsg.getInstanceId());
-    if (item && p.getInventory().addItem(std::move(*item))) {
+    if (item && p.getInventory().addItem(std::move(*item)))
+    {
         sendInventory(id, p, monitor);
-        monitor.broadcast(std::make_shared<const ItemPickedMessage>(id,pickMsg.getInstanceId()));
+        monitor.broadcast(std::make_shared<const ItemPickedMessage>(id, pickMsg.getInstanceId()));
     }
 }
 
@@ -429,7 +442,8 @@ void ActionDispatcher::handleAttack(uint32_t id, const Message &msg, GameWorld &
     std::cout << "[SERVER ATTACK] target inexistente targetId=" << targetId << " attackerId=" << id << std::endl;
 }
 
-void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,GameWorld &world,Monitor &monitor){
+void ActionDispatcher::handleAttackPlayer(uint32_t attackerId, uint32_t targetId, GameWorld &world, Monitor &monitor)
+{
 
     if (attackerId == targetId)
     {
@@ -477,16 +491,16 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
         }
         else if (result.failReason == CombatSystem::Result::FailReason::NO_MANA)
         {
-            sendCombatChat(attackerId,"No tenés mana suficiente para realizar ese hechizo.",ChatMsgType::INFO, monitor);
+            sendCombatChat(attackerId, "No tenés mana suficiente para realizar ese hechizo.", ChatMsgType::INFO, monitor);
         }
         else if (result.failReason == CombatSystem::Result::FailReason::LEVEL_TOO_LOW)
         {
             std::cout << "[COMBAT] attackerId=" << attackerId
-          << " level=" << attacker.getLevel()
-          << " targetId=" << targetId  
-          << " level=" << target.getLevel()
-          << " failReason=" << static_cast<int>(result.failReason)
-          << std::endl;
+                      << " level=" << attacker.getLevel()
+                      << " targetId=" << targetId
+                      << " level=" << target.getLevel()
+                      << " failReason=" << static_cast<int>(result.failReason)
+                      << std::endl;
 
             sendCombatChat(attackerId,
                            "No podés atacar a jugadores de nivel bajo.",
@@ -495,12 +509,12 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
         else if (result.failReason == CombatSystem::Result::FailReason::LEVEL_DIFF_TOO_HIGH)
         {
             std::cout << "[COMBAT] attackerId=" << attackerId
-          << " level=" << attacker.getLevel()
-          << " targetId=" << targetId  
-          << " level=" << target.getLevel()
-          << " failReason=" << static_cast<int>(result.failReason)
-          << std::endl;
-          
+                      << " level=" << attacker.getLevel()
+                      << " targetId=" << targetId
+                      << " level=" << target.getLevel()
+                      << " failReason=" << static_cast<int>(result.failReason)
+                      << std::endl;
+
             sendCombatChat(attackerId,
                            "La diferencia de nivel es demasiado grande para atacar.",
                            ChatMsgType::INFO, monitor);
@@ -527,7 +541,7 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
 
     if (result.valid && !result.dodged)
     {
-        monitor.sendTo(attackerId,std::make_shared<const CombatLogMessage>(std::to_string(targetId)));
+        monitor.sendTo(attackerId, std::make_shared<const CombatLogMessage>(std::to_string(targetId)));
 
         broadcastPlayerAttackVisual(attackerId, targetId, attacker, monitor);
     }
@@ -545,10 +559,12 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
         return;
     }
 
-    if (result.killed || target.getHp() <= 0) {
+    if (result.killed || target.getHp() <= 0)
+    {
         GameWorld::DeathResult deathResult = world.handlePlayerDeath(targetId, attackerId);
 
-        if (deathResult.excessGold > 0) {
+        if (deathResult.excessGold > 0)
+        {
             monitor.broadcast(std::make_shared<const GoldOnGroundMessage>(
                 deathResult.goldInstanceId,
                 deathResult.excessGold,
@@ -556,13 +572,14 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
                 deathResult.tileY));
         }
         sendCombatChat(attackerId,
-               "¡Mataste a " + target.getName() + "!",
-               ChatMsgType::DAMAGE_DEALT, monitor);
+                       "¡Mataste a " + target.getName() + "!",
+                       ChatMsgType::DAMAGE_DEALT, monitor);
         sendCombatChat(targetId,
                        "¡Fuiste asesinado por " + attacker.getName() + "!",
                        ChatMsgType::DAMAGE_TAKEN, monitor);
 
-        for (const Item& item : deathResult.droppedItems) {
+        for (const Item &item : deathResult.droppedItems)
+        {
             monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(
                 item,
                 deathResult.tileX,
@@ -574,8 +591,8 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
         sendInventory(targetId, target, monitor);
         sendDeath(targetId, target, monitor);
         monitor.broadcast(std::make_shared<const PlayerHealthMessage>(targetId,
-            static_cast<uint16_t>(target.getHp()),
-            static_cast<uint16_t>(target.getMaxHp())));
+                                                                      static_cast<uint16_t>(target.getHp()),
+                                                                      static_cast<uint16_t>(target.getMaxHp())));
 
         return;
     }
@@ -594,9 +611,10 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId,uint32_t targetId,
     sendStats(attackerId, attacker, monitor);
     sendStats(targetId, target, monitor);
     sendLevelUpIfNeeded(attackerId, attacker, monitor);
-    monitor.broadcast(std::make_shared<const PlayerHealthMessage>(targetId,target.getHp(),target.getMaxHp()));
+    monitor.broadcast(std::make_shared<const PlayerHealthMessage>(targetId, target.getHp(), target.getMaxHp()));
 }
-void ActionDispatcher::handleAttackNpc(uint32_t attackerId,uint32_t npcId,GameWorld &world,Monitor &monitor){
+void ActionDispatcher::handleAttackNpc(uint32_t attackerId, uint32_t npcId, GameWorld &world, Monitor &monitor)
+{
     Player &attacker = world.getPlayer(attackerId);
 
     // Jugador muerto/fantasma no puede atacar.
@@ -644,8 +662,8 @@ void ActionDispatcher::handleAttackNpc(uint32_t attackerId,uint32_t npcId,GameWo
 
     if (!result.dodged)
     {
-        monitor.sendTo(attackerId,std::make_shared<const CombatLogMessage>(std::to_string(npcId)));
-        broadcastPlayerAttackVisual(attackerId,npcId,attacker,monitor);
+        monitor.sendTo(attackerId, std::make_shared<const CombatLogMessage>(std::to_string(npcId)));
+        broadcastPlayerAttackVisual(attackerId, npcId, attacker, monitor);
     }
 
     // Siempre informamos vida nueva del NPC después del ataque válido.
@@ -656,10 +674,12 @@ void ActionDispatcher::handleAttackNpc(uint32_t attackerId,uint32_t npcId,GameWo
             npc.getMaxHp()));
 
     // Si el NPC murió, procesamos muerte, oro directo y respawn.
-    if (result.killed) {
+    if (result.killed)
+    {
         NpcDropResult dropResult = world.handleNpcDeath(npcId, attackerId);
 
-        if (dropResult.hasGold) {
+        if (dropResult.hasGold)
+        {
             monitor.broadcast(std::make_shared<const GoldOnGroundMessage>(
                 dropResult.goldInstanceId,
                 dropResult.goldAmount,
@@ -667,16 +687,16 @@ void ActionDispatcher::handleAttackNpc(uint32_t attackerId,uint32_t npcId,GameWo
                 dropResult.tileY));
         }
 
-
-        if (dropResult.hasItem) {
+        if (dropResult.hasItem)
+        {
             monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(
                 dropResult.droppedItem,
                 dropResult.tileX,
                 dropResult.tileY));
         }
         sendCombatChat(attackerId,
-                "¡Mataste al " + npc.getName() + "!",
-                ChatMsgType::DAMAGE_DEALT, monitor);
+                       "¡Mataste al " + npc.getName() + "!",
+                       ChatMsgType::DAMAGE_DEALT, monitor);
         sendStats(attackerId, attacker, monitor);
         sendLevelUpIfNeeded(attackerId, attacker, monitor);
 
@@ -737,67 +757,73 @@ void ActionDispatcher::handleDropItem(uint32_t id, const Message &msg,
 void ActionDispatcher::handleCheat(uint32_t id, const Message &msg,
                                    GameWorld &world, Monitor &monitor)
 {
-  std::cout << "[CHEAT DEBUG] handleCheat invocado clientId=" << id << std::endl;
-  const auto &cheatMsg = static_cast<const CheatMessage &>(msg);
-  std::cout << "[CHEAT DEBUG] tipo=" << static_cast<int>(cheatMsg.getCheat()) << std::endl;
-  Player &p = world.getPlayer(id);
-  switch (cheatMsg.getCheat())
-  {
-  case CheatType::INFINITE_HP:
-    std::cout << "[CHEAT DEBUG] INFINITE_HP inicio" << std::endl;
-    p.toggleInfiniteHp();
-    std::cout << "[CHEAT DEBUG] INFINITE_HP toggle hecho" << std::endl;
-    sendStats(id, p, monitor);
-    std::cout << "[CHEAT DEBUG] INFINITE_HP sendStats OK" << std::endl;
-    break;
-  case CheatType::INFINITE_MANA:
-    std::cout << "[CHEAT DEBUG] INFINITE_MANA inicio" << std::endl;
-    p.toggleInfiniteMana();
-    sendStats(id, p, monitor);
-    std::cout << "[CHEAT DEBUG] INFINITE_MANA fin" << std::endl;
-    break;
-  case CheatType::DIE:
-      std::cout << "[CHEAT DEBUG] DIE inicio" << std::endl;
-      if (!p.isAlive() || p.isGhost()) {
-          std::cout << "[CHEAT DEBUG] DIE early return" << std::endl;
-          return;
-      }
-      {
-      GameWorld::DeathResult deathResult = world.handlePlayerDeath(id, 0);
-      std::cout << "[CHEAT DEBUG] DIE handlePlayerDeath OK excessGold=" << deathResult.excessGold << std::endl;
-      if (deathResult.excessGold > 0) {
-          monitor.broadcast(std::make_shared<const GoldOnGroundMessage>(
-              deathResult.goldInstanceId,
-              deathResult.excessGold,
-              deathResult.tileX,
-              deathResult.tileY));
-          std::cout << "[CHEAT DEBUG] DIE gold broadcast OK" << std::endl;
-      }
-      for (const Item& item : deathResult.droppedItems) {
-          monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(item,deathResult.tileX,deathResult.tileY));
-      }
-      std::cout << "[CHEAT DEBUG] DIE items broadcast OK" << std::endl;
-      }
-      sendDeath(id, p, monitor);
-      std::cout << "[CHEAT DEBUG] DIE sendDeath OK" << std::endl;
-      break;
-  case CheatType::ADD_GOLD:
-          std::cout << "[CHEAT DEBUG] ADD_GOLD inicio" << std::endl;
-          p.addGold(1000);
-          sendInventory(id,p,monitor);
-          std::cout << "[CHEAT DEBUG] ADD_GOLD sendInventory OK" << std::endl;
-          sendStats(id,p,monitor);
-          std::cout << "[CHEAT DEBUG] ADD_GOLD sendStats OK" << std::endl;
-      break;
-  case CheatType::LEVEL_UP:
-          std::cout << "[CHEAT DEBUG] LEVEL_UP inicio" << std::endl;
-          world.giveExperience(id,100000);
-          sendStats(id,p,monitor);
-          sendLevelUpIfNeeded(id,p,monitor);
-          std::cout << "[CHEAT DEBUG] LEVEL_UP fin" << std::endl;
-      break;
-  }
-  std::cout << "[CHEAT DEBUG] handleCheat fin" << std::endl;
+    std::cout << "[CHEAT DEBUG] handleCheat invocado clientId=" << id << std::endl;
+    const auto &cheatMsg = static_cast<const CheatMessage &>(msg);
+    std::cout << "[CHEAT DEBUG] tipo=" << static_cast<int>(cheatMsg.getCheat()) << std::endl;
+    Player &p = world.getPlayer(id);
+    switch (cheatMsg.getCheat())
+    {
+    case CheatType::INFINITE_HP:
+        std::cout << "[CHEAT DEBUG] INFINITE_HP inicio" << std::endl;
+        p.toggleInfiniteHp();
+        std::cout << "[CHEAT DEBUG] INFINITE_HP toggle hecho" << std::endl;
+        sendStats(id, p, monitor);
+        std::cout << "[CHEAT DEBUG] INFINITE_HP sendStats OK" << std::endl;
+        break;
+    case CheatType::INFINITE_MANA:
+        std::cout << "[CHEAT DEBUG] INFINITE_MANA inicio" << std::endl;
+        p.toggleInfiniteMana();
+        sendStats(id, p, monitor);
+        std::cout << "[CHEAT DEBUG] INFINITE_MANA fin" << std::endl;
+        break;
+    case CheatType::DIE:
+        std::cout << "[CHEAT DEBUG] DIE inicio" << std::endl;
+        if (!p.isAlive() || p.isGhost())
+        {
+            std::cout << "[CHEAT DEBUG] DIE early return" << std::endl;
+            return;
+        }
+        {
+            GameWorld::DeathResult deathResult = world.handlePlayerDeath(id, 0);
+            std::cout << "[CHEAT DEBUG] DIE handlePlayerDeath OK excessGold=" << deathResult.excessGold << std::endl;
+            if (deathResult.excessGold > 0)
+            {
+                monitor.broadcast(std::make_shared<const GoldOnGroundMessage>(
+                    deathResult.goldInstanceId,
+                    deathResult.excessGold,
+                    deathResult.tileX,
+                    deathResult.tileY));
+                std::cout << "[CHEAT DEBUG] DIE gold broadcast OK" << std::endl;
+            }
+            for (const Item &item : deathResult.droppedItems)
+            {
+                monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(item, deathResult.tileX, deathResult.tileY));
+            }
+            std::cout << "[CHEAT DEBUG] DIE items broadcast OK" << std::endl;
+        }
+        sendDeath(id, p, monitor);
+        std::cout << "[CHEAT DEBUG] DIE sendDeath OK" << std::endl;
+        break;
+    case CheatType::ADD_GOLD:
+        std::cout << "[CHEAT DEBUG] ADD_GOLD inicio" << std::endl;
+        p.addGold(1000);
+        sendInventory(id, p, monitor);
+        std::cout << "[CHEAT DEBUG] ADD_GOLD sendInventory OK" << std::endl;
+        sendStats(id, p, monitor);
+        std::cout << "[CHEAT DEBUG] ADD_GOLD sendStats OK" << std::endl;
+        break;
+    case CheatType::LEVEL_UP:
+    {
+        uint32_t currentExp = p.getExp();
+        uint32_t limit = formulas.calcExpLimit(p.getLevel());
+        uint32_t toNextLevel = (limit > currentExp) ? (limit - currentExp) : 1;
+        world.giveExperience(id, toNextLevel);
+        sendStats(id, p, monitor);
+        sendLevelUpIfNeeded(id, p, monitor);
+        break;
+    }
+    }
+    std::cout << "[CHEAT DEBUG] handleCheat fin" << std::endl;
 }
 
 void ActionDispatcher::handleInteractNpc(uint32_t id, const Message &msg,
@@ -846,8 +872,11 @@ void ActionDispatcher::handleInteractNpc(uint32_t id, const Message &msg,
 
     auto result = world.handleCityInteraction(id, *npcType, *cmd);
     monitor.sendTo(id, std::make_shared<const NpcResponseMessage>(result.message));
+    sendStats(id, player, monitor);
     if (result.ok)
-        sendStats(id, player, monitor);
+    {
+        sendInventory(id, player, monitor);
+    }
 }
 
 void ActionDispatcher::handleChat(uint32_t id,
@@ -878,10 +907,10 @@ void ActionDispatcher::handleClanSync(uint32_t id, const Message &msg,
 }
 
 PlayerAttackVisualType ActionDispatcher::resolveAttackVisualType(
-    const Player& attacker) const
+    const Player &attacker) const
 {
     // Buscamos el arma equipada en la mano.
-    const Item* weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
+    const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
 
     // Sin arma: ataque físico básico.
     if (weapon == nullptr)
@@ -907,8 +936,8 @@ PlayerAttackVisualType ActionDispatcher::resolveAttackVisualType(
 
 void ActionDispatcher::broadcastPlayerAttackVisual(uint32_t attackerId,
                                                    uint32_t targetId,
-                                                   const Player& attacker,
-                                                   Monitor& monitor)
+                                                   const Player &attacker,
+                                                   Monitor &monitor)
 {
     const PlayerAttackVisualType visualType =
         resolveAttackVisualType(attacker);

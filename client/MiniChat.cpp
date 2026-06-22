@@ -12,9 +12,9 @@ SDL_Color MiniChat::colorFor(ChatMsgType type)
     case ChatMsgType::PRIVATE:
         return {255, 220, 60, 255};
     case ChatMsgType::DAMAGE_DEALT:
-        return {220, 60, 60, 255};
-    case ChatMsgType::DAMAGE_TAKEN:
         return {80, 200, 80, 255};
+    case ChatMsgType::DAMAGE_TAKEN:
+        return {220, 60, 60, 255};
     case ChatMsgType::INFO:
         return {100, 200, 255, 255};
     case ChatMsgType::CLAN:
@@ -26,7 +26,7 @@ SDL_Color MiniChat::colorFor(ChatMsgType type)
 void MiniChat::appendLine(const std::string &text, ChatMsgType type)
 {
 
-        std::cout << "[MINICHAT] appendLine type=" << static_cast<int>(type)
+    std::cout << "[MINICHAT] appendLine type=" << static_cast<int>(type)
               << " text='" << text << "'" << std::endl;
     lines.push_back({text, type});
 

@@ -2,7 +2,7 @@
 
 GameClient::GameClient(Socket &socket, uint32_t idPlayer,
                        const PlayerDto &playerDto, SDL_Window *window,
-                       SDL_Renderer *renderer, const std::string &mapPath,
+                       SDL_Renderer *renderer, const std::string &mapPath, const ClientConfig &config,
                        std::shared_ptr<const Message> pendingMessage)
     : pendingMessage(std::move(pendingMessage)),
       socket(socket), idPlayer(idPlayer), playerDto(playerDto), window(window),
@@ -11,8 +11,9 @@ GameClient::GameClient(Socket &socket, uint32_t idPlayer,
       receiverProtocol(factory.createProtocol(socket)),
       sender(senderProtocol, sendQueue),
       receiver(receiverProtocol, receiveQueue), gameLoop(),
-      mapPath(mapPath)
-{}
+      mapPath(mapPath), config(config)
+{
+}
 
 void GameClient::run()
 {
@@ -27,11 +28,10 @@ void GameClient::run()
 
   constexpr int GAME_W = 1280;
   constexpr int GAME_H = 720;
-  const bool useFullscreen = false; // luego viene de config
 
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
-  if (useFullscreen)
+  if (config.fullscreen)
   {
     SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
   }
@@ -39,9 +39,14 @@ void GameClient::run()
   {
     SDL_SetWindowFullscreen(window, 0);
     SDL_SetWindowSize(window, GAME_W, GAME_H);
-    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED,
-                          SDL_WINDOWPOS_CENTERED);
+    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   }
+
+  SDL_RenderSetLogicalSize(renderer, GAME_W, GAME_H);
+
+  // Aplicar volúmenes del config al audio
+  gameLoop.getAudioManager().setMusicVolume(config.musicVolume);
+  gameLoop.getAudioManager().setSfxVolume(config.sfxVolume);
 
   SDL_RenderSetLogicalSize(renderer, GAME_W, GAME_H);
 
@@ -55,9 +60,10 @@ void GameClient::run()
 
   gameLoop.init(window, renderer, sendQueue, receiveQueue, playerDto, mapPath);
 
-  if (pendingMessage) {
+  if (pendingMessage)
+  {
     receiveQueue.try_push(std::move(pendingMessage));
-}
+  }
 
   while (gameLoop.running())
   {
