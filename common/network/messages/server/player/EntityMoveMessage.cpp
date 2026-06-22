@@ -19,8 +19,8 @@ void EntityMoveMessage::serializeBody(PacketWriter& writer) const {
     writer.writeUint32(entityId);
 
     // Posición final validada por servidor.
-    writer.writeUint16(static_cast<uint16_t>(x));
-    writer.writeUint16(static_cast<uint16_t>(y));
+    writer.writeUint16(x);
+    writer.writeUint16(y);
 
     // Dirección aceptada por servidor.
     writer.writeUint8(static_cast<uint8_t>(direction));
