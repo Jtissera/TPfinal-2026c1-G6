@@ -192,8 +192,8 @@
       "desert_goblin": {
       "sheet_width": 161,
       "sheet_height": 498,
-      "frame_width": 34,
-      "frame_height": 66,
+      "frame_width": 33,
+      "frame_height": 63,
       "scale": 2,
       "nameplate_offset_y": 30,
       "animations": {
@@ -204,18 +204,6 @@
         "WalkUp":    { "row": 5, "frames": 5, "speed_ms": 100 },
         "WalkRight": { "row": 7, "frames": 5, "speed_ms": 100 }
       }
-    },
-    "desert_goblin_attack": {
-      "frame_width": 32,
-      "frame_height": 65,
-      "scale": 2,
-      "animations": {
-        "AttackDown":  { "row": 0, "frames": 3, "speed_ms": 150 },
-        "AttackUp":    { "row": 1, "frames": 3, "speed_ms": 150 },
-        "AttackLeft":  { "row": 2, "frames": 3, "speed_ms": 150 },
-        "AttackRight": { "row": 3, "frames": 3, "speed_ms": 150 }
-      },
-      "note": "scale asumido igual al body (1), no confirmado contra el sheet original."
     },
       "dungeon_goblin": {
       "sheet_width": 167,

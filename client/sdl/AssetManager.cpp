@@ -115,8 +115,6 @@ static AttackConfig attackConfigForNPC(NpcType type)
         return {"cavern_goblin_attack", 32, 64, 4, 3};
     case NpcType::GOBLIN_DUNGEON:
         return {"dungeon_goblin_attack", 32, 64, 4, 3};
-    case NpcType::GOBLIN_DESERT:
-        return {"desert_goblin_attack", 32, 64, 4, 3};
     default:
         return {"", 0, 0, 0, 0}; // sin ataque
     }
