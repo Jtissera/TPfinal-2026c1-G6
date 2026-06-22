@@ -1463,8 +1463,10 @@ void Game::refreshPlayerBodySprite()
     return;
   }
 
-  sprite.setSpriteTextureAndConfig("body_sheet",
-                                   assets->bodyConfigForRace(playerState.race));
+  sprite.setSpriteTextureAndConfig(
+      assets->bodyTextureForRace(playerState.race),
+      assets->bodyConfigForRace(playerState.race)
+  );
 }
 
 // helpér
