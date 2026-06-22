@@ -8,11 +8,10 @@
 #include "../map/tile.h"
 #include "common/npcType.h"
 
-// Modos de edicion del canvas
 enum class EditMode
 {
-    TILES, // Pintar tipos de tile y zonas
-    NPCS,  // Poner/sacar npcs
+    TILES,
+    NPCS,
 };
 
 class MapCanvas : public QWidget

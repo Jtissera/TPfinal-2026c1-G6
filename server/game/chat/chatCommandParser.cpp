@@ -1,11 +1,12 @@
 #include "chatCommandParser.h"
-#include <algorithm>
-#include <sstream>
 
 std::string ChatCommandParser::trim(const std::string &s)
 {
     auto notSpace = [](unsigned char c)
-    { return !std::isspace(c); };
+    {
+        return !std::isspace(c);
+    };
+
     auto start = std::find_if(s.begin(), s.end(), notSpace);
     auto end = std::find_if(s.rbegin(), s.rend(), notSpace).base();
     return (start < end) ? std::string(start, end) : std::string{};

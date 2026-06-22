@@ -56,7 +56,6 @@ void MainWindow::setupCentralWidget()
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    // Panel lateral con tabs: Tiles | NPCs
     _tabs = new QTabWidget(central);
     _tabs->setFixedWidth(170);
 
@@ -84,7 +83,6 @@ void MainWindow::setupCentralWidget()
     connect(_canvas, &MapCanvas::tileChanged, this,
             [this](uint16_t x, uint16_t y)
             {
-                // Marcar cambios pendientes
                 if (!_unsavedChanges)
                 {
                     _unsavedChanges = true;
@@ -106,7 +104,6 @@ void MainWindow::setupCentralWidget()
                     return;
                 Tile &t = _map->at(x, y);
 
-                // Si es una entrada, pedir el mapa destino
                 if (t.type == TileType::DUNGEON_ENTRANCE ||
                     t.type == TileType::CAVERN_ENTRANCE)
                 {
@@ -126,7 +123,6 @@ void MainWindow::setupCentralWidget()
                     }
                 }
 
-                // Status bar
                 const Tile &tc = _map->at(x, y);
                 QString npcStr = (tc.npc != NpcType::NONE)
                                      ? QString(" | NPC: %1").arg(QString::fromStdString(npcTypeName(tc.npc)))

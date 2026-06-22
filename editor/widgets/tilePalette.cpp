@@ -1,7 +1,6 @@
 #include "tilePalette.h"
 #include <QButtonGroup>
-
-#include <QScrollArea> // <-- Asegúrate de agregar este include
+#include <QScrollArea>
 
 TilePalette::TilePalette(QWidget *parent) : QWidget(parent)
 {

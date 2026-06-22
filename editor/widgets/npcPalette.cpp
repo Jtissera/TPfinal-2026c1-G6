@@ -8,7 +8,6 @@ NpcPalette::NpcPalette(QWidget *parent) : QWidget(parent)
 
     _group = new QButtonGroup(this);
 
-    // Sin NPC
     auto *noneGroup = new QGroupBox("Sin NPC", this);
     auto *noneLayout = new QVBoxLayout(noneGroup);
     _rbNone = new QRadioButton("Ninguno", noneGroup);
@@ -17,7 +16,6 @@ NpcPalette::NpcPalette(QWidget *parent) : QWidget(parent)
     noneLayout->addWidget(_rbNone);
     mainLayout->addWidget(noneGroup);
 
-    // NPCs de ciudad
     auto *cityGroup = new QGroupBox("Ciudad (zona segura)", this);
     auto *cityLayout = new QVBoxLayout(cityGroup);
     _rbPriest = new QRadioButton("Sacerdote", cityGroup);
@@ -31,7 +29,6 @@ NpcPalette::NpcPalette(QWidget *parent) : QWidget(parent)
     cityLayout->addWidget(_rbBanker);
     mainLayout->addWidget(cityGroup);
 
-    // Criaturas
     auto *mobGroup = new QGroupBox("Criaturas (combate)", this);
     auto *mobLayout = new QVBoxLayout(mobGroup);
     _rbGoblin = new QRadioButton("Goblin", mobGroup);

@@ -13,15 +13,16 @@
 #include "widgets/tilePalette.h"
 #include "widgets/npcPalette.h"
 
-class MainWindow : public QMainWindow {
+class MainWindow : public QMainWindow
+{
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override = default;
 
 protected:
-    void closeEvent(QCloseEvent* event) override;
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void onNewMap();
@@ -39,20 +40,17 @@ private:
     void updateTitle();
     bool confirmUnsavedChanges();
 
-    // Widgets
-    MapCanvas*    _canvas      = nullptr;
-    TilePalette*  _tilePalette = nullptr;
-    NpcPalette*   _npcPalette  = nullptr;
-    QTabWidget*   _tabs        = nullptr;
-    QLabel*       _coordLabel  = nullptr;
-    QScrollArea*  _scrollArea  = nullptr;
+    MapCanvas *_canvas = nullptr;
+    TilePalette *_tilePalette = nullptr;
+    NpcPalette *_npcPalette = nullptr;
+    QTabWidget *_tabs = nullptr;
+    QLabel *_coordLabel = nullptr;
+    QScrollArea *_scrollArea = nullptr;
 
-    // Estado
     std::unique_ptr<MapData> _map;
-    QString   _currentFilePath;
-    bool      _unsavedChanges = false;
+    QString _currentFilePath;
+    bool _unsavedChanges = false;
 
-    // Actions
-    QAction* _actSave   = nullptr;
-    QAction* _actSaveAs = nullptr;
+    QAction *_actSave = nullptr;
+    QAction *_actSaveAs = nullptr;
 };
