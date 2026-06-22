@@ -623,6 +623,15 @@ void ChatHandler::handlePickItem(uint32_t senderId,
 
     Player &p = world.getPlayer(senderId);
 
+
+    if (p.isGhost())
+    {
+        sendChat(senderId, "Los muertos no pueden tomar objetos.",
+                 ChatMsgType::INFO, monitor);
+        return;
+    }
+
+
     // Primero recorremos los items del piso.
     // un item que esté en el mismo tile del jugador.
     for (const GroundItem &groundItem : world.getGroundManager().getAllItems())
