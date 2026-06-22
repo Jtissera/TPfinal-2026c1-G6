@@ -390,6 +390,7 @@ void ChatHandler::handleCommand(uint32_t senderId,
         case ClanManager::Result::OK:
             sendChat(senderId, successMsgToSender, ChatMsgType::CLAN, monitor);
             clanManager.syncPlayerClanState(arg);
+            clanManager.syncPlayerClanState(p.getName());
             clanManager.notifyPlayer(arg, successMsgToTarget);
             return;
         default:
@@ -592,9 +593,7 @@ void ChatHandler::handleCommand(uint32_t senderId,
              ChatMsgType::INFO, monitor);
 }
 
-void ChatHandler::handleMeditate(uint32_t senderId,
-                                 GameWorld &world,
-                                 Monitor &monitor)
+void ChatHandler::handleMeditate(uint32_t senderId,GameWorld &world,Monitor &monitor)
 {
     Player &p = world.getPlayer(senderId);
     if (!p.getCls().canUseMagic)
@@ -616,9 +615,7 @@ void ChatHandler::handleMeditate(uint32_t senderId,
     sendStats(senderId, p, monitor);
 }
 
-void ChatHandler::handlePickItem(uint32_t senderId,
-                                 GameWorld &world,
-                                 Monitor &monitor)
+void ChatHandler::handlePickItem(uint32_t senderId,GameWorld &world,Monitor &monitor)
 {
 
     Player &p = world.getPlayer(senderId);
@@ -723,10 +720,7 @@ void ChatHandler::handlePickItem(uint32_t senderId,
              monitor);
 }
 
-void ChatHandler::handleDropItem(uint32_t senderId,
-                                 const std::string &itemName,
-                                 GameWorld &world,
-                                 Monitor &monitor)
+void ChatHandler::handleDropItem(uint32_t senderId,const std::string &itemName,GameWorld &world,Monitor &monitor)
 {
     Player &p = world.getPlayer(senderId);
     auto removed = p.getInventory().removeItemByName(itemName);
