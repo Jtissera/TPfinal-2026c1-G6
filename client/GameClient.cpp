@@ -78,6 +78,17 @@ void GameClient::run()
   const bool disconnectedByServer = receiver.wasClosedByError();
   gameLoop.clean();
 
+    if (!disconnectedByServer)
+  {
+    sendQueue.try_push(std::make_shared<const LeaveGameMessage>());
+
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(200);
+    while (!sendQueue.empty() && std::chrono::steady_clock::now() < deadline)
+    {
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+  }
+
   socket.shutdown(SHUT_RDWR);
 
   sendQueue.close();
@@ -99,3 +110,5 @@ void GameClient::run()
 
   SDL_RenderSetLogicalSize(renderer, 0, 0);
 }
+
+

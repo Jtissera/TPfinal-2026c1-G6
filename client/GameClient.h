@@ -12,6 +12,8 @@
 #include "common/network/messages/message.h"
 #include "common/queue.h"
 #include "network/clientProtocolFactory.h"
+#include "common/network/messages/client/lobby/leaveGameMessage.h"
+
 class GameClient
 {
 

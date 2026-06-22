@@ -102,6 +102,7 @@ void ActionDispatcher::sendDeath(uint32_t id, Player &dead, Monitor &monitor)
 void ActionDispatcher::handleMove(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor)
 {
 
+    std::cout << "[DEBUG] ActionDispatcher::handleMove - ID original: " << id << std::endl;
     const auto &moveMsg = static_cast<const MoveMessage &>(msg);
     const Direction direction = moveMsg.getDirection();
     const bool moving = moveMsg.isMoving();
@@ -109,7 +110,7 @@ void ActionDispatcher::handleMove(uint32_t id, const Message &msg, GameWorld &wo
     if (!moving)
     {
         monitor.broadcast(std::make_shared<const EntityMoveMessage>(
-            static_cast<uint8_t>(id),
+            static_cast<uint32_t>(id),
             world.getPixelX(id),
             world.getPixelY(id),
             direction,
@@ -121,7 +122,7 @@ void ActionDispatcher::handleMove(uint32_t id, const Message &msg, GameWorld &wo
     if (world.movePlayer(id, direction))
     {
         monitor.broadcast(std::make_shared<const EntityMoveMessage>(
-            static_cast<uint8_t>(id),
+            static_cast<uint32_t>(id),
             world.getPixelX(id),
             world.getPixelY(id),
             direction,
@@ -216,7 +217,7 @@ void ActionDispatcher::handleResurrect(uint32_t id, const Message &msg, GameWorl
     // Antes era sendTo(id), pero los remotos también tienen que moverlo.
     monitor.broadcast(
         std::make_shared<const EntityMoveMessage>(
-            static_cast<uint8_t>(id),
+            static_cast<uint32_t>(id),
             world.getPixelX(id),
             world.getPixelY(id),
             Direction::DOWN,

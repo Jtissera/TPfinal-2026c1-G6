@@ -74,6 +74,8 @@ void GameLoop::processMessage(const ClientMessage &incoming)
   if (incoming.message->opCode() ==
       static_cast<uint8_t>(ClientOpCode::MSG_LEAVE_GAME))
   {
+        std::cout << "ENTRANDO A LEAVE GAME POR MSJ"
+              << std::endl;
     handleLeaveGame(incoming.clientId);
     return;
   }

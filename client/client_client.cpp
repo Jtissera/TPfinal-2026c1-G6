@@ -173,7 +173,22 @@ int Client::run() {
 
           GameClient gameClient(socket, playerDto.playerID, playerDto, window,
                                 renderer, mapPath, std::move(pending));
-          gameClient.run();
+          
+          serverWatcher.pause();
+
+          try {
+            gameClient.run();
+          } catch (const std::exception &e) {
+            std::cerr << "[Client] Excepción fatal durante la partida: " << e.what() << std::endl;
+            detenerWatcher();
+            return 1;
+          } catch (...) {
+            std::cerr << "[Client] Excepción desconocida durante la partida." << std::endl;
+            detenerWatcher();
+            return 1;
+          }
+
+          serverWatcher.resume();
 
           if (gameClient.wasDisconnectedByServer() || serverShutdownDetected) {
             std::cerr << "[Client] Servidor cerró conexión." << std::endl;

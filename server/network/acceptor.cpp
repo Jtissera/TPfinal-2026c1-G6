@@ -22,6 +22,8 @@ void Acceptor::run() {
       Socket peer = acceptorSocket.accept();
 
       uint32_t clientId = nextClientId++;
+
+      std::cout << "[Acceptor] Nueva conexión aceptada. ID asignado: " << clientId << std::endl;
       auto handler = std::make_unique<ClientHandler>(std::move(peer), clientId,
                                                      factory, lobbyQueue);
 

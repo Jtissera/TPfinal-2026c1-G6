@@ -29,7 +29,7 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
         static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE),
         [](PacketReader &reader) -> std::unique_ptr<Message>
         {
-            auto id = reader.readUint8();
+            auto id = reader.readUint32();
             auto x = static_cast<int16_t>(reader.readUint16());
             auto y = static_cast<int16_t>(reader.readUint16());
 
