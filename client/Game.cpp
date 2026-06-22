@@ -13,7 +13,6 @@
 #include "common/network/messages/server/inventory/itemOnGroundMessage.h"
 #include "common/network/messages/server/player/playerAttackVisualMessage.h"
 
-
 Game::Game() {}
 
 void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
@@ -71,40 +70,56 @@ void Game::init(SDL_Window *existingWindow, SDL_Renderer *existingRenderer,
   // Audio — cargar musica y efectos de sonido.
   // Si SDL_mixer no está disponible o falta algún archivo, el juego sigue sin audio.
   audioManager.loadMusic("assets/audio/music_game.mp3");
-  audioManager.loadEffect("attack",    "assets/audio/sfx_attack.ogg");
-  audioManager.loadEffect("hit",       "assets/audio/sfx_hit.ogg");
-  audioManager.loadEffect("die",       "assets/audio/sfx_die.ogg");
-  audioManager.loadEffect("levelup",   "assets/audio/sfx_levelup.ogg");
-  audioManager.loadEffect("equip",     "assets/audio/sfx_equip.ogg");
-  audioManager.loadEffect("potion",    "assets/audio/sfx_potion.ogg");
+  audioManager.loadEffect("attack", "assets/audio/sfx_attack.ogg");
+  audioManager.loadEffect("hit", "assets/audio/sfx_hit.ogg");
+  audioManager.loadEffect("die", "assets/audio/sfx_die.ogg");
+  audioManager.loadEffect("levelup", "assets/audio/sfx_levelup.ogg");
+  audioManager.loadEffect("equip", "assets/audio/sfx_equip.ogg");
+  audioManager.loadEffect("potion", "assets/audio/sfx_potion.ogg");
   audioManager.loadEffect("resurrect", "assets/audio/sfx_resurrect.ogg");
-  audioManager.loadEffect("magic",        "assets/audio/sfx_attack_magic.ogg");
-  audioManager.loadEffect("meditate",     "assets/audio/sfx_meditate.ogg");
+  audioManager.loadEffect("magic", "assets/audio/sfx_attack_magic.ogg");
+  audioManager.loadEffect("meditate", "assets/audio/sfx_meditate.ogg");
   audioManager.loadEffect("npc_interact", "assets/audio/sfx_npc_interact.ogg");
   audioManager.playMusic();
 }
 
 static Uint32 moveDurationForNpcType(NpcType type)
 {
-    switch (type)
-    {
-    case NpcType::GOBLIN:           return 500;
-    case NpcType::SKELETON:         return 600;
-    case NpcType::ZOMBIE:           return 800;
-    case NpcType::GOBLIN_CAVE:      return 450;
-    case NpcType::SKELETON_CAVE:    return 550;
-    case NpcType::SPIDER_CAVE:      return 300;
-    case NpcType::GOLEM_CAVE:       return 900;
-    case NpcType::GOBLIN_DUNGEON:   return 400;
-    case NpcType::SKELETON_DUNGEON: return 500;
-    case NpcType::SPIDER_DUNGEON:   return 250;
-    case NpcType::GOLEM_DUNGEON:    return 1200;
-    case NpcType::GOBLIN_DESERT:    return 400;
-    case NpcType::SKELETON_DESERT:  return 550;
-    case NpcType::SPIDER_DESERT:    return 280;
-    case NpcType::GOLEM_DESERT:     return 950;
-    default:                        return 500;
-    }
+  switch (type)
+  {
+  case NpcType::GOBLIN:
+    return 500;
+  case NpcType::SKELETON:
+    return 600;
+  case NpcType::ZOMBIE:
+    return 800;
+  case NpcType::GOBLIN_CAVE:
+    return 450;
+  case NpcType::SKELETON_CAVE:
+    return 550;
+  case NpcType::SPIDER_CAVE:
+    return 300;
+  case NpcType::GOLEM_CAVE:
+    return 900;
+  case NpcType::GOBLIN_DUNGEON:
+    return 400;
+  case NpcType::SKELETON_DUNGEON:
+    return 500;
+  case NpcType::SPIDER_DUNGEON:
+    return 250;
+  case NpcType::GOLEM_DUNGEON:
+    return 1200;
+  case NpcType::GOBLIN_DESERT:
+    return 400;
+  case NpcType::SKELETON_DESERT:
+    return 550;
+  case NpcType::SPIDER_DESERT:
+    return 280;
+  case NpcType::GOLEM_DESERT:
+    return 950;
+  default:
+    return 500;
+  }
 }
 
 void Game::handleEvents()
@@ -126,6 +141,10 @@ void Game::handleEvents()
     if (event.type == SDL_KEYDOWN && event.key.repeat == 0)
     {
       handleCheatKeys();
+      if (event.key.keysym.sym == SDLK_ESCAPE && !miniChat.isFocused())
+      {
+        isRunning = false;
+      }
     }
 
     if (event.type == SDL_MOUSEBUTTONDOWN &&
@@ -164,22 +183,22 @@ void Game::handleEvents()
 
       for (auto &[instanceId, entity] : groundItems)
       {
-        if (entity == nullptr) continue;
+        if (entity == nullptr)
+          continue;
         pickupTargets.push_back(GroundPickupTarget{instanceId, false, entity});
       }
 
       for (auto &[instanceId, entity] : groundGold)
       {
-        if (entity == nullptr) continue;
+        if (entity == nullptr)
+          continue;
         pickupTargets.push_back(GroundPickupTarget{instanceId, true, entity});
       }
-
 
       if (pickUpSystem.handleMouseClick(mouseX, mouseY, pickupTargets, sendQueue))
       {
         return;
       }
-
 
       bool clickedNpc = false;
 
@@ -230,7 +249,8 @@ void Game::handleEvents()
         return;
       }
 
-      if (isLocalPlayerDead()) {
+      if (isLocalPlayerDead())
+      {
         return;
       }
 
@@ -316,35 +336,35 @@ void Game::update()
   manager.refresh();
 
   // --- Movimiento suave de enemigos a velocidad constante ---
-const Uint32 nowTicks = SDL_GetTicks();
-for (auto interpIt = enemyMoveInterp.begin(); interpIt != enemyMoveInterp.end(); )
-{
-  auto enemyIt = enemies.find(interpIt->first);
-  if (enemyIt == enemies.end() || enemyIt->second == nullptr)
+  const Uint32 nowTicks = SDL_GetTicks();
+  for (auto interpIt = enemyMoveInterp.begin(); interpIt != enemyMoveInterp.end();)
   {
-    interpIt = enemyMoveInterp.erase(interpIt);
-    continue;
-  }
+    auto enemyIt = enemies.find(interpIt->first);
+    if (enemyIt == enemies.end() || enemyIt->second == nullptr)
+    {
+      interpIt = enemyMoveInterp.erase(interpIt);
+      continue;
+    }
 
-  auto &enemyTransform = enemyIt->second->getComponent<TransformComponent>();
-  const EnemyMoveInterp &interp = interpIt->second;
+    auto &enemyTransform = enemyIt->second->getComponent<TransformComponent>();
+    const EnemyMoveInterp &interp = interpIt->second;
 
-  float t = static_cast<float>(nowTicks - interp.startTime) /
-            static_cast<float>(interp.durationMs);
+    float t = static_cast<float>(nowTicks - interp.startTime) /
+              static_cast<float>(interp.durationMs);
 
-  if (t >= 1.0f)
-  {
-    enemyTransform.position.x = interp.targetX;
-    enemyTransform.position.y = interp.targetY;
-    interpIt = enemyMoveInterp.erase(interpIt);
+    if (t >= 1.0f)
+    {
+      enemyTransform.position.x = interp.targetX;
+      enemyTransform.position.y = interp.targetY;
+      interpIt = enemyMoveInterp.erase(interpIt);
+    }
+    else
+    {
+      enemyTransform.position.x = interp.startX + (interp.targetX - interp.startX) * t;
+      enemyTransform.position.y = interp.startY + (interp.targetY - interp.startY) * t;
+      ++interpIt;
+    }
   }
-  else
-  {
-    enemyTransform.position.x = interp.startX + (interp.targetX - interp.startX) * t;
-    enemyTransform.position.y = interp.startY + (interp.targetY - interp.startY) * t;
-    ++interpIt;
-  }
-}
   // --- Fin movimiento de enemigos ---
 
   manager.update(updateContext);
@@ -375,7 +395,7 @@ void Game::render()
   SDL_Rect mapArea = {0, 33, 900, 687};
   SDL_RenderSetClipRect(renderer, &mapArea);
 
-  RenderContext renderContext{renderer, camera, mapArea, *textureManager,*assets, 133};
+  RenderContext renderContext{renderer, camera, mapArea, *textureManager, *assets, 133};
 
   for (auto &t : manager.getGroup(groupMap))
     t->draw(renderContext);
@@ -437,7 +457,7 @@ void Game::render()
 
       obj.yFootprint = static_cast<int>(transform.position.y + (transform.height * transform.scale));
 
-      obj.drawFunc = [this,remoteEntity, &renderContext]()
+      obj.drawFunc = [this, remoteEntity, &renderContext]()
       {
         // if (remoteEntity->hasComponent<EquipmentComponent>())
         //   remoteEntity->getComponent<EquipmentComponent>().drawBehind(renderContext);
@@ -445,7 +465,7 @@ void Game::render()
         //   remoteEntity->getComponent<SpriteComponent>().draw(renderContext);
         // if (remoteEntity->hasComponent<EquipmentComponent>())
         //   remoteEntity->getComponent<EquipmentComponent>().drawFront(renderContext);
-        drawEquippedEntity(remoteEntity,renderContext);
+        drawEquippedEntity(remoteEntity, renderContext);
       };
       ySorted.push_back(std::move(obj));
     }
@@ -485,7 +505,8 @@ void Game::render()
     };
     ySorted.push_back(std::move(obj));
   }
-  for (auto&item:manager.getGroup(groupItems)) {
+  for (auto &item : manager.getGroup(groupItems))
+  {
     item->draw(renderContext);
   }
 
@@ -571,8 +592,6 @@ void Game::render()
   miniChat.render(renderer, chatFont);
   SDL_RenderPresent(renderer);
 }
-
-
 
 void Game::clean()
 {
@@ -959,7 +978,7 @@ void Game::renderHUD()
     SDL_Rect bgRect = {x, y, w, h};
     SDL_RenderFillRect(renderer, &bgRect);
 
-    const int fillW = max > 0 ? (w * actual) / max : 0;
+    const int fillW = max > 0 ? static_cast<int>((static_cast<int64_t>(w) * actual) / max) : 0;
 
     if (tex != nullptr && fillW > 0)
     {
@@ -1086,9 +1105,8 @@ void Game::loadAssets()
   assets->AddTexture("npc_bank", "assets/sprites/npcs/bank.png");
 
   // ================EFECTOS=====================
-  assets->AddTexture("effect_attack_magic_01","assets/sprites/effects/effect_attack_magic_01.png");
-  assets->AddTexture("effect_blood_01","assets/sprites/effects/effect_blood_01.png");
-
+  assets->AddTexture("effect_attack_magic_01", "assets/sprites/effects/effect_attack_magic_01.png");
+  assets->AddTexture("effect_blood_01", "assets/sprites/effects/effect_blood_01.png");
 }
 
 int Game::getInventorySlotIndexAt(int mouseX, int mouseY) const
@@ -1140,7 +1158,6 @@ void Game::handleInventorySlotClick(int slotIndex)
 
   // Obtenemos el ítem del slot clickeado.
   const ItemView &item = inventoryState.slots[slotIndex].value();
-
 
   if (item.type == ClientItemType::HealthPotion ||
       item.type == ClientItemType::ManaPotion)
@@ -1295,8 +1312,6 @@ void Game::consumePotion(int slotIndex)
     {
       playerState.hp = playerState.maxHp;
     }
-
-
   }
   else if (item.type == ClientItemType::ManaPotion)
   {
@@ -1307,7 +1322,6 @@ void Game::consumePotion(int slotIndex)
     {
       playerState.mana = playerState.maxMana;
     }
-
   }
   else
   {
@@ -1463,8 +1477,10 @@ void Game::refreshPlayerBodySprite()
     return;
   }
 
-  sprite.setSpriteTextureAndConfig("body_sheet",
-                                   assets->bodyConfigForRace(playerState.race));
+  sprite.setSpriteTextureAndConfig(
+      assets->bodyTextureForRace(playerState.race),
+      assets->bodyConfigForRace(playerState.race)
+  );
 }
 
 // helpér
@@ -2026,7 +2042,6 @@ void Game::handlePlayerDied(const PlayerDiedMessage &diedMsg)
 {
   const uint32_t deadPlayerId = diedMsg.getId();
 
-
   // Si el muerto soy yo, aplico estado fantasma local.
   if (deadPlayerId == static_cast<uint32_t>(playerDto.playerID))
   {
@@ -2210,7 +2225,7 @@ void Game::processServerMessage(const Message &msg)
     resurrectionEndTime = SDL_GetTicks() + resMsg.getDelayMs();
     return;
   }
-    case ServerOpCode::MSG_COMBAT_LOG:
+  case ServerOpCode::MSG_COMBAT_LOG:
   {
     const auto &combatMsg = static_cast<const CombatLogMessage &>(msg);
     uint32_t targetId = static_cast<uint32_t>(std::stoul(combatMsg.getText()));
@@ -2229,19 +2244,17 @@ void Game::processServerMessage(const Message &msg)
       attackSystem.triggerAttackEffect(targetId, targetEntity, camera, isMagic);
     return;
   }
-    case ServerOpCode::MSG_PLAYER_ATTACK_VISUAL:
-      handlePlayerAttackVisual(static_cast<const PlayerAttackVisualMessage &>(msg));
-      return;
+  case ServerOpCode::MSG_PLAYER_ATTACK_VISUAL:
+    handlePlayerAttackVisual(static_cast<const PlayerAttackVisualMessage &>(msg));
+    return;
 
-    case ServerOpCode::MSG_PLAYER_HEALTH:
-      handlePlayerHeathVisual(static_cast<const PlayerHealthMessage&>(msg));
-      return;
-    default:
-      return;
+  case ServerOpCode::MSG_PLAYER_HEALTH:
+    handlePlayerHeathVisual(static_cast<const PlayerHealthMessage &>(msg));
+    return;
+  default:
+    return;
   }
 }
-
-
 
 std::optional<ClientEquipmentSlot>
 Game::toClientEquipmentSlot(int index) const
@@ -2322,7 +2335,6 @@ void Game::handleLevelUp(const LevelUpMessage &msg)
   if (clientWorld != nullptr)
   {
     clientWorld->updateRemotePlayerLevel(updatedPlayerId, newLevel);
-    clientWorld->updateRemotePlayerLevel(updatedPlayerId, newLevel);
   }
 }
 
@@ -2352,10 +2364,8 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg)
       {
         it->second->getComponent<HealthBarComponent>().setHealth(
             msg.getHp(),
-            msg.getHpMax()
-        );
+            msg.getHpMax());
       }
-
 
       return;
     }
@@ -2413,8 +2423,6 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg)
   }
 }
 
-
-
 void Game::handleNpcHealth(const NpcHealthMessage &msg)
 {
   // ID del NPC cuya vida cambió.
@@ -2432,8 +2440,7 @@ void Game::handleNpcHealth(const NpcHealthMessage &msg)
   {
     it->second->getComponent<HealthBarComponent>().setHealth(
         static_cast<int>(msg.getHp()),
-        static_cast<int>(msg.getMaxHp())
-    );
+        static_cast<int>(msg.getMaxHp()));
   }
 
   // Si hp <= 0, HealthBarComponent no dibuja la barra
@@ -2442,33 +2449,35 @@ void Game::handleNpcHealth(const NpcHealthMessage &msg)
 
 void Game::handleNpcAttack(const NpcAttackMessage &msg)
 {
-    auto it = enemies.find(msg.getNpcId());
-    if (it == enemies.end() || it->second == nullptr) return;
-    if (!it->second->hasComponent<SpriteComponent>()) return;
+  auto it = enemies.find(msg.getNpcId());
+  if (it == enemies.end() || it->second == nullptr)
+    return;
+  if (!it->second->hasComponent<SpriteComponent>())
+    return;
 
-    auto &sprite = it->second->getComponent<SpriteComponent>();
+  auto &sprite = it->second->getComponent<SpriteComponent>();
 
-    switch (msg.getDirection())
-    {
-    case Direction::DOWN:
-        sprite.spriteFlip = SDL_FLIP_NONE;
-        sprite.PlayOnce("AttackDown", "IdleDown");
-        break;
-    case Direction::UP:
-        sprite.spriteFlip = SDL_FLIP_NONE;
-        sprite.PlayOnce("AttackUp", "IdleDown");
-        break;
-    case Direction::LEFT:
-        sprite.spriteFlip = SDL_FLIP_NONE;
-        sprite.PlayOnce("AttackLeft", "IdleDown");
-        break;
-    case Direction::RIGHT:
-        sprite.spriteFlip = SDL_FLIP_NONE;
-        sprite.PlayOnce("AttackRight", "IdleDown");
-        break;
-    case Direction::NONE:
-        break;
-    }
+  switch (msg.getDirection())
+  {
+  case Direction::DOWN:
+    sprite.spriteFlip = SDL_FLIP_NONE;
+    sprite.PlayOnce("AttackDown", "IdleDown");
+    break;
+  case Direction::UP:
+    sprite.spriteFlip = SDL_FLIP_NONE;
+    sprite.PlayOnce("AttackUp", "IdleDown");
+    break;
+  case Direction::LEFT:
+    sprite.spriteFlip = SDL_FLIP_NONE;
+    sprite.PlayOnce("AttackLeft", "IdleDown");
+    break;
+  case Direction::RIGHT:
+    sprite.spriteFlip = SDL_FLIP_NONE;
+    sprite.PlayOnce("AttackRight", "IdleDown");
+    break;
+  case Direction::NONE:
+    break;
+  }
 }
 
 void Game::handleNpcMove(const NpcMoveMessage &msg)
@@ -2476,13 +2485,14 @@ void Game::handleNpcMove(const NpcMoveMessage &msg)
   const uint32_t npcId = msg.getNpcId();
 
   auto it = enemies.find(npcId);
-  if (it == enemies.end()) return;
+  if (it == enemies.end())
+    return;
 
   Entity *enemyEntity = it->second;
-  if (enemyEntity == nullptr) return;
+  if (enemyEntity == nullptr)
+    return;
 
   auto &transform = enemyEntity->getComponent<TransformComponent>();
-  
 
   const float newX = static_cast<float>(msg.getX());
   const float newY = static_cast<float>(msg.getY());
@@ -2634,7 +2644,8 @@ void Game::drawEquippedEntity(Entity *entity, RenderContext &context)
     entity->getComponent<EquipmentComponent>().drawFront(context);
   }
 
-  if (entity->hasComponent<NameplateComponent>()) {
+  if (entity->hasComponent<NameplateComponent>())
+  {
     entity->getComponent<NameplateComponent>().draw(context);
   }
   if (entity->hasComponent<HealthBarComponent>())
@@ -2748,7 +2759,7 @@ void Game::handleMapChanged(const MapChangedMessage &msg)
 void Game::handleChatNotification(const ChatNotificationMessage &msg)
 {
 
-    std::cout << "[CHAT DEBUG] type=" << static_cast<int>(msg.getMsgType())
+  std::cout << "[CHAT DEBUG] type=" << static_cast<int>(msg.getMsgType())
             << " text='" << msg.getText() << "'" << std::endl;
 
   const std::string &text = msg.getText();
@@ -2770,13 +2781,14 @@ void Game::handleChatNotification(const ChatNotificationMessage &msg)
     miniChat.appendLine(text.substr(start), type);
 }
 
-
-void Game::handleItemOnGround(const ItemOnGroundMessage &msg) {
+void Game::handleItemOnGround(const ItemOnGroundMessage &msg)
+{
   const Item &item = msg.getItem();
 
   const ItemView *itemView = itemCatalog.getById(static_cast<int>(item.catalogId));
 
-  if (itemView == nullptr) {
+  if (itemView == nullptr)
+  {
     std::cout << "[GROUND ITEM] catalogId desconocido: "
               << item.catalogId << std::endl;
     return;
@@ -2796,10 +2808,12 @@ void Game::handleItemOnGround(const ItemOnGroundMessage &msg) {
             << std::endl;
 }
 
-void Game::handleGoldOnGround(const GoldOnGroundMessage &msg) {
+void Game::handleGoldOnGround(const GoldOnGroundMessage &msg)
+{
   const ItemView *goldView = itemCatalog.getById(23);
 
-  if (goldView == nullptr) {
+  if (goldView == nullptr)
+  {
     std::cout << "[GROUND GOLD] no se encontro catalogId=23 para oro" << std::endl;
     return;
   }
@@ -2818,12 +2832,15 @@ void Game::handleGoldOnGround(const GoldOnGroundMessage &msg) {
             << std::endl;
 }
 
-void Game::handleItemPicked(const ItemPickedMessage &msg) {
+void Game::handleItemPicked(const ItemPickedMessage &msg)
+{
   const uint32_t itemId = msg.getItemId();
 
   auto itemIt = groundItems.find(itemId);
-  if (itemIt != groundItems.end()) {
-    if (itemIt->second != nullptr) {
+  if (itemIt != groundItems.end())
+  {
+    if (itemIt->second != nullptr)
+    {
       itemIt->second->destroy();
     }
     groundItems.erase(itemIt);
@@ -2832,8 +2849,10 @@ void Game::handleItemPicked(const ItemPickedMessage &msg) {
   }
 
   auto goldIt = groundGold.find(itemId);
-  if (goldIt != groundGold.end()) {
-    if (goldIt->second != nullptr) {
+  if (goldIt != groundGold.end())
+  {
+    if (goldIt->second != nullptr)
+    {
       goldIt->second->destroy();
     }
     groundGold.erase(goldIt);
@@ -2883,10 +2902,9 @@ void Game::handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg)
   }
 }
 
-
-void Game::handlePlayerHeathVisual(const PlayerHealthMessage &msg) {
+void Game::handlePlayerHeathVisual(const PlayerHealthMessage &msg)
+{
   const uint32_t playerId = msg.getPlayerId();
-
 
   if (playerId == static_cast<uint32_t>(playerDto.playerID))
   {
@@ -2898,5 +2916,5 @@ void Game::handlePlayerHeathVisual(const PlayerHealthMessage &msg) {
     return;
   }
 
-  clientWorld->updateRemotePlayerHealth(playerId,msg.getHp(),msg.getHpMax());
+  clientWorld->updateRemotePlayerHealth(playerId, msg.getHp(), msg.getHpMax());
 }

@@ -10,7 +10,7 @@ class ClanManager;
 class ChatHandler
 {
 public:
-    explicit ChatHandler(ClanManager &clanManager);
+    explicit ChatHandler(ClanManager &clanManager, const toml::table &config);
     bool handle(uint32_t senderId,
                 const std::string &rawText,
                 uint32_t targetId,
@@ -19,6 +19,7 @@ public:
 
 private:
     ClanManager &clanManager;
+    GameFormulas formulas;
     static void sendChat(uint32_t clientId,
                          const std::string &text,
                          ChatMsgType type,
@@ -50,6 +51,6 @@ private:
     void handleDropItem(uint32_t senderId, const std::string &itemName,
                         GameWorld &world, Monitor &monitor);
 
-    static void sendStats(uint32_t id, Player &p, Monitor &monitor);
+    void sendStats(uint32_t id, Player &p, Monitor &monitor);
     static void sendInventory(uint32_t id, Player &p, Monitor &monitor);
 };

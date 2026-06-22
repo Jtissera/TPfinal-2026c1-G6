@@ -12,6 +12,7 @@
 #include "common/network/messages/message.h"
 #include "common/queue.h"
 #include "network/clientProtocolFactory.h"
+#include "sdl/screens/ConfigScreen.h"
 #include "common/network/messages/client/lobby/leaveGameMessage.h"
 
 class GameClient
@@ -19,14 +20,17 @@ class GameClient
 
 public:
   GameClient(Socket &socket, uint32_t idPlayer, const PlayerDto &playerDto,
-           SDL_Window *window, SDL_Renderer *renderer,
-           const std::string &mapPath,
-           std::shared_ptr<const Message> pendingMessage = nullptr);
+             SDL_Window *window, SDL_Renderer *renderer,
+             const std::string &mapPath,
+             const ClientConfig &config,
+             std::shared_ptr<const Message> pendingMessage = nullptr);
   void run();
   bool wasDisconnectedByServer() const { return connectionLost; }
-  void pushPendingMessage(std::shared_ptr<const Message> msg) {
-    if (msg) receiveQueue.try_push(std::move(msg));
-}
+  void pushPendingMessage(std::shared_ptr<const Message> msg)
+  {
+    if (msg)
+      receiveQueue.try_push(std::move(msg));
+  }
 
 private:
   std::shared_ptr<const Message> pendingMessage;
@@ -51,6 +55,7 @@ private:
   Game gameLoop;
   std::string mapPath;
 
+  ClientConfig config;
   std::atomic<bool> connectionLost{false};
   bool checkSocketStatus();
 };

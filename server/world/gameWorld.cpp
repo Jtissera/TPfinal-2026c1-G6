@@ -202,11 +202,20 @@ int GameWorld::getPixelY(uint32_t id) const { return static_cast<int>(players.at
 void GameWorld::giveExperience(uint32_t playerId, uint32_t exp, float xpMultiplier)
 {
     Player &p = getPlayer(playerId);
+    uint32_t finalExp = static_cast<uint32_t>(exp * xpMultiplier);
+
     uint32_t limit = formulas.calcExpLimit(p.getLevel());
     int16_t newMaxHp = formulas.calcMaxHp(p.getRace(), p.getCls(), p.getLevel() + 1);
     int16_t newMaxMana = formulas.calcMaxMana(p.getRace(), p.getCls(), p.getLevel() + 1);
-    uint32_t finalExp = static_cast<uint32_t>(exp * xpMultiplier);
     p.addExperience(finalExp, limit, newMaxHp, newMaxMana);
+
+    while (p.getExp() >= formulas.calcExpLimit(p.getLevel()))
+    {
+        limit = formulas.calcExpLimit(p.getLevel());
+        newMaxHp = formulas.calcMaxHp(p.getRace(), p.getCls(), p.getLevel() + 1);
+        newMaxMana = formulas.calcMaxMana(p.getRace(), p.getCls(), p.getLevel() + 1);
+        p.addExperience(0, limit, newMaxHp, newMaxMana);
+    }
 }
 
 GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId, uint32_t attackerId)

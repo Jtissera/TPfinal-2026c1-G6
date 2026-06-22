@@ -11,13 +11,15 @@
 #include "server/game/equipmentDtoFactory.h"
 #include "server/game/clan/clanManager.h"
 #include "server/game/clan/clan.h"
+#include "server/game/stats/gameFormulas.h"
 
 namespace
 {
     constexpr uint8_t CLAN_MIN_LEVEL_TO_FOUND = 6;
 }
 
-ChatHandler::ChatHandler(ClanManager &clanManager) : clanManager(clanManager) {}
+ChatHandler::ChatHandler(ClanManager &clanManager, const toml::table &config)
+    : clanManager(clanManager), formulas(config) {}
 
 void ChatHandler::sendChat(uint32_t clientId,
                            const std::string &text,
@@ -41,7 +43,7 @@ void ChatHandler::sendStats(uint32_t id, Player &p, Monitor &monitor)
     monitor.sendTo(id, std::make_shared<const PlayerStatsMessage>(
                            p.getLevel(), p.getHp(), p.getMaxHp(),
                            p.getMana(), p.getMaxMana(),
-                           p.getExp(), 0u,
+                           p.getExp(), formulas.calcExpLimit(p.getLevel()),
                            p.getGold()));
 }
 
@@ -672,7 +674,6 @@ void ChatHandler::handlePickItem(uint32_t senderId,
         }
     }
 
-
     for (const GroundGold &groundGold : world.getGroundManager().getAllGold())
     {
 
@@ -690,7 +691,6 @@ void ChatHandler::handlePickItem(uint32_t senderId,
                          monitor);
                 return;
             }
-
 
             p.addGold(*gold);
 
@@ -734,15 +734,15 @@ void ChatHandler::handleDropItem(uint32_t senderId,
     world.addItemOnGround(std::move(*removed), tileX, tileY);
     sendInventory(senderId, p, monitor);
 
-    //caso donde jugador tiene un item equipado y lo tira
+    // caso donde jugador tiene un item equipado y lo tira
     monitor.broadcast(std::make_shared<const PlayerEquipmentUpdateMessage>(
-    senderId,
-    buildEquipmentDtoFromPlayer(p)));
+        senderId,
+        buildEquipmentDtoFromPlayer(p)));
 
     monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(
-    itemForMessage,
-    tileX,
-    tileY));
+        itemForMessage,
+        tileX,
+        tileY));
     sendChat(senderId, "Tiraste " + itemName + " al suelo.",
              ChatMsgType::INFO, monitor);
 }

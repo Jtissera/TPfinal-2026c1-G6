@@ -74,6 +74,7 @@ public:
     void clean();
     bool running() const;
     void renderHUD();
+    AudioManager &getAudioManager() { return audioManager; }
 
 private:
     bool isRunning = false;
@@ -106,8 +107,8 @@ private:
     PlayerDto playerDto;
 
     std::map<uint32_t, Entity *> enemies;
-    std::map<uint32_t,Entity*> groundItems;
-    std::map<uint32_t,Entity*> groundGold;
+    std::map<uint32_t, Entity *> groundItems;
+    std::map<uint32_t, Entity *> groundGold;
     AttackSystem attackSystem;
     PickupSystem pickUpSystem;
     PlayerViewState playerState;
@@ -225,7 +226,6 @@ private:
     void handleItemPicked(const ItemPickedMessage &msg);
     void handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg);
     void handlePlayerHeathVisual(const PlayerHealthMessage &msg);
-
 
     struct EnemyMoveInterp
     {

@@ -13,12 +13,14 @@ NameplateComponent::NameplateComponent(std::string name,
                                        NameplateType type,
                                        std::string fontId)
     // Movemos strings para evitar copias innecesarias.
-    :   name(std::move(name)),
-        className(std::move(className)),
-        level(level),
-        clan(std::move(clan)),
-        type(type),
-        fontId(fontId){}
+    : name(std::move(name)),
+      className(std::move(className)),
+      level(level),
+      clan(std::move(clan)),
+      type(type),
+      fontId(fontId)
+{
+}
 
 NameplateComponent::~NameplateComponent()
 {
@@ -29,9 +31,12 @@ NameplateComponent::~NameplateComponent()
 void NameplateComponent::init()
 {
     // Este componente necesita TransformComponent para ubicarse.
-    if (entity->hasComponent<TransformComponent>()) {
+    if (entity->hasComponent<TransformComponent>())
+    {
         transform = &entity->getComponent<TransformComponent>();
-    } else {
+    }
+    else
+    {
         std::cerr << "[NAMEPLATE] entidad sin TransformComponent" << std::endl;
     }
 }
@@ -41,13 +46,15 @@ std::vector<std::string> NameplateComponent::buildLines() const
     std::vector<std::string> lines;
 
     // NPC pasivo: solo nombre.
-    if (type == NameplateType::PassiveNpc) {
+    if (type == NameplateType::PassiveNpc)
+    {
         lines.push_back(name);
         return lines;
     }
 
     // Enemigo hostil: nombre + nivel.
-    if (type == NameplateType::Enemy) {
+    if (type == NameplateType::Enemy)
+    {
         lines.push_back(name + "  Nivel - " + std::to_string(level));
         return lines;
     }
@@ -56,12 +63,14 @@ std::vector<std::string> NameplateComponent::buildLines() const
     lines.push_back(name + "  Nivel - " + std::to_string(level));
 
     // Segunda línea: clase.
-    if (!className.empty()) {
+    if (!className.empty())
+    {
         lines.push_back(className);
     }
 
     // Tercera línea: clan.
-    if (!clan.empty()) {
+    if (!clan.empty())
+    {
         lines.push_back(clan);
     }
 
@@ -70,18 +79,19 @@ std::vector<std::string> NameplateComponent::buildLines() const
 
 SDL_Color NameplateComponent::textColor() const
 {
-    switch (type) {
-        case NameplateType::LocalPlayer:
-            return SDL_Color{120, 220, 255, 255};
+    switch (type)
+    {
+    case NameplateType::LocalPlayer:
+        return SDL_Color{120, 220, 255, 255};
 
-        case NameplateType::RemotePlayer:
-            return SDL_Color{255, 255, 255, 255};
+    case NameplateType::RemotePlayer:
+        return SDL_Color{255, 255, 255, 255};
 
-        case NameplateType::Enemy:
-            return SDL_Color{255, 80, 80, 255};
+    case NameplateType::Enemy:
+        return SDL_Color{255, 80, 80, 255};
 
-        case NameplateType::PassiveNpc:
-            return SDL_Color{120, 180, 255, 255};
+    case NameplateType::PassiveNpc:
+        return SDL_Color{120, 180, 255, 255};
     }
 
     return SDL_Color{255, 255, 255, 255};
@@ -89,8 +99,10 @@ SDL_Color NameplateComponent::textColor() const
 
 void NameplateComponent::destroyTexture()
 {
-    for (TextLine& line : textLines) {
-        if (line.texture != nullptr) {
+    for (TextLine &line : textLines)
+    {
+        if (line.texture != nullptr)
+        {
             SDL_DestroyTexture(line.texture);
             line.texture = nullptr;
         }
@@ -102,17 +114,19 @@ void NameplateComponent::destroyTexture()
     textLines.clear();
 }
 
-void NameplateComponent::rebuildTexture(RenderContext& context)
+void NameplateComponent::rebuildTexture(RenderContext &context)
 {
-    if (!dirty) {
+    if (!dirty)
+    {
         return;
     }
 
     destroyTexture();
 
-    TTF_Font* font = context.assets.GetFont(fontId);
+    TTF_Font *font = context.assets.GetFont(fontId);
 
-    if (font == nullptr) {
+    if (font == nullptr)
+    {
         std::cerr << "[NAMEPLATE] fuente no encontrada id=" << fontId << std::endl;
         dirty = false;
         return;
@@ -120,30 +134,32 @@ void NameplateComponent::rebuildTexture(RenderContext& context)
     const SDL_Color color = textColor();
     const std::vector<std::string> lines = buildLines();
 
-    for (const std::string& lineText : lines) {
-        if (lineText.empty()) {
+    for (const std::string &lineText : lines)
+    {
+        if (lineText.empty())
+        {
             continue;
         }
 
-        SDL_Surface* surface = TTF_RenderUTF8_Blended(
+        SDL_Surface *surface = TTF_RenderUTF8_Blended(
             font,
             lineText.c_str(),
-            color
-        );
+            color);
 
-        if (surface == nullptr) {
+        if (surface == nullptr)
+        {
             std::cerr << "[NAMEPLATE] error creando surface: "
                       << TTF_GetError()
                       << std::endl;
             continue;
         }
 
-        SDL_Texture* texture = SDL_CreateTextureFromSurface(
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(
             context.renderer,
-            surface
-        );
+            surface);
 
-        if (texture == nullptr) {
+        if (texture == nullptr)
+        {
             std::cerr << "[NAMEPLATE] error creando texture: "
                       << SDL_GetError()
                       << std::endl;
@@ -164,59 +180,57 @@ void NameplateComponent::rebuildTexture(RenderContext& context)
     dirty = false;
 }
 
-void NameplateComponent::draw(RenderContext& context)
+void NameplateComponent::draw(RenderContext &context)
 {
-    if (transform == nullptr) {
+    if (transform == nullptr)
         return;
-    }
 
     rebuildTexture(context);
 
-    if (textLines.empty()) {
+    if (textLines.empty())
         return;
+
+    int spriteLeft = static_cast<int>(transform->position.x - context.camera.x);
+    int spriteTop = static_cast<int>(transform->position.y - context.camera.y + context.mapOffsetY);
+    int spriteWidth = 0;
+
+    if (entity->hasComponent<SpriteComponent>())
+    {
+        const SDL_Rect &dest = entity->getComponent<SpriteComponent>().getDestRect();
+        if (dest.w > 0)
+        {
+            spriteLeft = dest.x;
+            spriteTop = dest.y;
+            spriteWidth = dest.w;
+        }
     }
 
-    const int entityScreenX = static_cast<int>(
-        transform->position.x - context.camera.x
-    );
-
-    const int entityScreenY = static_cast<int>(
-        transform->position.y - context.camera.y + context.mapOffsetY
-    );
-
-    const int entityWidth = transform->width * transform->scale;
-
-    constexpr int lineSpacing = 0;
-    constexpr int marginAboveHead = 100;
+    constexpr int lineSpacing = 2;
+    constexpr int marginAboveSprite = 6;
 
     int totalHeight = 0;
-
-    for (const TextLine& line : textLines) {
+    for (const TextLine &line : textLines)
         totalHeight += line.height;
-    }
-
     totalHeight += static_cast<int>(textLines.size() - 1) * lineSpacing;
 
-    int currentY = entityScreenY - totalHeight - marginAboveHead;
+    int currentY = spriteTop - totalHeight - marginAboveSprite;
 
-    for (const TextLine& line : textLines) {
-        if (line.texture == nullptr) {
+    for (const TextLine &line : textLines)
+    {
+        if (line.texture == nullptr)
             continue;
-        }
 
         SDL_Rect dst{};
         dst.w = line.width;
         dst.h = line.height;
-
-        // Centrado respecto al cuerpo.
-        dst.x = entityScreenX + (entityWidth / 2) - (line.width / 2);
+        dst.x = spriteLeft + (spriteWidth / 2) - (line.width / 2);
         dst.y = currentY;
 
         SDL_RenderCopy(context.renderer, line.texture, nullptr, &dst);
-
         currentY += line.height + lineSpacing;
     }
 }
+
 void NameplateComponent::setLevel(uint32_t newLevel)
 {
     // Si el nivel no cambió, no hay que reconstruir la textura.
@@ -232,7 +246,7 @@ void NameplateComponent::setLevel(uint32_t newLevel)
     dirty = true;
 }
 
-void NameplateComponent::setClan(const std::string& newClan)
+void NameplateComponent::setClan(const std::string &newClan)
 {
     // Si el clan no cambió, no hay que reconstruir la textura.
     if (clan == newClan)
