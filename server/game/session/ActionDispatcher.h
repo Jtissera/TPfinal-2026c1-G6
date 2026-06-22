@@ -45,6 +45,7 @@ private:
   CombatHandler combatHandler;
   ChatHandler chatHandler;
   ClanManager &clanManager;
+  CityCommandParser cityCommandParser;
 
   void handleMove(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
 
@@ -72,9 +73,9 @@ private:
   void handleChat(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
 
   void handleClanSync(uint32_t id, const Message &msg, GameWorld &world, Monitor &monitor);
-  PlayerAttackVisualType resolveAttackVisualType(const Player& attacker) const;
+  PlayerAttackVisualType resolveAttackVisualType(const Player &attacker) const;
 
-  void broadcastPlayerAttackVisual(uint32_t attackerId,uint32_t targetId,const Player& attacker,Monitor& monitor);
+  void broadcastPlayerAttackVisual(uint32_t attackerId, uint32_t targetId, const Player &attacker, Monitor &monitor);
 
 public:
   explicit ActionDispatcher(const toml::table &config, ClanManager &clanManager);

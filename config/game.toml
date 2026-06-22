@@ -607,3 +607,10 @@ sombrero_magico  = 350
 armadura_clerigo = 400
 espada_maldita   = 9999
 tunica_iniciado  = 0
+
+
+[city.priest_catalog]
+items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado", "pocion_vida", "pocion_mana"]
+
+[city.merchant_blacklist]
+items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado"]

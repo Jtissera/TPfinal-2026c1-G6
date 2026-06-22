@@ -742,16 +742,14 @@ void ActionDispatcher::sendLevelUpIfNeeded(uint32_t playerId, Player &player, Mo
     // Esto lo usan los clientes para actualizar el nameplate.
     monitor.broadcast(std::make_shared<const LevelUpMessage>(
         playerId,
-        static_cast<uint8_t>(player.getLevel())
-    ));
+        static_cast<uint8_t>(player.getLevel())));
 
     // Avisamos también la vida pública actualizada.
     // Al subir de nivel puede cambiar hpMax, y la barra remota depende de este mensaje.
     monitor.broadcast(std::make_shared<const PlayerHealthMessage>(
         playerId,
         static_cast<uint16_t>(player.getHp()),
-        static_cast<uint16_t>(player.getMaxHp())
-    ));
+        static_cast<uint16_t>(player.getMaxHp())));
 }
 void ActionDispatcher::handleDropItem(uint32_t id, const Message &msg,
                                       GameWorld &world, Monitor &monitor)
@@ -847,7 +845,7 @@ void ActionDispatcher::handleInteractNpc(uint32_t id, const Message &msg,
 
     if (player.isGhost())
     {
-        auto cmd = CityCommandParser::parse(interactMsg.getCmd());
+        auto cmd = cityCommandParser.parse(interactMsg.getCmd());
         if (!cmd || cmd->type != CityCommand::Type::RESURRECT)
         {
             monitor.sendTo(id, std::make_shared<const ErrorMessage>(
@@ -876,7 +874,7 @@ void ActionDispatcher::handleInteractNpc(uint32_t id, const Message &msg,
         return;
     }
 
-    auto cmd = CityCommandParser::parse(interactMsg.getCmd());
+    auto cmd = cityCommandParser.parse(interactMsg.getCmd());
     if (!cmd)
     {
         monitor.sendTo(id, std::make_shared<const ErrorMessage>("Comando inválido."));
