@@ -327,16 +327,16 @@
       "desert_golem": {
       "sheet_width": 390,
       "sheet_height": 510,
-      "frame_width": 78,
-      "frame_height": 96,
+      "frame_width": 79,
+      "frame_height": 129,
       "scale": 2,
       "animations": {
         "IdleDown":  { "row": 0, "frames": 1, "speed_ms": 150 },
         "IdleUp":    { "row": 1, "frames": 1, "speed_ms": 150 },
         "IdleRight": { "row": 3, "frames": 1, "speed_ms": 150 },
-        "WalkDown":  { "row": 0, "frames": 4, "speed_ms": 100 },
-        "WalkUp":    { "row": 1, "frames": 4, "speed_ms": 100 },
-        "WalkRight": { "row": 3, "frames": 4, "speed_ms": 100 }
+        "WalkDown":  { "row": 0, "frames": 5, "speed_ms": 100 },
+        "WalkUp":    { "row": 1, "frames": 5, "speed_ms": 100 },
+        "WalkRight": { "row": 3, "frames": 5, "speed_ms": 100 }
       }
     }
   }
