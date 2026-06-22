@@ -1,18 +1,16 @@
 #pragma once
+
 #include "../items/item.h"
 #include "../player/Player.h"
-#include <functional>
-#include <unordered_map>
 
-class ItemEffectHandler {
+class ItemEffectHandler
+{
 public:
-  ItemEffectHandler();
+  ItemEffectHandler() = default;
+
   bool apply(const Item &item, Player &user, Player *target = nullptr);
 
 private:
-  using Handler = std::function<bool(const Item &, Player &, Player *)>;
-  std::unordered_map<ItemEffect, Handler> handlers;
-
   bool applyConsumable(const Item &item, Player &user);
   bool applyHeal(const Item &item, Player &user, Player *target);
 };

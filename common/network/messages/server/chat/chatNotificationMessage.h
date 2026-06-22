@@ -7,12 +7,12 @@
 
 enum class ChatMsgType : uint8_t
 {
-    GENERAL = 0,      // Blanco   — chat público
-    PRIVATE = 1,      // Amarillo — mensaje privado
-    DAMAGE_DEALT = 2, // Rojo     — daño causado
-    DAMAGE_TAKEN = 3, // Verde    — daño recibido
-    INFO = 4,         // Celeste  — sistema, NPC, errores leves
-    CLAN = 5,         // Cyan/Esmeralda — mensajes de clan
+    GENERAL = 0,
+    PRIVATE = 1,
+    DAMAGE_DEALT = 2,
+    DAMAGE_TAKEN = 3,
+    INFO = 4,
+    CLAN = 5,
 };
 
 class ChatNotificationMessage : public Message

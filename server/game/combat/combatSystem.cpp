@@ -1,9 +1,4 @@
 #include "combatSystem.h"
-#include "../../world/gameWorld.h"
-#include <algorithm>
-#include <cmath>
-#include <cstdlib>
-#include <iostream>
 
 CombatSystem::CombatSystem(const toml::table &config)
     : meleeRange(config["combat"]["attack_range"].value_or(1)),
@@ -11,7 +6,10 @@ CombatSystem::CombatSystem(const toml::table &config)
       newbieMaxLevel(config["player"]["newbie_max_level"].value_or(12)),
       clanProximityRadius(config["clan"]["proximity_radius_tiles"].value_or(15)),
       clanBonusPerAlly(config["clan"]["bonus_per_ally"].value_or(0.05f)),
-      clanMaxBonusMultiplier(config["clan"]["max_bonus_multiplier"].value_or(2.0f)) {}
+      clanMaxBonusMultiplier(config["clan"]["max_bonus_multiplier"].value_or(2.0f)),
+      dodgeThreshold(config["combat"]["dodge_threshold"].value_or(0.001f)),
+      criticalChancePercent(config["combat"]["critical_chance_percent"].value_or(5)),
+      expLevelDiffBase(config["combat"]["exp_level_diff_base"].value_or(10)) {}
 
 float CombatSystem::clanMultiplier(int nearbyAllies) const
 {
@@ -48,7 +46,7 @@ CombatSystem::Result CombatSystem::attack(Combatant &attacker, Combatant &target
   result.killed = !target.isAlive();
 
   int diff = static_cast<int>(target.getLevel()) -
-             static_cast<int>(attacker.getLevel()) + 10;
+             static_cast<int>(attacker.getLevel()) + expLevelDiffBase;
   result.expGained = (diff > 0) ? static_cast<uint32_t>(finalDmg * diff) : 0;
 
   return result;
@@ -131,7 +129,7 @@ bool CombatSystem::rollDodge(const Combatant &target) const
 {
   float agility = static_cast<float>(target.getAgility());
   float roll = (std::rand() % 1000) / 1000.0f;
-  return std::pow(roll, agility) < 0.001f;
+  return std::pow(roll, agility) < dodgeThreshold;
 }
 
 int16_t CombatSystem::rollDamage(const Combatant &attacker,
@@ -141,7 +139,7 @@ int16_t CombatSystem::rollDamage(const Combatant &attacker,
   int16_t base = static_cast<int16_t>(attacker.getWeaponDamageMin() +
                                       (range > 0 ? std::rand() % range : 0));
 
-  outCritical = (std::rand() % 100) < 5;
+  outCritical = (std::rand() % 100) < criticalChancePercent;
   if (outCritical)
     base *= 2;
 

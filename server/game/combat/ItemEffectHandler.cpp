@@ -1,23 +1,18 @@
 #include "itemEffectHandler.h"
 
-ItemEffectHandler::ItemEffectHandler() {
-  handlers[ItemEffect::HEAL] = [this](const Item &item, Player &user,
-                                      Player *target) {
-    return applyHeal(item, user, target);
-  };
-}
-
-bool ItemEffectHandler::apply(const Item &item, Player &user, Player *target) {
+bool ItemEffectHandler::apply(const Item &item, Player &user, Player *target)
+{
   if (item.slot == ItemSlot::CONSUMABLE)
     return applyConsumable(item, user);
 
-  auto it = handlers.find(item.effect);
-  if (it == handlers.end())
-    return false;
-  return it->second(item, user, target);
+  if (item.effect == ItemEffect::HEAL)
+    return applyHeal(item, user, target);
+
+  return false;
 }
 
-bool ItemEffectHandler::applyConsumable(const Item &item, Player &user) {
+bool ItemEffectHandler::applyConsumable(const Item &item, Player &user)
+{
   if (!user.isAlive())
     return false;
 
@@ -30,8 +25,8 @@ bool ItemEffectHandler::applyConsumable(const Item &item, Player &user) {
   return true;
 }
 
-bool ItemEffectHandler::applyHeal(const Item &item, Player &user,
-                                  Player *target) {
+bool ItemEffectHandler::applyHeal(const Item &item, Player &user, Player *target)
+{
   if (!user.isAlive())
     return false;
   if (!user.spendMana(item.stats.manaCost))

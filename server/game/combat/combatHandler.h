@@ -1,12 +1,15 @@
 #pragma once
+
 #include "../../world/gameWorld.h"
 #include "../combat/combatSystem.h"
 #include "../combat/itemEffectHandler.h"
 #include "../stats/gameFormulas.h"
 
-class CombatHandler {
+class CombatHandler
+{
 public:
-  struct Result {
+  struct Result
+  {
     bool valid = false;
     bool attackerLeveledUp = false;
     bool targetDied = false;
@@ -23,9 +26,7 @@ private:
   ItemEffectHandler &effects;
   GameFormulas &formulas;
 
-  Result handleHealWeapon(uint32_t attackerId, uint32_t targetId,
-                          Player &attacker, Player &target, const Item &weapon);
-
+  Result handleHealWeapon(Player &attacker, Player &target, const Item &weapon);
   Result handleDamageAttack(uint32_t attackerId, Player &attacker,
                             Player &target, GameWorld &world);
 };

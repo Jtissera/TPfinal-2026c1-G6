@@ -1,11 +1,14 @@
 #pragma once
+
 #include "../player/Player.h"
 #include "../player/combatant.h"
+#include <cstdint>
+#include <toml++/toml.hpp>
+#include "../../world/gameWorld.h"
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 #include <cstdlib>
-#include <toml++/toml.hpp>
+#include <iostream>
 
 class GameWorld;
 
@@ -40,23 +43,26 @@ public:
                 int attackerAllies = 0, int targetAllies = 0);
   Result attackPlayer(Player &attacker, Player &target, const GameWorld &world);
   Result attackNpc(Player &attacker, Combatant &target, const GameWorld &world);
+
   bool canAttack(const Combatant &attacker, const Combatant &target) const;
-  bool canAttackPlayer(const Player &attacker, const Player &target, Result::FailReason &failReason) const;
+  bool canAttackPlayer(const Player &attacker, const Player &target,
+                       Result::FailReason &failReason) const;
 
 private:
   int meleeRange;
   int maxLevelDiff;
   int newbieMaxLevel;
-
   int clanProximityRadius;
   float clanBonusPerAlly;
   float clanMaxBonusMultiplier;
+  float dodgeThreshold;
+  int criticalChancePercent;
+  int expLevelDiffBase;
+
+  float clanMultiplier(int nearbyAllies) const;
 
   bool rollDodge(const Combatant &target) const;
   int16_t rollDamage(const Combatant &attacker, bool &outCritical, int nearbyAllies) const;
   int16_t rollDefense(const Combatant &target, int nearbyAllies) const;
-  int16_t rollWeaponDamage(const Item &weapon, bool &outCritical) const;
   int16_t rollArmorDefense(uint16_t min, uint16_t max) const;
-  float clanMultiplier(int nearbyAllies) const;
-  static constexpr int MELEE_RANGE = 1; // en tiles
 };

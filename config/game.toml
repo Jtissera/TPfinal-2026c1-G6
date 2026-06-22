@@ -30,13 +30,13 @@ move_step = 4.0
 
 [combat]
 max_level_diff  = 10         # diferencia maxima de nivel para poder atacar
-critical_multiplier = 2.0
-dodge_base_chance   = 0.05  # 5% base de evasion
 npc_gold_drop_max = 0.2      # Oro = rand(0, 0.2) * VidaMaxNPC
 npc_xp_bonus_max  = 0.1      # Exp adicional = rand(0, 0.1) * VidaMax...
 attack_range      = 1        # distancia para cuerpo a cuerpo
-melee_range = 1
 ranged_attack_range = 10
+critical_chance_percent = 5
+dodge_threshold         = 0.001
+exp_level_diff_base     = 10
 
 
 [experience]
@@ -66,7 +66,7 @@ respawn_ms           = 1000
 
 [clan]
 max_members          = 16
-min_level_found      = 6
+min_level_to_found = 6 
 proximity_radius_tiles = 15   # tiles de radio para contar aliados cercanos
 bonus_per_ally       = 0.4   # 40% de bonus por aliado cercano
 max_bonus_multiplier = 6.5    # tope: multiplicador máximo de 6.5x
