@@ -147,6 +147,7 @@ PlayerDto GameRoom::buildPlayerDto(const Player &player) const
   // Raza y clase.
   dto.raza = player.getRace().name;
   dto.clase = player.getCls().name;
+  dto.clanName = player.getClanName();
 
   // Apariencia.
   dto.headId = 0;

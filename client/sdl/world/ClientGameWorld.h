@@ -74,6 +74,8 @@ public:
     Entity *getRemotePlayerEntity(uint32_t entityId) const;
 
     void updateRemotePlayerHealth(uint32_t entityId, int hp, int hpMax);
+
+    void updateRemotePlayerClan(uint32_t playerId, const std::string &clanName);
 };
 
 #endif // TALLER_TP_CLIENTGAMEWORLD_H

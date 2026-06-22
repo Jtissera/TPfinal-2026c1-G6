@@ -440,6 +440,7 @@ PlayerDto LobbyHandler::buildPlayerDto(const Player &player) const
   dto.nombre = player.getName();
   dto.raza = player.getRace().name;
   dto.clase = player.getCls().name;
+  dto.clanName = player.getClanName();
   dto.headId = 0;
   dto.level = player.getLevel();
   dto.hp = player.getHp();

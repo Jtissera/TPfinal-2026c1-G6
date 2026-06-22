@@ -248,7 +248,7 @@ Entity *AssetManager::CreatePlayer(const PlayerDto &data)
     player.addComponent<TransformComponent>(data.xpos, data.ypos);
     player.addComponent<SpriteComponent>(*this, bodyTextureId, true, playerAnims, bodyConfig);
     player.getComponent<SpriteComponent>().setHeadTexture(headTextureId, data.headId);
-    player.addComponent<NameplateComponent>(data.nombre, data.clase, data.level, "", NameplateType::LocalPlayer, "eagle_lake");
+    player.addComponent<NameplateComponent>(data.nombre, data.clase, data.level, data.clanName, NameplateType::LocalPlayer, "eagle_lake");
     player.addComponent<EquipmentComponent>(*this, data.raza);
     player.addComponent<KeyboardController>(sendQueue);
     player.addComponent<ColliderComponent>("player");
@@ -650,7 +650,7 @@ Entity *AssetManager::CreateRemotePlayer(const PlayerDto &data)
 
     // Cabeza del jugador remoto.
     remotePlayer.getComponent<SpriteComponent>().setHeadTexture(headTextureId, data.headId);
-    remotePlayer.addComponent<NameplateComponent>(data.nombre, data.clase, data.level, "", NameplateType::RemotePlayer, "eagle_lake");
+    remotePlayer.addComponent<NameplateComponent>(data.nombre, data.clase, data.level, data.clanName, NameplateType::RemotePlayer, "eagle_lake");
     remotePlayer.addComponent<HealthBarComponent>(data.hp, data.hpMax, 80, 10, 100);
     remotePlayer.addComponent<EquipmentComponent>(*this, data.raza);
     remotePlayer.addComponent<ColliderComponent>("remote_player");

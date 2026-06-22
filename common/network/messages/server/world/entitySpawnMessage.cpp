@@ -19,7 +19,7 @@ void EntitySpawnMessage::serializeBody(PacketWriter& writer) const {
     writer.writeUint32(playerDto.playerID);
     writer.writeString(playerDto.raza);
     writer.writeString(playerDto.clase);
-
+    writer.writeString(playerDto.clanName);
     writer.writeUint32(static_cast<uint32_t>(playerDto.headId));
     writer.writeUint8(playerDto.level);
 
