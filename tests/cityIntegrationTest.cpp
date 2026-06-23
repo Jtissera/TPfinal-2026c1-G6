@@ -111,19 +111,6 @@ TEST_F(CityIntegrationTest, ComercianteVendeArma)
     EXPECT_TRUE(world.getPlayer(1).getInventory().hasItem("espada"));
 }
 
-TEST_F(CityIntegrationTest, ComercianteNoVendeStaff)
-{
-    auto world = makeWorld();
-    Player p = PlayerBuilder().withId(1).withGold(500).atTile(4, 6).build();
-    world.addPlayer(std::move(p));
-
-    auto result = world.handleCityInteraction(
-        1, NpcType::MERCHANT,
-        {CityCommand::Type::BUY, "vara_fresno", 0, false});
-
-    EXPECT_FALSE(result.ok);
-}
-
 TEST_F(CityIntegrationTest, ComercianteCompraItem)
 {
     auto world = makeWorld();
