@@ -90,167 +90,370 @@ void CombatHandler::handle(uint32_t clientId, const Message &msg,
     return;
   }
 }
+
 void CombatHandler::handleAttackPlayer(uint32_t attackerId, uint32_t targetId,
                                        GameWorld &world, Monitor &monitor) {
-  // Obtenemos al atacante desde el mundo.
-  // Si llegó hasta acá, el targetId ya corresponde a un jugador existente.
+
   Player &attacker = world.getPlayer(attackerId);
 
-  // Un atacante muerto o fantasma no puede atacar ni curar.
+  // Si el atacante está muerto o fantasma, no puede atacar.
   if (!attacker.isAlive() || attacker.isGhost()) {
+    std::cout << "[PVP DEBUG] cortado: attacker muerto/fantasma attackerId="
+              << attackerId
+              << std::endl;
     return;
   }
 
+  // Obtenemos el arma equipada.
   const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
-  const bool isHealWeapon = weapon != nullptr && weapon->effect == ItemEffect::HEAL;
 
+  // Detectamos si el arma es de curación.
+  const bool isHealWeapon =
+      weapon != nullptr && weapon->effect == ItemEffect::HEAL;
 
+  std::cout << "[PVP DEBUG] weapon="
+            << (weapon ? static_cast<int>(weapon->catalogId) : -1)
+            << " isHealWeapon="
+            << isHealWeapon
+            << std::endl;
+
+  // Si se apunta a sí mismo sin arma de curación, bloqueamos.
   if (attackerId == targetId && !isHealWeapon) {
+    std::cout << "[PVP DEBUG] cortado: self target sin heal" << std::endl;
     return;
   }
 
+  // Obtenemos al objetivo.
   Player &target = world.getPlayer(targetId);
 
+  std::cout << "[PVP DEBUG] target hp="
+            << target.getHp()
+            << "/"
+            << target.getMaxHp()
+            << " isAlive="
+            << target.isAlive()
+            << " isGhost="
+            << target.isGhost()
+            << std::endl;
 
+  // Si el objetivo está muerto o fantasma, no puede recibir ataque/curación.
   if (!target.isAlive() || target.isGhost() || target.getHp() == 0) {
+    std::cout << "[PVP DEBUG] cortado: target muerto/fantasma/hp0 targetId="
+              << targetId
+              << std::endl;
     return;
   }
 
+  // Caso flauta/heal.
   if (isHealWeapon) {
+    std::cout << "[PVP DEBUG] entra por HEAL" << std::endl;
 
     if (itemEffectHandler.apply(*weapon, attacker, &target)) {
+      std::cout << "[PVP DEBUG] heal aplicado targetHp="
+                << target.getHp()
+                << " attackerMana="
+                << attacker.getMana()
+                << std::endl;
 
       if (attackerId == targetId) {
         sendStats(attackerId, attacker, monitor);
       } else {
-        // El atacante gastó maná.
         sendStats(attackerId, attacker, monitor);
-
-        // El target recuperó vida.
         sendStats(targetId, target, monitor);
       }
-
 
       monitor.broadcast(std::make_shared<const PlayerHealthMessage>(
           targetId,
           static_cast<uint16_t>(target.getHp()),
           static_cast<uint16_t>(target.getMaxHp())));
 
-      // Avisamos a todos el efecto visual de curación.
-      // El cliente debería mostrar el visual_effect de la flauta.
       monitor.broadcast(std::make_shared<const PlayerAttackVisualMessage>(
           attackerId,
           targetId,
           PlayerAttackVisualType::Heal,
           weapon->stats.visualEffectId));
     } else {
+      std::cout << "[PVP DEBUG] heal falló" << std::endl;
+
       sendCombatChat(attackerId,
                      "No tenés mana suficiente para curar.",
                      ChatMsgType::INFO,
                      monitor);
 
-      // Reenviamos stats para dejar el HUD sincronizado.
       sendStats(attackerId, attacker, monitor);
     }
 
-    // Como era curación, no seguimos al combate normal.
     return;
   }
 
-  // A partir de acá sí estamos procesando un ataque hostil.
-  // Por eso recién ahora validamos zona segura.
+  // Desde acá es ataque hostil.
   const Tile &attackerTile =
       world.getTileAt(attacker.getTileX(), attacker.getTileY());
 
   const Tile &targetTile =
       world.getTileAt(target.getTileX(), target.getTileY());
 
-  // En zona segura no se puede atacar a otros jugadores.
+
   if (attackerTile.zone == ZoneType::SAFE ||
       targetTile.zone == ZoneType::SAFE) {
+    std::cout << "[PVP DEBUG] cortado: zona segura" << std::endl;
+
     sendCombatChat(attackerId,
                    "No podés atacar jugadores en zona segura.",
                    ChatMsgType::INFO,
                    monitor);
     return;
-  }
+      }
 
-void CombatHandler::handleAttackNpc(uint32_t attackerId, uint32_t npcId,
-                                    GameWorld &world, Monitor &monitor) {
-  Player &attacker = world.getPlayer(attackerId);
+  std::cout << "[PVP DEBUG] antes de combatSystem.attackPlayer" << std::endl;
 
-  if (!attacker.isAlive() || attacker.isGhost())
-    return;
+  CombatSystem::Result result =
+      combatSystem.attackPlayer(attacker, target, world);
 
-  const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
-  if (weapon != nullptr && weapon->effect == ItemEffect::HEAL)
-    return;
+  std::cout << "[PVP DEBUG] result valid="
+            << result.valid
+            << " damage="
+            << result.damage
+            << " dodged="
+            << result.dodged
+            << " killed="
+            << result.killed
+            << " failReason="
+            << static_cast<int>(result.failReason)
+            << std::endl;
 
-  Npc &npc = world.getNpc(npcId);
-  if (!npc.isAlive())
-    return;
-  if (!npc.isHostile())
-    return;
-
-  CombatSystem::Result result = combatSystem.attackNpc(attacker, npc, world);
-
+  // Si el ataque no fue válido, avisamos el motivo cuando corresponde
+  // y terminamos sin aplicar feedback de daño.
   if (!result.valid) {
-    if (result.failReason == CombatSystem::Result::FailReason::NO_MANA)
+    if (result.failReason == CombatSystem::Result::FailReason::FRIENDLY_FIRE) {
+      sendCombatChat(attackerId,
+                     "No podés atacar a tus aliados.",
+                     ChatMsgType::INFO,
+                     monitor);
+    } else if (result.failReason == CombatSystem::Result::FailReason::NO_MANA) {
       sendCombatChat(attackerId,
                      "No tenés mana suficiente para realizar ese hechizo.",
-                     ChatMsgType::INFO, monitor);
+                     ChatMsgType::INFO,
+                     monitor);
+    } else if (result.failReason == CombatSystem::Result::FailReason::LEVEL_TOO_LOW) {
+      sendCombatChat(attackerId,
+                     "No podés atacar a jugadores de nivel bajo.",
+                     ChatMsgType::INFO,
+                     monitor);
+    } else if (result.failReason == CombatSystem::Result::FailReason::LEVEL_DIFF_TOO_HIGH) {
+      sendCombatChat(attackerId,
+                     "La diferencia de nivel es demasiado grande para atacar.",
+                     ChatMsgType::INFO,
+                     monitor);
+    }
+
+    // Reenviamos stats del atacante por si el intento consumió algo.
     sendStats(attackerId, attacker, monitor);
     return;
   }
 
+  // Si el ataque fue válido y no fue esquivado,
+  // avisamos al cliente que debe mostrar el efecto visual.
   if (!result.dodged) {
-    monitor.sendTo(attackerId, std::make_shared<const CombatLogMessage>(
-                                   std::to_string(npcId)));
-    broadcastPlayerAttackVisual(attackerId, npcId, attacker, monitor);
+    monitor.sendTo(attackerId,
+                   std::make_shared<const CombatLogMessage>(
+                       std::to_string(targetId)));
+
+    broadcastPlayerAttackVisual(attackerId, targetId, attacker, monitor);
   }
 
-  monitor.broadcast(std::make_shared<const NpcHealthMessage>(
-      npcId, static_cast<uint16_t>(npc.getHp()),
-      static_cast<uint16_t>(npc.getMaxHp())));
+  // Si esquivó, no hay daño real.
+  // Avisamos a ambos jugadores y terminamos.
+  if (result.dodged) {
+    sendCombatChat(attackerId,
+                   "¡Tu ataque fue esquivado!",
+                   ChatMsgType::INFO,
+                   monitor);
 
-  if (result.killed) {
-    NpcDropResult dropResult = world.handleNpcDeath(npcId, attackerId);
+    sendCombatChat(targetId,
+                   "¡Esquivaste el ataque!",
+                   ChatMsgType::INFO,
+                   monitor);
 
-    if (dropResult.hasGold)
+    sendStats(attackerId, attacker, monitor);
+    sendStats(targetId, target, monitor);
+    return;
+  }
+
+  // Si el golpe mató al jugador, procesamos muerte PvP.
+  if (result.killed || target.getHp() <= 0) {
+    DeathResult deathResult =
+        world.handlePlayerDeath(targetId, attackerId);
+
+    // Si el jugador muerto tenía oro en exceso, lo tiramos al suelo.
+    if (deathResult.excessGold > 0) {
       monitor.broadcast(std::make_shared<const GoldOnGroundMessage>(
-          dropResult.goldInstanceId, dropResult.goldAmount, dropResult.tileX,
-          dropResult.tileY));
+          deathResult.goldInstanceId,
+          deathResult.excessGold,
+          deathResult.tileX,
+          deathResult.tileY));
+    }
 
-    if (dropResult.hasItem)
+    // Avisamos por chat al asesino.
+    sendCombatChat(attackerId,
+                   "¡Mataste a " + target.getName() + "!",
+                   ChatMsgType::DAMAGE_DEALT,
+                   monitor);
+
+    // Avisamos por chat al muerto.
+    sendCombatChat(targetId,
+                   "¡Fuiste asesinado por " + attacker.getName() + "!",
+                   ChatMsgType::DAMAGE_TAKEN,
+                   monitor);
+
+    // Si la muerte dropeó ítems, los mostramos en el suelo.
+    for (const Item &item : deathResult.droppedItems) {
       monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(
-          dropResult.droppedItem, dropResult.tileX, dropResult.tileY));
+          item,
+          deathResult.tileX,
+          deathResult.tileY));
+    }
 
-    sendCombatChat(attackerId, "¡Mataste al " + npc.getName() + "!",
-                   ChatMsgType::DAMAGE_DEALT, monitor);
+    // Actualizamos atacante por experiencia/oro/level.
     sendStats(attackerId, attacker, monitor);
     sendLevelUpIfNeeded(attackerId, attacker, monitor);
+
+    // Actualizamos inventario del muerto por drops.
+    sendInventory(targetId, target, monitor);
+
+    // Avisamos al jugador muerto que murió.
+    // Esto permite que su cliente pase a estado fantasma.
+    monitor.sendTo(targetId,
+                   std::make_shared<const PlayerDiedMessage>(targetId));
+
+    // Avisamos a todos los demás clientes que ese jugador murió.
+    // Esto permite que los remotos lo vean como fantasma.
+    monitor.broadcast(std::make_shared<const PlayerDiedMessage>(targetId));
+
+    // Actualizamos el HUD del jugador muerto.
+    sendStats(targetId, target, monitor);
+
+    // Avisamos a todos que la vida del target quedó en 0.
+    // Esto actualiza la barra de vida remota.
+    monitor.broadcast(std::make_shared<const PlayerHealthMessage>(
+        targetId,
+        static_cast<uint16_t>(target.getHp()),
+        static_cast<uint16_t>(target.getMaxHp())));
+
     return;
   }
 
-  if (result.dodged) {
-    sendCombatChat(attackerId, "¡El " + npc.getName() + " esquivó tu ataque!",
-                   ChatMsgType::INFO, monitor);
-    sendStats(attackerId, attacker, monitor);
-    return;
-  }
-
+  // Caso normal: golpe válido, no esquivado, no mató.
+  // Avisamos al atacante cuánto daño causó.
   sendCombatChat(attackerId,
                  "Causaste " + std::to_string(result.damage) +
-                     " pts de daño al " + npc.getName() + ".",
-                 ChatMsgType::DAMAGE_DEALT, monitor);
+                     " pts de daño a " + target.getName() + ".",
+                 ChatMsgType::DAMAGE_DEALT,
+                 monitor);
 
+  // Avisamos al jugador atacado cuánto daño recibió.
+  sendCombatChat(targetId,
+                 attacker.getName() + " te causó " +
+                     std::to_string(result.damage) + " pts de daño.",
+                 ChatMsgType::DAMAGE_TAKEN,
+                 monitor);
+
+  // Damos experiencia si corresponde.
   world.giveExperience(attackerId, result.expGained);
-  npc.setTargetId(attackerId);
-  npc.setState(NpcState::CHASING);
 
+  // Actualizamos HUD de ambos jugadores.
   sendStats(attackerId, attacker, monitor);
+  sendStats(targetId, target, monitor);
+
+  // Si subió de nivel, avisamos.
   sendLevelUpIfNeeded(attackerId, attacker, monitor);
+
+  // Actualizamos la barra de vida remota sobre el jugador atacado.
+  monitor.broadcast(std::make_shared<const PlayerHealthMessage>(
+      targetId,
+      static_cast<uint16_t>(target.getHp()),
+      static_cast<uint16_t>(target.getMaxHp())));
 }
+
+
+
+  void CombatHandler::handleAttackNpc(uint32_t attackerId, uint32_t npcId,
+                                      GameWorld &world, Monitor &monitor) {
+    Player &attacker = world.getPlayer(attackerId);
+
+    if (!attacker.isAlive() || attacker.isGhost())
+      return;
+
+    const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
+    if (weapon != nullptr && weapon->effect == ItemEffect::HEAL)
+      return;
+
+    Npc &npc = world.getNpc(npcId);
+    if (!npc.isAlive())
+      return;
+    if (!npc.isHostile())
+      return;
+
+    CombatSystem::Result result = combatSystem.attackNpc(attacker, npc, world);
+
+    if (!result.valid) {
+      if (result.failReason == CombatSystem::Result::FailReason::NO_MANA)
+        sendCombatChat(attackerId,
+                       "No tenés mana suficiente para realizar ese hechizo.",
+                       ChatMsgType::INFO, monitor);
+      sendStats(attackerId, attacker, monitor);
+      return;
+    }
+
+    if (!result.dodged) {
+      monitor.sendTo(attackerId, std::make_shared<const CombatLogMessage>(
+                                     std::to_string(npcId)));
+      broadcastPlayerAttackVisual(attackerId, npcId, attacker, monitor);
+    }
+
+    monitor.broadcast(std::make_shared<const NpcHealthMessage>(
+        npcId, static_cast<uint16_t>(npc.getHp()),
+        static_cast<uint16_t>(npc.getMaxHp())));
+
+    if (result.killed) {
+      NpcDropResult dropResult = world.handleNpcDeath(npcId, attackerId);
+
+      if (dropResult.hasGold)
+        monitor.broadcast(std::make_shared<const GoldOnGroundMessage>(
+            dropResult.goldInstanceId, dropResult.goldAmount, dropResult.tileX,
+            dropResult.tileY));
+
+      if (dropResult.hasItem)
+        monitor.broadcast(std::make_shared<const ItemOnGroundMessage>(
+            dropResult.droppedItem, dropResult.tileX, dropResult.tileY));
+
+      sendCombatChat(attackerId, "¡Mataste al " + npc.getName() + "!",
+                     ChatMsgType::DAMAGE_DEALT, monitor);
+      sendStats(attackerId, attacker, monitor);
+      sendLevelUpIfNeeded(attackerId, attacker, monitor);
+      return;
+    }
+
+    if (result.dodged) {
+      sendCombatChat(attackerId, "¡El " + npc.getName() + " esquivó tu ataque!",
+                     ChatMsgType::INFO, monitor);
+      sendStats(attackerId, attacker, monitor);
+      return;
+    }
+
+    sendCombatChat(attackerId,
+                   "Causaste " + std::to_string(result.damage) +
+                       " pts de daño al " + npc.getName() + ".",
+                   ChatMsgType::DAMAGE_DEALT, monitor);
+
+    world.giveExperience(attackerId, result.expGained);
+    npc.setTargetId(attackerId);
+    npc.setState(NpcState::CHASING);
+
+    sendStats(attackerId, attacker, monitor);
+    sendLevelUpIfNeeded(attackerId, attacker, monitor);
+  }
+
 
 std::string CombatHandler::resolveAttackEffectId(const Player &attacker) const {
   const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);

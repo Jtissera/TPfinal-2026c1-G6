@@ -6,7 +6,7 @@
 class ItemEffectHandler
 {
 public:
-  ItemEffectHandler();
+  ItemEffectHandler() = default;
 
   bool apply(const Item &item, Player &user, Player *target = nullptr);
 
