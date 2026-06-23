@@ -56,6 +56,7 @@ void LobbyServerDeserializersModule::registerDeserializers(
         playerDto.playerID = reader.readUint32();
         playerDto.raza = reader.readString();
         playerDto.clase = reader.readString();
+        playerDto.clanName = reader.readString();
         playerDto.headId = static_cast<int>(reader.readUint32());
         playerDto.level = reader.readUint8();
 

@@ -765,6 +765,7 @@ void ChatHandler::handleClanMemberAction(uint32_t senderId,
     case ClanManager::Result::OK:
         sendChat(senderId, successMsgToSender, ChatMsgType::CLAN, monitor);
         clanManager.syncPlayerClanState(targetNick);
+        clanManager.syncPlayerClanState(p.getName());
         clanManager.notifyPlayer(targetNick, successMsgToTarget);
         return;
     default:

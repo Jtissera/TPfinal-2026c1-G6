@@ -2126,23 +2126,47 @@ void Game::handlePlayerStats(const PlayerStatsMessage &stats)
 }
 void Game::handleEntitySpawn(const EntitySpawnMessage &spawnMsg)
 {
-
+  // DTO público del jugador que spawneó.
   const PlayerDto &dto = spawnMsg.getPlayerDto();
 
-  std::cout << "[CLIENT] MSG_ENTITY_SPAWN recibido. playerID="
-            << static_cast<int>(dto.playerID)
-            << " localID=" << static_cast<int>(playerDto.playerID) << " pos=("
-            << dto.xpos << ", " << dto.ypos << ")" << std::endl;
+  std::cout << "[ENTITY SPAWN DTO CLAN] id="
+            << dto.playerID
+            << " name='"
+            << dto.nombre
+            << "' clan='"
+            << dto.clanName
+            << "' localId="
+            << playerDto.playerID
+            << std::endl;
 
+  // Si el spawn corresponde al jugador local, no lo creamos como remoto.
+  // Usamos el DTO para sincronizar datos visuales que quizás no llegaron
+  // completos por JoinOkMessage, por ejemplo clanName.
+  if (static_cast<uint32_t>(dto.playerID) ==
+      static_cast<uint32_t>(playerDto.playerID))
+  {
+    playerDto.clanName = dto.clanName;
+
+    if (player != nullptr && player->hasComponent<NameplateComponent>())
+    {
+      player->getComponent<NameplateComponent>().setClan(dto.clanName);
+    }
+
+    std::cout << "[LOCAL SPAWN CLAN SYNC] id="
+              << dto.playerID
+              << " clan='"
+              << dto.clanName
+              << "'"
+              << std::endl;
+
+    return;
+  }
+
+  // Si no es local, sí corresponde crearlo/actualizarlo como remoto.
   if (clientWorld != nullptr)
   {
     clientWorld->spawnRemotePlayer(dto);
   }
-  std::cout << "[CLIENT] MSG_ENTITY_SPAWN recibido. playerID="
-            << static_cast<int>(dto.playerID)
-            << " localID=" << static_cast<int>(playerDto.playerID) << " pos=("
-            << dto.xpos << ", " << dto.ypos << ")"
-            << " esFantasma=" << dto.esFantasma << std::endl;
 }
 void Game::handleInventoryUpdate(const InventoryUpdateMessage &inventoryMsg)
 {
@@ -2939,33 +2963,20 @@ void Game::handlePlayerHeathVisual(const PlayerHealthMessage &msg)
 
 void Game::handleClanUpdate(const ClanUpdateMessage &msg)
 {
-  std::cout << "[CLIENT CLAN UPDATE] playerId="
-            << msg.getPlayerId()
-            << " clan='"
-            << msg.getClanName()
-            << "' founder="
-            << msg.getIsFounder()
-            << " localId="
-            << playerDto.playerID
-            << std::endl;
-
   const uint32_t playerId = msg.getPlayerId();
   const std::string &clanName = msg.getClanName();
 
-  if (playerId == static_cast<uint32_t>(playerDto.playerID))
+  const bool isLocal =
+      playerId == static_cast<uint32_t>(playerDto.playerID) ||
+      (clientWorld != nullptr && clientWorld->isLocalPlayer(playerId));
+
+  if (isLocal)
   {
     playerDto.clanName = clanName;
 
     if (player != nullptr && player->hasComponent<NameplateComponent>())
     {
-      std::cout << "[CLIENT CLAN UPDATE] actualizo local clan='"
-                << clanName << "'" << std::endl;
-
       player->getComponent<NameplateComponent>().setClan(clanName);
-    }
-    else
-    {
-      std::cout << "[CLIENT CLAN UPDATE] local sin NameplateComponent" << std::endl;
     }
 
     return;
@@ -2973,13 +2984,6 @@ void Game::handleClanUpdate(const ClanUpdateMessage &msg)
 
   if (clientWorld != nullptr)
   {
-    std::cout << "[CLIENT CLAN UPDATE] actualizo remoto playerId="
-              << playerId
-              << " clan='"
-              << clanName
-              << "'"
-              << std::endl;
-
     clientWorld->updateRemotePlayerClan(playerId, clanName);
   }
 }
