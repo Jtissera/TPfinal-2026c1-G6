@@ -52,10 +52,10 @@ spawn_interval_ticks = 600
 max_population       = 150
 spawn_batch_size     = 3
 aggro_range        = 4
-drop_chance_nothing  = 0.80
-drop_chance_gold     = 0.08
-drop_chance_potion   = 0.01
-drop_chance_item     = 0.01
+drop_chance_nothing  = 0.70
+drop_chance_gold     = 0.20
+drop_chance_potion   = 0.05
+drop_chance_item     = 0.05
 respawn_ms           = 10000
 
 [clan]
@@ -346,6 +346,9 @@ detection_range = 3
 home_range = 10
 attack_cooldown_ms = 1600
 move_cooldown_ms = 700
+gold_drop_chance = 0.10
+gold_drop_min = 1
+gold_drop_max = 6
 zones = ["COMBAT"]
 
 [npcs.zombie]
@@ -360,9 +363,9 @@ detection_range = 3
 home_range = 8
 attack_cooldown_ms = 2000
 move_cooldown_ms = 1000
-gold_drop_chance = 0.08
-gold_drop_min = 1
-gold_drop_max = 8
+gold_drop_chance = 0.15
+gold_drop_min = 2
+gold_drop_max = 6
 zones = ["COMBAT"]
 
 [npcs.skeleton]
