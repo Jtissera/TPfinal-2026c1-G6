@@ -1,18 +1,21 @@
 #include "raceRepository.h"
-#include <stdexcept>
 
 RaceRepository::RaceRepository(const toml::table &config)
 {
-  const auto *racesSection = config.get_as<toml::table>("races");
+  const toml::table *racesSection = config.get_as<toml::table>("races");
   if (!racesSection)
+  {
     throw std::runtime_error(
-        "RaceRepository: falta la seccion [races] en el TOML");
+        "RaceRepository: missing [races] section in TOML");
+  }
 
   for (const auto &[key, value] : *racesSection)
   {
-    const auto *entry = value.as_table();
+    const toml::table *entry = value.as_table();
     if (!entry)
+    {
       continue;
+    }
     std::string name(key.str());
     races[name] = parse(name, *entry);
   }
@@ -20,10 +23,15 @@ RaceRepository::RaceRepository(const toml::table &config)
 
 const RaceStats &RaceRepository::get(const std::string &raceName) const
 {
-  auto it = races.find(raceName);
+  std::map<std::string, RaceStats>::const_iterator it =
+      races.find(raceName);
+
   if (it == races.end())
-    throw std::out_of_range("RaceRepository: raza desconocida '" + raceName +
-                            "'");
+  {
+    throw std::out_of_range(
+        "RaceRepository: unknown race '" + raceName + "'");
+  }
+
   return it->second;
 }
 
