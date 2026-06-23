@@ -101,7 +101,7 @@ void CombatHandler::handleAttackPlayer(uint32_t attackerId, uint32_t targetId,
 
   if (!attacker.isAlive() || attacker.isGhost())
     return;
-  if (!target.isAlive() || target.isGhost())
+  if ((!target.isAlive() && !target.isMeditating()) || target.isGhost() || target.getHp() == 0)
     return;
 
   const Tile &attackerTile =

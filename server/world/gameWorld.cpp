@@ -351,9 +351,9 @@ void GameWorld::resolveNpcAttacks(NpcTickResult &npcResult, WorldTickResult &res
 
         Player &target = playerManager.getPlayer(attack.targetPlayerId);
 
-        if (!target.isAlive() || target.isGhost() || target.getHp() == 0)
+        if ((!target.isAlive() && !target.isMeditating()) || target.isGhost() || target.getHp() == 0)
             continue;
-
+        
         target.takeDamage(attack.damage);
 
         result.playerHits.push_back({attack.targetPlayerId, attack.damage});

@@ -50,6 +50,9 @@ void Player::takeDamage(int16_t dmg)
   if (infiniteHp)
     return;
 
+  if (isMeditating())
+    state = PlayerState::ALIVE;
+
   hp = std::max<int16_t>(0, static_cast<int16_t>(hp - dmg));
 }
 

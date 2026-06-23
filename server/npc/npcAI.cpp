@@ -48,7 +48,7 @@ uint32_t NpcAI::findClosestPlayerId(
   if (currentTarget != 0) {
     std::unordered_map<uint32_t, Player>::const_iterator it =
         players.find(currentTarget);
-    if (it != players.end() && !it->second.isGhost()) {
+    if (it != players.end() && !it->second.isGhost() && (it->second.isAlive() || it->second.isMeditating())) {
       int dist = distance(npc.getTileX(), npc.getTileY(), it->second.getTileX(),
                           it->second.getTileY());
       if (dist <= npc.getDetectionRange()) {
@@ -61,9 +61,10 @@ uint32_t NpcAI::findClosestPlayerId(
   int minDist = npc.getDetectionRange() + 1;
 
   for (const std::pair<const uint32_t, Player> &entry : players) {
-    if (entry.second.isGhost()) {
-      continue;
+    if (entry.second.isGhost() || (!entry.second.isAlive() && !entry.second.isMeditating())) {
+    continue;
     }
+
     int dist = distance(npc.getTileX(), npc.getTileY(), entry.second.getTileX(),
                         entry.second.getTileY());
     if (dist < minDist) {
