@@ -14,7 +14,6 @@
 #include "CollisionSystem.h"
 #include "GroundManager.h"
 #include "OccupancySystem.h"
-#include "SpawnManager.h"
 #include "../bank/bankRepository.h"
 #include "../resurrection/resurrectionSystem.h"
 #include "../city/priestHandler.h"
