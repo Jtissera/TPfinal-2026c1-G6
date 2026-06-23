@@ -25,7 +25,7 @@ move_step = 8.0
 
 [combat]
 max_level_diff  = 10
-npc_gold_drop_max = 0.2
+npc_gold_drop_max = 0.70
 npc_xp_bonus_max  = 0.1
 attack_range      = 1
 ranged_attack_range = 10
@@ -52,10 +52,10 @@ spawn_interval_ticks = 600
 max_population       = 150
 spawn_batch_size     = 3
 aggro_range        = 4
-drop_chance_nothing  = 0.70
-drop_chance_gold     = 0.20
-drop_chance_potion   = 0.05
-drop_chance_item     = 0.05
+drop_chance_nothing  = 0.40
+drop_chance_gold     = 0.40
+drop_chance_potion   = 0.10
+drop_chance_item     = 0.10
 respawn_ms           = 10000
 
 [clan]
@@ -673,8 +673,6 @@ items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado", "p
 
 [city.merchant_blacklist]
 items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado"]
-
-
 
 [initial_inventory.cleric]
 items = ["capucha", "tunica_iniciado", "uniforme_argentino", "vara_fresno"]
