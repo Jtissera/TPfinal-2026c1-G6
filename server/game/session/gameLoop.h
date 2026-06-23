@@ -4,20 +4,31 @@
 #include "../../lobby/leaveEvent.h"
 #include "../../persistence/playerArchive.h"
 #include "../common/network/messages/client/movement/moveMessage.h"
+#include "../common/network/messages/server/chat/chatNotificationMessage.h"
+#include "../common/network/messages/server/inventory/goldOnGroundMessage.h"
+#include "../common/network/messages/server/inventory/inventoryUpdateMessage.h"
+#include "../common/network/messages/server/inventory/itemOnGroundMessage.h"
+#include "../common/network/messages/server/npc/npcAttackMessage.h"
+#include "../common/network/messages/server/npc/npcMoveMessage.h"
+#include "../common/network/messages/server/npc/npcSpawnMessage.h"
 #include "../common/network/messages/server/player/EntityDespawnMessage.h"
 #include "../common/network/messages/server/player/EntityMoveMessage.h"
+#include "../common/network/messages/server/player/playerDiedMessage.h"
+#include "../common/network/messages/server/player/playerHealthMessage.h"
+#include "../common/network/messages/server/player/playerResurrectedMessage.h"
+#include "../common/network/messages/server/error/errorMessage.h"
 #include "../common/network/protocol/clientOpCode.h"
 #include "../session/statManager.h"
-
-#include <iostream>
-#include <memory>
-
 #include "../../clientMessage.h"
 #include "../../monitorQueues.h"
 #include "../../world/gameWorld.h"
 #include "../common/queue.h"
 #include "../common/thread.h"
 #include "ActionDispatcher.h"
+
+#include <fstream>
+#include <iostream>
+#include <memory>
 class ClanManager;
 
 class GameLoop : public Thread
@@ -53,6 +64,7 @@ private:
 
   Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue;
   void handleInstanceTransition(const GameWorld::InstanceEntry &entry);
+  std::string resolveMapPath(const std::string &targetMap) const;
 
   void processMessage(const ClientMessage &incoming);
   void worldUpdate(float deltaSeconds);

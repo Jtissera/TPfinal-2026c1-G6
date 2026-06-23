@@ -1,12 +1,13 @@
-#include "combatHandler.h"
+#include "combatResolver.h"
 
-CombatHandler::CombatHandler(CombatSystem &combat, ItemEffectHandler &effects,
-                             GameFormulas &formulas)
+CombatResolver::CombatResolver(CombatSystem &combat,
+                               ItemEffectHandler &effects,
+                               GameFormulas &formulas)
     : combat(combat), effects(effects), formulas(formulas) {}
 
-CombatHandler::Result CombatHandler::handle(uint32_t attackerId,
-                                            uint32_t targetId,
-                                            GameWorld &world)
+CombatResolver::Result CombatResolver::handle(uint32_t attackerId,
+                                              uint32_t targetId,
+                                              GameWorld &world)
 {
   Player &attacker = world.getPlayer(attackerId);
   Player &target = world.getPlayer(targetId);
@@ -18,9 +19,9 @@ CombatHandler::Result CombatHandler::handle(uint32_t attackerId,
   return handleDamageAttack(attackerId, attacker, target, world);
 }
 
-CombatHandler::Result CombatHandler::handleHealWeapon(Player &attacker,
-                                                      Player &target,
-                                                      const Item &weapon)
+CombatResolver::Result CombatResolver::handleHealWeapon(Player &attacker,
+                                                        Player &target,
+                                                        const Item &weapon)
 {
   Result result;
   result.valid = effects.apply(weapon, attacker, &target);
@@ -28,10 +29,10 @@ CombatHandler::Result CombatHandler::handleHealWeapon(Player &attacker,
   return result;
 }
 
-CombatHandler::Result CombatHandler::handleDamageAttack(uint32_t attackerId,
-                                                        Player &attacker,
-                                                        Player &target,
-                                                        GameWorld &world)
+CombatResolver::Result CombatResolver::handleDamageAttack(uint32_t attackerId,
+                                                          Player &attacker,
+                                                          Player &target,
+                                                          GameWorld &world)
 {
   Result result;
 
@@ -52,7 +53,6 @@ CombatHandler::Result CombatHandler::handleDamageAttack(uint32_t attackerId,
   {
     world.handlePlayerDeath(target.getId(), attackerId);
     result.targetDied = true;
-
     if (attacker.checkAndClearLevelUp())
       result.attackerLeveledUp = true;
   }

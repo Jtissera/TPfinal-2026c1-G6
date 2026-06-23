@@ -12,6 +12,7 @@
 #include <optional>
 
 #include "../../../common/network/messages/server/lobby/gameListMessage.h"
+#include "common/network/messages/internal/clanSyncMessage.h"
 #include "../../../common/queue.h"
 #include "../../clientMessage.h"
 #include "../../lobby/instanceTransitionEvent.h"
@@ -59,11 +60,9 @@ public:
   std::string getRoomMapPath(uint32_t gameId) const;
   void restoreFromArchive();
 
-  // ── Control de sesión única por personaje ──────────────────────────────
   bool tryMarkOnline(uint32_t clientId, const std::string &characterName);
   void markOffline(uint32_t clientId);
 
-  // ── Clan / mensajería dirigida ──────────────────────────────────────────
   void sendToClient(uint32_t clientId, const std::shared_ptr<const Message> &msg);
   std::optional<uint32_t> findOnlineClientByNick(const std::string &nick) const;
   void updatePlayerClanState(const std::string &nick, const std::string &clanName, bool isFounder);

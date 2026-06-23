@@ -48,7 +48,8 @@ public:
     int returnTileX;
     int returnTileY;
   };
-  struct NpcSpawnEvent {
+  struct NpcSpawnEvent
+  {
     uint32_t npcId;
     NpcType type;
     std::string name;
@@ -67,7 +68,6 @@ public:
     int tileX = 0;
     int tileY = 0;
   };
-
   struct WorldTickResult
   {
     std::vector<uint32_t> playersDied;
@@ -114,7 +114,7 @@ public:
       uint32_t npcId;
       Direction direction;
     };
-    
+
     std::vector<NpcAttackAnim> npcAttacksForAnim;
   };
 
@@ -134,8 +134,6 @@ public:
 
   const Tile &getTileAt(int tileX, int tileY) const;
 
-
-
   void giveExperience(uint32_t playerId, uint32_t exp, float xpMultiplier = 1.0f);
   DeathResult handlePlayerDeath(uint32_t targetId, uint32_t attackerId);
 
@@ -144,7 +142,7 @@ public:
 
   uint32_t addGoldOnGround(uint32_t amount, int tileX, int tileY);
   std::optional<uint32_t> pickGoldById(uint32_t instanceId);
-  const GroundManager& getGroundManager() const {return groundManager;}
+  const GroundManager &getGroundManager() const { return groundManager; }
 
   void spawnNpc(const std::string &typeName, int tileX, int tileY);
 
@@ -212,7 +210,8 @@ private:
     int tileX, tileY;
   };
 
-  struct GroundGold {
+  struct GroundGold
+  {
     uint32_t amount;
     int tileX, tileY;
   };
@@ -224,12 +223,12 @@ private:
   void tickNpcs(WorldTickResult &result);
 
   void spawnMapNpcs();
-  void loadInitialInventoryForPlayer(Player& player);
+  void loadInitialInventoryForPlayer(Player &player);
 
   int spawnTickCounter = 0;
   static constexpr int SPAWN_EVERY_N_TICKS = 200; // toml
-  static constexpr int MAX_NPCS = 20; // toml
-  static constexpr int SPAWN_BATCH_SIZE = 4; // toml
+  static constexpr int MAX_NPCS = 20;             // toml
+  static constexpr int SPAWN_BATCH_SIZE = 4;      // toml
 
   std::vector<std::pair<std::string, std::pair<int, int>>> spawnPoints;
 };
