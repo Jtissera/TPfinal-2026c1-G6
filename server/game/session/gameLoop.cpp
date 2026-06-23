@@ -62,8 +62,9 @@ void GameLoop::run()
 
 void GameLoop::processMessage(const ClientMessage &incoming)
 {
-    if (incoming.message->opCode() ==
-        static_cast<uint8_t>(ClientOpCode::MSG_LEAVE_GAME))
+    const uint8_t opcode = incoming.message->opCode();
+
+    if (opcode == static_cast<uint8_t>(ClientOpCode::MSG_LEAVE_GAME))
     {
         handleLeaveGame(incoming.clientId);
         return;
@@ -79,11 +80,13 @@ void GameLoop::handleLeaveGame(uint32_t clientId)
 {
     std::optional<Player> player = world.removePlayer(clientId);
     if (!player.has_value())
+    {
         return;
+    }
 
     Queue<std::shared_ptr<const Message>> *clientQueue = monitor.getQueue(clientId);
-    monitor.removeQueue(clientId);
 
+    monitor.removeQueue(clientId);
     leaveQueue.try_push(std::make_shared<LeaveEvent>(
         LeaveEvent{clientId, gameId, std::move(*player), clientQueue}));
 }
@@ -151,8 +154,8 @@ std::string GameLoop::resolveMapPath(const std::string &targetMap) const
     const std::string ext = ".argmap";
 
     const std::string pathInMazmorra = baseDir + "mazmorra/" + targetMap + ext;
-    const std::string pathInCaverna  = baseDir + "caverna/"  + targetMap + ext;
-    const std::string pathInRoot     = baseDir + targetMap + ext;
+    const std::string pathInCaverna = baseDir + "caverna/" + targetMap + ext;
+    const std::string pathInRoot = baseDir + targetMap + ext;
 
     if (std::ifstream(pathInMazmorra, std::ios::binary).good())
         return pathInMazmorra;

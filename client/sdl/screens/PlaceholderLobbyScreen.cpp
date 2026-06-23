@@ -239,6 +239,9 @@ void PlaceholderLobbyScreen::fetchGameList()
 
 void PlaceholderLobbyScreen::tryCreateGame()
 {
+    if (_readyToPlay)
+        return;
+
     if (newGameName.empty())
     {
         errorMsg = "Ingresa un nombre para la partida.";
@@ -291,6 +294,9 @@ void PlaceholderLobbyScreen::tryCreateGame()
 
 void PlaceholderLobbyScreen::tryJoinSelected()
 {
+    if (_readyToPlay)
+        return;
+
     if (selectedGame < 0 || selectedGame >= static_cast<int>(games.size()))
     {
         errorMsg = "Selecciona una partida primero.";
@@ -304,35 +310,22 @@ void PlaceholderLobbyScreen::tryJoinSelected()
     try
     {
         protocol.send(JoinGameMessage(games[selectedGame].id));
+
         auto response = protocol.receive();
+
         if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_JOIN_OK))
         {
             joinedPlayerDto =
                 static_cast<const JoinOkMessage &>(*response).getPlayerDto();
-
             this->chosenMapPath = games[selectedGame].mapPath;
-
-            // Si el jugador reconecta desde una instancia, el servidor manda
-            // un MapChangedMessage inmediatamente después del JoinOk.
-            // Lo consumimos acá para inicializar Game con el mapa correcto.
-            auto next = protocol.receive();
-            if (next->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_MAP_CHANGED))
-            {
-                const auto &mapMsg = static_cast<const MapChangedMessage &>(*next);
-                this->chosenMapPath = mapMsg.getMapPath();
-                std::cout << "[LOBBY] reconexión a instancia, mapa="
-                          << this->chosenMapPath << std::endl;
-            }
-            else
-            {
-                // No era MapChanged — lo guardamos para que GameClient lo procese.
-                pendingMessage = std::move(next);
-            }
-
             _readyToPlay = true;
         }
-        else if (response->opCode() == static_cast<uint8_t>(ServerOpCode::MSG_ERROR))
-            errorMsg = static_cast<const ErrorMessage &>(*response).getReason();
+        else if (response->opCode() ==
+                 static_cast<uint8_t>(ServerOpCode::MSG_ERROR))
+        {
+            errorMsg =
+                static_cast<const ErrorMessage &>(*response).getReason();
+        }
     }
     catch (const std::exception &e)
     {

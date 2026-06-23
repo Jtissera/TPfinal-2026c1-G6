@@ -155,15 +155,16 @@ void GameManager::addPlayerToGame(uint32_t gameId, Player player)
     for (const std::pair<const uint32_t, uint32_t> &entry : clientRoom)
     {
       if (entry.second != gameId)
-      {
         continue;
-      }
+
+      if (entry.first == playerId)
+        continue;
+
       std::unordered_map<uint32_t, std::string>::const_iterator
           targetNickIt = clientNick.find(entry.first);
       if (targetNickIt == clientNick.end())
-      {
         continue;
-      }
+
       std::optional<std::pair<std::string, bool>> targetClan =
           clanManager.findClanInfoForMember(targetNickIt->second);
       if (targetClan.has_value() && targetClan->first == clanName)

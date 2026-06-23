@@ -310,6 +310,7 @@ void LobbyHandler::finalizeJoin(uint32_t clientId,
                                 Player &player,
                                 Queue<std::shared_ptr<const Message>> &clientQueue)
 {
+
   if (!gameManager.joinGame(targetGameId, clientId, clientQueue))
   {
     lobbyMonitor.sendTo(clientId,
@@ -337,10 +338,9 @@ void LobbyHandler::finalizeJoin(uint32_t clientId,
   {
     clientQueue.try_push(
         std::make_shared<const MapChangedMessage>(mapId));
-    std::cout << "[LobbyHandler] MapChanged sent to clientId=" << clientId
-              << " (reconnecting to instance) mapId='" << mapId << "'"
-              << std::endl;
   }
+
+  gameManager.syncPlayerJoin(targetGameId, clientId);
 
   Receiver *receiver = receiverRegistry.get(clientId);
   if (receiver)
@@ -349,7 +349,6 @@ void LobbyHandler::finalizeJoin(uint32_t clientId,
   }
 
   lobbyMonitor.removeQueue(clientId);
-  gameManager.syncPlayerJoin(targetGameId, clientId);
 }
 
 void LobbyHandler::handleLeaveGame(LeaveEvent &event)
@@ -358,14 +357,11 @@ void LobbyHandler::handleLeaveGame(LeaveEvent &event)
 
   Receiver *receiver = receiverRegistry.get(event.clientId);
   if (receiver)
-  {
     receiver->setQueue(lobbyQueue);
-  }
 
   lobbyMonitor.addQueue(event.clientId, *event.clientQueue);
   playerRepo.save(event.clientId, std::move(event.player));
-  lobbyMonitor.sendTo(event.clientId,
-                      std::make_shared<const LeaveOkMessage>());
+  lobbyMonitor.sendTo(event.clientId, std::make_shared<const LeaveOkMessage>());
 }
 
 void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
@@ -422,16 +418,16 @@ void LobbyHandler::completeTransition(uint32_t targetRoomId,
   gameManager.joinAndAddPlayer(
       targetRoomId, event.clientId, *event.clientQueue, std::move(event.player));
 
+  event.clientQueue->try_push(
+      std::make_shared<const MapChangedMessage>(mapPath));
+
+  gameManager.syncPlayerJoin(targetRoomId, event.clientId);
+
   Receiver *receiver = receiverRegistry.get(event.clientId);
   if (receiver)
   {
     receiver->setQueue(gameManager.getGameQueue(targetRoomId));
   }
-
-  event.clientQueue->try_push(
-      std::make_shared<const MapChangedMessage>(mapPath));
-
-  gameManager.syncPlayerJoin(targetRoomId, event.clientId);
 }
 
 std::string LobbyHandler::findGameName(uint32_t gameId) const
