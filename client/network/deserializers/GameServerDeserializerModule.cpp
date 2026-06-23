@@ -345,8 +345,9 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
         const uint32_t targetId = reader.readUint32();
 
         const auto visualType = static_cast<PlayerAttackVisualType>(reader.readUint8());
+        std::string effectId = reader.readString();
 
-        return std::make_unique<PlayerAttackVisualMessage>(attackerId,targetId,visualType);
+        return std::make_unique<PlayerAttackVisualMessage>(attackerId,targetId,visualType,effectId);
     });
     registry.registerDeserializer(static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_HEALTH),
 [](PacketReader &reader) -> std::unique_ptr<Message>

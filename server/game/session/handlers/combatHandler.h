@@ -62,4 +62,5 @@ private:
                                      uint32_t targetId,
                                      const Player &attacker,
                                      Monitor &monitor);
+    std::string resolveAttackEffectId(const Player &attacker) const;
 };

@@ -64,6 +64,8 @@ PlayerAttackVisualType CombatHandler::resolveAttackVisualType(
     const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
     if (weapon == nullptr)
         return PlayerAttackVisualType::Physical;
+    if (weapon->effect == ItemEffect::HEAL)
+        return PlayerAttackVisualType::Heal;
     if (weapon->slot == ItemSlot::STAFF)
         return PlayerAttackVisualType::Magic;
     if (weapon->stats.isRanged)
@@ -76,8 +78,11 @@ void CombatHandler::broadcastPlayerAttackVisual(uint32_t attackerId,
                                                 const Player &attacker,
                                                 Monitor &monitor)
 {
+    const PlayerAttackVisualType visualType = resolveAttackVisualType(attacker);
+    const std::string effectId = resolveAttackEffectId(attacker);
+
     monitor.broadcast(std::make_shared<const PlayerAttackVisualMessage>(
-        attackerId, targetId, resolveAttackVisualType(attacker)));
+        attackerId, targetId, visualType, effectId));
 }
 
 void CombatHandler::handle(uint32_t clientId,
@@ -338,4 +343,17 @@ void CombatHandler::handleAttackNpc(uint32_t attackerId,
 
     sendStats(attackerId, attacker, monitor);
     sendLevelUpIfNeeded(attackerId, attacker, monitor);
+}
+
+std::string CombatHandler::resolveAttackEffectId(const Player &attacker) const
+{
+    const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
+    if (weapon == nullptr)
+        return "";
+
+    std::cout << "[SERVER EFFECT] item='" << weapon->catalogId
+              << "' typeName='" << weapon->typeName
+              << "' effectId='" << weapon->stats.visualEffectId << "'" << std::endl;
+
+    return weapon->stats.visualEffectId;
 }

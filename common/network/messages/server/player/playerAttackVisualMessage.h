@@ -10,7 +10,8 @@
 enum class PlayerAttackVisualType : uint8_t {
     Physical = 0,
     Magic = 1,
-    Ranged = 2
+    Ranged = 2,
+    Heal = 3
 };
 
 class PlayerAttackVisualMessage : public Message {
@@ -18,11 +19,13 @@ private:
     uint32_t attackerId;
     uint32_t targetId;
     PlayerAttackVisualType visualType;
+    std::string effectId;
 
 public:
     PlayerAttackVisualMessage(uint32_t attackerId,
                               uint32_t targetId,
-                              PlayerAttackVisualType visualType);
+                              PlayerAttackVisualType visualType,
+                              std::string effectId);
 
     uint8_t opCode() const override;
     void serializeBody(PacketWriter& writer) const override;
@@ -30,6 +33,7 @@ public:
     uint32_t getAttackerId() const;
     uint32_t getTargetId() const;
     PlayerAttackVisualType getVisualType() const;
+    const std::string &getEffectId() const;
 };
 
 #endif

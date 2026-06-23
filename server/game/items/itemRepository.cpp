@@ -72,6 +72,9 @@ namespace
     if (manaAmount)
       stats.manaAmount = static_cast<uint16_t>(manaAmount->get());
 
+    if (const auto *v = entry.get_as<std::string>("visual_effect"))
+      stats.visualEffectId = v->get();
+
     return stats;
   }
 }

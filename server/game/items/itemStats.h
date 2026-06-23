@@ -12,4 +12,5 @@ struct ItemStats
   uint16_t manaAmount = 0;
   uint16_t manaCost = 0;
   bool isRanged = false;
+  std::string visualEffectId;
 };
