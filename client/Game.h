@@ -23,10 +23,10 @@
 #include "common/network/messages/client/inventory/equipItemMessage.h"
 
 #include "common/network/messages/client/cheat/cheatMessage.h"
-#include "common/network/messages/server/player/EntityMoveMessage.h"
-#include "common/network/messages/server/player/EntityDespawnMessage.h"
+#include "common/network/messages/server/player/entityMoveMessage.h"
+#include "common/network/messages/server/world/entityDespawnMessage.h"
 #include "common/network/messages/server/player/playerDiedMessage.h"
-#include "common/network/messages/server/world/EntitySpawnMessage.h"
+#include "common/network/messages/server/world/entitySpawnMessage.h"
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
 #include "common/network/messages/server/npc/npcHealthMessage.h"
 #include "common/network/messages/server/npc/npcMoveMessage.h"
@@ -227,7 +227,7 @@ private:
     void handleItemPicked(const ItemPickedMessage &msg);
     void handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg);
     void handlePlayerHeathVisual(const PlayerHealthMessage &msg);
-    void  handleClanUpdate(const ClanUpdateMessage &msg);
+    void handleClanUpdate(const ClanUpdateMessage &msg);
 
     struct EnemyMoveInterp
     {

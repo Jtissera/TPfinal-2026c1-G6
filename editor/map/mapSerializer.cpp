@@ -27,7 +27,7 @@ void MapSerializer::save(const MapData &map, const std::string &filepath)
 
     f.write(reinterpret_cast<const char *>(MAGIC), 8);
     writeU16(f, VERSION);
-    f.put(static_cast<char>(map.mapType())); // v3: tipo de mapa
+    f.put(static_cast<char>(map.mapType()));
     writeU16(f, map.width());
     writeU16(f, map.height());
 
@@ -70,7 +70,6 @@ MapData MapSerializer::load(const std::string &filepath)
         throw std::runtime_error("Versión de mapa no soportada: " +
                                  std::to_string(version));
 
-    // v3: leer MapType; versiones anteriores asumen WORLD
     MapType mapType = MapType::WORLD;
     if (version >= 3)
         mapType = static_cast<MapType>(f.get());
@@ -95,7 +94,6 @@ MapData MapSerializer::load(const std::string &filepath)
             t.walkable = (f.get() != 0);
             t.npc = static_cast<NpcType>(f.get());
 
-            // targetMap presente desde v2
             if (version >= 2)
             {
                 uint16_t tlen = readU16(f);

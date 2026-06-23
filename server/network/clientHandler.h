@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <memory>
 #include <utility>
 
 #include <sys/socket.h>
@@ -9,17 +10,18 @@
 #include "../../common/liberror.h"
 #include "../../common/network/messages/message.h"
 #include "../../common/network/sockets.h"
-
+#include "../../common/queue.h"
 #include "../../common/thread.h"
 #include "../clientMessage.h"
-#include "../common/queue.h"
 #include "protocol/serverProtocolFactory.h"
 #include "receiver.h"
 #include "sender.h"
 
-class ClientHandler {
+class ClientHandler
+{
 public:
-  ClientHandler(Socket &&socket, uint32_t clientId,
+  ClientHandler(Socket &&socket,
+                uint32_t clientId,
                 const ServerProtocolFactory &factory,
                 Queue<ClientMessage> &gameQueue);
 
@@ -30,7 +32,6 @@ public:
   uint32_t id() const;
   Queue<std::shared_ptr<const Message>> &getClientQueue();
   bool isDead() const;
-
   Receiver &getReceiver();
 
   ClientHandler(const ClientHandler &) = delete;

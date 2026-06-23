@@ -444,7 +444,7 @@ void Game::render()
   {
     const int hudOffsetY = 133;
     map->forEachVisibleTopTile(camera, mapArea, [this, hudOffsetY, &ySorted](const TileEntry &t)
-    {
+                               {
       RenderObject obj;
       obj.yFootprint = t.groundY;
       obj.drawFunc = [this, hudOffsetY, t]() {
@@ -456,8 +456,7 @@ void Game::render()
         };
         SDL_RenderCopy(renderer, t.texture, const_cast<SDL_Rect*>(&t.srcRect), &dst);
       };
-      ySorted.push_back(std::move(obj));
-    });
+      ySorted.push_back(std::move(obj)); });
   }
 
   {
@@ -476,7 +475,8 @@ void Game::render()
   {
     for (Entity *remoteEntity : clientWorld->getRemotePlayerEntities())
     {
-      if (remoteEntity == nullptr) continue;
+      if (remoteEntity == nullptr)
+        continue;
       auto &transform = remoteEntity->getComponent<TransformComponent>();
       RenderObject obj;
       obj.yFootprint = static_cast<int>(transform.position.y + (transform.height * transform.scale));
@@ -490,7 +490,8 @@ void Game::render()
 
   for (const auto &[enemyId, enemy] : enemies)
   {
-    if (enemy == nullptr || attackSystem.isEnemyDead(enemyId)) continue;
+    if (enemy == nullptr || attackSystem.isEnemyDead(enemyId))
+      continue;
     auto &transform = enemy->getComponent<TransformComponent>();
     RenderObject obj;
     obj.yFootprint = static_cast<int>(transform.position.y + (transform.height * transform.scale));
@@ -503,7 +504,8 @@ void Game::render()
 
   for (auto &npcEntity : manager.getGroup(groupNPC))
   {
-    if (npcEntity == nullptr) continue;
+    if (npcEntity == nullptr)
+      continue;
     auto &transform = npcEntity->getComponent<TransformComponent>();
     RenderObject obj;
     int screenY = static_cast<int>(transform.position.y - camera.y) + 133;
@@ -520,10 +522,10 @@ void Game::render()
     item->draw(renderContext);
 
   std::stable_sort(ySorted.begin(), ySorted.end(),
-    [](const RenderObject &a, const RenderObject &b)
-    {
-      return a.yFootprint < b.yFootprint;
-    });
+                   [](const RenderObject &a, const RenderObject &b)
+                   {
+                     return a.yFootprint < b.yFootprint;
+                   });
 
   for (const auto &obj : ySorted)
     obj.drawFunc();
@@ -536,7 +538,8 @@ void Game::render()
   {
     for (Entity *remoteEntity : clientWorld->getRemotePlayerEntities())
     {
-      if (remoteEntity == nullptr) continue;
+      if (remoteEntity == nullptr)
+        continue;
       if (remoteEntity->hasComponent<NameplateComponent>())
         remoteEntity->getComponent<NameplateComponent>().draw(renderContext);
     }
@@ -544,14 +547,16 @@ void Game::render()
 
   for (const auto &[enemyId, enemy] : enemies)
   {
-    if (enemy == nullptr || attackSystem.isEnemyDead(enemyId)) continue;
+    if (enemy == nullptr || attackSystem.isEnemyDead(enemyId))
+      continue;
     if (enemy->hasComponent<NameplateComponent>())
       enemy->getComponent<NameplateComponent>().draw(renderContext);
   }
 
   for (auto &npcEntity : manager.getGroup(groupNPC))
   {
-    if (npcEntity == nullptr) continue;
+    if (npcEntity == nullptr)
+      continue;
     if (npcEntity->hasComponent<NameplateComponent>())
       npcEntity->getComponent<NameplateComponent>().draw(renderContext);
   }
@@ -2643,19 +2648,20 @@ void Game::handlePlayerResurrected(const PlayerResurrectedMessage &msg)
 
 void Game::drawEquippedEntity(Entity *entity, RenderContext &context)
 {
-    if (entity == nullptr) return;
+  if (entity == nullptr)
+    return;
 
-    if (entity->hasComponent<EquipmentComponent>())
-        entity->getComponent<EquipmentComponent>().drawBehind(context);
+  if (entity->hasComponent<EquipmentComponent>())
+    entity->getComponent<EquipmentComponent>().drawBehind(context);
 
-    if (entity->hasComponent<SpriteComponent>())
-        entity->getComponent<SpriteComponent>().draw(context);
+  if (entity->hasComponent<SpriteComponent>())
+    entity->getComponent<SpriteComponent>().draw(context);
 
-    if (entity->hasComponent<EquipmentComponent>())
-        entity->getComponent<EquipmentComponent>().drawFront(context);
+  if (entity->hasComponent<EquipmentComponent>())
+    entity->getComponent<EquipmentComponent>().drawFront(context);
 
-    if (entity->hasComponent<HealthBarComponent>())
-        entity->getComponent<HealthBarComponent>().draw(context);
+  if (entity->hasComponent<HealthBarComponent>())
+    entity->getComponent<HealthBarComponent>().draw(context);
 }
 
 void Game::handleEntityDespawn(const EntityDespawnMessage &msg)
@@ -2708,6 +2714,20 @@ void Game::clearCurrentScene()
     }
   }
   enemies.clear();
+
+  for (auto &[instanceId, entity] : groundItems)
+  {
+    if (entity != nullptr)
+      entity->destroy();
+  }
+  groundItems.clear();
+
+  for (auto &[instanceId, entity] : groundGold)
+  {
+    if (entity != nullptr)
+      entity->destroy();
+  }
+  groundGold.clear();
 
   for (auto &p : manager.getGroup(groupPlayers))
   {

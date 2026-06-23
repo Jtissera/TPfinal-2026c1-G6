@@ -20,8 +20,11 @@ namespace
 }
 
 ClanManager::ClanManager(ClanArchive &clanArchive,
-                         CharacterArchive &characterArchive)
-    : clanArchive(clanArchive), characterArchive(characterArchive) {}
+                         CharacterArchive &characterArchive,
+                         const toml::table &config)
+    : clanArchive(clanArchive),
+      characterArchive(characterArchive),
+      maxMembersPerClan(config["clan"]["max_members"].value_or<std::size_t>(16)) {}
 
 void ClanManager::bindGameManager(GameManager *gm)
 {
@@ -80,11 +83,9 @@ ClanManager::Result ClanManager::foundClan(const std::string &clanName,
     if (findClanOfMemberUnlocked(founderNick) != nullptr)
         return Result::ALREADY_IN_CLAN;
 
-    Clan clan(clanName, founderNick);
+    Clan clan(clanName, founderNick, maxMembersPerClan);
     clan.addMember(founderNick);
 
-    // Persistir ANTES de mover el clan al mapa, así tenemos una copia
-    // estable para pasarle al archive.
     clanArchive.save(clan);
     characterArchive.updateClan(founderNick, clanName);
 
@@ -115,8 +116,6 @@ ClanManager::Result ClanManager::applyToJoin(const std::string &clanName,
 
     clan->addApplicant(applicantNick);
 
-    // applicants no afecta CharacterRecord (el personaje no tiene clan
-    // todavía), pero sí cambia el estado del Clan en sí.
     clanArchive.save(*clan);
 
     return Result::OK;
@@ -162,7 +161,6 @@ ClanManager::Result ClanManager::rejectApplicant(const std::string &founderNick,
 
     clan->removeApplicant(targetNick);
 
-    // El rechazado nunca fue miembro, así que el CharacterRecord no cambia.
     clanArchive.save(*clan);
 
     return Result::OK;
@@ -184,7 +182,7 @@ ClanManager::Result ClanManager::banPlayer(const std::string &founderNick,
     clan->banPlayer(targetNick);
 
     clanArchive.save(*clan);
-    // Si era miembro y lo baneamos, también pierde el clan en su registro.
+
     if (wasMember)
         characterArchive.updateClan(targetNick, "");
 
@@ -257,6 +255,7 @@ ClanManager::getOverviewForFounder(const std::string &founderNick) const
 
         ClanOverview overview;
         overview.clanName = clan.getName();
+        overview.maxMembers = maxMembersPerClan;
         overview.members.assign(clan.getMembers().begin(), clan.getMembers().end());
         overview.applicants.assign(clan.getApplicants().begin(), clan.getApplicants().end());
         return overview;

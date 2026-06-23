@@ -1,10 +1,9 @@
 #pragma once
-
-#include <string>
-
 #include "../../message.h"
-#include "../../../protocol/serverOpCode.h"
 #include "../../../protocol/packetWriter.h"
+#include "../../../protocol/serverOpCode.h"
+#include <cstdint>
+#include <string>
 
 class ErrorMessage : public Message
 {

@@ -5,10 +5,7 @@
 #include <mutex>
 #include <string>
 
-
 #include "common/thread.h"
-
-
 
 // ServerWatcher — hilo que monitorea si el servidor sigue activo.
 
@@ -35,8 +32,8 @@ private:
     std::atomic<bool> isPaused{false};
     std::mutex mtxPause;
     std::condition_variable cvPause;
-    std::atomic<bool> isActuallyPaused{false}; 
-    std::condition_variable cvPausedAck;        
+    std::atomic<bool> isActuallyPaused{false};
+    std::condition_variable cvPausedAck;
 
     static constexpr int INTERVALO_SEG = 3;
 };

@@ -3,6 +3,7 @@
 
 // ─── Colisiones ──────────────────────────────────────────────────────────────
 
+
 TEST(CollisionTest, WalkableTileAllowsMovement)
 {
   auto map = makeMap(5, 5, true);
@@ -76,14 +77,14 @@ class GameWorldTest : public ::testing::Test
 protected:
   toml::table config = makeConfig();
   NpcRepository npcRepo{config};
-  NpcFactory npcFact{npcRepo};
+  NpcFactory npcFact{npcRepo, config};
   ItemRepository itemRepo{toml::parse(R"([items])")};
   
   std::string tempDir = std::filesystem::temp_directory_path().string();
 
   ClanArchive clanArchive{tempDir + "/test_clans.dat", tempDir + "/test_clans.idx"};
   CharacterArchive characterArchive{tempDir + "/test_chars.dat", tempDir + "/test_chars.idx"};
-  ClanManager clanManager{clanArchive, characterArchive};
+  ClanManager clanManager{clanArchive, characterArchive, config};
 
   MapData makeWalkableMap()
   {

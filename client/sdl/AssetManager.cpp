@@ -607,7 +607,7 @@ void AssetManager::applyPlayerAppearance(Entity &entity, const PlayerViewState &
     SpriteSheetConfig bodyConfig = bodyConfigForRace(playerState.race);
     std::string bodyTextureId = bodyTextureForRace(playerState.race);
 
-    sprite.setBody(bodyTextureId, bodyConfig);
+    sprite.setSpriteTextureAndConfig(bodyTextureId, bodyConfig);
 
     std::string headTextureId = headTextureForRace(playerState.race);
     sprite.setHeadTexture(headTextureId, 0);

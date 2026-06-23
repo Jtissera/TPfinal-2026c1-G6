@@ -1,7 +1,15 @@
 #include "clan.h"
 
-Clan::Clan(std::string name, std::string founderNick)
-    : name(std::move(name)), founderNick(std::move(founderNick)) {}
+Clan::Clan(std::string name, std::string founderNick, std::size_t maxMembers)
+    : name(std::move(name)),
+      founderNick(std::move(founderNick)),
+      maxMembers(maxMembers) {}
+
+const std::string &Clan::getName() const { return name; }
+const std::string &Clan::getFounderNick() const { return founderNick; }
+const std::set<std::string> &Clan::getMembers() const { return members; }
+const std::set<std::string> &Clan::getApplicants() const { return applicants; }
+const std::set<std::string> &Clan::getBannedPlayers() const { return bannedPlayers; }
 
 bool Clan::isMember(const std::string &nick) const
 {
@@ -20,7 +28,7 @@ bool Clan::isBanned(const std::string &nick) const
 
 bool Clan::isFull() const
 {
-    return members.size() >= MAX_MEMBERS;
+    return members.size() >= maxMembers;
 }
 
 bool Clan::addMember(const std::string &nick)

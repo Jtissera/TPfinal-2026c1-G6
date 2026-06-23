@@ -2,6 +2,8 @@
 
 #include <string>
 #include <optional>
+#include <algorithm>
+#include <sstream>
 
 enum class ChatInputType
 {
@@ -14,7 +16,7 @@ struct ParsedChatInput
 {
     ChatInputType type = ChatInputType::GENERAL;
     std::string keyword;    // GENERAL: texto completo. COMMAND: nombre del cmd. PRIVATE: cuerpo.
-    std::string argument;   // COMMAND: resto después del comando (ej. nombre de ítem)
+    std::string argument;   // COMMAND: resto después del comando
     std::string targetNick; // PRIVATE: nick del destinatario
 };
 

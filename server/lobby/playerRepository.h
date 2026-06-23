@@ -1,8 +1,12 @@
 #pragma once
-#include "../game/player/Player.h"
+
+#include <cstdint>
 #include <unordered_map>
 
-class PlayerRepository {
+#include "../game/player/Player.h"
+
+class PlayerRepository
+{
 public:
   void save(uint32_t clientId, Player player);
   Player *get(uint32_t clientId);

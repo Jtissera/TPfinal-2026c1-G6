@@ -1,16 +1,20 @@
 #pragma once
+
 #include "classStats.h"
 #include <map>
 #include <string>
 #include <toml++/toml.hpp>
 
-class ClassRepository {
+class ClassRepository
+{
 public:
   explicit ClassRepository(const toml::table &config);
+
   const ClassStats &get(const std::string &className) const;
   bool exists(const std::string &className) const;
 
 private:
   std::map<std::string, ClassStats> classes;
+
   ClassStats parse(const std::string &name, const toml::table &entry) const;
 };

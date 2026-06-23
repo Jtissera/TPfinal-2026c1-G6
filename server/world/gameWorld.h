@@ -1,5 +1,8 @@
 #pragma once
 
+#include "PlayerManager.h"
+#include "NpcSpawner.h"
+#include "WorldTickResult.h"
 #include "../../common/dtos/gameTypes.h"
 #include "../../editor/map/mapData.h"
 #include "../../editor/map/mapSerializer.h"
@@ -11,7 +14,6 @@
 #include "CollisionSystem.h"
 #include "GroundManager.h"
 #include "OccupancySystem.h"
-#include "SpawnManager.h"
 #include "../bank/bankRepository.h"
 #include "../resurrection/resurrectionSystem.h"
 #include "../city/priestHandler.h"
@@ -19,7 +21,9 @@
 #include "../city/bankerHandler.h"
 #include "../city/cityNpcDispatcher.h"
 #include "server/game/clan/clanManager.h"
-#include <iostream>
+
+#include <toml++/toml.h>
+
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -28,208 +32,98 @@
 #include <cstdlib>
 #include <algorithm>
 
-class ClanManager;
-
 class GameWorld
 {
 public:
-  explicit GameWorld(const std::string &mapPath, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config,
-                     ClanManager &clanManager);
+    GameWorld(const std::string &mapPath,
+              NpcFactory &npcFactory,
+              ItemRepository &itemRepo,
+              const toml::table &config,
+              ClanManager &clanManager);
 
-  explicit GameWorld(MapData mapData, NpcFactory &npcFactory,
-                     ItemRepository &itemRepo, const toml::table &config,
-                     ClanManager &clanManager);
+    GameWorld(MapData mapData,
+              NpcFactory &npcFactory,
+              ItemRepository &itemRepo,
+              const toml::table &config,
+              ClanManager &clanManager);
 
-  struct InstanceEntry
-  {
-    uint32_t playerId;
-    std::string targetMap;
-    int returnTileX;
-    int returnTileY;
-  };
-  struct NpcSpawnEvent {
-    uint32_t npcId;
-    NpcType type;
-    std::string name;
-    uint16_t x;
-    uint16_t y;
-    uint16_t hp;
-    uint16_t maxHp;
-    uint16_t level;
-    bool hostile;
-  };
-  struct DeathResult
-  {
-    uint32_t excessGold;
-    uint32_t goldInstanceId = 0;
-    std::vector<Item> droppedItems;
-    int tileX = 0;
-    int tileY = 0;
-  };
+    void addPlayer(Player player);
+    std::optional<Player> removePlayer(uint32_t id);
+    bool movePlayer(uint32_t id, Direction dir);
 
-  struct WorldTickResult
-  {
-    std::vector<uint32_t> playersDied;
-    std::vector<uint32_t> playersChanged;
-    std::vector<uint32_t> npcsMoved;
-    std::vector<NpcDeathResult> npcDeaths;
+    Player &getPlayer(uint32_t id);
+    const Player &getPlayer(uint32_t id) const;
 
-    struct PlayerHit
-    {
-      uint32_t playerId;
-      int16_t damage;
-    };
-    std::vector<PlayerHit> playerHits;
-    std::vector<InstanceEntry> instanceTransitions;
-    std::vector<NpcSpawnEvent> spawnedNpcs;
+    bool hasPlayer(uint32_t playerId) const;
+    bool canPlayerAct(uint32_t id) const;
 
-    std::vector<std::pair<uint32_t, DeathResult>> playerDeathsByNpc;
+    int getTileX(uint32_t id) const;
+    int getTileY(uint32_t id) const;
+    int getPixelX(uint32_t id) const;
+    int getPixelY(uint32_t id) const;
 
-    struct PlayerResurrection
-    {
-      uint32_t playerId;
-      uint16_t tileX;
-      uint16_t tileY;
-    };
+    void giveExperience(uint32_t playerId, uint32_t exp, float xpMultiplier = 1.0f);
+    DeathResult handlePlayerDeath(uint32_t targetId, uint32_t attackerId);
 
-    struct ResurrectStartedInfo
-    {
-      uint32_t playerId;
-      uint32_t delayMs;
-    };
-    std::vector<PlayerResurrection> playersResurrected;
-    std::vector<ResurrectStartedInfo> resurrectionStarted;
+    std::optional<uint32_t> findPlayerIdByName(const std::string &name) const;
+    int countClanAlliesNear(const Player &player, int radiusTiles) const;
+    std::vector<uint32_t> getOnlineClanMemberIds(const std::string &clanName) const;
 
-    struct ClanAllyHit
-    {
-      std::string clanName;
-      std::string targetName;
-      uint32_t targetId;
-    };
-    std::vector<ClanAllyHit> clanAllyHits;
+    const std::unordered_map<uint32_t, Player> &getPlayers() const;
 
-    struct NpcAttackAnim
-    {
-      uint32_t npcId;
-      Direction direction;
-    };
-    
-    std::vector<NpcAttackAnim> npcAttacksForAnim;
-  };
+    void spawnMapNpcs();
+    void spawnNpc(const std::string &typeName, int tileX, int tileY);
+    bool hasNpc(uint32_t npcId) const;
+    bool damageNpc(uint32_t npcId, int16_t damage, uint32_t attackerPlayerId);
+    NpcDropResult handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId);
+    Npc &getNpc(uint32_t npcId);
+    const Npc &getNpc(uint32_t npcId) const;
+    const std::unordered_map<uint32_t, Npc> &getNpcs() const;
+    std::optional<NpcType> getNpcTypeAtTile(int tileX, int tileY) const;
 
-  void addPlayer(Player player);
-  std::optional<Player> removePlayer(uint32_t id);
-  bool movePlayer(uint32_t id, Direction dir);
+    void addItemOnGround(Item item, int tileX, int tileY);
+    uint32_t addGoldOnGround(uint32_t amount, int tileX, int tileY);
+    std::optional<Item> pickItemById(uint32_t instanceId);
+    std::optional<uint32_t> pickGoldById(uint32_t instanceId);
+    const GroundManager &getGroundManager() const;
 
-  Player &getPlayer(uint32_t id);
-  const Player &getPlayer(uint32_t id) const;
+    const MapData &getMapData() const;
+    const Tile &getTileAt(int tileX, int tileY) const;
+    std::pair<int, int> findSafeSpawnNear(int tileX, int tileY) const;
 
-  bool canPlayerAct(uint32_t id) const;
+    CityResult handleCityInteraction(uint32_t playerId, NpcType npcType,
+                                     const CityCommand &cmd);
+    CityResult handleRemoteResurrect(uint32_t playerId);
 
-  int getTileX(uint32_t id) const;
-  int getTileY(uint32_t id) const;
-  int getPixelX(uint32_t id) const;
-  int getPixelY(uint32_t id) const;
+    WorldTickResult tick(float deltaSeconds);
 
-  const Tile &getTileAt(int tileX, int tileY) const;
-
-
-
-  void giveExperience(uint32_t playerId, uint32_t exp, float xpMultiplier = 1.0f);
-  DeathResult handlePlayerDeath(uint32_t targetId, uint32_t attackerId);
-
-  void addItemOnGround(Item item, int tileX, int tileY);
-  std::optional<Item> pickItemById(uint32_t instanceId);
-
-  uint32_t addGoldOnGround(uint32_t amount, int tileX, int tileY);
-  std::optional<uint32_t> pickGoldById(uint32_t instanceId);
-  const GroundManager& getGroundManager() const {return groundManager;}
-
-  void spawnNpc(const std::string &typeName, int tileX, int tileY);
-
-  WorldTickResult tick(float deltaSeconds);
-
-  const MapData &getMapData() const { return mapData; }
-  const std::unordered_map<uint32_t, Npc> &getNpcs() const;
-
-  void resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY);
-  bool hasNpc(uint32_t npcId) const;
-  bool damageNpc(uint32_t npcId, int16_t damage, uint32_t attackerPlayerId);
-
-  NpcDropResult handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId);
-  bool hasPlayer(uint32_t playerId) const;
-
-  std::optional<uint32_t> findPlayerIdByName(const std::string &name) const;
-
-  Npc &getNpc(uint32_t npcId);
-  const Npc &getNpc(uint32_t npcId) const;
-
-  // Devuelve una vista de solo lectura de los jugadores del mundo.
-  // Se usa para enviar spawns al cliente que acaba de entrar.
-  const std::unordered_map<uint32_t, Player> &getPlayers() const;
-  std::pair<int, int> findSafeSpawnNear(int tileX, int tileY) const;
-
-  CityResult handleCityInteraction(uint32_t playerId, NpcType npcType,
-                                   const CityCommand &cmd);
-  CityResult handleRemoteResurrect(uint32_t playerId);
-  std::optional<NpcType> getNpcTypeAtTile(int tileX, int tileY) const;
-
-  int countClanAlliesNear(const Player &player, int radiusTiles) const;
-  std::vector<uint32_t> getOnlineClanMemberIds(const std::string &clanName) const;
+    void resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY);
 
 private:
-  static constexpr int TILE_SIZE = 96;            // a toml
-  static constexpr float PLAYER_MOVE_STEP = 8.0f; // a toml
+    void tickNpcs(WorldTickResult &result);
+    void resolveNpcMovement(NpcTickResult &npcResult, WorldTickResult &result);
+    void resolveNpcAttacks(NpcTickResult &npcResult, WorldTickResult &result);
+    void resolveNpcDeaths(NpcTickResult &npcResult, WorldTickResult &result);
 
-  MapData mapData;
-  CollisionSystem collision;
-  OccupancySystem occupancy;
-  GameFormulas formulas;
-  NpcManager npcManager;
-  ItemRepository &itemRepo;
-  ClanManager &clanManager;
+    MapData mapData;
+    CollisionSystem collision;
+    OccupancySystem occupancy;
+    GameFormulas formulas;
+    NpcManager npcManager;
+    ItemRepository &itemRepo;
+    ClanManager &clanManager;
+    BankRepository bankRepo;
+    ResurrectionSystem resurrectionSystem;
 
-  BankRepository bankRepo;
-  ResurrectionSystem resurrectionSystem;
-  PriestHandler priestHandler;
-  MerchantHandler merchantHandler;
-  BankerHandler bankerHandler;
-  CityNpcDispatcher cityDispatcher;
+    PriestHandler priestHandler;
+    MerchantHandler merchantHandler;
+    BankerHandler bankerHandler;
+    CityNpcDispatcher cityDispatcher;
 
-  std::unordered_map<uint32_t, Player> players;
-  GroundManager groundManager;
-  SpawnManager spawnManager;
+    GroundManager groundManager;
 
-  std::vector<WorldTickResult::ResurrectStartedInfo> pendingResurrectionStarts;
+    PlayerManager playerManager;
+    NpcSpawner npcSpawner;
 
-  int tileSize;
-  float npcRespawnDelayMs = 5000.0f; // toml
-
-  struct GroundItem
-  {
-    Item item;
-    int tileX, tileY;
-  };
-
-  struct GroundGold {
-    uint32_t amount;
-    int tileX, tileY;
-  };
-
-  std::vector<GroundItem> groundItems;
-  std::vector<GroundGold> groundGold;
-
-  void tickPlayers(float deltaSeconds, WorldTickResult &result);
-  void tickNpcs(WorldTickResult &result);
-
-  void spawnMapNpcs();
-  void loadInitialInventoryForPlayer(Player& player);
-
-  int spawnTickCounter = 0;
-  static constexpr int SPAWN_EVERY_N_TICKS = 200; // toml
-  static constexpr int MAX_NPCS = 20; // toml
-  static constexpr int SPAWN_BATCH_SIZE = 4; // toml
-
-  std::vector<std::pair<std::string, std::pair<int, int>>> spawnPoints;
+    std::vector<WorldTickResult::ResurrectStartedInfo> pendingResurrectionStarts;
 };

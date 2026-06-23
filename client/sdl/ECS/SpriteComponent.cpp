@@ -47,8 +47,10 @@ void SpriteComponent::setHeadTexture(const std::string &textureId,
 void SpriteComponent::Play(const char *animName)
 {
     std::string name(animName);
-    if (animations.count(name) == 0) return;
-    if (currentAnim == name) return;
+    if (animations.count(name) == 0)
+        return;
+    if (currentAnim == name)
+        return;
 
     isOneShot = false;
     usingAttackTexture = false;
@@ -57,7 +59,7 @@ void SpriteComponent::Play(const char *animName)
     animationIndex = animations[name].index;
     speed = animations[name].speed;
     manualFrameIndex = 0;
-    animStartX = startX; 
+    animStartX = startX;
 }
 
 void SpriteComponent::init()
@@ -85,10 +87,10 @@ void SpriteComponent::update(UpdateContext &context)
 
     // Geometría activa: depende de si estamos dibujando el body sheet
     // o el attack sheet, que pueden tener frame size / startY distintos.
-    const int activeFrameWidth  = usingAttackTexture ? attackConfig.frameWidth  : frameWidth;
+    const int activeFrameWidth = usingAttackTexture ? attackConfig.frameWidth : frameWidth;
     const int activeFrameHeight = usingAttackTexture ? attackConfig.frameHeight : frameHeight;
-    const int activeScale       = usingAttackTexture ? attackConfig.scale       : scale;
-    const int activeStartY      = usingAttackTexture ? attackConfig.startY     : startY;
+    const int activeScale = usingAttackTexture ? attackConfig.scale : scale;
+    const int activeStartY = usingAttackTexture ? attackConfig.startY : startY;
 
     if (animated && frames > 0)
     {
@@ -112,7 +114,6 @@ void SpriteComponent::update(UpdateContext &context)
     destRect.h = activeFrameHeight * activeScale;
 }
 
-
 void SpriteComponent::draw(RenderContext &context)
 {
     if (bodyTexture == nullptr && !(usingAttackTexture && attackTexture != nullptr))
@@ -121,9 +122,10 @@ void SpriteComponent::draw(RenderContext &context)
     }
 
     SDL_Texture *texToDraw = (usingAttackTexture && attackTexture != nullptr)
-                              ? attackTexture : bodyTexture;
+                                 ? attackTexture
+                                 : bodyTexture;
 
-    const int activeScale   = usingAttackTexture ? attackConfig.scale       : scale;
+    const int activeScale = usingAttackTexture ? attackConfig.scale : scale;
     const int activeOffsetX = usingAttackTexture ? attackConfig.renderOffsetX : renderOffsetX;
     const int activeOffsetY = usingAttackTexture ? attackConfig.renderOffsetY : renderOffsetY;
 
@@ -145,10 +147,14 @@ void SpriteComponent::draw(RenderContext &context)
         headSrc.x = headStartX + headIndex * headStepX;
 
         int headDirectionRow = 0;
-        if (animationIndex == 0)      headDirectionRow = 0;
-        else if (animationIndex == 1) headDirectionRow = 1;
-        else if (animationIndex == 2) headDirectionRow = 2;
-        else if (animationIndex == 3) headDirectionRow = 3;
+        if (animationIndex == 0)
+            headDirectionRow = 0;
+        else if (animationIndex == 1)
+            headDirectionRow = 1;
+        else if (animationIndex == 2)
+            headDirectionRow = 2;
+        else if (animationIndex == 3)
+            headDirectionRow = 3;
 
         headSrc.y = headStartY + headDirectionRow * headStepY;
         headSrc.w = headFrameWidth;
@@ -220,7 +226,6 @@ void SpriteComponent::draw(RenderContext &context)
         }
     }
 }
-
 
 const SDL_Rect &SpriteComponent::getSrcRect() const { return srcRect; }
 
@@ -379,21 +384,22 @@ void SpriteComponent::StepFrame()
 void SpriteComponent::PlayOnce(const char *animName, const std::string &returnAnim)
 {
     std::string name(animName);
-    if (animations.count(name) == 0) return;
+    if (animations.count(name) == 0)
+        return;
 
     currentAnim = "";
-    
+
     isOneShot = true;
     oneShotReturnAnim = returnAnim;
     usingAttackTexture = (attackTexture != nullptr);
-    
+
     currentAnim = name;
     frames = animations[name].frames;
     animationIndex = animations[name].index;
     speed = animations[name].speed;
     manualFrameIndex = 0;
     animStartX = usingAttackTexture ? attackConfig.startX : startX;
-    
+
     oneShotEndTime = SDL_GetTicks() + static_cast<Uint32>(frames * speed);
 }
 

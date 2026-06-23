@@ -1,4 +1,5 @@
 #pragma once
+
 #include "../game/player/Player.h"
 #include "../game/items/itemRepository.h"
 #include "cityResult.h"
@@ -18,8 +19,10 @@ public:
 private:
     ItemRepository &itemRepo;
     const toml::table &config;
+    std::vector<std::string> blacklist;
 
+    bool isBlacklisted(const std::string &itemName) const;
     bool isSellable(const std::string &itemName) const;
     uint32_t priceOf(const std::string &itemName) const;
-    uint32_t sellPriceOf(const std::string &itemName) const; // 50% del precio base
+    uint32_t sellPriceOf(const std::string &itemName) const;
 };

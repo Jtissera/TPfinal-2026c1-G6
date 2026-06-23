@@ -1,14 +1,14 @@
 #include "npcAI.h"
-#include <cmath>
-#include <cstdlib>
 
-static constexpr int MELEE_RANGE = 1; // cambiar
+NpcAI::NpcAI(const toml::table &config)
+    : meleeRange(config["npc_ai"]["melee_range"].value_or(1)) {}
 
 NpcIntent
 NpcAI::decide(const Npc &npc,
               const std::unordered_map<uint32_t, Player> &players) const {
-  if (!npc.isAlive())
+  if (!npc.isAlive()) {
     return {};
+  }
 
   uint32_t targetId = findClosestPlayerId(npc, players);
 
@@ -17,23 +17,25 @@ NpcAI::decide(const Npc &npc,
     int dx = std::abs(npc.getTileX() - target.getTileX());
     int dy = std::abs(npc.getTileY() - target.getTileY());
 
-    if (dx <= MELEE_RANGE && dy <= MELEE_RANGE) {
+    if (dx <= meleeRange && dy <= meleeRange) {
       return {NpcIntent::Type::ATTACK, 0, 0, targetId, NpcState::ATTACKING};
     }
 
-    auto [tx, ty] = stepTowards(npc.getTileX(), npc.getTileY(),
-                                target.getTileX(), target.getTileY());
-    return {NpcIntent::Type::MOVE, tx, ty, targetId, NpcState::CHASING};
+    std::pair<int, int> step = stepTowards(
+        npc.getTileX(), npc.getTileY(), target.getTileX(), target.getTileY());
+    return {NpcIntent::Type::MOVE, step.first, step.second, targetId,
+            NpcState::CHASING};
   }
 
   int distHome = distance(npc.getTileX(), npc.getTileY(), npc.getSpawnTileX(),
                           npc.getSpawnTileY());
 
   if (distHome > 0) {
-    auto [tx, ty] = stepTowards(npc.getTileX(), npc.getTileY(),
-                                npc.getSpawnTileX(), npc.getSpawnTileY());
+    std::pair<int, int> step =
+        stepTowards(npc.getTileX(), npc.getTileY(), npc.getSpawnTileX(),
+                    npc.getSpawnTileY());
     NpcState next = (distHome == 1) ? NpcState::IDLE : NpcState::RETURNING;
-    return {NpcIntent::Type::MOVE, tx, ty, 0, next};
+    return {NpcIntent::Type::MOVE, step.first, step.second, 0, next};
   }
 
   return {NpcIntent::Type::IDLE, 0, 0, 0, NpcState::IDLE};
@@ -42,31 +44,32 @@ NpcAI::decide(const Npc &npc,
 uint32_t NpcAI::findClosestPlayerId(
     const Npc &npc, const std::unordered_map<uint32_t, Player> &players) const {
 
-  // PERF: si el NPC ya tiene target asignado, verificar si sigue vivo y en rango
-  // antes de hacer O(N) búsqueda completa. Evita 2400+ comparaciones/seg con 20 NPCs.
   const uint32_t currentTarget = npc.getTargetId();
   if (currentTarget != 0) {
-    auto it = players.find(currentTarget);
-    if (it != players.end() && it->second.isAlive()) {
-      int dist = distance(npc.getTileX(), npc.getTileY(),
-                          it->second.getTileX(), it->second.getTileY());
-      if (dist <= npc.getDetectionRange())
-        return currentTarget;  // target existente sigue válido, no buscar más
+    std::unordered_map<uint32_t, Player>::const_iterator it =
+        players.find(currentTarget);
+    if (it != players.end() && !it->second.isGhost() && (it->second.isAlive() || it->second.isMeditating())) {
+      int dist = distance(npc.getTileX(), npc.getTileY(), it->second.getTileX(),
+                          it->second.getTileY());
+      if (dist <= npc.getDetectionRange()) {
+        return currentTarget;
+      }
     }
   }
 
-  // Búsqueda completa solo cuando no hay target válido.
   uint32_t closestId = 0;
   int minDist = npc.getDetectionRange() + 1;
 
-  for (const auto &[id, player] : players) {
-    if (!player.isAlive())
-      continue;
-    int dist = distance(npc.getTileX(), npc.getTileY(), player.getTileX(),
-                        player.getTileY());
+  for (const std::pair<const uint32_t, Player> &entry : players) {
+    if (entry.second.isGhost() || (!entry.second.isAlive() && !entry.second.isMeditating())) {
+    continue;
+    }
+
+    int dist = distance(npc.getTileX(), npc.getTileY(), entry.second.getTileX(),
+                        entry.second.getTileY());
     if (dist < minDist) {
       minDist = dist;
-      closestId = id;
+      closestId = entry.first;
     }
   }
 

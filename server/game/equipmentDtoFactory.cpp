@@ -1,16 +1,13 @@
-
 #include "equipmentDtoFactory.h"
 
-#include "server/game/items/EquipSlot.h"
-#include "server/game/player/inventory.h"
-#include "server/game/items/item.h"
-
-EquipmentDto buildEquipmentDtoFromPlayer(const Player& player) {
+EquipmentDto buildEquipmentDtoFromPlayer(const Player &player)
+{
     EquipmentDto dto{};
 
-    const Inventory& inventory = player.getInventory();
+    const Inventory &inventory = player.getInventory();
 
-    if (const Item* weapon = inventory.getEquipped(EquipSlot::HAND)) {
+    if (const Item *weapon = inventory.getEquipped(EquipSlot::HAND))
+    {
         dto.weaponCatalogId = weapon->catalogId;
 
         // El server informa si el arma equipada permite curación.
@@ -18,15 +15,18 @@ EquipmentDto buildEquipmentDtoFromPlayer(const Player& player) {
         dto.weaponCanHeal = (weapon->effect == ItemEffect::HEAL);
     }
 
-    if (const Item* armor = inventory.getEquipped(EquipSlot::ARMOR)) {
+    if (const Item *armor = inventory.getEquipped(EquipSlot::ARMOR))
+    {
         dto.armorCatalogId = armor->catalogId;
     }
 
-    if (const Item* helmet = inventory.getEquipped(EquipSlot::HELMET)) {
+    if (const Item *helmet = inventory.getEquipped(EquipSlot::HELMET))
+    {
         dto.helmetCatalogId = helmet->catalogId;
     }
 
-    if (const Item* shield = inventory.getEquipped(EquipSlot::SHIELD)) {
+    if (const Item *shield = inventory.getEquipped(EquipSlot::SHIELD))
+    {
         dto.shieldCatalogId = shield->catalogId;
     }
 

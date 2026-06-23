@@ -1,7 +1,8 @@
 #pragma once
+
 #include "bankAccount.h"
-#include <unordered_map>
 #include <cstdint>
+#include <unordered_map>
 
 class BankRepository
 {
@@ -11,4 +12,5 @@ public:
 
 private:
     std::unordered_map<uint32_t, BankAccount> accounts;
+    BankAccount emptyAccount;
 };

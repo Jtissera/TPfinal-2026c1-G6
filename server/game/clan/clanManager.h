@@ -6,21 +6,23 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <cstddef>
 
 #include "clan.h"
 #include "../../persistence/clanArchive.h"
 #include "../../persistence/characterArchive.h"
+#include <toml++/toml.h>
 
 class GameManager;
 
 class ClanManager
 {
 public:
-    ClanManager(ClanArchive &clanArchive, CharacterArchive &characterArchive);
-    void bindGameManager(GameManager *gameManager);
+    ClanManager(ClanArchive &clanArchive,
+                CharacterArchive &characterArchive,
+                const toml::table &config);
 
-    // Carga todos los clanes persistidos. Llamar una vez al arrancar el
-    // servidor, antes de aceptar conexiones.
+    void bindGameManager(GameManager *gameManager);
     void restoreFromArchive();
 
     enum class Result
@@ -55,12 +57,15 @@ public:
         std::string clanName;
         std::vector<std::string> members;
         std::vector<std::string> applicants;
+        std::size_t maxMembers;
     };
+
     std::optional<ClanOverview> getOverviewForFounder(const std::string &founderNick) const;
 
     void notifyPlayer(const std::string &nick, const std::string &text);
-    void notifyClan(const std::string &clanName, const std::string &excludeNick, const std::string &text);
-
+    void notifyClan(const std::string &clanName,
+                    const std::string &excludeNick,
+                    const std::string &text);
     void syncPlayerClanState(const std::string &nick);
 
     ClanManager(const ClanManager &) = delete;
@@ -77,4 +82,5 @@ private:
 
     ClanArchive &clanArchive;
     CharacterArchive &characterArchive;
+    std::size_t maxMembersPerClan;
 };

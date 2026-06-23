@@ -5,8 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 
-// ─── formato del index.dat
-// ──────────────────────────────────────────────────── Entrada fija: [char
+// Entrada fija: 
 // key[48]][uint64_t offset] = 56 bytes key = "nombre@gameId"  (MAX_NAME_LEN=32
 // + '@' + uint32 en decimal ≤ 10 chars)
 static constexpr std::size_t INDEX_KEY_LEN = 48;

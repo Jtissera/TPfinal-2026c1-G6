@@ -4,7 +4,7 @@
 #define TALLER_TP_GAMESERVERDESERIALIZERMODULE_H
 
 #include "common/network/protocol/registry.h"
-#include "common/network/messages/server/player/EntityMoveMessage.h"
+#include "common/network/messages/server/player/entityMoveMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
 #include "common/network/messages/server/player/playerDiedMessage.h"
 #include "common/network/messages/server/system/mapChangedMessage.h"

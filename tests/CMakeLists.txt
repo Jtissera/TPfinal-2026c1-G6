@@ -1,11 +1,11 @@
 target_sources(taller_tests
     PRIVATE
     version_test.cpp
+
     protocol_test.cpp
     mapSerializer_test.cpp
     ../editor/map/mapData.cpp
     ../editor/map/mapSerializer.cpp
-    
     combat_test.cpp
     inventory_test.cpp
     player_test.cpp

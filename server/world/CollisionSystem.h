@@ -1,6 +1,5 @@
 #pragma once
 #include "../../editor/map/mapData.h"
-#include <cstdint>
 
 class CollisionSystem {
 public:

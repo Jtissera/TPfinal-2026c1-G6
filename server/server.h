@@ -33,7 +33,7 @@ private:
   PlayerRepository playerRepo;
   PlayerArchive playerArchive;
   CharacterArchive characterArchive;
-  ClanArchive clanArchive; 
+  ClanArchive clanArchive;
 
   Monitor lobbyMonitor;
   Queue<ClientMessage> lobbyQueue;

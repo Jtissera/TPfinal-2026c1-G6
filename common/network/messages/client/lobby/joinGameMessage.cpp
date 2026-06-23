@@ -1,7 +1,9 @@
 #include "joinGameMessage.h"
 
 JoinGameMessage::JoinGameMessage(uint32_t gameId)
-    : gameId(gameId) {}
+    : gameId(gameId)
+{
+}
 
 uint32_t JoinGameMessage::getGameId() const
 {

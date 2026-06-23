@@ -46,11 +46,9 @@ QRect getStructureBounds(int tx, int ty, TileType type)
     case TileType::WELL:
     case TileType::BOXES:
         return QRect(tx - 1, ty - 1, 2, 2);
-
     case TileType::BANNER:
     case TileType::WITCH_BANNER:
         return QRect(tx, ty - 2, 2, 3);
-
     case TileType::SHOP:
         return QRect(tx - 1, ty - 2, 3, 3);
     default:
@@ -65,44 +63,33 @@ QRect getStructureCollisionBounds(int tx, int ty, TileType type)
     case TileType::FOREST:
         return QRect(tx, ty - 1, 1, 2);
     case TileType::CACTUS:
-
         return QRect(tx, ty, 1, 1);
-
     case TileType::STONE:
         return QRect(tx - 1, ty - 1, 3, 2);
     case TileType::MILL:
         return QRect(tx - 1, ty - 2, 3, 3);
     case TileType::HOUSE:
     case TileType::CHURCH:
-
         return QRect(tx - 2, ty - 3, 5, 4);
-
     case TileType::CAVERN_ENTRANCE:
         return QRect(tx - 3, ty - 3, 6, 3);
-
     case TileType::DUNGEON_ENTRANCE:
         return QRect(tx - 1, ty - 1, 3, 2);
-
     case TileType::CAVERN_WALL_V:
         return QRect(tx - 1, ty - 4, 3, 5);
-
     case TileType::CAVERN_WALL_H:
         return QRect(tx - 3, ty - 1, 7, 2);
-
     case TileType::DUNGEON_WALL_H:
         return QRect(tx, ty, 1, 1);
     case TileType::DUNGEON_WALL_V:
         return QRect(tx, ty - 1, 1, 3);
-
     case TileType::WELL:
         return QRect(tx, ty, 1, 1);
     case TileType::BOXES:
         return QRect(tx - 1, ty, 2, 1);
-
     case TileType::BANNER:
     case TileType::WITCH_BANNER:
         return QRect(tx, ty, 1, 1);
-
     case TileType::SHOP:
         return QRect(tx - 1, ty, 2, 1);
 
@@ -213,7 +200,6 @@ QColor MapCanvas::tileColor(const Tile &tile) const
     case TileType::DUNGEON_WALL_V:
         base = QColor(40, 45, 50);
         break;
-
     case TileType::WELL:
         base = QColor(60, 80, 100);
         break;
@@ -234,18 +220,14 @@ QColor MapCanvas::tileColor(const Tile &tile) const
         break;
     }
 
-    // Overlay de zona encima del color base
     switch (tile.zone)
     {
     case ZoneType::CITY:
-        // borde dorado — el overlay lo aplicamos en paintEvent, acá solo
-        // oscurecemos un poco
         break;
     case ZoneType::COMBAT:
         base = base.darker(130);
         break;
     case ZoneType::DESERT:
-        // arena ya es visualmente desierto; si el tile es pasto, teñimos
         if (tile.type == TileType::GRASS)
             base = QColor(210, 185, 110).darker(110);
         break;
@@ -259,7 +241,6 @@ QColor MapCanvas::tileColor(const Tile &tile) const
 
     if (!tile.walkable)
     {
-        // Hatching visual: oscurecer + tinte rojizo para no caminable
         base = base.darker(150);
         base = QColor(qMin(base.red() + 40, 255), base.green(), base.blue());
     }

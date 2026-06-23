@@ -1,12 +1,10 @@
 #pragma once
-
-#include <vector>
-#include <string>
-#include <cstdint>
-
 #include "../../message.h"
-#include "../../../protocol/serverOpCode.h"
 #include "../../../protocol/packetWriter.h"
+#include "../../../protocol/serverOpCode.h"
+#include <cstdint>
+#include <string>
+#include <vector>
 
 struct GameInfo
 {

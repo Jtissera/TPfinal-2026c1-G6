@@ -1,13 +1,9 @@
-
-#ifndef TALLER_TP_EQUIPMENTDTOFACTORY_H
-#define TALLER_TP_EQUIPMENTDTOFACTORY_H
-
-
 #pragma once
 
 #include "common/dtos/equipmentDto.h"
 #include "server/game/player/Player.h"
+#include "server/game/items/EquipSlot.h"
+#include "server/game/player/inventory.h"
+#include "server/game/items/item.h"
 
-EquipmentDto buildEquipmentDtoFromPlayer(const Player& player);
-
-#endif //TALLER_TP_EQUIPMENTDTOFACTORY_H
+EquipmentDto buildEquipmentDtoFromPlayer(const Player &player);

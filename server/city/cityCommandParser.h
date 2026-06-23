@@ -1,6 +1,8 @@
 #pragma once
-#include <string>
+
 #include <optional>
+#include <sstream>
+#include <string>
 #include <cstdint>
 
 struct CityCommand
@@ -17,14 +19,13 @@ struct CityCommand
     };
 
     Type type;
-    std::string itemName;    // vacío si no aplica
-    uint32_t goldAmount = 0; // solo para depositar/retirar oro
+    std::string itemName;
+    uint32_t goldAmount = 0;
     bool isGold = false;
 };
 
 class CityCommandParser
 {
 public:
-    // Retorna nullopt si el comando es inválido o desconocido.
-    static std::optional<CityCommand> parse(const std::string &raw);
+    std::optional<CityCommand> parse(const std::string &raw) const;
 };

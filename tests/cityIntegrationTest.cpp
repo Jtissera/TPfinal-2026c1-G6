@@ -20,15 +20,14 @@ protected:
     toml::table config{TomlBuilder::withCityPrices()};
     ItemRepository itemRepo{config};
     NpcRepository npcRepo{config};
-    NpcFactory npcFactory{npcRepo};
+    NpcFactory npcFactory{npcRepo, config};
 
     std::string tempDir = std::filesystem::temp_directory_path().string();
 
     ClanArchive clanArchive{tempDir + "/test_clans.dat", tempDir + "/test_clans.idx"};
     CharacterArchive characterArchive{tempDir + "/test_chars.dat", tempDir + "/test_chars.idx"};
-    ClanManager clanManager{clanArchive, characterArchive};
+    ClanManager clanManager{clanArchive, characterArchive, config};
 
-    // Construimos el mundo con un MapData que tiene los NPCs de ciudad
     GameWorld makeWorld()
     {
         MapData map(10, 10);
@@ -39,7 +38,6 @@ protected:
                 map.at(x, y).zone = ZoneType::SAFE;
             }
 
-        // Sacerdote en (5,5), comerciante en (5,6), banquero en (5,7)
         map.at(5, 5).npc = NpcType::PRIEST;
         map.at(5, 6).npc = NpcType::MERCHANT;
         map.at(5, 7).npc = NpcType::BANKER;
@@ -47,7 +45,6 @@ protected:
         return GameWorld(std::move(map), npcFactory, itemRepo, config, clanManager);
     }
 };
-
 // ---------------------------------------------------------------------------
 // Sacerdote
 // ---------------------------------------------------------------------------

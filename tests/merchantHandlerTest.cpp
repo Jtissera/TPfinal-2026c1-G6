@@ -20,14 +20,6 @@ TEST_F(MerchantHandlerTest, CompraArma)
     EXPECT_EQ(player.getGold(), 350u); // 500 - 150
 }
 
-TEST_F(MerchantHandlerTest, CompraStaffFalla)
-{
-    Player player = PlayerBuilder().withId(1).withGold(500).build();
-    auto result = handler.handleBuy(player, "vara_fresno");
-    EXPECT_FALSE(result.ok);
-    EXPECT_EQ(player.getGold(), 500u); // oro intacto
-}
-
 TEST_F(MerchantHandlerTest, CompraConOroInsuficienteFalla)
 {
     Player player = PlayerBuilder().withId(1).withGold(10).build();

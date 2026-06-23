@@ -7,7 +7,6 @@ BankAccount &BankRepository::get(uint32_t playerId)
 
 const BankAccount &BankRepository::get(uint32_t playerId) const
 {
-    static const BankAccount empty;
-    auto it = accounts.find(playerId);
-    return it != accounts.end() ? it->second : empty;
+    std::unordered_map<uint32_t, BankAccount>::const_iterator it = accounts.find(playerId);
+    return it != accounts.end() ? it->second : emptyAccount;
 }

@@ -32,8 +32,8 @@ public:
   uint32_t die(uint32_t safeGold);
   void resurrect(int tileX, int tileY);
 
-  void addExperience(uint32_t exp, uint32_t expLimit, int16_t newMaxHp,
-                     int16_t newMaxMana);
+  void addExperience(uint32_t exp, uint32_t expLimit,
+                     int16_t newMaxHp, int16_t newMaxMana);
   bool checkAndClearLevelUp();
   void levelUp(int16_t newMaxHp, int16_t newMaxMana);
 
@@ -41,8 +41,8 @@ public:
   void stopMeditating();
   void toggleInfiniteHp();
   void toggleInfiniteMana();
-  bool hasInfiniteHp() const { return infiniteHp; }
-  bool hasInfiniteMana() const { return infiniteMana; }
+  bool hasInfiniteHp() const;
+  bool hasInfiniteMana() const;
   bool tick(float hpGained, float manaGained);
 
   std::vector<Item> purgeInventoryOnDeath();
@@ -57,8 +57,8 @@ public:
   void forceGhostState();
   void setClientId(uint32_t id);
 
-  int getTileX() const override { return static_cast<int>(pixelX) / TILE_SIZE; }
-  int getTileY() const override { return static_cast<int>(pixelY) / TILE_SIZE; }
+  int getTileX() const override;
+  int getTileY() const override;
   uint32_t getId() const override;
   uint32_t getClientId() const;
   const std::string &getName() const;
@@ -72,13 +72,11 @@ public:
   uint8_t getAgility() const override;
   uint8_t getStrength() const override;
   int getAttackRange() const override;
-  bool hasReceivedInitialInventory() const { return initialInventoryGiven; }
-  void markInitialInventoryGiven() { initialInventoryGiven = true; }
 
-  // Devuelve la posición X real en píxeles.
+  bool hasReceivedInitialInventory() const;
+  void markInitialInventoryGiven();
+
   float getPixelX() const;
-
-  // Devuelve la posición Y real en píxeles.
   float getPixelY() const;
 
   uint16_t getWeaponDamageMin() const override;
@@ -93,15 +91,15 @@ public:
   void restoreFullHpAndMana();
   void spendGold(uint32_t amount);
 
-  bool isResurrecting() const { return resurrecting; }
-  void startResurrection() { resurrecting = true; }
-  void stopResurrection() { resurrecting = false; }
-  bool canInteract() const { return !isGhost() && !resurrecting; }
+  bool isResurrecting() const;
+  void startResurrection();
+  void stopResurrection();
+  bool canInteract() const;
 
-  const std::string &getClanName() const { return clanName; }
-  void setClanName(std::string name) { clanName = std::move(name); }
-  bool isClanFounder() const { return clanFounder; }
-  void setClanFounder(bool founder) { clanFounder = founder; }
+  const std::string &getClanName() const;
+  void setClanName(std::string name);
+  bool isClanFounder() const;
+  void setClanFounder(bool founder);
 
   const RaceStats &getRace() const;
   const ClassStats &getCls() const;
@@ -122,13 +120,12 @@ private:
   std::string name;
   const RaceStats &race;
   const ClassStats &cls;
-  const int TILE_SIZE = 96;
+  int tileSize;
 
   int tileX = 0;
   int tileY = 0;
-
-  float pixelX;
-  float pixelY;
+  float pixelX = 0.f;
+  float pixelY = 0.f;
 
   uint8_t level = 1;
   int16_t hp = 0;

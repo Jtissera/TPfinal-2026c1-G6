@@ -2,14 +2,12 @@
 #include <cstdint>
 #include <cstring>
 
-// TOML
-
-static constexpr uint8_t SNAPSHOT_VERSION = 1;
-static constexpr uint32_t MAX_NAME_LEN = 32;
-static constexpr uint32_t MAX_MAP_ID_LEN = 64;
-static constexpr uint32_t MAX_RACE_LEN = 32;
-static constexpr uint32_t MAX_CLASS_LEN = 32;
-static constexpr uint32_t MAX_ITEMS = 20;
+const uint8_t  SNAPSHOT_VERSION = 1;
+const uint32_t MAX_NAME_LEN     = 32;
+const uint32_t MAX_MAP_ID_LEN   = 64;
+const uint32_t MAX_RACE_LEN     = 32;
+const uint32_t MAX_CLASS_LEN    = 32;
+const uint32_t MAX_ITEMS        = 20;
 
 struct ItemSnapshot {
   uint32_t catalogId = 0;

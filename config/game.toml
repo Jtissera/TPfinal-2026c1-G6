@@ -5,76 +5,68 @@
 [server]
 host = "localhost"
 port = 8080
-tick_rate_ms = 22          # milisegundos entre ticks del game loop
+tick_rate_ms = 22
 max_clients = 50
 persist_every_n_ticks = 70
 
 
-
-
 [player]
-# Stats base (antes de aplicar modificadores de raza/clase)
-base_health     = 1
-base_mana       = 50
+base_health     = 100
+base_mana       = 150
 base_agility    = 10
 base_strength   = 10
 base_intelligence = 10
-recovery_health_ms = 5000   # cada cuanto recupera vida (ms)
-recovery_mana_ms   = 3000   # cada cuanto recupera mana (ms)
+recovery_health_ms = 2500
+recovery_mana_ms   = 1500
 newbie_max_level = 12
 max_inventory_items = 20
-move_step = 4.0
-
-
+move_step = 8.0
 
 
 [combat]
-max_level_diff  = 10         # diferencia maxima de nivel para poder atacar
-critical_multiplier = 2.0
-dodge_base_chance   = 0.05  # 5% base de evasion
-npc_gold_drop_max = 0.2      # Oro = rand(0, 0.2) * VidaMaxNPC
-npc_xp_bonus_max  = 0.1      # Exp adicional = rand(0, 0.1) * VidaMax...
-attack_range      = 1        # distancia para cuerpo a cuerpo
-melee_range = 1
+max_level_diff  = 10
+npc_gold_drop_max = 0.2
+npc_xp_bonus_max  = 0.1
+attack_range      = 1
 ranged_attack_range = 10
+critical_chance_percent = 5
+dodge_threshold         = 0.001
+exp_level_diff_base     = 10
 
 
 [experience]
-# XP requerida = base * (nivel ^ exponent)
 base  = 1000
 exponent = 1.8
 
 [gold]
 gold_level_base     = 100
-overflow_drop   = 0.20      # fraccion que se tira al suelo al morir con exceso
-gold_level_exponent = 1.1   # OroMax = 100 * Nivel^1.1
+overflow_drop   = 0.20
+gold_level_exponent = 1.1
 
 
 [meditation]
-mana_per_tick = 5           # mana recuperado por tick al meditar
+mana_per_tick = 10
 
 [npc]
-spawn_interval_ticks = 200
-max_population       = 200
-spawn_batch_size     = 4
-aggro_range        = 5       # tiles de distancia para que el NPC ataque
+spawn_interval_ticks = 600
+max_population       = 150
+spawn_batch_size     = 3
+aggro_range        = 4
 drop_chance_nothing  = 0.80
 drop_chance_gold     = 0.08
 drop_chance_potion   = 0.01
 drop_chance_item     = 0.01
-respawn_ms           = 1000
+respawn_ms           = 10000
 
 [clan]
 max_members          = 16
-min_level_found      = 6
-proximity_radius_tiles = 15   # tiles de radio para contar aliados cercanos
-bonus_per_ally       = 0.4   # 40% de bonus por aliado cercano
-max_bonus_multiplier = 6.5    # tope: multiplicador máximo de 6.5x
+min_level_to_found = 6
+proximity_radius_tiles = 15
+bonus_per_ally       = 0.4
+max_bonus_multiplier = 6.5
 
 
 [items]
-# stats de cada item definidos en el enunciado
-# catalog_id debe coincidir con assets/items/items.json del cliente
 
 [items.espada]
 catalog_id = 1
@@ -82,6 +74,124 @@ slot = "WEAPON"
 is_ranged = false
 damage_min = 2
 damage_max = 5
+
+[items.hacha]
+catalog_id = 8
+slot = "WEAPON"
+is_ranged = false
+damage_min = 4
+damage_max = 5
+
+[items.martillo]
+catalog_id = 9
+slot = "WEAPON"
+is_ranged = false
+damage_min = 1
+damage_max = 9
+
+[items.arco_simple]
+catalog_id = 13
+slot = "WEAPON"
+is_ranged = true
+damage_min = 1
+damage_max = 4
+
+[items.arco_compuesto]
+catalog_id = 14
+slot = "WEAPON"
+is_ranged = true
+damage_min = 4
+damage_max = 16
+
+[items.vara_fresno]
+catalog_id = 2
+slot      = "STAFF"
+is_ranged = true
+damage_min  = 2
+damage_max  = 4
+mana_cost   = 5
+effect     = "damage"
+visual_effect = "effect_attack_magic_01"
+
+[items.flauta_elfica]
+catalog_id = 10
+slot      = "STAFF"
+is_ranged = true
+mana_cost   = 100
+effect     = "heal"
+heal_amount = 100
+visual_effect = "effect_heal_01"
+
+
+[items.baculo_nudoso]
+catalog_id = 11
+slot      = "STAFF"
+is_ranged = true
+damage_min  = 4
+damage_max  = 8
+mana_cost   = 15
+effect     = "damage"
+visual_effect = "effect_attack_magic_02"
+
+[items.baculo_engarzado]
+catalog_id = 12
+slot      = "STAFF"
+is_ranged = true
+damage_min  = 8
+damage_max = 20
+mana_cost   = 30
+effect     = "damage"
+visual_effect = "effect_attack_magic_03"
+
+
+[items.armadura_cuero]
+catalog_id = 15
+slot        = "ARMOR"
+defense_min = 2
+defense_max = 6
+
+[items.armadura_placas]
+catalog_id = 3
+slot        = "ARMOR"
+defense_min = 15
+defense_max = 30
+
+[items.tunica_azul]
+catalog_id = 16
+slot        = "ARMOR"
+defense_min = 6
+defense_max = 10
+
+[items.capucha]
+catalog_id = 4
+slot        = "HELMET"
+defense_min = 1
+defense_max = 4
+
+[items.casco_hierro]
+catalog_id = 17
+slot        = "HELMET"
+defense_min = 4
+defense_max = 8
+
+[items.escudo_tortuga]
+catalog_id = 5
+slot        = "SHIELD"
+defense_min = 1
+defense_max = 2
+
+[items.escudo_hierro]
+catalog_id = 18
+slot        = "SHIELD"
+defense_min = 1
+defense_max = 4
+
+[items.sombrero_magico]
+catalog_id = 19
+slot        = "HELMET"
+defense_min = 4
+defense_max = 12
+
 
 [items.gorro_calabaza]
 catalog_id = 24
@@ -129,117 +239,7 @@ defense_max = 14
 [items.tunica_iniciado]
 catalog_id = 29
 slot = "ARMOR"
-defense_min = 1
-defense_max = 3
-
-[items.hacha]
-catalog_id = 8
-slot = "WEAPON"
-is_ranged = false
-damage_min = 4
-damage_max = 5
-
-[items.martillo]
-catalog_id = 9
-slot = "WEAPON"
-is_ranged = false
-damage_min = 1
-damage_max = 9
-
-[items.vara_fresno]
-catalog_id = 2
-slot      = "STAFF"
-is_ranged = true
-damage_min  = 2
-damage_max  = 4
-mana_cost   = 5
-effect     = "damage"
-visual_effect = "effect_attack_magic_01"
-
-[items.flauta_elfica]
-catalog_id = 10
-slot      = "STAFF"
-is_ranged = true
-mana_cost   = 100
-effect     = "heal"
-heal_amount = 100
-visual_effect = "effect_heal_01"
-
-
-[items.baculo_nudoso]
-catalog_id = 11
-slot      = "STAFF"
-is_ranged = true
-damage_min  = 4
-damage_max  = 8
-mana_cost   = 15
-effect     = "damage"
-visual_effect = "effect_attack_magic_02"
-
-[items.baculo_engarzado]
-catalog_id = 12
-slot      = "STAFF"
-is_ranged = true
-damage_min  = 8
-damage_max = 20
-mana_cost   = 30
-effect     = "damage"
-visual_effect = "effect_attack_magic_03"
-
-[items.arco_simple]
-catalog_id = 13
-slot = "WEAPON"
-is_ranged = true
-damage_min = 1
-damage_max = 4
-
-[items.arco_compuesto]
-catalog_id = 14
-slot = "WEAPON"
-is_ranged = true
-damage_min = 4
-damage_max = 16
-
-[items.armadura_cuero]
-catalog_id = 15
-slot        = "ARMOR"
 defense_min = 2
-defense_max = 6
-
-[items.armadura_placas]
-catalog_id = 3
-slot        = "ARMOR"
-defense_min = 15
-defense_max = 30
-
-[items.tunica_azul]
-catalog_id = 16
-slot        = "ARMOR"
-defense_min = 6
-defense_max = 10
-
-[items.capucha]
-catalog_id = 4
-slot        = "HELMET"
-defense_min = 1
-defense_max = 4
-
-[items.casco_hierro]
-catalog_id = 17
-slot        = "HELMET"
-defense_min = 4
-defense_max = 8
-
-[items.escudo_tortuga]
-catalog_id = 5
-slot        = "SHIELD"
-defense_min = 1
-defense_max = 2
-
-[items.escudo_hierro]
-catalog_id = 18
-slot        = "SHIELD"
-defense_min = 1
 defense_max = 4
 
 [items.uniforme_argentino]
@@ -247,12 +247,6 @@ catalog_id = 30
 slot = "ARMOR"
 defense_min = 1
 defense_max = 1
-
-[items.sombrero_magico]
-catalog_id = 19
-slot        = "HELMET"
-defense_min = 4
-defense_max = 12
 
 [items.pocion_vida]
 catalog_id = 6
@@ -332,57 +326,278 @@ mana        = 0.0
 meditation  = 0.0
 can_use_magic = false
 
+
+# ─── NPCS ─────────────────────────────────────────────────────────────────────
+# Todos los stats de NPCs son libres: la consigna nombra los tipos
+# pero no especifica niveles ni HP ni daño exactos.
+# Progresion de dificultad: bosque < desierto < caverna < mazmorra
+
+# ── Bosque (COMBAT base) — niveles 2-5 ───────────────────────────────────────
+
 [npcs.goblin]
 name = "Goblin"
-hp = 50
+hp = 25
 damage_min = 2
 damage_max = 5
-level = 3
-agility = 8
-strength = 5
-detection_range = 5
+level = 2
+agility = 7
+strength = 4
+detection_range = 3
 home_range = 10
-attack_cooldown_ms = 1000
-move_cooldown_ms = 500
+attack_cooldown_ms = 1600
+move_cooldown_ms = 700
+zones = ["COMBAT"]
+
+[npcs.zombie]
+name = "Zombie"
+hp = 35
+damage_min = 3
+damage_max = 6
+level = 2
+agility = 2
+strength = 5
+detection_range = 3
+home_range = 8
+attack_cooldown_ms = 2000
+move_cooldown_ms = 1000
+gold_drop_chance = 0.08
+gold_drop_min = 1
+gold_drop_max = 8
 zones = ["COMBAT"]
 
 [npcs.skeleton]
 name = "Skeleton"
-hp = 80
+hp = 45
 damage_min = 4
-damage_max = 8
-level = 6
-agility = 5
-strength = 6
-detection_range = 5
-home_range = 10
-attack_cooldown_ms = 1200
-move_cooldown_ms = 600
-gold_drop_chance = 0.08
-item_drop_chance = 0.01
-gold_drop_min = 3
-gold_drop_max = 15
-zones = ["COMBAT"]
-
-
-[npcs.zombie]
-name = "Zombie"
-hp = 100
-damage_min = 3
 damage_max = 7
-level = 5
-agility = 2
-strength = 7
+level = 4
+agility = 5
+strength = 5
 detection_range = 4
-home_range = 8
-attack_cooldown_ms = 1500
-move_cooldown_ms = 800
+home_range = 10
+attack_cooldown_ms = 1400
+move_cooldown_ms = 700
 gold_drop_chance = 0.08
-item_drop_chance = 0.01
 gold_drop_min = 2
 gold_drop_max = 12
 zones = ["COMBAT"]
 
+[npcs.orc]
+name = "Orco"
+level = 5
+max_hp = 100
+damage_min = 10
+damage_max = 18
+defense_min = 2
+defense_max = 5
+attack_range = 1
+zones = ["COMBAT"]
+exp = 0
+gold = 0
+
+
+# ── Desierto — niveles 6-10 ───────────────────────────────────────────────────
+
+[npcs.goblin_desert]
+hp                 = 60
+damage_min         = 6
+damage_max         = 10
+level              = 6
+agility            = 9
+strength           = 7
+detection_range    = 5
+home_range         = 12
+attack_cooldown_ms = 1200
+move_cooldown_ms   = 550
+gold_drop_chance   = 0.08
+gold_drop_min      = 5
+gold_drop_max      = 20
+zones              = ["COMBAT"]
+
+[npcs.spider_desert]
+hp                 = 50
+damage_min         = 7
+damage_max         = 12
+level              = 7
+agility            = 14
+strength           = 4
+detection_range    = 6
+home_range         = 12
+attack_cooldown_ms = 950
+move_cooldown_ms   = 380
+gold_drop_chance   = 0.08
+gold_drop_min      = 3
+gold_drop_max      = 15
+zones              = ["COMBAT"]
+
+[npcs.skeleton_desert]
+hp                 = 85
+damage_min         = 10
+damage_max         = 16
+level              = 9
+agility            = 6
+strength           = 9
+detection_range    = 6
+home_range         = 12
+attack_cooldown_ms = 1300
+move_cooldown_ms   = 650
+gold_drop_chance   = 0.08
+gold_drop_min      = 8
+gold_drop_max      = 30
+zones              = ["COMBAT"]
+
+[npcs.golem_desert]
+hp                 = 150
+damage_min         = 14
+damage_max         = 22
+level              = 10
+agility            = 2
+strength           = 15
+detection_range    = 4
+home_range         = 10
+attack_cooldown_ms = 2200
+move_cooldown_ms   = 1200
+gold_drop_chance   = 0.08
+gold_drop_min      = 15
+gold_drop_max      = 50
+zones              = ["COMBAT"]
+
+
+# ── Caverna — niveles 11-15 ───────────────────────────────────────────────────
+
+[npcs.goblin_cave]
+hp                 = 95
+damage_min         = 10
+damage_max         = 16
+level              = 11
+agility            = 9
+strength           = 8
+detection_range    = 6
+home_range         = 8
+attack_cooldown_ms = 1100
+move_cooldown_ms   = 520
+gold_drop_chance   = 0.08
+gold_drop_min      = 10
+gold_drop_max      = 40
+zones              = ["COMBAT"]
+
+[npcs.spider_cave]
+hp                 = 80
+damage_min         = 12
+damage_max         = 18
+level              = 12
+agility            = 14
+strength           = 5
+detection_range    = 7
+home_range         = 8
+attack_cooldown_ms = 900
+move_cooldown_ms   = 360
+gold_drop_chance   = 0.08
+gold_drop_min      = 8
+gold_drop_max      = 30
+zones              = ["COMBAT"]
+
+[npcs.skeleton_cave]
+hp                 = 130
+damage_min         = 15
+damage_max         = 22
+level              = 13
+agility            = 6
+strength           = 9
+detection_range    = 6
+home_range         = 8
+attack_cooldown_ms = 1250
+move_cooldown_ms   = 620
+gold_drop_chance   = 0.08
+gold_drop_min      = 15
+gold_drop_max      = 55
+zones              = ["COMBAT"]
+
+[npcs.golem_cave]
+hp                 = 260
+damage_min         = 20
+damage_max         = 30
+level              = 15
+agility            = 2
+strength           = 17
+detection_range    = 4
+home_range         = 6
+attack_cooldown_ms = 2200
+move_cooldown_ms   = 1100
+gold_drop_chance   = 0.08
+gold_drop_min      = 30
+gold_drop_max      = 90
+zones              = ["COMBAT"]
+
+
+# ── Mazmorra — niveles 16-20, los mas dificiles ───────────────────────────────
+
+[npcs.goblin_dungeon]
+hp                 = 190
+damage_min         = 18
+damage_max         = 28
+level              = 16
+agility            = 11
+strength           = 13
+detection_range    = 8
+home_range         = 10
+attack_cooldown_ms = 1000
+move_cooldown_ms   = 460
+gold_drop_chance   = 0.08
+gold_drop_min      = 25
+gold_drop_max      = 80
+zones              = ["COMBAT"]
+
+[npcs.spider_dungeon]
+hp                 = 170
+damage_min         = 20
+damage_max         = 30
+level              = 17
+agility            = 17
+strength           = 7
+detection_range    = 9
+home_range         = 10
+attack_cooldown_ms = 750
+move_cooldown_ms   = 300
+gold_drop_chance   = 0.08
+gold_drop_min      = 20
+gold_drop_max      = 60
+zones              = ["COMBAT"]
+
+[npcs.skeleton_dungeon]
+hp                 = 260
+damage_min         = 25
+damage_max         = 38
+level              = 18
+agility            = 7
+strength           = 15
+detection_range    = 8
+home_range         = 10
+attack_cooldown_ms = 1200
+move_cooldown_ms   = 560
+gold_drop_chance   = 0.08
+gold_drop_min      = 40
+gold_drop_max      = 120
+zones              = ["COMBAT"]
+
+[npcs.golem_dungeon]
+hp                 = 430
+damage_min         = 32
+damage_max         = 50
+level              = 20
+agility            = 2
+strength           = 23
+detection_range    = 5
+home_range         = 8
+attack_cooldown_ms = 2400
+move_cooldown_ms   = 1400
+gold_drop_chance   = 0.08
+gold_drop_min      = 80
+gold_drop_max      = 250
+zones              = ["COMBAT"]
+
+
+# ── NPCs no hostiles ──────────────────────────────────────────────────────────
 
 [npcs.merchant]
 hostile = false
@@ -402,217 +617,56 @@ hp = 100
 damage_min = 0
 damage_max = 0
 
-
 [world]
 tile_size = 96
 map_path = "assets/sprites/MapAssets/map.argmap"
+
 [drops]
 combat_pool = ["espada", "hacha", "martillo", "armadura_cuero", "casco_hierro", "capucha", "escudo_hierro", "arco_simple"]
 cavern_pool = ["armadura_placas", "tunica_azul", "sombrero_magico", "baculo_nudoso", "arco_compuesto", "escudo_tortuga"]
 dungeon_pool = ["espada_maldita", "armadura_sombras", "escudo_maldito", "baculo_engarzado", "armadura_clerigo"]
+
 [cavern]
 gold_multiplier = 1.5
 xp_multiplier   = 1.5
 item_multiplier = 1.5
-
 
 [dungeon]
 gold_multiplier = 3.0
 xp_multiplier   = 2.5
 item_multiplier = 2.5
 
-[npcs.goblin_cave]
-hp                 = 80
-damage_min         = 5
-damage_max         = 9
-level              = 6
-agility            = 9
-strength           = 7
-detection_range    = 6
-home_range         = 8
-attack_cooldown_ms = 900
-move_cooldown_ms   = 450
-zones              = ["COMBAT"]
-
-[npcs.skeleton_cave]
-hp                 = 120
-damage_min         = 8
-damage_max         = 14
-level              = 8
-agility            = 6
-strength           = 8
-detection_range    = 6
-home_range         = 8
-attack_cooldown_ms = 1100
-move_cooldown_ms   = 550
-zones              = ["COMBAT"]
-
-[npcs.spider_cave]
-hp                 = 60
-damage_min         = 6
-damage_max         = 10
-level              = 5
-agility            = 14
-strength           = 4
-detection_range    = 7
-home_range         = 8
-attack_cooldown_ms = 700
-move_cooldown_ms   = 300
-zones              = ["COMBAT"]
-
-[npcs.golem_cave]
-hp                 = 200
-damage_min         = 12
-damage_max         = 18
-level              = 10
-agility            = 3
-strength           = 16
-detection_range    = 4
-home_range         = 6
-attack_cooldown_ms = 1800
-move_cooldown_ms   = 900
-zones              = ["COMBAT"]
-
-[npcs.goblin_dungeon]
-hp                 = 150
-damage_min         = 12
-damage_max         = 20
-level              = 14
-agility            = 11
-strength           = 12
-detection_range    = 8
-home_range         = 10
-attack_cooldown_ms = 800
-move_cooldown_ms   = 400
-zones              = ["COMBAT"]
-
-[npcs.skeleton_dungeon]
-hp                 = 220
-damage_min         = 18
-damage_max         = 28
-level              = 16
-agility            = 7
-strength           = 14
-detection_range    = 8
-home_range         = 10
-attack_cooldown_ms = 1000
-move_cooldown_ms   = 500
-zones              = ["COMBAT"]
-
-[npcs.spider_dungeon]
-hp                 = 130
-damage_min         = 15
-damage_max         = 22
-level              = 13
-agility            = 18
-strength           = 6
-detection_range    = 10
-home_range         = 10
-attack_cooldown_ms = 600
-move_cooldown_ms   = 250
-zones              = ["COMBAT"]
-
-[npcs.golem_dungeon]
-hp                 = 400
-damage_min         = 25
-damage_max         = 40
-level              = 18
-agility            = 2
-strength           = 22
-detection_range    = 5
-home_range         = 8
-attack_cooldown_ms = 2000
-move_cooldown_ms   = 1200
-zones              = ["COMBAT"]
-
-[npcs.goblin_desert]
-hp                 = 70
-damage_min         = 6
-damage_max         = 11
-level              = 7
-agility            = 10
-strength           = 8
-detection_range    = 7
-home_range         = 12
-attack_cooldown_ms = 850
-move_cooldown_ms   = 400
-zones              = ["COMBAT"]
-
-[npcs.skeleton_desert]
-hp                 = 100
-damage_min         = 10
-damage_max         = 16
-level              = 9
-agility            = 6
-strength           = 10
-detection_range    = 7
-home_range         = 12
-attack_cooldown_ms = 1100
-move_cooldown_ms   = 550
-zones              = ["COMBAT"]
-
-[npcs.spider_desert]
-hp                 = 55
-damage_min         = 8
-damage_max         = 13
-level              = 6
-agility            = 15
-strength           = 5
-detection_range    = 8
-home_range         = 12
-attack_cooldown_ms = 650
-move_cooldown_ms   = 280
-zones              = ["COMBAT"]
-
-[npcs.golem_desert]
-hp                 = 280
-damage_min         = 18
-damage_max         = 26
-level              = 13
-agility            = 3
-strength           = 20
-detection_range    = 4
-home_range         = 10
-attack_cooldown_ms = 1700
-move_cooldown_ms   = 950
-zones              = ["COMBAT"]
-
-[npcs.orc]
-name = "Orco"
-level = 5
-max_hp = 100
-damage_min = 8
-damage_max = 15
-defense_min = 2
-defense_max = 5
-attack_range = 1
-zones              = ["COMBAT"]
-exp = 0
-gold = 0
 
 [city]
 ms_per_tile_resurrection = 500
 
 [city.prices]
-vara_fresno      = 100
-flauta_elfica    = 500
-baculo_nudoso    = 300
-baculo_engarzado = 800
-pocion_vida      = 50
-pocion_mana      = 50
-espada           = 150
-hacha            = 200
-martillo         = 180
-arco_simple      = 120
-arco_compuesto   = 400
-armadura_cuero   = 200
-armadura_placas  = 600
-tunica_azul      = 250
-capucha          = 80
-casco_hierro     = 180
-escudo_tortuga   = 100
-escudo_hierro    = 220
-sombrero_magico  = 350
-armadura_clerigo = 400
-espada_maldita   = 9999
+vara_fresno      = 20
+flauta_elfica    = 80
+baculo_nudoso    = 50
+baculo_engarzado = 120
+pocion_vida      = 10
+pocion_mana      = 10
+espada           = 25
+hacha            = 30
+martillo         = 28
+arco_simple      = 20
+arco_compuesto   = 70
+armadura_cuero   = 30
+armadura_placas  = 100
+tunica_azul      = 40
+capucha          = 12
+casco_hierro     = 28
+escudo_tortuga   = 15
+escudo_hierro    = 35
+sombrero_magico  = 55
+armadura_clerigo = 65
+espada_maldita   = 1000
 tunica_iniciado  = 0
+
+
+[city.priest_catalog]
+items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado", "pocion_vida", "pocion_mana"]
+
+[city.merchant_blacklist]
+items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado"]

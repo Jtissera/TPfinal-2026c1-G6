@@ -1,32 +1,22 @@
-
-#ifndef TALLER_TP_MOVEMESSAGE_H
-#define TALLER_TP_MOVEMESSAGE_H
-
-
+#pragma once
 #include "../../message.h"
 #include "../../../protocol/clientOpCode.h"
 #include "../../../protocol/packetWriter.h"
 #include "../../../../dtos/gameTypes.h"
+#include <cstdint>
 
-
-class MoveMessage : public Message {
-
+class MoveMessage : public Message
+{
 public:
+    MoveMessage(Direction dir, bool moving);
 
-    explicit MoveMessage (Direction dir, bool moving);
-    uint8_t opCode() const override;
-    void serializeBody(PacketWriter &writer) const override;
     Direction getDirection() const;
     bool isMoving() const;
+
+    uint8_t opCode() const override;
+    void serializeBody(PacketWriter &writer) const override;
+
 private:
     Direction dir;
     bool moving;
 };
-
-
-
-
-
-
-
-#endif //TALLER_TP_MOVEMESSAGE_H

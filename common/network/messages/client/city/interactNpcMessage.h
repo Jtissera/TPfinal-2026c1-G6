@@ -1,28 +1,20 @@
 #pragma once
 #include "../../message.h"
 #include "../../../protocol/clientOpCode.h"
+#include "../../../protocol/packetWriter.h"
 #include <cstdint>
 #include <string>
 
 class InteractNpcMessage : public Message
 {
 public:
-    InteractNpcMessage(uint32_t npcId, std::string cmd)
-        : npcId(npcId), cmd(std::move(cmd)) {}
+    InteractNpcMessage(uint32_t npcId, std::string cmd);
 
-    uint8_t opCode() const override
-    {
-        return static_cast<uint8_t>(ClientOpCode::MSG_INTERACT_NPC);
-    }
+    uint32_t getNpcId() const;
+    const std::string &getCmd() const;
 
-    void serializeBody(PacketWriter &writer) const override
-    {
-        writer.writeUint32(npcId);
-        writer.writeString(cmd);
-    }
-
-    uint32_t getNpcId() const { return npcId; }
-    const std::string &getCmd() const { return cmd; }
+    uint8_t opCode() const override;
+    void serializeBody(PacketWriter &writer) const override;
 
 private:
     uint32_t npcId;
