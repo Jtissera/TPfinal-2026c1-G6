@@ -3,6 +3,18 @@
     {
       "id": "effect_attack_magic_01",
       "path": "assets/sprites/effects/effect_attack_magic_01.png"
+    },
+    {
+      "id": "effect_attack_magic_02",
+      "path": "assets/sprites/effects/effect_attack_magic_02.png"
+    },
+    {
+      "id": "effect_attack_magic_03",
+      "path": "assets/sprites/effects/effect_attack_magic_03.png"
+    },
+    {
+      "id": "effect_heal_01",
+      "path": "assets/sprites/effects/efecto_curar.png"
     }
   ],
   "_sprite_info": {
@@ -15,17 +27,53 @@
         "charge": {
           "row_y": 0,
           "frames": 3,
-          "speed_ms": 80,
-          "note": "Punto pequeño creciendo a bola"
+          "speed_ms": 80
         },
         "explode": {
           "row_y": 64,
           "frames": 3,
-          "speed_ms": 100,
-          "note": "Explosion expandiendose"
+          "speed_ms": 100
         }
-      },
-      "note": "Solo 2 filas utiles de 64px de alto cada una. Frame 3 de cada fila esta vacio."
+      }
+    },
+    "effect_magic_02": {
+      "sheet_width": 512,
+      "sheet_height": 512,
+      "frame_width": 128,
+      "frame_height": 128,
+      "animations": {
+        "default": {
+          "row_y": 0,
+          "frames": 4,
+          "speed_ms": 80
+        }
+      }
+    },
+    "effect_magic_03": {
+      "sheet_width": 512,
+      "sheet_height": 512,
+      "frame_width": 128,
+      "frame_height": 128,
+      "animations": {
+        "default": {
+          "row_y": 0,
+          "frames": 4,
+          "speed_ms": 80
+        }
+      }
+    },
+    "effect_heal_01": {
+      "sheet_width": 1024,
+      "sheet_height": 1024,
+      "frame_width": 204,
+      "frame_height": 170,
+      "animations": {
+        "default": {
+          "row_y": 0,
+          "frames": 5,
+          "speed_ms": 90
+        }
+      }
     }
   }
 }

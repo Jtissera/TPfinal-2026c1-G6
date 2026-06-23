@@ -938,28 +938,28 @@ void ActionDispatcher::handleClanSync(uint32_t id, const Message &msg,GameWorld 
 PlayerAttackVisualType ActionDispatcher::resolveAttackVisualType(
     const Player &attacker) const
 {
-    // Buscamos el arma equipada en la mano.
     const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
 
-    // Sin arma: ataque físico básico.
     if (weapon == nullptr)
     {
         return PlayerAttackVisualType::Physical;
     }
 
-    // Bastones/varas: ataque mágico.
+    if (weapon->effect == ItemEffect::HEAL)
+    {
+        return PlayerAttackVisualType::Heal;
+    }
+
     if (weapon->slot == ItemSlot::STAFF)
     {
         return PlayerAttackVisualType::Magic;
     }
 
-    // Arcos u otras armas marcadas como rango desde TOML.
     if (weapon->stats.isRanged)
     {
         return PlayerAttackVisualType::Ranged;
     }
 
-    // Espadas, hachas, martillos, etc.
     return PlayerAttackVisualType::Physical;
 }
 
@@ -970,9 +970,45 @@ void ActionDispatcher::broadcastPlayerAttackVisual(uint32_t attackerId,
 {
     const PlayerAttackVisualType visualType =
         resolveAttackVisualType(attacker);
+    const std::string effectId =
+    resolveAttackEffectId(attacker);
+
+    std::cout << "[SERVER ATTACK VISUAL] attackerId="
+          << attackerId
+          << " targetId="
+          << targetId
+          << " visualType="
+          << static_cast<int>(visualType)
+          << " effectId='"
+          << effectId
+          << "'"
+          << std::endl;
 
     monitor.broadcast(std::make_shared<const PlayerAttackVisualMessage>(
         attackerId,
         targetId,
-        visualType));
+        visualType,effectId));
+}
+
+
+std::string ActionDispatcher::resolveAttackEffectId(const Player &attacker) const
+{
+    // Buscamos el arma equipada en la mano.
+    const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
+
+    // Sin arma no hay efecto mágico extra.
+    if (weapon == nullptr)
+    {
+        return "";
+    }
+
+    std::cout << "[SERVER EFFECT] item='"
+              << weapon->catalogId
+              << "' typeName='"
+              << weapon->typeName
+              << "' effectId='"
+              << weapon->stats.visualEffectId
+              << "'"
+              << std::endl;
+    return weapon->stats.visualEffectId;
 }

@@ -120,6 +120,8 @@ ItemStats ItemRepository::parseStats(const toml::table &entry) {
     stats.healAmount = static_cast<uint16_t>(v->get());
   if (const auto *v = entry.get_as<int64_t>("mana_amount"))
     stats.manaAmount = static_cast<uint16_t>(v->get());
+  if (const auto *v = entry.get_as<std::string>("visual_effect"))
+    stats.visualEffectId = v->get();
 
   return stats;
 }

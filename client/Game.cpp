@@ -1116,6 +1116,8 @@ void Game::loadAssets()
 
   // ================EFECTOS=====================
   assets->AddTexture("effect_attack_magic_01", "assets/sprites/effects/effect_attack_magic_01.png");
+  assets->AddTexture("effect_attack_magic_02", "assets/sprites/effects/effect_attack_magic_02.png");
+  assets->AddTexture("effect_attack_magic_03", "assets/sprites/effects/effect_attack_magic_03.png");
   assets->AddTexture("effect_blood_01", "assets/sprites/effects/effect_blood_01.png");
 }
 
@@ -1315,7 +1317,6 @@ void Game::consumePotion(int slotIndex)
 
   if (item.type == ClientItemType::HealthPotion)
   {
-    // Calculamos nueva vida sin superar el máximo.
     playerState.hp += item.healAmount;
 
     if (playerState.hp > playerState.maxHp)
@@ -1325,7 +1326,6 @@ void Game::consumePotion(int slotIndex)
   }
   else if (item.type == ClientItemType::ManaPotion)
   {
-    // Calculamos nuevo maná sin superar el máximo.
     playerState.mana += item.manaAmount;
 
     if (playerState.mana > playerState.maxMana)
@@ -1335,14 +1335,11 @@ void Game::consumePotion(int slotIndex)
   }
   else
   {
-    // Si no era poción, no hacemos nada.
     return;
   }
 
-  // Reducimos la cantidad.
   item.quantity--;
 
-  // Si se terminó, vaciamos el slot.
   if (item.quantity <= 0)
   {
     inventoryState.slots[slotIndex] = std::nullopt;
@@ -1509,7 +1506,6 @@ void Game::refreshPlayerEquipmentVisuals()
   {
     return;
   }
-  // Obtenemos el SpriteComponent del jugador local.
   auto &sprite = player->getComponent<SpriteComponent>();
 
   // Casco / capucha.
@@ -1527,12 +1523,9 @@ void Game::refreshPlayerEquipmentVisuals()
   }
   else
   {
-    // Si no hay casco equipado, limpiamos el visual.
     sprite.clearHelmet();
   }
-  // Arma y escudo: no necesitan limpiar nada en el sprite porque se
-  // renderizan en render() chequeando equipmentState directamente.
-  // Con que el slot esté vacío alcanza para que no se dibujen.
+
 }
 
 void Game::renderEquippedWeapon()
@@ -1571,18 +1564,12 @@ void Game::renderEquippedWeapon()
                         playerSrc.y - sprite.getStartY(), playerSrc.w,
                         playerSrc.h};
 
-  // El destRect debe tener el tamaño del frame escalado — no el del personaje.
-  // playerDest.w/h heredan el tamaño del body (54x94 con scale 2), que es
-  // el mismo que queremos para la espada.
   const SpriteSheetConfig cfg = armorSpriteConfigForCurrentRace();
   SDL_Point offset = visualOffsetForCurrentRace(weapon);
 
   SDL_Rect weaponDest = {playerDest.x + offset.x, playerDest.y + offset.y,
                          playerSrc.w * cfg.scale, playerSrc.h * cfg.scale};
 
-  // SDL_RenderCopy(renderer, weaponTexture, &weaponSrc, &weaponDest);
-  //  Usamos el mismo flip que el cuerpo del personaje para que
-  //  el arma acompañe la orientación y quede siempre en la mano derecha.
   SDL_RenderCopyEx(renderer, weaponTexture, &weaponSrc, &weaponDest, 0, nullptr,
                    sprite.spriteFlip);
 }
@@ -1708,20 +1695,17 @@ void Game::renderEnemyHealthBars()
 }
 bool Game::isLocalPlayerDead() const
 {
-  // Si el servidor ya marcó al jugador como fantasma, está muerto.
+
   if (playerState.isDead)
   {
     return true;
   }
 
-  // Si todavía no recibimos una vida válida, no podemos asumir muerte
-  // solo porque hp sea 0.
   if (!hasReceivedValidPlayerStats)
   {
     return false;
   }
 
-  // Luego de recibir stats válidas, hp <= 0 sí representa muerte.
   return playerState.hp <= 0;
 }
 
@@ -1752,18 +1736,13 @@ void Game::applyLocalPlayerGhostState(bool showMessage)
 
 void Game::reviveLocalPlayer(int newHp)
 {
-  // El jugador vuelve a estar vivo.
   playerState.isDead = false;
-
-  // Permitimos que, si muere otra vez, se pueda aplicar de nuevo
-  // la transición a fantasma.
   localGhostStateApplied = false;
   playerState.hp = newHp;
 
   // Mensaje visual temporal.
   showStatusMessage("Has revivido");
 
-  std::cout << "[PLAYER] Revivió. HP=" << playerState.hp << std::endl;
   assets->applyPlayerAppearance(*player, playerState);
   refreshPlayerEquipmentVisuals();
 }
@@ -1786,7 +1765,6 @@ SDL_Texture *Game::getOrCreateTextTexture(const std::string &key,
   {
     CachedText &cached = it->second;
 
-    // Si texto, fuente y color siguen iguales, reutilizamos la textura.
     if (cached.texture != nullptr && cached.text == text &&
         cached.font == font && sameColor(cached.color, color))
     {
@@ -1795,7 +1773,6 @@ SDL_Texture *Game::getOrCreateTextTexture(const std::string &key,
       return cached.texture;
     }
 
-    // Si cambió algo, destruimos la textura anterior.
     if (cached.texture != nullptr)
     {
       SDL_DestroyTexture(cached.texture);
@@ -1803,7 +1780,6 @@ SDL_Texture *Game::getOrCreateTextTexture(const std::string &key,
     }
   }
 
-  // Si el texto está vacío, no generamos textura.
   if (text.empty() || font == nullptr)
   {
     outW = 0;
@@ -1811,7 +1787,6 @@ SDL_Texture *Game::getOrCreateTextTexture(const std::string &key,
     return nullptr;
   }
 
-  // Creamos surface nueva solo cuando el texto realmente cambió.
   SDL_Surface *surface = TTF_RenderText_Blended(font, text.c_str(), color);
   if (surface == nullptr)
   {
@@ -1820,7 +1795,7 @@ SDL_Texture *Game::getOrCreateTextTexture(const std::string &key,
     return nullptr;
   }
 
-  // Convertimos surface a texture.
+
   SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
   if (texture == nullptr)
   {
@@ -1840,7 +1815,6 @@ SDL_Texture *Game::getOrCreateTextTexture(const std::string &key,
 
   SDL_FreeSurface(surface);
 
-  // Guardamos o reemplazamos la entrada cacheada.
   textCache[key] = cached;
 
   outW = cached.w;
@@ -1851,7 +1825,6 @@ SDL_Texture *Game::getOrCreateTextTexture(const std::string &key,
 
 void Game::clearTextCache()
 {
-  // Destruimos todas las texturas cacheadas.
   for (auto &[key, cached] : textCache)
   {
     if (cached.texture != nullptr)
@@ -1950,9 +1923,6 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg)
     {
       inventoryState.slots[slotIndex].reset();
 
-      std::cerr << "[CLIENT][INV] slot=" << slotIndex
-                << " apunta a instanceId inexistente=" << itemInstanceId
-                << std::endl;
       continue;
     }
 
@@ -2034,9 +2004,9 @@ void Game::applyInventoryUpdate(const InventoryUpdateMessage &msg)
 
 void Game::handleEntityMove(const EntityMoveMessage &moveMsg)
 {
-  const uint32_t entityId = static_cast<uint32_t>(moveMsg.getId());
-  const float serverX = static_cast<float>(moveMsg.getX());
-  const float serverY = static_cast<float>(moveMsg.getY());
+  const uint32_t entityId = moveMsg.getId();
+  const float serverX = moveMsg.getX();
+  const float serverY = moveMsg.getY();
   const Direction direction = moveMsg.getDirection();
   const bool moving = moveMsg.isMoving();
 
@@ -2124,15 +2094,6 @@ void Game::handleEntitySpawn(const EntitySpawnMessage &spawnMsg)
   // DTO público del jugador que spawneó.
   const PlayerDto &dto = spawnMsg.getPlayerDto();
 
-  std::cout << "[ENTITY SPAWN DTO CLAN] id="
-            << dto.playerID
-            << " name='"
-            << dto.nombre
-            << "' clan='"
-            << dto.clanName
-            << "' localId="
-            << playerDto.playerID
-            << std::endl;
 
   // Si el spawn corresponde al jugador local, no lo creamos como remoto.
   // Usamos el DTO para sincronizar datos visuales que quizás no llegaron
@@ -2258,23 +2219,37 @@ void Game::processServerMessage(const Message &msg)
     resurrectionEndTime = SDL_GetTicks() + resMsg.getDelayMs();
     return;
   }
-  case ServerOpCode::MSG_COMBAT_LOG:
+  // case ServerOpCode::MSG_COMBAT_LOG:
+  // {
+  //   const auto &combatMsg = static_cast<const CombatLogMessage &>(msg);
+  //   uint32_t targetId = static_cast<uint32_t>(std::stoul(combatMsg.getText()));
+  //
+  //   Entity *targetEntity = nullptr;
+  //   auto it = enemies.find(targetId);
+  //   if (it != enemies.end())
+  //     targetEntity = it->second;
+  //   else if (clientWorld != nullptr)
+  //     targetEntity = clientWorld->getRemotePlayerEntity(targetId);
+  //
+  //   bool isMagic = equipmentState.weapon.has_value() &&
+  //                  equipmentState.weapon->type == ClientItemType::MagicWeapon;
+  //
+  //   if (targetEntity != nullptr)
+  //     attackSystem.triggerAttackEffect(targetId, targetEntity, camera, isMagic);
+  //   return;
+  // }
+    case ServerOpCode::MSG_COMBAT_LOG:
   {
+    // CombatLogMessage ya no debe crear efectos visuales.
+    // Los efectos visuales ahora vienen por MSG_PLAYER_ATTACK_VISUAL,
+    // que trae visualType + effectId.
+    //
+    // Si dejamos triggerAttackEffect acá, se duplica el efecto
+    // y además siempre usa effect_attack_magic_01.
+
     const auto &combatMsg = static_cast<const CombatLogMessage &>(msg);
-    uint32_t targetId = static_cast<uint32_t>(std::stoul(combatMsg.getText()));
+    (void)combatMsg;
 
-    Entity *targetEntity = nullptr;
-    auto it = enemies.find(targetId);
-    if (it != enemies.end())
-      targetEntity = it->second;
-    else if (clientWorld != nullptr)
-      targetEntity = clientWorld->getRemotePlayerEntity(targetId);
-
-    bool isMagic = equipmentState.weapon.has_value() &&
-                   equipmentState.weapon->type == ClientItemType::MagicWeapon;
-
-    if (targetEntity != nullptr)
-      attackSystem.triggerAttackEffect(targetId, targetEntity, camera, isMagic);
     return;
   }
   case ServerOpCode::MSG_PLAYER_ATTACK_VISUAL:
@@ -2876,20 +2851,34 @@ void Game::handleItemPicked(const ItemPickedMessage &msg)
 
 void Game::handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg)
 {
+  // ID de la entidad que recibió el ataque/efecto.
   const uint32_t targetId = msg.getTargetId();
+
+  // Tipo lógico del visual: físico, rango, mágico, heal, etc.
+  const PlayerAttackVisualType visualType = msg.getVisualType();
+
+  // ID concreto del sprite/efecto visual.
+  // Viene desde el server según el visual_effect del item en game.toml.
+  const std::string &effectId = msg.getEffectId();
 
   Entity *targetEntity = nullptr;
 
+  // Si el atacante soy yo, reproducimos sonido local.
+  // El visual lo ven todos, pero el sonido lo usamos localmente.
   if (msg.getAttackerId() == static_cast<uint32_t>(playerDto.playerID))
   {
-    if (msg.getVisualType() == PlayerAttackVisualType::Magic)
+    if (visualType == PlayerAttackVisualType::Magic)
+    {
       audioManager.playEffect("magic");
+    }
     else
+    {
       audioManager.playEffect("attack");
+    }
   }
 
   // Caso 1: el target soy yo.
-  if (targetId == playerDto.playerID)
+  if (targetId == static_cast<uint32_t>(playerDto.playerID))
   {
     targetEntity = player;
   }
@@ -2908,6 +2897,7 @@ void Game::handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg)
     }
   }
 
+  // Si no encontramos el target, no hay dónde dibujar el efecto.
   if (targetEntity == nullptr)
   {
     std::cout << "[CLIENT ATTACK VISUAL] target no encontrado targetId="
@@ -2916,11 +2906,33 @@ void Game::handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg)
     return;
   }
 
-  attackSystem.triggerBloodEffect(targetId, targetEntity, camera);
+  std::cout << "[CLIENT ATTACK VISUAL] targetId="
+            << targetId
+            << " visualType="
+            << static_cast<int>(visualType)
+            << " effectId='"
+            << effectId
+            << "'"
+            << std::endl;
 
-  if (msg.getVisualType() == PlayerAttackVisualType::Magic)
+  switch (visualType)
   {
-    attackSystem.triggerMagicEffect(targetId, targetEntity, camera);
+  case PlayerAttackVisualType::Physical:
+  case PlayerAttackVisualType::Ranged:
+    // Ataques físicos o de rango: solo sangre.
+    attackSystem.triggerBloodEffect(targetId, targetEntity, camera);
+    break;
+
+  case PlayerAttackVisualType::Magic:
+    // Ataques mágicos de daño: sangre + efecto visual configurable.
+    attackSystem.triggerBloodEffect(targetId, targetEntity, camera);
+    attackSystem.triggerSpriteEffect(targetId, targetEntity, camera, effectId);
+    break;
+
+  case PlayerAttackVisualType::Heal:
+    // Curación: efecto visual, sin sangre.
+    attackSystem.triggerSpriteEffect(targetId, targetEntity, camera, effectId);
+    break;
   }
 }
 

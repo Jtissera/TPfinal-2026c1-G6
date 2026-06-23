@@ -75,7 +75,7 @@ private:
   PlayerAttackVisualType resolveAttackVisualType(const Player& attacker) const;
 
   void broadcastPlayerAttackVisual(uint32_t attackerId,uint32_t targetId,const Player& attacker,Monitor& monitor);
-
+  std::string resolveAttackEffectId(const Player &attacker) const;
 public:
   explicit ActionDispatcher(const toml::table &config, ClanManager &clanManager);
   void dispatch(const ClientMessage &msg, GameWorld &world, Monitor &monitor);

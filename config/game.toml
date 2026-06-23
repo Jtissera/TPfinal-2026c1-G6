@@ -153,6 +153,8 @@ is_ranged = true
 damage_min  = 2
 damage_max  = 4
 mana_cost   = 5
+effect     = "damage"
+visual_effect = "effect_attack_magic_01"
 
 [items.flauta_elfica]
 catalog_id = 10
@@ -160,6 +162,7 @@ slot      = "STAFF"
 is_ranged = true
 mana_cost   = 100
 effect     = "heal"
+visual_effect = "effect_heal_01"
 
 [items.baculo_nudoso]
 catalog_id = 11
@@ -168,14 +171,18 @@ is_ranged = true
 damage_min  = 4
 damage_max  = 8
 mana_cost   = 15
+effect     = "damage"
+visual_effect = "effect_attack_magic_02"
 
 [items.baculo_engarzado]
 catalog_id = 12
 slot      = "STAFF"
 is_ranged = true
 damage_min  = 8
-damage_max  = 20
+damage_max = 20
 mana_cost   = 30
+effect     = "damage"
+visual_effect = "effect_attack_magic_03"
 
 [items.arco_simple]
 catalog_id = 13

@@ -55,14 +55,11 @@ bool AttackSystem::handleMouseClick(
     return false;
 }
 
-void AttackSystem::createAttackEffect(
-    uint32_t targetId,
-    Entity &target,
-    const SDL_Rect &camera,
-    AttackEffectType type)
+void AttackSystem::createAttackEffect(uint32_t targetId,Entity &target,const SDL_Rect &camera,AttackEffectType type,
+    const std::string &effectId)
 {
     (void)targetId;
-    // Para ubicar el efecto usamos el sprite real del target.
+
     if (!target.hasComponent<SpriteComponent>())
     {
         return;
@@ -71,20 +68,17 @@ void AttackSystem::createAttackEffect(
     const auto &sprite = target.getComponent<SpriteComponent>();
     const SDL_Rect &targetRect = sprite.getDestRect();
 
-    // Tamaño base para centrar. La sangre es 32x32 y la magia 64x64,
-    // pero usamos 64 como referencia para centrar bien ambos.
     constexpr int effectSize = 64;
 
     AttackEffect effect{};
 
-    // Convertimos de pantalla a mundo:
-    // targetRect está en pantalla, por eso sumamos cámara y restamos offset del mapa.
     effect.x = targetRect.x + targetRect.w / 2 + camera.x - effectSize / 2;
     effect.y = targetRect.y + targetRect.h / 2 + camera.y - 133 - effectSize / 2;
 
     effect.createdAt = SDL_GetTicks();
     effect.durationMs = 500;
     effect.type = type;
+    effect.effectId = effectId;
 
     attackEffects.push_back(effect);
 }
@@ -133,7 +127,7 @@ void AttackSystem::render(SDL_Renderer *renderer,
         }
         else
         {
-            texture = assets.GetTexture("effect_attack_magic_01");
+            texture = assets.GetTexture(ef.effectId);
             frameWidth = 64;
             frameHeight = 64;
             totalFrames = 11;
@@ -266,18 +260,14 @@ bool AttackSystem::shouldCreateVisualEffect(const ItemView *weapon) const
     return weapon->type == ClientItemType::MagicWeapon;
 }
 
-void AttackSystem::triggerBloodEffect(uint32_t targetId, Entity *targetEntity, const SDL_Rect &camera)
+void AttackSystem::triggerBloodEffect(uint32_t targetId,Entity *targetEntity,const SDL_Rect &camera)
 {
     if (targetEntity == nullptr)
     {
         return;
     }
 
-    createAttackEffect(
-        targetId,
-        *targetEntity,
-        camera,
-        AttackEffectType::Blood);
+    createAttackEffect(targetId,*targetEntity,camera,AttackEffectType::Blood,"");
 }
 
 void AttackSystem::triggerMagicEffect(uint32_t targetId, Entity *targetEntity, const SDL_Rect &camera)
@@ -287,11 +277,11 @@ void AttackSystem::triggerMagicEffect(uint32_t targetId, Entity *targetEntity, c
         return;
     }
 
-    createAttackEffect(
+    triggerSpriteEffect(
         targetId,
-        *targetEntity,
+        targetEntity,
         camera,
-        AttackEffectType::Magic);
+        "effect_attack_magic_01");
 }
 
 void AttackSystem::triggerAttackEffect(uint32_t targetId, Entity *targetEntity, const SDL_Rect &camera, bool isMagicWeapon)
@@ -307,4 +297,28 @@ void AttackSystem::triggerAttackEffect(uint32_t targetId, Entity *targetEntity, 
     }
 
     triggerMagicEffect(targetId, targetEntity, camera);
+}
+
+
+void AttackSystem::triggerSpriteEffect(uint32_t targetId,
+                                       Entity *targetEntity,
+                                       const SDL_Rect &camera,
+                                       const std::string &effectId)
+{
+    if (targetEntity == nullptr)
+    {
+        return;
+    }
+
+    if (effectId.empty())
+    {
+        return;
+    }
+
+    createAttackEffect(
+        targetId,
+        *targetEntity,
+        camera,
+        AttackEffectType::Sprite,
+        effectId);
 }

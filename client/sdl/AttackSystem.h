@@ -16,7 +16,7 @@
 enum class AttackEffectType
 {
     Blood,
-    Magic
+    Sprite
 };
 
 // Representa un efecto visual de ataque activo.
@@ -28,6 +28,7 @@ struct AttackEffect
     Uint32 createdAt;        // Momento en que se creó el efecto.
     Uint32 durationMs = 500; // Duración total del efecto.
     AttackEffectType type = AttackEffectType::Blood;
+    std::string effectId;
 };
 
 struct AttackTarget
@@ -90,6 +91,8 @@ public:
 
     void triggerMagicEffect(uint32_t targetId, Entity *targetEntity, const SDL_Rect &camera);
 
+    void triggerSpriteEffect(uint32_t targetId,Entity *targetEntity,const SDL_Rect &camera,const std::string &effectId);
+
 private:
     std::vector<AttackEffect> attackEffects;
 
@@ -101,7 +104,7 @@ private:
     int attackRangeForWeapon(const ItemView *weapon) const;
     bool isTargetInRange(Entity *attacker, Entity &target, int range) const;
     bool shouldCreateVisualEffect(const ItemView *weapon) const;
-    void createAttackEffect(uint32_t targetId, Entity &target, const SDL_Rect &camera, AttackEffectType type);
+    void createAttackEffect(uint32_t targetId,Entity &target,const SDL_Rect &camera,AttackEffectType type,const std::string &effectId);
 };
 
 #endif
