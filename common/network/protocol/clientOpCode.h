@@ -2,13 +2,11 @@
 
 #include <cstdint>
 
-enum class ClientOpCode : uint8_t
-{
+enum class ClientOpCode : uint8_t {
 
   MSG_CONNECT = 0x01,
   MSG_LOGIN = 0x02,
   MSG_CREATE_CHAR = 0x03,
-  MSG_DISCONNECT = 0x04,
   MSG_LIST_GAMES = 0x05,
   MSG_CREATE_GAME = 0x06,
   MSG_JOIN_GAME = 0x07,
@@ -21,18 +19,11 @@ enum class ClientOpCode : uint8_t
   MSG_EQUIP_ITEM = 0x14,
   MSG_MEDITATE = 0x15,
   MSG_RESURRECT = 0x16,
-  MSG_ENEMY_HIT_PLAYER = 0x17,
   MSG_UNEQUIP_SLOT = 0x18,
   MSG_USE_ITEM = 0x19,
   MSG_CHAT = 0x1A,
 
   MSG_INTERACT_NPC = 0x20,
-  MSG_BUY = 0x21,
-  MSG_SELL = 0x22,
-  MSG_DEPOSIT = 0x23,
-  MSG_WITHDRAW = 0x24,
-  MSG_LIST_NPC = 0x25,
-
   MSG_CHEAT = 0x40,
 
   MSG_CLAN_SYNC_INTERNAL = 0xFE,

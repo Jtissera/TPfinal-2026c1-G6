@@ -1,32 +1,30 @@
 #pragma once
 
+#include "../../world/gameWorld.h"
 #include "../player/Player.h"
 #include "../player/combatant.h"
-#include <cstdint>
-#include <toml++/toml.hpp>
-#include "../../world/gameWorld.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <toml++/toml.hpp>
 
 class GameWorld;
 
-class CombatSystem
-{
+class CombatSystem {
 public:
   explicit CombatSystem(const toml::table &config);
 
-  struct Result
-  {
-    enum class FailReason
-    {
+  struct Result {
+    enum class FailReason {
       NONE,
       FRIENDLY_FIRE,
       NO_MANA,
       OUT_OF_RANGE,
       LEVEL_TOO_LOW,
-      LEVEL_DIFF_TOO_HIGH
+      LEVEL_DIFF_TOO_HIGH,
+      SAFE_ZONE
     };
 
     bool valid = false;
@@ -39,8 +37,8 @@ public:
     FailReason failReason = FailReason::NONE;
   };
 
-  Result attack(Combatant &attacker, Combatant &target,
-                int attackerAllies = 0, int targetAllies = 0);
+  Result attack(Combatant &attacker, Combatant &target, int attackerAllies = 0,
+                int targetAllies = 0);
   Result attackPlayer(Player &attacker, Player &target, const GameWorld &world);
   Result attackNpc(Player &attacker, Combatant &target, const GameWorld &world);
 
@@ -62,7 +60,8 @@ private:
   float clanMultiplier(int nearbyAllies) const;
 
   bool rollDodge(const Combatant &target) const;
-  int16_t rollDamage(const Combatant &attacker, bool &outCritical, int nearbyAllies) const;
+  int16_t rollDamage(const Combatant &attacker, bool &outCritical,
+                     int nearbyAllies) const;
   int16_t rollDefense(const Combatant &target, int nearbyAllies) const;
   int16_t rollArmorDefense(uint16_t min, uint16_t max) const;
 };

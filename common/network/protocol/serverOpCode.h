@@ -2,21 +2,16 @@
 
 #include <cstdint>
 
-enum class ServerOpCode : uint8_t
-{
+enum class ServerOpCode : uint8_t {
 
   MSG_CONNECT_OK = 0x40,
-  MSG_CONNECT_ERROR = 0x41,
   MSG_LOGIN_OK = 0x42,
-  MSG_LOGIN_ERROR = 0x43,
   MSG_CREATE_OK = 0x44,
-  MSG_CREATE_ERROR = 0x45,
   MSG_GAME_LIST = 0x46,
   MSG_GAME_CREATED = 0x47,
   MSG_JOIN_OK = 0x48,
   MSG_LEAVE_OK = 0x49,
 
-  MSG_WORLD_UPDATE = 0x50,
   MSG_ENTITY_SPAWN = 0x51,
   MSG_ENTITY_MOVE = 0x52,
   MSG_ENTITY_DESPAWN = 0x53,
@@ -35,7 +30,6 @@ enum class ServerOpCode : uint8_t
   MSG_CHAT_MESSAGE = 0x60,
   MSG_COMBAT_LOG = 0x61,
   MSG_NPC_LIST = 0x62,
-  MSG_BANK_STATE = 0x63,
   MSG_NPC_HEALTH = 0x64,
   MSG_NPC_SPAWN = 0x65,
   MSG_NPC_RESPONSE = 0x66,
@@ -44,8 +38,6 @@ enum class ServerOpCode : uint8_t
   MSG_PLAYER_ATTACK_VISUAL = 0x69,
 
   MSG_CLAN_UPDATE = 0x70,
-  MSG_CLAN_NOTIFICATION = 0x71,
-  MSG_CLAN_REQUEST_RESULT = 0x72,
 
   MSG_MAP_CHANGED = 0x7E,
   MSG_ERROR = 0x7F
