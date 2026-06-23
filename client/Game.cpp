@@ -2377,8 +2377,6 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg)
 
     if (enemyEntity != nullptr)
     {
-      // Respawn de NPC existente:
-      // actualizamos posición y vida, sin crear una entidad duplicada.
       auto &transform = enemyEntity->getComponent<TransformComponent>();
 
       transform.position.x = static_cast<float>(msg.getX());
