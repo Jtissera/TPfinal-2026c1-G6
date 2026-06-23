@@ -56,8 +56,20 @@ std::optional<std::pair<int, int>> NpcSpawner::findAndOccupyAdjacentTile(
 
 void NpcSpawner::spawnNpc(const std::string &typeName, int tileX, int tileY)
 {
-    if (!collision.isWalkable(tileX, tileY) || occupancy.isOccupied(tileX, tileY))
-        return;
+    const bool isCityNpc = (typeName == "priest" ||
+                            typeName == "merchant" ||
+                            typeName == "banker");
+
+    if (isCityNpc)
+    {
+        if (!collision.isInBounds(tileX, tileY) || occupancy.isOccupied(tileX, tileY))
+            return;
+    }
+    else
+    {
+        if (!collision.isWalkable(tileX, tileY) || occupancy.isOccupied(tileX, tileY))
+            return;
+    }
 
     const uint32_t npcId = npcManager.spawnNpc(typeName, tileX, tileY);
     occupancy.occupy(tileX, tileY, npcId);
