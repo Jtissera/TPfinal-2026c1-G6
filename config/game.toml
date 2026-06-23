@@ -25,7 +25,7 @@ move_step = 8.0
 
 [combat]
 max_level_diff  = 10
-npc_gold_drop_max = 0.2
+npc_gold_drop_max = 0.70
 npc_xp_bonus_max  = 0.1
 attack_range      = 1
 ranged_attack_range = 10
@@ -52,10 +52,10 @@ spawn_interval_ticks = 600
 max_population       = 150
 spawn_batch_size     = 3
 aggro_range        = 4
-drop_chance_nothing  = 0.70
-drop_chance_gold     = 0.20
-drop_chance_potion   = 0.05
-drop_chance_item     = 0.05
+drop_chance_nothing  = 0.40
+drop_chance_gold     = 0.40
+drop_chance_potion   = 0.10
+drop_chance_item     = 0.10
 respawn_ms           = 10000
 
 [clan]
@@ -671,5 +671,22 @@ tunica_iniciado  = 0
 [city.priest_catalog]
 items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado", "pocion_vida", "pocion_mana"]
 
-[city.merchant_blacklist]
-items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado"]
+[city.merchant_catalog]
+items = [
+    "espada",
+    "hacha",
+    "martillo",
+    "arco_simple",
+    "arco_compuesto",
+    "armadura_cuero",
+    "armadura_placas",
+    "tunica_azul",
+    "capucha",
+    "casco_hierro",
+    "escudo_tortuga",
+    "escudo_hierro",
+    "sombrero_magico",
+    "armadura_clerigo",
+    "pocion_vida",
+    "pocion_mana"
+]

@@ -109,19 +109,23 @@ uint32_t GameFormulas::calcExpOnKill(int16_t targetMaxHp,uint8_t attackerLevel,u
 
 uint32_t GameFormulas::calcNpcGoldDrop(int16_t npcMaxHp) const
 {
-    // Máximo porcentaje de vida máxima que puede convertirse en oro.
-    // Ejemplo: 0.20 significa rand(0, 0.20) * VidaMaxNPC.
+    // Máximo porcentaje de la vida máxima del NPC que puede convertirse en oro.
     const double maxFactor =
-        config["combat"]["npc_gold_drop_max"].value_or<double>(0.20);
+        config["combat"]["npc_gold_drop_max"].value_or<double>(0.35);
 
-    // Genera un valor entre 0.0 y 1.0.
+    // Número aleatorio entre 0.0 y 1.0.
     const double random01 =
         static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
 
+    // Factor final entre 0.0 y maxFactor.
     const double factor = random01 * maxFactor;
 
-    return static_cast<uint32_t>(
-        factor * static_cast<double>(npcMaxHp));
+    // Cantidad calculada de oro.
+    const uint32_t gold =
+        static_cast<uint32_t>(factor * static_cast<double>(npcMaxHp));
+
+    // Si el sistema decidió que el NPC dropea oro, evitamos que caiga 0.
+    return std::max<uint32_t>(1, gold);
 }
 
 uint32_t GameFormulas::calcExcessGold(uint32_t gold,
