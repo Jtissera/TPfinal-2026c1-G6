@@ -54,14 +54,14 @@ bool GameWorld::movePlayer(uint32_t id, Direction dir)
     return playerManager.movePlayer(id, dir);
 }
 
-Player &GameWorld::getPlayer(uint32_t id)             { return playerManager.getPlayer(id); }
+Player &GameWorld::getPlayer(uint32_t id) { return playerManager.getPlayer(id); }
 const Player &GameWorld::getPlayer(uint32_t id) const { return playerManager.getPlayer(id); }
-bool GameWorld::hasPlayer(uint32_t id) const          { return playerManager.hasPlayer(id); }
-bool GameWorld::canPlayerAct(uint32_t id) const       { return playerManager.canPlayerAct(id); }
-int GameWorld::getTileX(uint32_t id) const            { return playerManager.getTileX(id); }
-int GameWorld::getTileY(uint32_t id) const            { return playerManager.getTileY(id); }
-int GameWorld::getPixelX(uint32_t id) const           { return playerManager.getPixelX(id); }
-int GameWorld::getPixelY(uint32_t id) const           { return playerManager.getPixelY(id); }
+bool GameWorld::hasPlayer(uint32_t id) const { return playerManager.hasPlayer(id); }
+bool GameWorld::canPlayerAct(uint32_t id) const { return playerManager.canPlayerAct(id); }
+int GameWorld::getTileX(uint32_t id) const { return playerManager.getTileX(id); }
+int GameWorld::getTileY(uint32_t id) const { return playerManager.getTileY(id); }
+int GameWorld::getPixelX(uint32_t id) const { return playerManager.getPixelX(id); }
+int GameWorld::getPixelY(uint32_t id) const { return playerManager.getPixelY(id); }
 
 void GameWorld::giveExperience(uint32_t playerId, uint32_t exp, float xpMultiplier)
 {
@@ -103,9 +103,9 @@ void GameWorld::spawnNpc(const std::string &typeName, int tileX, int tileY)
     npcSpawner.spawnNpc(typeName, tileX, tileY);
 }
 
-bool GameWorld::hasNpc(uint32_t npcId) const          { return npcManager.hasNpc(npcId); }
-Npc &GameWorld::getNpc(uint32_t npcId)                { return npcManager.getNpc(npcId); }
-const Npc &GameWorld::getNpc(uint32_t npcId) const    { return npcManager.getNpc(npcId); }
+bool GameWorld::hasNpc(uint32_t npcId) const { return npcManager.hasNpc(npcId); }
+Npc &GameWorld::getNpc(uint32_t npcId) { return npcManager.getNpc(npcId); }
+const Npc &GameWorld::getNpc(uint32_t npcId) const { return npcManager.getNpc(npcId); }
 
 const std::unordered_map<uint32_t, Npc> &GameWorld::getNpcs() const
 {
@@ -118,7 +118,8 @@ std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const
         return std::nullopt;
 
     const NpcType t = mapData.at(static_cast<uint16_t>(tileX),
-                                  static_cast<uint16_t>(tileY)).npc;
+                                 static_cast<uint16_t>(tileY))
+                          .npc;
     return t != NpcType::NONE ? std::optional<NpcType>(t) : std::nullopt;
 }
 
@@ -267,10 +268,10 @@ WorldTickResult GameWorld::tick(float deltaSeconds)
     const float deltaMs = deltaSeconds * 1000.0f;
 
     resurrectionSystem.tick(deltaMs,
-        [this, &result](uint32_t pid, int tx, int ty)
-        {
-            playerManager.handleResurrectionComplete(pid, tx, ty, result);
-        });
+                            [this, &result](uint32_t pid, int tx, int ty)
+                            {
+                                playerManager.handleResurrectionComplete(pid, tx, ty, result);
+                            });
 
     playerManager.tickPlayers(deltaSeconds, mapData, result);
     tickNpcs(result);
@@ -330,7 +331,7 @@ void GameWorld::resolveNpcMovement(NpcTickResult &npcResult, WorldTickResult &re
             continue;
 
         const Tile &destTile = mapData.at(static_cast<uint16_t>(toX),
-                                           static_cast<uint16_t>(toY));
+                                          static_cast<uint16_t>(toY));
         if (destTile.zone == ZoneType::SAFE)
             continue;
 
@@ -353,11 +354,21 @@ void GameWorld::resolveNpcAttacks(NpcTickResult &npcResult, WorldTickResult &res
 
         if ((!target.isAlive() && !target.isMeditating()) || target.isGhost() || target.getHp() == 0)
             continue;
-        
-        target.takeDamage(attack.damage);
 
-        result.playerHits.push_back({attack.targetPlayerId, attack.damage});
-        result.playersChanged.push_back(attack.targetPlayerId);
+        auto rollArmor = [](uint16_t min, uint16_t max) -> int16_t
+        {
+            int range = max - min;
+            return static_cast<int16_t>(min + (range > 0 ? std::rand() % range : 0));
+        };
+
+        int16_t defense = rollArmor(target.getArmorDefenseMin(), target.getArmorDefenseMax()) +
+                          rollArmor(target.getHelmetDefenseMin(), target.getHelmetDefenseMax()) +
+                          rollArmor(target.getShieldDefenseMin(), target.getShieldDefenseMax());
+
+        int16_t finalDmg = std::max<int16_t>(1, attack.damage - defense);
+
+        target.takeDamage(finalDmg);
+        result.playerHits.push_back({attack.targetPlayerId, finalDmg});
 
         if (npcManager.hasNpc(attack.npcId))
         {
@@ -366,8 +377,8 @@ void GameWorld::resolveNpcAttacks(NpcTickResult &npcResult, WorldTickResult &res
             const int dy = target.getTileY() - attackerNpc.getTileY();
 
             const Direction dir = (std::abs(dx) > std::abs(dy))
-                ? (dx > 0 ? Direction::RIGHT : Direction::LEFT)
-                : (dy > 0 ? Direction::DOWN : Direction::UP);
+                                      ? (dx > 0 ? Direction::RIGHT : Direction::LEFT)
+                                      : (dy > 0 ? Direction::DOWN : Direction::UP);
 
             result.npcAttacksForAnim.push_back({attack.npcId, dir});
         }

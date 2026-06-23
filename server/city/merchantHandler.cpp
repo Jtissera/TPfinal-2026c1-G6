@@ -27,34 +27,10 @@ bool MerchantHandler::isBlacklisted(const std::string &itemName) const
 
 bool MerchantHandler::isSellable(const std::string &itemName) const
 {
-    // Buscamos el array de items permitidos para el comerciante.
-    // Esta lista representa el catálogo propio del merchant.
-    const toml::array *catalog =
-        config["city"]["merchant_catalog"]["items"].as_array();
-
-    // Si no existe el catálogo, por seguridad el comerciante no vende nada.
-    // Es mejor fallar cerrado que vender cualquier item por error.
-    if (catalog == nullptr)
-    {
+    if (isBlacklisted(itemName))
         return false;
-    }
 
-    // Recorremos los nombres de items definidos en el catálogo.
-    for (const auto &entry : *catalog)
-    {
-        // Convertimos cada entrada TOML a string.
-        const std::string catalogItem = entry.value_or<std::string>("");
-
-        // Si el item pedido está en el catálogo, todavía falta validar precio.
-        if (catalogItem == itemName)
-        {
-            // Un item vendible debe estar en el catálogo y tener precio mayor a cero.
-            return config["city"]["prices"][itemName].value_or(0u) > 0;
-        }
-    }
-
-    // Si no aparece en merchant_catalog, el comerciante no debe venderlo.
-    return false;
+    return config["city"]["prices"][itemName].value_or(0u) > 0;
 }
 
 uint32_t MerchantHandler::priceOf(const std::string &itemName) const

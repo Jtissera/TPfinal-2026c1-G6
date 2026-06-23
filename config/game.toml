@@ -673,3 +673,17 @@ items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado", "p
 
 [city.merchant_blacklist]
 items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado"]
+
+
+
+[initial_inventory.cleric]
+items = ["capucha", "tunica_iniciado", "uniforme_argentino", "vara_fresno"]
+
+[initial_inventory.mage]
+items = ["baculo_nudoso", "capucha", "pocion_mana", "pocion_vida", "uniforme_argentino"]
+
+[initial_inventory.paladin]
+items = ["espada", "armadura_placas", "baculo_nudoso", "casco_hierro", "uniforme_argentino"]
+
+[initial_inventory.warrior]
+items = ["casco_hierro", "armadura_placas", "uniforme_argentino", "espada"]
