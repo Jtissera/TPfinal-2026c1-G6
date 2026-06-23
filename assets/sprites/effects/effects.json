@@ -18,47 +18,60 @@
     }
   ],
   "_sprite_info": {
-    "effect_magic_01": {
+    "effect_attack_magic_01": {
       "sheet_width": 512,
       "sheet_height": 512,
-      "frame_width": 128,
+      "frame_width": 64,
       "frame_height": 64,
+      "scale": 1,
+      "start_x": 0,
+      "start_y": 0,
+      "render_offset_x": 0,
+      "render_offset_y": 0,
       "animations": {
-        "charge": {
-          "row_y": 0,
-          "frames": 3,
-          "speed_ms": 80
-        },
-        "explode": {
-          "row_y": 64,
-          "frames": 3,
-          "speed_ms": 100
+        "default": {
+          "row": 0,
+          "frames": 10,
+          "columns": 5,
+          "speed_ms": 50
         }
       }
-    },
-    "effect_magic_02": {
+    } ,
+    "effect_attack_magic_02": {
       "sheet_width": 512,
       "sheet_height": 512,
       "frame_width": 128,
       "frame_height": 128,
+      "scale": 1,
+      "start_x": 0,
+      "start_y": 0,
+      "render_offset_x": 0,
+      "render_offset_y": 0,
       "animations": {
         "default": {
-          "row_y": 0,
-          "frames": 4,
-          "speed_ms": 80
+          "row": 0,
+          "frames": 16,
+          "columns": 4,
+          "speed_ms": 30
         }
       }
     },
-    "effect_magic_03": {
+    "effect_attack_magic_03": {
       "sheet_width": 512,
       "sheet_height": 512,
       "frame_width": 128,
       "frame_height": 128,
+      "scale": 1,
+      "start_x": 0,
+      "start_y": 0,
+      "render_offset_x": 0,
+      "render_offset_y": 0,
       "animations": {
         "default": {
-          "row_y": 0,
-          "frames": 4,
-          "speed_ms": 80
+          "row": 0,
+          "frames": 16,
+          "columns": 4,
+          "speed_ms": 30
         }
       }
     },
@@ -67,10 +80,16 @@
       "sheet_height": 1024,
       "frame_width": 204,
       "frame_height": 170,
+      "scale": 1,
+      "start_x": 0,
+      "start_y": 0,
+      "render_offset_x": 0,
+      "render_offset_y": 20,
       "animations": {
         "default": {
-          "row_y": 0,
+          "row": 0,
           "frames": 5,
+          "columns": 5,
           "speed_ms": 90
         }
       }

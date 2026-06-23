@@ -29,6 +29,7 @@ struct AnimationDef
     int row = 0;
     int frames = 1;
     int speed = 150;
+    int columns = 1;
 };
 
 struct SpriteDefinition
@@ -66,6 +67,7 @@ public:
     std::string ghostTextureId() const;
     void applyPlayerAppearance(Entity& entity, const PlayerViewState& playerState);
     void applyRemotePlayerAppearance(Entity& entity, const PlayerDto& dto);
+    const SpriteDefinition *GetSpriteDefinition(const std::string &id) const;
 
 private:
     Manager* manager;
@@ -79,7 +81,7 @@ private:
 
     std::string headTextureForRace(const std::string& race) const;
     void LoadBodiesFromJson(const std::string& path);
-    const SpriteDefinition *GetSpriteDefinition(const std::string &id) const;
+
     std::unordered_map<std::string, SpriteDefinition> spriteDefinitions;
 };
 

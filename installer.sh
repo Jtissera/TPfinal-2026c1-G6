@@ -134,9 +134,11 @@ sudo mkdir -p "$INSTALL_DIR"
 sudo cp -r "$SRC_DIR/assets" "$INSTALL_DIR/"
 sudo chmod -R 755 "$INSTALL_DIR"
 
-# El editor guarda mapas nuevos en assets/sprites/MapAssets/worlds/ con el
-# usuario normal (sin sudo). Sin esto, "Guardar mapa" falla por permisos
-# porque todo lo de arriba quedó con dueño root.
+INSTALL_USER="${SUDO_USER:-$USER}"
+sudo chown -R "$INSTALL_USER:$INSTALL_USER" "$INSTALL_DIR"
+
+mkdir -p "$INSTALL_DIR/data"
+
 sudo chmod -R 777 "$INSTALL_DIR/assets/sprites/MapAssets/worlds"
 
 # Config → /etc/argentum
