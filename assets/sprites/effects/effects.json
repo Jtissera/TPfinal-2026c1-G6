@@ -84,11 +84,11 @@
       "start_x": 0,
       "start_y": 0,
       "render_offset_x": 0,
-      "render_offset_y": 20,
+      "render_offset_y": 0,
       "animations": {
         "default": {
           "row": 0,
-          "frames": 5,
+          "frames": 3,
           "columns": 5,
           "speed_ms": 90
         }

@@ -241,6 +241,8 @@ private:
     std::unordered_map<uint32_t, NpcType> enemyNpcTypes; // para saber la duración de cada uno
 
     std::unordered_map<uint32_t, FacingDirection> enemyFacing;
+
+    bool equippedWeaponCanHeal = false;
 };
 
 #endif // PRUEBA_SDL_GAME_H

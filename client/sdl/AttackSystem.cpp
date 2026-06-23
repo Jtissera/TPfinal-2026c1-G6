@@ -55,33 +55,7 @@ bool AttackSystem::handleMouseClick(
     return false;
 }
 
-// void AttackSystem::createAttackEffect(uint32_t targetId,Entity &target,const SDL_Rect &camera,AttackEffectType type,
-//     const std::string &effectId)
-// {
-//     (void)targetId;
-//
-//     if (!target.hasComponent<SpriteComponent>())
-//     {
-//         return;
-//     }
-//
-//     const auto &sprite = target.getComponent<SpriteComponent>();
-//     const SDL_Rect &targetRect = sprite.getDestRect();
-//
-//     constexpr int effectSize = 64;
-//
-//     AttackEffect effect{};
-//
-//     effect.x = targetRect.x + targetRect.w / 2 + camera.x - effectSize / 2;
-//     effect.y = targetRect.y + targetRect.h / 2 + camera.y - 133 - effectSize / 2;
-//
-//     effect.createdAt = SDL_GetTicks();
-//     effect.durationMs = 500;
-//     effect.type = type;
-//     effect.effectId = effectId;
-//
-//     attackEffects.push_back(effect);
-// }
+
 void AttackSystem::createAttackEffect(uint32_t targetId,
                                       Entity &target,
                                       const SDL_Rect &camera,
@@ -131,90 +105,7 @@ void AttackSystem::update()
         attackEffects.end());
 }
 
-// void AttackSystem::render(SDL_Renderer *renderer,AssetManager &assets,const SDL_Rect &camera)
-// {
-//     Uint32 now = SDL_GetTicks();
-//
-//     for (auto &ef : attackEffects)
-//     {
-//         Uint32 elapsed = now - ef.createdAt;
-//
-//         SDL_Texture *texture = nullptr;
-//
-//         int frameWidth = 0;
-//         int frameHeight = 0;
-//         int totalFrames = 0;
-//
-//         if (ef.type == AttackEffectType::Blood)
-//         {
-//             texture = assets.GetTexture("effect_blood_01");
-//
-//             frameWidth = 32;
-//             frameHeight = 32;
-//             totalFrames = 5;
-//         }
-//         else
-//         {
-//             texture = assets.GetTexture(ef.effectId);
-//             frameWidth = 64;
-//             frameHeight = 64;
-//             totalFrames = 11;
-//         }
-//
-//         if (texture == nullptr)
-//         {
-//             continue;
-//         }
-//
-//         int frame = static_cast<int>((elapsed * totalFrames) / ef.durationMs);
-//
-//         if (frame >= totalFrames)
-//         {
-//             frame = totalFrames - 1;
-//         }
-//
-//         if (ef.type == AttackEffectType::Blood)
-//         {
-//             // Sangre: spritesheet horizontal de 5 frames.
-//             SDL_Rect src{frame * frameWidth, 0, frameWidth, frameHeight};
-//
-//             SDL_Rect dst{
-//                 ef.x - camera.x + 16, // ajuste para centrar sangre dentro del efectoSize 64
-//                 ef.y - camera.y + 133 + 16,
-//                 32,
-//                 32};
-//
-//             SDL_RenderCopy(renderer, texture, &src, &dst);
-//         }
-//         else
-//         {
-//             // Magia: spritesheet existente de dos filas.
-//             int srcX = 0;
-//             int srcY = 0;
-//
-//             if (frame < 5)
-//             {
-//                 srcX = frame * frameWidth;
-//                 srcY = 0;
-//             }
-//             else
-//             {
-//                 srcX = (frame - 5) * frameWidth;
-//                 srcY = 64;
-//             }
-//
-//             SDL_Rect src{srcX, srcY, frameWidth, frameHeight};
-//
-//             SDL_Rect dst{
-//                 ef.x - camera.x,
-//                 ef.y - camera.y + 133,
-//                 64,
-//                 64};
-//
-//             SDL_RenderCopy(renderer, texture, &src, &dst);
-//         }
-//     }
-// }
+
 void AttackSystem::render(SDL_Renderer *renderer,AssetManager &assets,const SDL_Rect &camera){
     Uint32 now = SDL_GetTicks();
 
@@ -224,7 +115,7 @@ void AttackSystem::render(SDL_Renderer *renderer,AssetManager &assets,const SDL_
 
         if (ef.type == AttackEffectType::Blood)
         {
-            // Textura fija de sangre.
+
             SDL_Texture *texture = assets.GetTexture("effect_blood_01");
 
             if (texture == nullptr)
@@ -232,12 +123,10 @@ void AttackSystem::render(SDL_Renderer *renderer,AssetManager &assets,const SDL_
                 continue;
             }
 
-            // La sangre sigue usando spritesheet horizontal de 5 frames.
             const int frameWidth = 32;
             const int frameHeight = 32;
             const int totalFrames = 5;
 
-            // Calculamos el frame actual según el tiempo transcurrido.
             int frame = static_cast<int>((elapsed * totalFrames) / ef.durationMs);
 
             if (frame >= totalFrames)
@@ -252,7 +141,6 @@ void AttackSystem::render(SDL_Renderer *renderer,AssetManager &assets,const SDL_
                 frameWidth,
                 frameHeight};
 
-            // Dibujamos la sangre centrada sobre la posición del efecto.
             SDL_Rect dst{
                 ef.x - camera.x + 16,
                 ef.y - camera.y + 133 + 16,
@@ -274,10 +162,6 @@ void AttackSystem::render(SDL_Renderer *renderer,AssetManager &assets,const SDL_
 
             if (texture == nullptr || def == nullptr)
             {
-                std::cout << "[ATTACK EFFECT] falta textura o sprite_info effectId='"
-                          << ef.effectId
-                          << "'"
-                          << std::endl;
                 continue;
             }
 
@@ -285,10 +169,7 @@ void AttackSystem::render(SDL_Renderer *renderer,AssetManager &assets,const SDL_
 
             if (animIt == def->animations.end())
             {
-                std::cout << "[ATTACK EFFECT] falta animacion default effectId='"
-                          << ef.effectId
-                          << "'"
-                          << std::endl;
+
                 continue;
             }
 
@@ -319,18 +200,7 @@ void AttackSystem::render(SDL_Renderer *renderer,AssetManager &assets,const SDL_
                 def->config.startY + anim.row + frameRow * frameHeight,
                 frameWidth,
                 frameHeight};
-            //
-            // const int dstW = frameWidth * def->config.scale;
-            // const int dstH = frameHeight * def->config.scale;
 
-            // PRUEBA BASE:
-            // Dibujamos en la misma posición y tamaño que el sistema viejo.
-            // Esto sirve para confirmar que el recorte desde JSON funciona.
-            // SDL_Rect dst{
-            //     ef.x - camera.x,
-            //     ef.y - camera.y + 133,
-            //     64,
-            //     64};
             SDL_Rect dst{
                 ef.x - camera.x + 32 - dstW / 2 + def->config.renderOffsetX,
                 ef.y - camera.y + 133 + 32 - dstH / 2 + def->config.renderOffsetY,

@@ -447,12 +447,17 @@ void ActionDispatcher::handleAttack(uint32_t id, const Message &msg, GameWorld &
 void ActionDispatcher::handleAttackPlayer(uint32_t attackerId, uint32_t targetId, GameWorld &world, Monitor &monitor)
 {
 
-    if (attackerId == targetId)
+    Player &attacker = world.getPlayer(attackerId);
+    const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
+
+    const bool isSelfTarget = attackerId == targetId;
+    const bool isHealWeapon = weapon != nullptr && weapon->effect == ItemEffect::HEAL;
+
+    if (isSelfTarget && !isHealWeapon)
     {
         return;
     }
 
-    Player &attacker = world.getPlayer(attackerId);
     Player &target = world.getPlayer(targetId);
 
     // El atacante muerto/fantasma no puede atacar.
@@ -467,15 +472,33 @@ void ActionDispatcher::handleAttackPlayer(uint32_t attackerId, uint32_t targetId
         return;
     }
 
-    const Item *weapon = attacker.getInventory().getEquipped(EquipSlot::HAND);
-
-    // Si el arma equipada es de curación, no procesamos como daño PvP.
     if (weapon != nullptr && weapon->effect == ItemEffect::HEAL)
     {
         if (effects.apply(*weapon, attacker, &target))
         {
+            // Actualiza el HUD del atacante: maná gastado.
             sendStats(attackerId, attacker, monitor);
+
+            // Actualiza el HUD del jugador curado: vida recuperada.
             sendStats(targetId, target, monitor);
+
+            // Actualiza la barra de vida remota para TODOS los clientes.
+            // Sin esto, el jugador curado ve su HUD correcto,
+            // pero los demás no ven cambiar su barra sobre el personaje.
+            monitor.broadcast(std::make_shared<const PlayerHealthMessage>(
+                targetId,
+                static_cast<uint16_t>(target.getHp()),
+                static_cast<uint16_t>(target.getMaxHp())
+            ));
+
+            // Visual de curación. El cliente lo maneja como Heal,
+            // por eso no muestra sangre.
+            monitor.broadcast(std::make_shared<const PlayerAttackVisualMessage>(
+                attackerId,
+                targetId,
+                PlayerAttackVisualType::Heal,
+                weapon->stats.visualEffectId
+            ));
         }
 
         return;

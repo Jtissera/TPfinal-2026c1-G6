@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "itemEffectHandler.h"
 
 ItemEffectHandler::ItemEffectHandler() {
@@ -32,12 +34,50 @@ bool ItemEffectHandler::applyConsumable(const Item &item, Player &user) {
 
 bool ItemEffectHandler::applyHeal(const Item &item, Player &user,
                                   Player *target) {
-  if (!user.isAlive())
+  // Si el usuario está muerto, no puede usar la flauta.
+  if (!user.isAlive()) {
+    std::cout << "[HEAL DEBUG] user muerto, no cura" << std::endl;
     return false;
-  if (!user.spendMana(item.stats.manaCost))
-    return false;
+  }
 
+  // Elegimos a quién se va a curar.
+  // Si hay target vivo, cura al target.
+  // Si no hay target válido, se cura a sí mismo.
   Player *recipient = (target && target->isAlive()) ? target : &user;
+
+  const int hpBefore = recipient->getHp();
+  const int manaBefore = user.getMana();
+
+  std::cout << "[HEAL DEBUG] item='"
+            << item.catalogId
+            << "' healAmount="
+            << item.stats.healAmount
+            << " manaCost="
+            << item.stats.manaCost
+            << " userId="
+            << user.getId()
+            << " targetId="
+            << recipient->getId()
+            << " hpBefore="
+            << hpBefore
+            << " manaBefore="
+            << manaBefore
+            << std::endl;
+
+  // Primero gastamos maná.
+  if (!user.spendMana(item.stats.manaCost)) {
+    std::cout << "[HEAL DEBUG] mana insuficiente" << std::endl;
+    return false;
+  }
+
+  // Aplicamos curación.
   recipient->heal(item.stats.healAmount);
+
+  std::cout << "[HEAL DEBUG] hpAfter="
+            << recipient->getHp()
+            << " manaAfter="
+            << user.getMana()
+            << std::endl;
+
   return true;
 }

@@ -162,7 +162,9 @@ slot      = "STAFF"
 is_ranged = true
 mana_cost   = 100
 effect     = "heal"
+heal_amount = 100
 visual_effect = "effect_heal_01"
+
 
 [items.baculo_nudoso]
 catalog_id = 11

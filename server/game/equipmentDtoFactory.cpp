@@ -12,6 +12,10 @@ EquipmentDto buildEquipmentDtoFromPlayer(const Player& player) {
 
     if (const Item* weapon = inventory.getEquipped(EquipSlot::HAND)) {
         dto.weaponCatalogId = weapon->catalogId;
+
+        // El server informa si el arma equipada permite curación.
+        // El cliente no decide por healAmount del JSON visual.
+        dto.weaponCanHeal = (weapon->effect == ItemEffect::HEAL);
     }
 
     if (const Item* armor = inventory.getEquipped(EquipSlot::ARMOR)) {

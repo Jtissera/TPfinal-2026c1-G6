@@ -163,6 +163,7 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
             equipment.armorCatalogId = reader.readUint32();
             equipment.helmetCatalogId = reader.readUint32();
             equipment.shieldCatalogId = reader.readUint32();
+            equipment.weaponCanHeal = reader.readUint8() != 0;
 
             return std::make_unique<PlayerEquipmentUpdateMessage>(
                 playerId,

@@ -10,11 +10,11 @@ uint8_t PlayerEquipmentUpdateMessage::opCode() const {
 
 void PlayerEquipmentUpdateMessage::serializeBody(PacketWriter& writer) const {
     writer.writeUint32(playerId);
-
     writer.writeUint32(equipment.weaponCatalogId);
     writer.writeUint32(equipment.armorCatalogId);
     writer.writeUint32(equipment.helmetCatalogId);
     writer.writeUint32(equipment.shieldCatalogId);
+    writer.writeUint8(equipment.weaponCanHeal ? 1 : 0);
 }
 
 uint32_t PlayerEquipmentUpdateMessage::getPlayerId() const {

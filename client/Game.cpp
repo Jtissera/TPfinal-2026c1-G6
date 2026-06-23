@@ -149,9 +149,7 @@ void Game::handleEvents()
     }
 
     if (event.type == SDL_MOUSEBUTTONDOWN &&
-        event.button.button == SDL_BUTTON_LEFT)
-    {
-
+        event.button.button == SDL_BUTTON_LEFT) {
       if (isLocalPlayerDead())
       {
         continue;
@@ -257,6 +255,7 @@ void Game::handleEvents()
 
       std::vector<AttackTarget> attackTargets;
 
+      // Targets enemigos/NPCs hostiles.
       for (auto &[enemyId, enemyEntity] : enemies)
       {
         if (enemyEntity == nullptr)
@@ -267,17 +266,50 @@ void Game::handleEvents()
         attackTargets.push_back(AttackTarget{enemyId, enemyEntity});
       }
 
-      // Jugadores remotos.
-      if (clientWorld != nullptr)
+      if (equipmentState.weapon.has_value() &&
+          equippedWeaponCanHeal &&
+          player != nullptr)
       {
-        clientWorld->appendRemoteAttackTargets(
-            attackTargets);
+        std::cout << "[SELF HEAL TARGET] agregado localId="
+                  << static_cast<uint32_t>(playerDto.playerID)
+                  << " weaponCanHeal="
+                  << equippedWeaponCanHeal
+                  << std::endl;
+
+        attackTargets.push_back(AttackTarget{playerDto.playerID,player});
+      }
+      else
+      {
+        std::cout << "[SELF HEAL TARGET] NO agregado hasWeapon="
+                  << equipmentState.weapon.has_value()
+                  << " weaponCanHeal="
+                  << equippedWeaponCanHeal
+                  << " playerNull="
+                  << (player == nullptr)
+                  << std::endl;
       }
 
-      attackSystem.handleMouseClick(mouseX, mouseY, camera, attackTargets,
-                                    sendQueue, equippedWeapon);
-    }
+      // Targets jugadores remotos.
+      if (clientWorld != nullptr)
+      {
+        clientWorld->appendRemoteAttackTargets(attackTargets);
+      }
 
+      // Intentamos ataque/curación sobre cualquier target clickeado.
+      const bool handledAttackClick = attackSystem.handleMouseClick(
+          mouseX,
+          mouseY,
+          camera,
+          attackTargets,
+          sendQueue,
+          equippedWeapon
+      );
+
+      if (handledAttackClick)
+      {
+        return;
+      }
+    }
     if (event.type == SDL_KEYDOWN &&
         event.key.keysym.sym == SDLK_RETURN &&
         !miniChat.isFocused())
@@ -2219,34 +2251,9 @@ void Game::processServerMessage(const Message &msg)
     resurrectionEndTime = SDL_GetTicks() + resMsg.getDelayMs();
     return;
   }
-  // case ServerOpCode::MSG_COMBAT_LOG:
-  // {
-  //   const auto &combatMsg = static_cast<const CombatLogMessage &>(msg);
-  //   uint32_t targetId = static_cast<uint32_t>(std::stoul(combatMsg.getText()));
-  //
-  //   Entity *targetEntity = nullptr;
-  //   auto it = enemies.find(targetId);
-  //   if (it != enemies.end())
-  //     targetEntity = it->second;
-  //   else if (clientWorld != nullptr)
-  //     targetEntity = clientWorld->getRemotePlayerEntity(targetId);
-  //
-  //   bool isMagic = equipmentState.weapon.has_value() &&
-  //                  equipmentState.weapon->type == ClientItemType::MagicWeapon;
-  //
-  //   if (targetEntity != nullptr)
-  //     attackSystem.triggerAttackEffect(targetId, targetEntity, camera, isMagic);
-  //   return;
-  // }
+
     case ServerOpCode::MSG_COMBAT_LOG:
   {
-    // CombatLogMessage ya no debe crear efectos visuales.
-    // Los efectos visuales ahora vienen por MSG_PLAYER_ATTACK_VISUAL,
-    // que trae visualType + effectId.
-    //
-    // Si dejamos triggerAttackEffect acá, se duplica el efecto
-    // y además siempre usa effect_attack_magic_01.
-
     const auto &combatMsg = static_cast<const CombatLogMessage &>(msg);
     (void)combatMsg;
 
@@ -2314,20 +2321,31 @@ void Game::handlePlayerEquipmentUpdate(
 {
   const uint32_t updatedPlayerId = msg.getPlayerId();
 
-  // El jugador local ya se actualiza mediante InventoryUpdateMessage.
-  // Este mensaje se usa para actualizar jugadores remotos.
-  if (updatedPlayerId == static_cast<uint32_t>(playerDto.playerID))
+  // Caso 1: actualización del jugador local.
+  // El inventario/equipment local se actualiza por InventoryUpdateMessage,
+  // pero este mensaje trae un dato lógico del server:
+  // si el arma equipada permite curación.
+  if (updatedPlayerId == playerDto.playerID)
   {
+    equippedWeaponCanHeal = msg.getEquipment().weaponCanHeal;
+
+    std::cout << "[EQUIP HEAL FLAG] local weaponCanHeal="
+              << equippedWeaponCanHeal
+              << std::endl;
+
     return;
   }
 
+  // Caso 2: actualización de jugadores remotos.
   if (clientWorld == nullptr)
   {
     return;
   }
 
-  clientWorld->updateRemotePlayerEquipment(updatedPlayerId, msg.getEquipment(),
-                                           itemCatalog);
+  clientWorld->updateRemotePlayerEquipment(
+      updatedPlayerId,
+      msg.getEquipment(),
+      itemCatalog);
 }
 
 void Game::handleLevelUp(const LevelUpMessage &msg)
@@ -2335,7 +2353,7 @@ void Game::handleLevelUp(const LevelUpMessage &msg)
   const uint32_t updatedPlayerId = msg.getPlayerId();
   const uint32_t newLevel = msg.getLevel();
 
-  if (updatedPlayerId == static_cast<uint32_t>(playerDto.playerID))
+  if (updatedPlayerId == playerDto.playerID)
   {
     playerState.level = newLevel;
     player->getComponent<NameplateComponent>().setLevel(newLevel);
@@ -2366,8 +2384,8 @@ void Game::handleNpcSpawn(const NpcSpawnMessage &msg)
       transform.position.x = static_cast<float>(msg.getX());
       transform.position.y = static_cast<float>(msg.getY());
 
-      attackSystem.setEnemyHealth(msg.getNpcId(), static_cast<int>(msg.getHp()),
-                                  static_cast<int>(msg.getHpMax()));
+      attackSystem.setEnemyHealth(msg.getNpcId(), msg.getHp(),
+                                  msg.getHpMax());
       auto it = enemies.find(msg.getNpcId());
 
       if (it != enemies.end() && it->second != nullptr &&
@@ -2449,9 +2467,7 @@ void Game::handleNpcHealth(const NpcHealthMessage &msg)
       it->second != nullptr &&
       it->second->hasComponent<HealthBarComponent>())
   {
-    it->second->getComponent<HealthBarComponent>().setHealth(
-        static_cast<int>(msg.getHp()),
-        static_cast<int>(msg.getMaxHp()));
+    it->second->getComponent<HealthBarComponent>().setHealth(msg.getHp(),msg.getMaxHp());
   }
 
   // Si hp <= 0, HealthBarComponent no dibuja la barra
@@ -2518,7 +2534,6 @@ void Game::handleNpcMove(const NpcMoveMessage &msg)
 
     if (isMoving)
     {
-      // Elegimos la dirección dominante (el eje con mayor desplazamiento).
       if (std::abs(deltaX) > std::abs(deltaY))
       {
         if (deltaX > 0)
@@ -2655,7 +2670,6 @@ void Game::handleEntityDespawn(const EntityDespawnMessage &msg)
       itEnemy->second->destroy();
     }
     enemies.erase(itEnemy);
-    std::cout << "[CLIENT] Enemigo despawneado ID: " << idToRemove << std::endl;
     return;
   }
 
@@ -2724,7 +2738,6 @@ void Game::clearCurrentScene()
 
 void Game::handleMapChanged(const MapChangedMessage &msg)
 {
-  std::cout << "[Game] Cambiando al mapa: " << msg.getMapPath() << std::endl;
 
   clearCurrentScene();
 
@@ -2748,8 +2761,6 @@ void Game::handleMapChanged(const MapChangedMessage &msg)
 void Game::handleChatNotification(const ChatNotificationMessage &msg)
 {
 
-  std::cout << "[CHAT DEBUG] type=" << static_cast<int>(msg.getMsgType())
-            << " text='" << msg.getText() << "'" << std::endl;
 
   const std::string &text = msg.getText();
   const ChatMsgType type = msg.getMsgType();
@@ -2790,11 +2801,6 @@ void Game::handleItemOnGround(const ItemOnGroundMessage &msg)
 
   groundItems[item.instanceId] = entity;
 
-  std::cout << "[GROUND ITEM] creado instanceId=" << item.instanceId
-            << " catalogId=" << item.catalogId
-            << " tile=(" << msg.getX() << "," << msg.getY() << ")"
-            << " pixel=(" << pixelX << "," << pixelY << ")"
-            << std::endl;
 }
 
 void Game::handleGoldOnGround(const GoldOnGroundMessage &msg)
@@ -2803,7 +2809,6 @@ void Game::handleGoldOnGround(const GoldOnGroundMessage &msg)
 
   if (goldView == nullptr)
   {
-    std::cout << "[GROUND GOLD] no se encontro catalogId=23 para oro" << std::endl;
     return;
   }
 
@@ -2814,11 +2819,6 @@ void Game::handleGoldOnGround(const GoldOnGroundMessage &msg)
 
   groundGold[msg.getInstanceId()] = entity;
 
-  std::cout << "[GROUND GOLD] creado instanceId=" << msg.getInstanceId()
-            << " amount=" << msg.getAmount()
-            << " tile=(" << msg.getX() << "," << msg.getY() << ")"
-            << " pixel=(" << pixelX << "," << pixelY << ")"
-            << std::endl;
 }
 
 void Game::handleItemPicked(const ItemPickedMessage &msg)
@@ -2833,7 +2833,6 @@ void Game::handleItemPicked(const ItemPickedMessage &msg)
       itemIt->second->destroy();
     }
     groundItems.erase(itemIt);
-    std::cout << "[GROUND ITEM] removido instanceId=" << itemId << std::endl;
     return;
   }
 
@@ -2845,7 +2844,6 @@ void Game::handleItemPicked(const ItemPickedMessage &msg)
       goldIt->second->destroy();
     }
     groundGold.erase(goldIt);
-    std::cout << "[GROUND GOLD] removido instanceId=" << itemId << std::endl;
   }
 }
 
@@ -2900,20 +2898,10 @@ void Game::handlePlayerAttackVisual(const PlayerAttackVisualMessage &msg)
   // Si no encontramos el target, no hay dónde dibujar el efecto.
   if (targetEntity == nullptr)
   {
-    std::cout << "[CLIENT ATTACK VISUAL] target no encontrado targetId="
-              << targetId
-              << std::endl;
     return;
   }
 
-  std::cout << "[CLIENT ATTACK VISUAL] targetId="
-            << targetId
-            << " visualType="
-            << static_cast<int>(visualType)
-            << " effectId='"
-            << effectId
-            << "'"
-            << std::endl;
+
 
   switch (visualType)
   {
