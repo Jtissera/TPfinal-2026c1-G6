@@ -2,18 +2,18 @@
 
 #include <cstdint>
 #include <mutex>
+#include <shared_mutex>
 #include <unordered_map>
 
 class Receiver;
 
-class ReceiverRegistry {
+class ReceiverRegistry
+{
 public:
   ReceiverRegistry() = default;
 
   void add(uint32_t clientId, Receiver &receiver);
   void remove(uint32_t clientId);
-
-  // Devuelve nullptr si el cliente no existe
   Receiver *get(uint32_t clientId) const;
 
   ReceiverRegistry(const ReceiverRegistry &) = delete;

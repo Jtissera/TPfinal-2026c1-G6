@@ -1,14 +1,17 @@
+#pragma once
+
+#include <atomic>
 #include <cstdint>
 #include <iostream>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <utility>
 
 #include <sys/socket.h>
 
 #include "../../common/liberror.h"
 #include "../../common/network/sockets.h"
-
 #include "../../common/queue.h"
 #include "../../common/thread.h"
 #include "../clientMessage.h"
@@ -18,10 +21,13 @@
 #include "protocol/serverProtocolFactory.h"
 #include "receiverRegistry.h"
 
-class Acceptor : public Thread {
+class Acceptor : public Thread
+{
 public:
-  Acceptor(Socket &&acceptorSocket, Queue<ClientMessage> &lobbyQueue,
-           Monitor &lobbyMonitor, GameManager &gameManager,
+  Acceptor(Socket &&acceptorSocket,
+           Queue<ClientMessage> &lobbyQueue,
+           Monitor &lobbyMonitor,
+           GameManager &gameManager,
            ReceiverRegistry &receiverRegistry);
 
   void run() override;

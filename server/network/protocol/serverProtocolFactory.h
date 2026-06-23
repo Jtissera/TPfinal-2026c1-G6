@@ -11,7 +11,8 @@
 
 class Socket;
 
-class ServerProtocolFactory {
+class ServerProtocolFactory
+{
 public:
   ServerProtocolFactory();
   Protocol createProtocol(Socket &socket) const;
