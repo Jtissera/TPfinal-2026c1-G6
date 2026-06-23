@@ -1,14 +1,16 @@
 #pragma once
+#include "server/game/items/item.h"
 #include <cstdint>
 #include <string>
 #include <vector>
-#include "server/game/items/item.h"
 
 struct NpcMoveIntent
 {
     uint32_t npcId;
-    int fromX, fromY;
-    int toX, toY;
+    int fromX;
+    int fromY;
+    int toX;
+    int toY;
 };
 
 struct NpcAttack
@@ -26,12 +28,12 @@ struct NpcDeathResult
     int tileX;
     int tileY;
     uint32_t goldDrop;
-    std::string itemDrop; // vacío si no hay drop
+    std::string itemDrop;
 };
 
 struct NpcTickResult
 {
-    std::vector<NpcMoveIntent> moveIntents; // GameWorld aplica si puede
+    std::vector<NpcMoveIntent> moveIntents;
     std::vector<NpcAttack> attacks;
     std::vector<NpcDeathResult> deaths;
 };

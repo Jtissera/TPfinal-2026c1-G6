@@ -1,18 +1,38 @@
 #include "npcRepository.h"
-#include <stdexcept>
 
-NpcRepository::NpcRepository(const toml::table &config) : config(config)
+namespace
 {
-    const auto *section = config.get_as<toml::table>("npcs");
+
+    ZoneType zoneTypeFromString(const std::string &s)
+    {
+        if (s == "CAVERN")
+            return ZoneType::CAVERN;
+        if (s == "DUNGEON")
+            return ZoneType::DUNGEON;
+        if (s == "DESERT")
+            return ZoneType::DESERT;
+        return ZoneType::COMBAT;
+    }
+
+}
+
+NpcRepository::NpcRepository(const toml::table &config)
+    : config(config)
+{
+    const toml::table *section = config.get_as<toml::table>("npcs");
 
     if (!section)
-        throw std::runtime_error("NpcRepository: falta [npcs] en el TOML");
+    {
+        throw std::runtime_error("NpcRepository: missing [npcs] section in TOML");
+    }
 
     for (const auto &[key, value] : *section)
     {
-        const auto *entry = value.as_table();
+        const toml::table *entry = value.as_table();
         if (!entry)
+        {
             continue;
+        }
         std::string name(key.str());
         npcs[name] = parse(name, *entry);
     }
@@ -20,9 +40,11 @@ NpcRepository::NpcRepository(const toml::table &config) : config(config)
 
 const NpcStats &NpcRepository::get(const std::string &typeName) const
 {
-    auto it = npcs.find(typeName);
+    std::map<std::string, NpcStats>::const_iterator it = npcs.find(typeName);
     if (it == npcs.end())
-        throw std::out_of_range("NpcRepository: tipo desconocido '" + typeName + "'");
+    {
+        throw std::out_of_range("NpcRepository: unknown type '" + typeName + "'");
+    }
     return it->second;
 }
 
@@ -31,26 +53,27 @@ bool NpcRepository::exists(const std::string &typeName) const
     return npcs.count(typeName) > 0;
 }
 
+float NpcRepository::zoneMultiplier(const std::string &zoneKey,
+                                    const std::string &multiplierKey) const
+{
+    return config[zoneKey][multiplierKey].value_or(1.0f);
+}
+
 NpcStats NpcRepository::parse(const std::string &typeName, const toml::table &entry) const
 {
-
     NpcStats stats;
     stats.typeName = typeName;
     stats.type = npcTypeFromKey(typeName);
 
     if (stats.type == NpcType::NONE)
     {
-        throw std::runtime_error(
-            "NpcRepository: unknown npc typeName: " + typeName);
+        throw std::runtime_error("NpcRepository: unknown npc typeName: " + typeName);
     }
 
-    // Nombre visible por defecto.
     stats.name = npcTypeName(stats.type);
-
-    // Si el TOML trae name, pisa el default.
-    if (auto value = entry["name"].value<std::string>())
+    if (std::optional<std::string> nameOverride = entry["name"].value<std::string>())
     {
-        stats.name = *value;
+        stats.name = *nameOverride;
     }
 
     stats.maxHp = entry["hp"].value_or<int16_t>(50);
@@ -63,42 +86,40 @@ NpcStats NpcRepository::parse(const std::string &typeName, const toml::table &en
     stats.homeRange = entry["home_range"].value_or<int>(10);
     stats.attackCooldownMs = entry["attack_cooldown_ms"].value_or<uint32_t>(1000);
     stats.moveCooldownMs = entry["move_cooldown_ms"].value_or<uint32_t>(500);
+    stats.hostile = entry["hostile"].value_or<bool>(true);
 
-    if (const auto *arr = entry["zones"].as_array())
-        for (const auto &z : *arr)
-            if (auto s = z.value<std::string>())
+    if (const toml::array *arr = entry["zones"].as_array())
+    {
+        for (const toml::node &z : *arr)
+        {
+            if (std::optional<std::string> s = z.value<std::string>())
+            {
                 stats.zones.push_back(*s);
+            }
+        }
+    }
 
     ZoneType homeZone = ZoneType::COMBAT;
-    float goldMult = 1.0f, xpMult = 1.0f, itemMult = 1.0f;
+    float goldMult = 1.0f;
+    float xpMult = 1.0f;
+    float itemMult = 1.0f;
 
     if (!stats.zones.empty())
     {
-        const std::string &z = stats.zones[0];
-        if (z == "CAVERN")
+        const std::string &zoneStr = stats.zones[0];
+        homeZone = zoneTypeFromString(zoneStr);
+
+        std::string zoneKey = zoneStr;
+        for (char &c : zoneKey)
         {
-            homeZone = ZoneType::CAVERN;
-            goldMult = config["cavern"]["gold_multiplier"].value_or(1.5f);
-            xpMult = config["cavern"]["xp_multiplier"].value_or(1.5f);
-            itemMult = config["cavern"]["item_multiplier"].value_or(1.5f);
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         }
-        else if (z == "DUNGEON")
-        {
-            homeZone = ZoneType::DUNGEON;
-            goldMult = config["dungeon"]["gold_multiplier"].value_or(3.0f);
-            xpMult = config["dungeon"]["xp_multiplier"].value_or(2.5f);
-            itemMult = config["dungeon"]["item_multiplier"].value_or(2.5f);
-        }
-        else if (z == "DESERT")
-{
-    homeZone = ZoneType::DESERT;
-    goldMult = config["desert"]["gold_multiplier"].value_or(2.0f);
-    xpMult = config["desert"]["xp_multiplier"].value_or(2.0f);
-    itemMult = config["desert"]["item_multiplier"].value_or(2.0f);
-}
+
+        goldMult = zoneMultiplier(zoneKey, "gold_multiplier");
+        xpMult = zoneMultiplier(zoneKey, "xp_multiplier");
+        itemMult = zoneMultiplier(zoneKey, "item_multiplier");
     }
 
-    stats.hostile = entry["hostile"].value_or<bool>(true);
     stats.homeZone = homeZone;
     stats.goldMultiplier = goldMult;
     stats.xpMultiplier = xpMult;
