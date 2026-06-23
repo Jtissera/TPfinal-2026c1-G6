@@ -6,7 +6,7 @@
 #include "server/monitorQueues.h"
 #include "server/world/gameWorld.h"
 #include "server/game/stats/gameFormulas.h"
-#include "common/network/messages/server/player/EntityMoveMessage.h"
+#include "common/network/messages/server/player/entityMoveMessage.h"
 #include "common/network/messages/server/player/playerResurrectedMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
 

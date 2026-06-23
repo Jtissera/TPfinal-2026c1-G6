@@ -131,7 +131,7 @@ void LobbyHandler::handleCreateChar(uint32_t clientId, const Message &message)
   const CreateCharMessage &msg = static_cast<const CreateCharMessage &>(message);
   try
   {
-    if (!characterArchive.save(msg.getName(), msg.getRaza(), msg.getClase()))
+    if (!characterArchive.save(msg.getName(), msg.getRace(), msg.getCharacterClass()))
     {
       lobbyMonitor.sendTo(clientId,
                           std::make_shared<const ErrorMessage>(
@@ -142,7 +142,7 @@ void LobbyHandler::handleCreateChar(uint32_t clientId, const Message &message)
     gameManager.tryMarkOnline(clientId, msg.getName());
 
     Player player = playerFactory.create(
-        clientId, msg.getName(), msg.getRaza(), msg.getClase(), 2, 2);
+        clientId, msg.getName(), msg.getRace(), msg.getCharacterClass(), 2, 2);
     playerRepo.save(clientId, std::move(player));
     lobbyMonitor.sendTo(clientId, std::make_shared<const CreateOkMessage>());
   }

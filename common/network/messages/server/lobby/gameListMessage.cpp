@@ -1,7 +1,9 @@
 #include "gameListMessage.h"
 
 GameListMessage::GameListMessage(std::vector<GameInfo> games)
-    : games(std::move(games)) {}
+    : games(std::move(games))
+{
+}
 
 const std::vector<GameInfo> &GameListMessage::getGames() const
 {
@@ -16,7 +18,7 @@ uint8_t GameListMessage::opCode() const
 void GameListMessage::serializeBody(PacketWriter &writer) const
 {
     writer.writeUint8(static_cast<uint8_t>(games.size()));
-    for (const auto &game : games)
+    for (const GameInfo &game : games)
     {
         writer.writeUint32(game.gameId);
         writer.writeString(game.gameName);

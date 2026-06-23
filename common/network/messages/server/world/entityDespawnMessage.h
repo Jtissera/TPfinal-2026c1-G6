@@ -1,18 +1,19 @@
 #pragma once
-#include <cstdint>
 #include "../../message.h"
 #include "../../../protocol/packetWriter.h"
 #include "../../../protocol/serverOpCode.h"
+#include <cstdint>
 
-class EntityDespawnMessage : public Message {
+class EntityDespawnMessage : public Message
+{
 public:
-    explicit EntityDespawnMessage(uint32_t id);
+    explicit EntityDespawnMessage(uint32_t entityId);
 
-    uint8_t  opCode() const override;
-    void     serializeBody(PacketWriter& writer) const override;
+    uint32_t getEntityId() const;
 
-    uint32_t getId() const;
+    uint8_t opCode() const override;
+    void serializeBody(PacketWriter &writer) const override;
 
 private:
-    uint32_t id;
+    uint32_t entityId;
 };

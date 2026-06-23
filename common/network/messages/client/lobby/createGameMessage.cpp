@@ -5,7 +5,9 @@ CreateGameMessage::CreateGameMessage(std::string gameName,
                                      std::string mapPath)
     : gameName(std::move(gameName)),
       maxPlayers(maxPlayers),
-      mapPath(std::move(mapPath)) {}
+      mapPath(std::move(mapPath))
+{
+}
 
 const std::string &CreateGameMessage::getGameName() const { return gameName; }
 uint8_t CreateGameMessage::getMaxPlayers() const { return maxPlayers; }

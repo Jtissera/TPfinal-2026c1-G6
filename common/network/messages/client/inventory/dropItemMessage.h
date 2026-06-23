@@ -1,17 +1,19 @@
 #pragma once
 #include "common/network/messages/message.h"
 #include "common/network/protocol/clientOpCode.h"
+#include "common/network/protocol/packetWriter.h"
+#include <cstdint>
 
-class DropItemMessage : public Message {
-    uint32_t itemId;
+class DropItemMessage : public Message
+{
 public:
-    explicit DropItemMessage(uint32_t itemId) : itemId(itemId) {}
-    uint32_t getItemId() const { return itemId; }
-    uint8_t opCode() const override {
-        return static_cast<uint8_t>(ClientOpCode::MSG_DROP_ITEM);
-    }
+    explicit DropItemMessage(uint32_t itemId);
 
-    void serializeBody(PacketWriter& writer) const override{
-    writer.writeUint32(itemId);
-}
+    uint32_t getItemId() const;
+
+    uint8_t opCode() const override;
+    void serializeBody(PacketWriter &writer) const override;
+
+private:
+    uint32_t itemId;
 };

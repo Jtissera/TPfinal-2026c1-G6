@@ -1,25 +1,19 @@
 #pragma once
 #include "../../message.h"
+#include "../../../protocol/packetWriter.h"
 #include "../../../protocol/serverOpCode.h"
+#include <cstdint>
 #include <string>
 
 class NpcResponseMessage : public Message
 {
 public:
-    explicit NpcResponseMessage(std::string text)
-        : text(std::move(text)) {}
+    explicit NpcResponseMessage(std::string text);
 
-    uint8_t opCode() const override
-    {
-        return static_cast<uint8_t>(ServerOpCode::MSG_NPC_RESPONSE);
-    }
+    const std::string &getText() const;
 
-    void serializeBody(PacketWriter &writer) const override
-    {
-        writer.writeString(text);
-    }
-
-    const std::string &getText() const { return text; }
+    uint8_t opCode() const override;
+    void serializeBody(PacketWriter &writer) const override;
 
 private:
     std::string text;

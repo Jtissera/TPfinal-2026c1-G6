@@ -1,7 +1,9 @@
 #include "errorMessage.h"
 
 ErrorMessage::ErrorMessage(std::string reason)
-    : reason(std::move(reason)) {}
+    : reason(std::move(reason))
+{
+}
 
 const std::string &ErrorMessage::getReason() const
 {

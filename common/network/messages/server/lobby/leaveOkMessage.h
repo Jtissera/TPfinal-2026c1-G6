@@ -1,16 +1,12 @@
 #pragma once
-
-#include <cstdint>
-#include <string>
-
+#include "../../message.h"
 #include "../../../protocol/packetWriter.h"
 #include "../../../protocol/serverOpCode.h"
-#include "../../message.h"
+#include <cstdint>
 
-class LeaveOkMessage : public Message {
+class LeaveOkMessage : public Message
+{
 public:
-  LeaveOkMessage();
-
   uint8_t opCode() const override;
   void serializeBody(PacketWriter &writer) const override;
 };

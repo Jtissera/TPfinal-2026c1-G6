@@ -1,29 +1,20 @@
 #pragma once
-
 #include "common/network/messages/message.h"
 #include "common/network/protocol/clientOpCode.h"
-#include <string>
+#include "common/network/protocol/packetWriter.h"
 #include <cstdint>
+#include <string>
 
 class ChatMessage : public Message
 {
 public:
-    explicit ChatMessage(std::string text, uint32_t targetId = 0)
-        : text(std::move(text)), targetId(targetId) {}
+    explicit ChatMessage(std::string text, uint32_t targetId = 0);
 
-    const std::string &getText() const { return text; }
-    uint32_t getTargetId() const { return targetId; }
+    const std::string &getText() const;
+    uint32_t getTargetId() const;
 
-    uint8_t opCode() const override
-    {
-        return static_cast<uint8_t>(ClientOpCode::MSG_CHAT);
-    }
-
-    void serializeBody(PacketWriter &writer) const override
-    {
-        writer.writeString(text);
-        writer.writeUint32(targetId);
-    }
+    uint8_t opCode() const override;
+    void serializeBody(PacketWriter &writer) const override;
 
 private:
     std::string text;
