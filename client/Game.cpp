@@ -773,12 +773,13 @@ void Game::renderHUD()
   SDL_Texture *texInv = assets->GetTexture("hud_inv");
   SDL_Texture *texStats = assets->GetTexture("hud_stats");
 
+
   SDL_Rect rTop = {0, 0, 1280, 33};
   SDL_Rect rLogo = {5, 0, 177, 33};
   SDL_Rect rChat = {0, 33, 900, 100};
   SDL_Rect rPjInfo = {900, 33, 380, 100};
-  SDL_Rect rInv = {900, 133, 380, 442};
-  SDL_Rect rStats = {900, 575, 380, 145};
+  SDL_Rect rInv = {900, 133, 380, 412};
+  SDL_Rect rStats = {900, 545, 380, 175};;
 
   if (texTop)
     SDL_RenderCopy(renderer, texTop, nullptr, &rTop);
@@ -803,17 +804,33 @@ void Game::renderHUD()
   SDL_RenderDrawLine(renderer, 901, 33, 901, 720);
   SDL_RenderDrawLine(renderer, 900, 133, 1280, 133);
   SDL_RenderDrawLine(renderer, 900, 134, 1280, 134);
-  SDL_RenderDrawLine(renderer, 900, 575, 1280, 575);
-  SDL_RenderDrawLine(renderer, 900, 576, 1280, 576);
+  SDL_RenderDrawLine(renderer, 900, 545, 1280, 545);
+  SDL_RenderDrawLine(renderer, 900, 546, 1280, 546);
 
   // === FUENTES Y COLORES ===
+  // Fuente para textos destacados.
   TTF_Font *fontBold = assets->GetFont("ao_bold");
+
+  // Fuente general del HUD.
   TTF_Font *fontRegular = assets->GetFont("ao_regular");
 
-  if (fontBold == nullptr || fontRegular == nullptr)
+  // Fuente usada para nombre y clase.
+  TTF_Font *fontLevel = assets->GetFont("cardo");
+
+  // Fuente más grande para el número del nivel.
+  TTF_Font *fontLevelBig = assets->GetFont("cardo_level_big");
+
+  // Estas tres fuentes sí son obligatorias para dibujar el HUD.
+  if (fontBold == nullptr || fontRegular == nullptr || fontLevel == nullptr)
   {
     return;
   }
+
+  if (fontLevelBig == nullptr)
+  {
+    fontLevelBig = fontLevel;
+  }
+
 
   SDL_Color white = {255, 255, 255, 255};
   SDL_Color yellow = {255, 215, 0, 255};
@@ -858,21 +875,48 @@ void Game::renderHUD()
   };
 
   // === CAJA DE NIVEL ===
+  // La caja del nivel está dentro del panel de información del personaje.
+  const int nivelBoxX = 914;
+  const int nivelBoxY = 38;
+  const int nivelBoxW = 62;
+  const int nivelBoxH = 58;
+
+  // Fondo oscuro de la caja de nivel.
   SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
-  SDL_Rect nivelBox = {908, 38, 50, 50};
+  SDL_Rect nivelBox = {nivelBoxX, nivelBoxY, nivelBoxW, nivelBoxH};
   SDL_RenderFillRect(renderer, &nivelBox);
 
+  // Borde dorado/marrón de la caja.
   SDL_SetRenderDrawColor(renderer, 100, 80, 40, 255);
   SDL_RenderDrawRect(renderer, &nivelBox);
 
-  drawTextCentered("hud_level", std::to_string(playerState.level), fontBold,
-                   908, 38, 50, 50, yellow);
+  drawTextCentered("hud_level_big",
+                   std::to_string(playerState.level),
+                   fontLevelBig,
+                   nivelBoxX,
+                   nivelBoxY,
+                   nivelBoxW,
+                   nivelBoxH,
+                   yellow);
 
   // === NOMBRE Y CLASE ===
-  drawTextAt("hud_name", playerState.name, fontBold, 968, 45, yellow);
+  drawTextCentered("hud_name",
+                   playerState.name,
+                   fontLevel,
+                   950,
+                   43,
+                   280,
+                   28,
+                   yellow);
 
-  drawTextAt("hud_class", playerClassToString(playerState.playerClass),
-             fontRegular, 968, 75, white);
+  drawTextCentered("hud_class",
+                   playerClassToString(playerState.playerClass) + " class",
+                   fontLevel,
+                   950,
+                   90,
+                   280,
+                   28,
+                   white);
 
   // === EQUIPAMIENTO ===
   drawTextCentered("hud_title_equipment", "Equipamiento", fontRegular, 900, 142,
@@ -1031,34 +1075,36 @@ void Game::renderHUD()
   SDL_Texture *texMana = assets->GetTexture("barra_mana");
   SDL_Texture *texExp = assets->GetTexture("barra_exp");
 
-  // Experiencia
-  drawTextCentered("hud_label_exp", "Experiencia", fontRegular, 910, 100, 350,
-                   16, white);
 
-  drawBar("hud_exp_bar_text", texExp, 910, 118, 350, 16, expActual, expMax,
-          fontRegular);
+  const int statsX = 950;
+  const int statsBarW = 260;
+  const int statsBarH = 14;
 
   // Oro
   drawTextAt("hud_gold", "Oro: " + std::to_string(playerState.gold),
-             fontRegular, 915, 585, yellow);
+             fontRegular, 915, 555, yellow);
 
-  // Vida
-  const int statsX = 950;
-  const int statsBarW = 260;
-  const int statsBarH = 18;
-
-  drawTextCentered("hud_label_hp", "Vida", fontRegular, statsX, 610, statsBarW,
+  //vida
+  drawTextCentered("hud_label_hp", "Vida", fontRegular, statsX, 580, statsBarW,
                    18, white);
 
-  drawBar("hud_hp_bar_text", texVida, statsX, 630, statsBarW, statsBarH,
+  drawBar("hud_hp_bar_text", texVida, statsX, 596, statsBarW, statsBarH,
           hpActual, hpMax, fontRegular);
 
   // Mana
-  drawTextCentered("hud_label_mana", "Mana", fontRegular, statsX, 665,
+  drawTextCentered("hud_label_mana", "Mana", fontRegular, statsX, 618,
                    statsBarW, 18, white);
 
-  drawBar("hud_mana_bar_text", texMana, statsX, 685, statsBarW, statsBarH,
+  drawBar("hud_mana_bar_text", texMana, statsX, 634, statsBarW, statsBarH,
           manaActual, manaMax, fontRegular);
+
+  // Experiencia
+  drawTextCentered("hud_label_exp", "Experiencia", fontRegular, statsX, 656, statsBarW,
+                   statsBarH, white);
+
+  drawBar("hud_exp_bar_text", texExp, statsX, 672, statsBarW, statsBarH, expActual, expMax,
+          fontRegular);
+
 }
 void Game::loadAssets()
 {
@@ -1080,8 +1126,9 @@ void Game::loadAssets()
                   "assets/sprites/ui/fonts/Alegreya-Sans-AO-Bold.ttf", 18);
   assets->AddFont("ao_regular",
                   "assets/sprites/ui/fonts/Alegreya-Sans-AO-Regular.ttf", 14);
-  assets->AddFont("cardo", "assets/sprites/ui/fonts/Cardo-Regular.ttf", 14);
+  assets->AddFont("cardo", "assets/sprites/ui/fonts/Cardo-Regular.ttf", 25);
   assets->AddFont("eagle_lake", "assets/sprites/ui/fonts/EagleLake-Regular.ttf", 12);
+  assets->AddFont("cardo_level_big", "assets/sprites/ui/fonts/Cardo-Regular.ttf", 38);
 
   statusFont = assets->GetFont("ao_bold");
 
