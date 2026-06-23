@@ -20,7 +20,7 @@
 #include "common/dtos/gameTypes.h"
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
 #include "common/network/messages/server/player/playerEquipmentUpdateMessage.h"
-#include "common/network/messages/server/world/EntitySpawnMessage.h"
+#include "common/network/messages/server/world/entitySpawnMessage.h"
 #include "common/network/messages/server/inventory/goldOnGroundMessage.h"
 #include "common/network/messages/server/inventory/itemOnGroundMessage.h"
 #include "common/network/messages/server/npc/npcSpawnMessage.h"

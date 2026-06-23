@@ -1,22 +1,19 @@
 #pragma once
-
 #include "cheatType.h"
 #include "common/network/messages/message.h"
 #include "common/network/protocol/clientOpCode.h"
+#include "common/network/protocol/packetWriter.h"
+#include <cstdint>
 
-class CheatMessage : public Message {
+class CheatMessage : public Message
+{
 public:
-  explicit CheatMessage(CheatType cheat) : cheat(cheat) {}
+  explicit CheatMessage(CheatType cheat);
 
-  uint8_t opCode() const override {
-    return static_cast<uint8_t>(ClientOpCode::MSG_CHEAT);
-  }
+  CheatType getCheat() const;
 
-  void serializeBody(PacketWriter &writer) const override {
-    writer.writeUint8(static_cast<uint8_t>(cheat));
-  }
-
-  CheatType getCheat() const { return cheat; }
+  uint8_t opCode() const override;
+  void serializeBody(PacketWriter &writer) const override;
 
 private:
   CheatType cheat;

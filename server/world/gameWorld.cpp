@@ -8,6 +8,7 @@ GameWorld::GameWorld(const std::string &mapPath,
                      const toml::table &config,
                      ClanManager &clanManager)
     : GameWorld(MapSerializer::load(mapPath), npcFactory, itemRepo, config, clanManager)
+
 {
 }
 
@@ -20,7 +21,7 @@ GameWorld::GameWorld(MapData mapData,
       collision(this->mapData),
       occupancy(),
       formulas(config),
-      npcManager(npcFactory, collision, this->mapData),
+      npcManager(npcFactory, collision, this->mapData, config),
       itemRepo(itemRepo),
       clanManager(clanManager),
       bankRepo(),

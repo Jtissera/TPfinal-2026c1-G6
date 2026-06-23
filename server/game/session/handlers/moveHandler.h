@@ -6,7 +6,7 @@
 #include "server/monitorQueues.h"
 #include "server/world/gameWorld.h"
 #include "common/network/messages/client/movement/moveMessage.h"
-#include "common/network/messages/server/player/EntityMoveMessage.h"
+#include "common/network/messages/server/player/entityMoveMessage.h"
 
 class MoveHandler
 {

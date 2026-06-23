@@ -1,9 +1,9 @@
 #pragma once
-
 #include "common/network/messages/message.h"
+#include "common/network/protocol/packetWriter.h"
 #include "common/network/protocol/serverOpCode.h"
-#include <string>
 #include <cstdint>
+#include <string>
 
 enum class ChatMsgType : uint8_t
 {
@@ -18,22 +18,13 @@ enum class ChatMsgType : uint8_t
 class ChatNotificationMessage : public Message
 {
 public:
-    ChatNotificationMessage(std::string text, ChatMsgType type)
-        : text(std::move(text)), type(type) {}
+    ChatNotificationMessage(std::string text, ChatMsgType type);
 
-    const std::string &getText() const { return text; }
-    ChatMsgType getMsgType() const { return type; }
+    const std::string &getText() const;
+    ChatMsgType getMsgType() const;
 
-    uint8_t opCode() const override
-    {
-        return static_cast<uint8_t>(ServerOpCode::MSG_CHAT_MESSAGE);
-    }
-
-    void serializeBody(PacketWriter &writer) const override
-    {
-        writer.writeString(text);
-        writer.writeUint8(static_cast<uint8_t>(type));
-    }
+    uint8_t opCode() const override;
+    void serializeBody(PacketWriter &writer) const override;
 
 private:
     std::string text;

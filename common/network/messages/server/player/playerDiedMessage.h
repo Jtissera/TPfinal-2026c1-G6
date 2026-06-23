@@ -1,26 +1,19 @@
-// PlayerDiedMessage.h
-// PlayerDiedMessage.h
 #pragma once
-
+#include "common/network/messages/message.h"
+#include "common/network/protocol/packetWriter.h"
+#include "common/network/protocol/serverOpCode.h"
 #include <cstdint>
 
-#include "common/network/messages/message.h"
-
-class PlayerDiedMessage : public Message {
-private:
-    // Id del jugador que murió.
-    uint32_t id;
-
+class PlayerDiedMessage : public Message
+{
 public:
-    // Constructor: recibe el id del jugador muerto.
-    explicit PlayerDiedMessage(uint32_t id);
+    explicit PlayerDiedMessage(uint32_t playerId);
 
-    // Devuelve el opcode correspondiente a MSG_PLAYER_DIED.
-    uint8_t opCode() const override;
-
-    // Serializa el cuerpo del mensaje.
-    void serializeBody(PacketWriter& writer) const override;
-
-    // Permite consultar el id del jugador muerto.
     uint32_t getId() const;
+
+    uint8_t opCode() const override;
+    void serializeBody(PacketWriter &writer) const override;
+
+private:
+    uint32_t playerId;
 };

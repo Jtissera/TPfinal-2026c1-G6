@@ -1,16 +1,16 @@
 #pragma once
-
+#include "common/npcType.h"
+#include "editor/map/tile.h"
 #include <cstdint>
 #include <string>
 #include <vector>
-#include "editor/map/tile.h" // ZoneType
 
-#include "common/npcType.h"
-
-struct NpcStats {
+struct NpcStats
+{
     NpcType type = NpcType::NONE;
     std::string name;
     std::string typeName;
+
     int16_t maxHp;
     uint16_t damageMin;
     uint16_t damageMax;
@@ -21,12 +21,12 @@ struct NpcStats {
     int homeRange;
     uint32_t attackCooldownMs;
     uint32_t moveCooldownMs;
+
     std::vector<std::string> zones;
     bool hostile = true;
-    // Zona en la que vive este NPC — determina confinamiento y multiplicadores
+
     ZoneType homeZone = ZoneType::COMBAT;
 
-    // Multiplicadores de drop respecto a los valores base del config
     float goldMultiplier = 1.0f;
     float xpMultiplier = 1.0f;
     float itemMultiplier = 1.0f;

@@ -1,10 +1,8 @@
 #pragma once
-
-#include <cstdint>
-
 #include "../../message.h"
 #include "../../../protocol/clientOpCode.h"
 #include "../../../protocol/packetWriter.h"
+#include <cstdint>
 
 class JoinGameMessage : public Message
 {

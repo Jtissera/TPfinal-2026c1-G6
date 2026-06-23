@@ -2,7 +2,7 @@
 
 Server::Server(const char *servname)
     : config(toml::parse_file("config/game.toml")), classRepo(config),
-      raceRepo(config), npcRepo(config), itemRepo(config), npcFactory(npcRepo),
+      raceRepo(config), npcRepo(config), itemRepo(config), npcFactory(npcRepo, config),
       playerFactory(classRepo, raceRepo, config), playerRepo(), lobbyMonitor(),
       lobbyQueue(), leaveQueue(), transitionQueue(), receiverRegistry(),
       characterArchive("data/characters.dat", "data/characters.idx"),
@@ -17,13 +17,15 @@ Server::Server(const char *servname)
                    playerArchive, characterArchive, config),
       socket(servname), acceptor(std::move(socket), lobbyQueue, lobbyMonitor,
                                  gameManager, receiverRegistry) {}
-int Server::run() {
+int Server::run()
+{
   playerArchive.start();
   lobbyHandler.start();
   gameManager.restoreFromArchive();
   acceptor.start();
 
-  while (std::cin.get() != 'q') {
+  while (std::cin.get() != 'q')
+  {
   }
 
   acceptor.stop();

@@ -1,11 +1,9 @@
 #pragma once
-
+#include "../../message.h"
+#include "../../../protocol/packetWriter.h"
+#include "../../../protocol/serverOpCode.h"
 #include <cstdint>
 #include <string>
-
-#include "../../message.h"
-#include "../../../protocol/serverOpCode.h"
-#include "../../../protocol/packetWriter.h"
 
 class GameCreatedMessage : public Message
 {

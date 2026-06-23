@@ -1,22 +1,20 @@
-#ifndef MAP_CHANGED_MESSAGE_H
-#define MAP_CHANGED_MESSAGE_H
-
-#include <string>
+#pragma once
 #include "../../message.h"
+#include "../../../protocol/packetWriter.h"
 #include "../../../protocol/serverOpCode.h"
+#include <cstdint>
+#include <string>
 
 class MapChangedMessage : public Message
 {
-private:
-    std::string mapPath;
-
 public:
     explicit MapChangedMessage(std::string mapPath);
+
+    const std::string &getMapPath() const;
 
     uint8_t opCode() const override;
     void serializeBody(PacketWriter &writer) const override;
 
-    const std::string &getMapPath() const;
+private:
+    std::string mapPath;
 };
-
-#endif // MAP_CHANGED_MESSAGE_H

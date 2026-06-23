@@ -5,53 +5,57 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-
+#include <string>
 #include "common/npcType.h"
 
-class Npc : public Combatant {
+class Npc : public Combatant
+{
 public:
   Npc(uint32_t id, const NpcStats &stats, int spawnTileX, int spawnTileY);
 
+  Npc(const Npc &) = delete;
+  Npc &operator=(const Npc &) = delete;
+  Npc(Npc &&) = default;
+  Npc &operator=(Npc &&) = default;
 
-    uint32_t getId()          const override { return id;              }
-    int      getTileX()       const override { return tileX;           }
-    int      getTileY()       const override { return tileY;           }
-    int16_t  getHp()          const override { return hp;              }
-    int16_t  getMaxHp()       const override { return stats.maxHp;     }
-    uint8_t  getLevel()       const override { return stats.level;     }
-    uint8_t  getAgility()     const override { return stats.agility;   }
-    uint8_t  getStrength()    const override { return stats.strength;  }
-    int      getAttackRange() const override { return 1;               }
-    bool isAlive() const override {return lifeState == NpcLifeState::ALIVE && hp > 0;}
-    NpcType getType() const {return stats.type;}
-    const std::string& getName() const {return stats.name;}
-    const std::string& getTypeName() const {return stats.typeName;}
+  uint32_t getId() const override;
+  int getTileX() const override;
+  int getTileY() const override;
+  int16_t getHp() const override;
+  int16_t getMaxHp() const override;
+  uint8_t getLevel() const override;
+  uint8_t getAgility() const override;
+  uint8_t getStrength() const override;
+  int getAttackRange() const override;
+  bool isAlive() const override;
 
-    uint16_t getWeaponDamageMin()  const override { return stats.damageMin; }
-    uint16_t getWeaponDamageMax()  const override { return stats.damageMax; }
-    uint16_t getArmorDefenseMin()  const override { return 0; }
-    uint16_t getArmorDefenseMax()  const override { return 0; }
-    uint16_t getHelmetDefenseMin() const override { return 0; }
-    uint16_t getHelmetDefenseMax() const override { return 0; }
-    uint16_t getShieldDefenseMin() const override { return 0; }
-    uint16_t getShieldDefenseMax() const override { return 0; }
+  uint16_t getWeaponDamageMin() const override;
+  uint16_t getWeaponDamageMax() const override;
+  uint16_t getArmorDefenseMin() const override;
+  uint16_t getArmorDefenseMax() const override;
+  uint16_t getHelmetDefenseMin() const override;
+  uint16_t getHelmetDefenseMax() const override;
+  uint16_t getShieldDefenseMin() const override;
+  uint16_t getShieldDefenseMax() const override;
 
   void takeDamage(int16_t dmg) override;
 
-  int      getSpawnTileX()     const { return spawnTileX;           }
-  int      getSpawnTileY()     const { return spawnTileY;           }
-  int      getDetectionRange() const { return stats.detectionRange; }
-  int      getHomeRange()      const { return stats.homeRange;      }
-  const NpcStats& getStats()   const { return stats;                }
-  NpcState getState()          const { return state;                }
-  uint32_t getTargetId()       const { return targetId;             }
-  bool isHostile() const { return stats.hostile; }
+  NpcType getType() const;
+  const std::string &getName() const;
+  const std::string &getTypeName() const;
+  int getSpawnTileX() const;
+  int getSpawnTileY() const;
+  int getDetectionRange() const;
+  int getHomeRange() const;
+  const NpcStats &getStats() const;
+  NpcState getState() const;
+  uint32_t getTargetId() const;
+  bool isHostile() const;
 
-
-  void setTilePos(int tx, int ty) { tileX = tx; tileY = ty; }
-  void setState(NpcState s)       { state = s;               }
-  void setTargetId(uint32_t id)   { targetId = id;           }
-  void clearTarget() { targetId = 0; state = NpcState::IDLE; }
+  void setTilePos(int tx, int ty);
+  void setState(NpcState s);
+  void setTargetId(uint32_t id);
+  void clearTarget();
 
   bool canAttack() const;
   bool canMove() const;
@@ -60,31 +64,24 @@ public:
 
   bool isRespawning() const;
   NpcLifeState getLifeState() const;
-
   void startRespawn(float respawnMs);
   bool tickRespawn(float deltaMs);
   void respawn();
 
-
-  Npc(const Npc&)            = delete;
-  Npc& operator=(const Npc&) = delete;
-  Npc(Npc&&)                 = default;
-  Npc& operator=(Npc&&)      = default;
-
 private:
   uint32_t id;
   NpcStats stats;
-  int tileX, tileY;
-  int spawnTileX, spawnTileY;
+  int tileX;
+  int tileY;
+  int spawnTileX;
+  int spawnTileY;
   int16_t hp;
-  // Estado de comportamiento/IA.
-  NpcState state = NpcState::IDLE;
-  // Estado de vida/respawn.
-  NpcLifeState lifeState = NpcLifeState::ALIVE;
-  float respawnRemainingMs = 0.0f;
-  uint32_t targetId = 0;
+  NpcState state;
+  NpcLifeState lifeState;
+  float respawnRemainingMs;
+  uint32_t targetId;
 
-    using Clock = std::chrono::steady_clock;
-    Clock::time_point lastAttack;
-    Clock::time_point lastMove;
+  using Clock = std::chrono::steady_clock;
+  Clock::time_point lastAttack;
+  Clock::time_point lastMove;
 };

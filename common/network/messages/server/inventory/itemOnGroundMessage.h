@@ -1,29 +1,24 @@
 #pragma once
 #include "common/network/messages/message.h"
+#include "common/network/protocol/packetWriter.h"
 #include "common/network/protocol/serverOpCode.h"
 #include "server/game/items/item.h"
+#include <cstdint>
 
-class ItemOnGroundMessage : public Message {
-    Item item;
-    int x, y;
+class ItemOnGroundMessage : public Message
+{
 public:
-    ItemOnGroundMessage(Item item, int x, int y)
-        : item(std::move(item)), x(x), y(y) {}
+    ItemOnGroundMessage(Item item, int x, int y);
 
-    const Item& getItem() const { return item; }
-    int getX() const { return x; }
-    int getY() const { return y; }
+    const Item &getItem() const;
+    int getX() const;
+    int getY() const;
 
-    uint8_t opCode() const override {
-        return static_cast<uint8_t>(ServerOpCode::MSG_ITEM_ON_GROUND);
-    }
+    uint8_t opCode() const override;
+    void serializeBody(PacketWriter &writer) const override;
 
-    // itemOnGroundMessage.cpp
-void serializeBody(PacketWriter& writer) const override{
-    writer.writeUint32(item.instanceId);
-    writer.writeUint32(item.catalogId);
-    writer.writeString(item.typeName);
-    writer.writeUint16(static_cast<uint16_t>(x));
-    writer.writeUint16(static_cast<uint16_t>(y));
-}
+private:
+    Item item;
+    int x;
+    int y;
 };

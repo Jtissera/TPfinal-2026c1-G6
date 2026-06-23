@@ -5,7 +5,7 @@
 
 #include "common/network/messages/client/inventory/useItemMessage.h"
 #include "common/network/messages/server/inventory/goldOnGroundMessage.h"
-#include "common/network/messages/server/world/EntitySpawnMessage.h"
+#include "common/network/messages/server/world/entitySpawnMessage.h"
 #include "common/network/messages/server/inventory/inventoryUpdateMessage.h"
 #include "common/network/messages/server/inventory/itemOnGroundMessage.h"
 #include "common/network/messages/server/inventory/itemPickedMessage.h"
@@ -14,7 +14,7 @@
 #include "common/network/messages/server/npc/npcSpawnMessage.h"
 #include "common/network/messages/server/npc/npcHealthMessage.h"
 #include "common/network/messages/server/npc/npcMoveMessage.h"
-#include "common/network/messages/server/player/EntityDespawnMessage.h"
+#include "common/network/messages/server/world/entityDespawnMessage.h"
 #include "common/network/messages/server/chat/chatNotificationMessage.h"
 #include "common/network/messages/server/clan/clanUpdateMessage.h"
 #include "common/network/messages/server/player/resurrectionStartedMessage.h"
@@ -302,7 +302,7 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
             const uint32_t amount = reader.readUint32();
             const int x = reader.readUint16();
             const int y = reader.readUint16();
-            return std::make_unique<GoldOnGroundMessage>(instanceId,amount, x, y);
+            return std::make_unique<GoldOnGroundMessage>(instanceId, amount, x, y);
         });
 
     registry.registerDeserializer(
@@ -330,47 +330,44 @@ void GameServerDeserializersModule::registerDeserializers(Registry &registry) co
         });
 
     registry.registerDeserializer(
-    static_cast<uint8_t>(ServerOpCode::MSG_NPC_ATTACK),
-    [](PacketReader &reader) -> std::unique_ptr<Message>
-    {
-        const uint32_t npcId = reader.readUint32();
-        const auto direction = static_cast<Direction>(reader.readUint8());
-        return std::make_unique<NpcAttackMessage>(npcId, direction);
-    });
+        static_cast<uint8_t>(ServerOpCode::MSG_NPC_ATTACK),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+            const uint32_t npcId = reader.readUint32();
+            const auto direction = static_cast<Direction>(reader.readUint8());
+            return std::make_unique<NpcAttackMessage>(npcId, direction);
+        });
 
     registry.registerDeserializer(static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_ATTACK_VISUAL),
-[](PacketReader &reader) -> std::unique_ptr<Message>
-    {
-        const uint32_t attackerId = reader.readUint32();
-        const uint32_t targetId = reader.readUint32();
+                                  [](PacketReader &reader) -> std::unique_ptr<Message>
+                                  {
+                                      const uint32_t attackerId = reader.readUint32();
+                                      const uint32_t targetId = reader.readUint32();
 
-        const auto visualType = static_cast<PlayerAttackVisualType>(reader.readUint8());
-        std::string effectId = reader.readString();
+                                      const auto visualType = static_cast<PlayerAttackVisualType>(reader.readUint8());
+                                      std::string effectId = reader.readString();
 
-        return std::make_unique<PlayerAttackVisualMessage>(attackerId,targetId,visualType,effectId);
-    });
+                                      return std::make_unique<PlayerAttackVisualMessage>(attackerId, targetId, visualType, effectId);
+                                  });
     registry.registerDeserializer(static_cast<uint8_t>(ServerOpCode::MSG_PLAYER_HEALTH),
-[](PacketReader &reader) -> std::unique_ptr<Message>
-    {
-        const uint32_t playerId = reader.readUint32();
-        const uint16_t hp = reader.readUint16();
-        const uint16_t hpMax = reader.readUint16();
-        return std::make_unique<PlayerHealthMessage>(playerId,hp,hpMax);
-    });
+                                  [](PacketReader &reader) -> std::unique_ptr<Message>
+                                  {
+                                      const uint32_t playerId = reader.readUint32();
+                                      const uint16_t hp = reader.readUint16();
+                                      const uint16_t hpMax = reader.readUint16();
+                                      return std::make_unique<PlayerHealthMessage>(playerId, hp, hpMax);
+                                  });
     registry.registerDeserializer(
-    static_cast<uint8_t>(ServerOpCode::MSG_CLAN_UPDATE),
-    [](PacketReader &reader) -> std::unique_ptr<Message>
-    {
-        const uint32_t playerId = reader.readUint32();
-        std::string clanName = reader.readString();
-        const bool isFounder = reader.readUint8() != 0;
+        static_cast<uint8_t>(ServerOpCode::MSG_CLAN_UPDATE),
+        [](PacketReader &reader) -> std::unique_ptr<Message>
+        {
+            const uint32_t playerId = reader.readUint32();
+            std::string clanName = reader.readString();
+            const bool isFounder = reader.readUint8() != 0;
 
-        return std::make_unique<ClanUpdateMessage>(
-            playerId,
-            clanName,
-            isFounder
-        );
-    });
-
+            return std::make_unique<ClanUpdateMessage>(
+                playerId,
+                clanName,
+                isFounder);
+        });
 }
-
