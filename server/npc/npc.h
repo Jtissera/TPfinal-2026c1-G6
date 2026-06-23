@@ -84,4 +84,5 @@ private:
   using Clock = std::chrono::steady_clock;
   Clock::time_point lastAttack;
   Clock::time_point lastMove;
+  bool hasAttacked;
 };

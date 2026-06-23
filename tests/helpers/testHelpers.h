@@ -88,6 +88,7 @@
         [player]
         newbie_max_level    = 12
         max_inventory_items = 20
+        move_step = 96.0
 
         [items.pocion_vida]
         catalog_id = 2

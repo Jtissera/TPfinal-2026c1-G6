@@ -193,7 +193,7 @@ TEST_F(GameWorldTest, DroppedItemCanBePickedFromGround)
   ASSERT_EQ(deathResult.droppedItems.size(), 1u);
   auto item = world.pickItemById(deathResult.droppedItems[0].instanceId);
   EXPECT_TRUE(item.has_value());
-  EXPECT_EQ(item->typeName, "sword");
+  EXPECT_EQ(item->typeName, "espada");
 }
 
 TEST_F(GameWorldTest, PlayerCanPickItemFromGround)
@@ -205,7 +205,7 @@ TEST_F(GameWorldTest, PlayerCanPickItemFromGround)
   world.addItemOnGround(weapon, 3, 3);
   auto item = world.pickItemById(instanceId);
   EXPECT_TRUE(item.has_value());
-  EXPECT_EQ(item->typeName, "sword");
+  EXPECT_EQ(item->typeName, "espada");
 }
 
 TEST_F(GameWorldTest, PickItemEmptyIfNothingThere)

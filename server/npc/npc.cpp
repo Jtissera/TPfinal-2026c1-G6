@@ -13,7 +13,8 @@ Npc::Npc(uint32_t id, const NpcStats &stats, int spawnTileX, int spawnTileY)
       respawnRemainingMs(0.0f),
       targetId(0),
       lastAttack(Clock::now()),
-      lastMove(Clock::now())
+      lastMove(Clock::now()),
+      hasAttacked(false)
 {
 }
 
@@ -78,9 +79,17 @@ void Npc::clearTarget()
 
 bool Npc::canAttack() const
 {
+    // Si el NPC nunca atacó, puede atacar inmediatamente.
+    // El cooldown empieza a contar recién después del primer ataque.
+    if (!hasAttacked)
+    {
+        return true;
+    }
+
     std::chrono::milliseconds elapsed =
         std::chrono::duration_cast<std::chrono::milliseconds>(
             Clock::now() - lastAttack);
+
     return elapsed.count() >= stats.attackCooldownMs;
 }
 
@@ -92,7 +101,7 @@ bool Npc::canMove() const
     return elapsed.count() >= stats.moveCooldownMs;
 }
 
-void Npc::resetAttackCooldown() { lastAttack = Clock::now(); }
+void Npc::resetAttackCooldown() { hasAttacked =true; lastAttack = Clock::now(); }
 void Npc::resetMoveCooldown() { lastMove = Clock::now(); }
 
 bool Npc::isRespawning() const
