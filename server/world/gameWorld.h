@@ -28,8 +28,6 @@
 #include <cstdlib>
 #include <algorithm>
 
-class ClanManager;
-
 class GameWorld
 {
 public:
@@ -142,13 +140,13 @@ public:
 
   uint32_t addGoldOnGround(uint32_t amount, int tileX, int tileY);
   std::optional<uint32_t> pickGoldById(uint32_t instanceId);
-  const GroundManager &getGroundManager() const { return groundManager; }
+  const GroundManager &getGroundManager() const;
 
   void spawnNpc(const std::string &typeName, int tileX, int tileY);
 
   WorldTickResult tick(float deltaSeconds);
 
-  const MapData &getMapData() const { return mapData; }
+  const MapData &getMapData() const;
   const std::unordered_map<uint32_t, Npc> &getNpcs() const;
 
   void resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY);
@@ -163,8 +161,6 @@ public:
   Npc &getNpc(uint32_t npcId);
   const Npc &getNpc(uint32_t npcId) const;
 
-  // Devuelve una vista de solo lectura de los jugadores del mundo.
-  // Se usa para enviar spawns al cliente que acaba de entrar.
   const std::unordered_map<uint32_t, Player> &getPlayers() const;
   std::pair<int, int> findSafeSpawnNear(int tileX, int tileY) const;
 
@@ -177,9 +173,6 @@ public:
   std::vector<uint32_t> getOnlineClanMemberIds(const std::string &clanName) const;
 
 private:
-  static constexpr int TILE_SIZE = 96;            // a toml
-  static constexpr float PLAYER_MOVE_STEP = 8.0f; // a toml
-
   MapData mapData;
   CollisionSystem collision;
   OccupancySystem occupancy;
@@ -202,33 +195,28 @@ private:
   std::vector<WorldTickResult::ResurrectStartedInfo> pendingResurrectionStarts;
 
   int tileSize;
-  float npcRespawnDelayMs = 5000.0f; // toml
+  float npcRespawnDelayMs;
+  float playerMoveStep;
 
-  struct GroundItem
-  {
-    Item item;
-    int tileX, tileY;
-  };
+  std::vector<std::pair<std::string, std::pair<int, int>>> spawnPoints;
 
-  struct GroundGold
-  {
-    uint32_t amount;
-    int tileX, tileY;
-  };
+  std::optional<std::pair<int, int>> findAndOccupyAdjacentTile(int tileX, int tileY,
+                                                                uint32_t entityId);
 
-  std::vector<GroundItem> groundItems;
-  std::vector<GroundGold> groundGold;
+  void handleResurrectionComplete(uint32_t playerId, int tileX, int tileY,
+                                  WorldTickResult &result);
+  void processNpcRespawns(float deltaMs, WorldTickResult &result);
+  bool placeRespawnedNpc(Npc &npc, WorldTickResult &result);
 
   void tickPlayers(float deltaSeconds, WorldTickResult &result);
   void tickNpcs(WorldTickResult &result);
+  void resolveNpcMovement(NpcTickResult &npcResult, WorldTickResult &result);
+  void resolveNpcAttacks(NpcTickResult &npcResult, WorldTickResult &result);
+  void resolveNpcDeaths(NpcTickResult &npcResult, WorldTickResult &result);
 
   void spawnMapNpcs();
+  void spawnCombatNpcsFromMap();
+  void spawnCityNpcsFromMap();
+
   void loadInitialInventoryForPlayer(Player &player);
-
-  int spawnTickCounter = 0;
-  static constexpr int SPAWN_EVERY_N_TICKS = 200; // toml
-  static constexpr int MAX_NPCS = 20;             // toml
-  static constexpr int SPAWN_BATCH_SIZE = 4;      // toml
-
-  std::vector<std::pair<std::string, std::pair<int, int>>> spawnPoints;
 };

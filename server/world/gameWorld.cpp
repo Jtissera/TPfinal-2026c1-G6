@@ -1,31 +1,12 @@
 #include "gameWorld.h"
-#include "../game/clan/clanManager.h"
 
 GameWorld::GameWorld(const std::string &mapPath,
                      NpcFactory &npcFactory,
                      ItemRepository &itemRepo,
                      const toml::table &config,
                      ClanManager &clanManager)
-    : mapData(MapSerializer::load(mapPath)),
-      collision(mapData),
-      occupancy(),
-      formulas(config),
-      npcManager(npcFactory, collision, mapData),
-      itemRepo(itemRepo),
-      clanManager(clanManager),
-      bankRepo(),
-      resurrectionSystem(),
-      priestHandler(itemRepo, resurrectionSystem, mapData, config),
-      merchantHandler(itemRepo, config),
-      bankerHandler(bankRepo),
-      cityDispatcher(priestHandler, merchantHandler, bankerHandler),
-      players(),
-      groundManager(),
-      spawnManager(config, npcManager, collision, occupancy),
-      tileSize(config["world"]["tile_size"].value_or(96)),
-      npcRespawnDelayMs(config["npcs"]["respawn_ms"].value_or(5000.0f))
+    : GameWorld(MapSerializer::load(mapPath), npcFactory, itemRepo, config, clanManager)
 {
-    spawnManager.loadSpawnPoints(this->mapData);
 }
 
 GameWorld::GameWorld(MapData mapData,
@@ -50,43 +31,60 @@ GameWorld::GameWorld(MapData mapData,
       groundManager(),
       spawnManager(config, npcManager, collision, occupancy),
       tileSize(config["world"]["tile_size"].value_or(96)),
-      npcRespawnDelayMs(config["npcs"]["respawn_ms"].value_or(5000.0f))
+      npcRespawnDelayMs(config["npc"]["respawn_ms"].value_or(5000.0f)),
+      playerMoveStep(config["player"]["move_step"].value_or(8.0f))
 {
     spawnManager.loadSpawnPoints(this->mapData);
+}
+
+std::optional<std::pair<int, int>> GameWorld::findAndOccupyAdjacentTile(
+    int tileX, int tileY, uint32_t entityId)
+{
+    for (int dx = -1; dx <= 1; ++dx)
+    {
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            if (dx == 0 && dy == 0)
+                continue;
+
+            const int tx = tileX + dx;
+            const int ty = tileY + dy;
+
+            if (collision.isWalkable(tx, ty) && occupancy.occupy(tx, ty, entityId))
+            {
+                return std::make_pair(tx, ty);
+            }
+        }
+    }
+    return std::nullopt;
 }
 
 void GameWorld::addPlayer(Player player)
 {
     loadInitialInventoryForPlayer(player);
     const uint32_t id = player.getId();
-    int tx = player.getTileX();
-    int ty = player.getTileY();
+    const int tx = player.getTileX();
+    const int ty = player.getTileY();
 
-    if (!occupancy.occupy(tx, ty, id))
+    if (occupancy.occupy(tx, ty, id))
     {
-        for (int dx = -1; dx <= 1; dx++)
-        {
-            for (int dy = -1; dy <= 1; dy++)
-            {
-                if (dx == 0 && dy == 0)
-                    continue;
-                if (collision.isWalkable(tx + dx, ty + dy) &&
-                    occupancy.occupy(tx + dx, ty + dy, id))
-                {
-                    player.setTilePos(tx + dx, ty + dy);
-                    players.emplace(id, std::move(player));
-                    return;
-                }
-            }
-        }
+        players.emplace(id, std::move(player));
+        return;
+    }
+
+    const std::optional<std::pair<int, int>> freeTile = findAndOccupyAdjacentTile(tx, ty, id);
+    if (!freeTile)
+    {
         throw std::runtime_error("No free tile near spawn for player");
     }
+
+    player.setTilePos(freeTile->first, freeTile->second);
     players.emplace(id, std::move(player));
 }
 
 std::optional<Player> GameWorld::removePlayer(uint32_t id)
 {
-    auto it = players.find(id);
+    std::unordered_map<uint32_t, Player>::iterator it = players.find(id);
     if (it == players.end())
         return std::nullopt;
 
@@ -98,7 +96,7 @@ std::optional<Player> GameWorld::removePlayer(uint32_t id)
 
 bool GameWorld::movePlayer(uint32_t id, Direction dir)
 {
-    auto it = players.find(id);
+    std::unordered_map<uint32_t, Player>::iterator it = players.find(id);
 
     if (it == players.end())
     {
@@ -112,28 +110,25 @@ bool GameWorld::movePlayer(uint32_t id, Direction dir)
         return false;
     }
 
-    // Movimiento fino en píxeles.
-    // Si queda lento, subilo a 5 o 6. No vuelvas a mover por tile.
-
     float dx = 0.0f;
     float dy = 0.0f;
 
     switch (dir)
     {
     case Direction::UP:
-        dy = -PLAYER_MOVE_STEP;
+        dy = -playerMoveStep;
         break;
 
     case Direction::DOWN:
-        dy = PLAYER_MOVE_STEP;
+        dy = playerMoveStep;
         break;
 
     case Direction::LEFT:
-        dx = -PLAYER_MOVE_STEP;
+        dx = -playerMoveStep;
         break;
 
     case Direction::RIGHT:
-        dx = PLAYER_MOVE_STEP;
+        dx = playerMoveStep;
         break;
 
     default:
@@ -172,7 +167,7 @@ bool GameWorld::movePlayer(uint32_t id, Direction dir)
 
 Player &GameWorld::getPlayer(uint32_t id)
 {
-    auto it = players.find(id);
+    std::unordered_map<uint32_t, Player>::iterator it = players.find(id);
     if (it == players.end())
         throw std::runtime_error("Player not found: " + std::to_string(id));
     return it->second;
@@ -180,7 +175,7 @@ Player &GameWorld::getPlayer(uint32_t id)
 
 const Player &GameWorld::getPlayer(uint32_t id) const
 {
-    auto it = players.find(id);
+    std::unordered_map<uint32_t, Player>::const_iterator it = players.find(id);
     if (it == players.end())
         throw std::runtime_error("Player not found: " + std::to_string(id));
     return it->second;
@@ -188,7 +183,7 @@ const Player &GameWorld::getPlayer(uint32_t id) const
 
 bool GameWorld::canPlayerAct(uint32_t id) const
 {
-    auto it = players.find(id);
+    std::unordered_map<uint32_t, Player>::const_iterator it = players.find(id);
     if (it == players.end())
         return false;
     return it->second.isAlive();
@@ -202,7 +197,7 @@ int GameWorld::getPixelY(uint32_t id) const { return static_cast<int>(players.at
 void GameWorld::giveExperience(uint32_t playerId, uint32_t exp, float xpMultiplier)
 {
     Player &p = getPlayer(playerId);
-    uint32_t finalExp = static_cast<uint32_t>(exp * xpMultiplier);
+    const uint32_t finalExp = static_cast<uint32_t>(exp * xpMultiplier);
 
     uint32_t limit = formulas.calcExpLimit(p.getLevel());
     int16_t newMaxHp = formulas.calcMaxHp(p.getRace(), p.getCls(), p.getLevel() + 1);
@@ -231,7 +226,7 @@ GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId, uint32_t 
     {
         Player &attacker = getPlayer(attackerId);
 
-        uint32_t killExp = formulas.calcExpOnKill(
+        const uint32_t killExp = formulas.calcExpOnKill(
             target.getMaxHp(),
             attacker.getLevel(),
             target.getLevel());
@@ -239,47 +234,20 @@ GameWorld::DeathResult GameWorld::handlePlayerDeath(uint32_t targetId, uint32_t 
         giveExperience(attackerId, killExp);
     }
 
-    const uint32_t victimGoldBefore = target.getGold();
     const uint32_t safeGold = formulas.calcMaxGold(target.getLevel());
-
     const uint32_t excessGold = target.die(safeGold);
-
-    std::cout << "[PVP GOLD BEFORE DIE] victimId="
-              << targetId
-              << " killerId="
-              << attackerId
-              << " victimGoldBefore="
-              << victimGoldBefore
-              << " safeGold="
-              << safeGold
-              << " excessGold="
-              << excessGold
-              << " victimGoldAfter="
-              << target.getGold()
-              << std::endl;
 
     const int tileX = target.getTileX();
     const int tileY = target.getTileY();
 
-    // El oro en exceso cae al piso, visible para cualquiera.
     uint32_t goldInstanceId = 0;
     if (excessGold > 0)
     {
         goldInstanceId = addGoldOnGround(excessGold, tileX, tileY);
-
-        std::cout << "[PVP GOLD DROP] victimId="
-                  << targetId
-                  << " excessGold="
-                  << excessGold
-                  << " instanceId="
-                  << goldInstanceId
-                  << " tile=(" << tileX << "," << tileY << ")"
-                  << std::endl;
     }
 
     std::vector<Item> items = target.purgeInventoryOnDeath();
 
-    // Los items del muerto tambien caen al piso.
     for (const Item &item : items)
     {
         addItemOnGround(item, tileX, tileY);
@@ -317,111 +285,46 @@ std::optional<uint32_t> GameWorld::pickGoldById(uint32_t instanceId)
     return groundManager.pickGoldById(instanceId);
 }
 
+const GroundManager &GameWorld::getGroundManager() const { return groundManager; }
+const MapData &GameWorld::getMapData() const { return mapData; }
+
 void GameWorld::spawnNpc(const std::string &typeName, int tileX, int tileY)
 {
-    if (!collision.isWalkable(tileX, tileY))
+    if (!collision.isWalkable(tileX, tileY) || occupancy.isOccupied(tileX, tileY))
     {
-        std::cout << "[WORLD NPC] no spawn. tile no caminable typeName="
-                  << typeName
-                  << " tile=("
-                  << tileX
-                  << ","
-                  << tileY
-                  << ")"
-                  << std::endl;
-        return;
-    }
-
-    if (occupancy.isOccupied(tileX, tileY))
-    {
-        std::cout << "[WORLD NPC] no spawn. tile ocupado typeName="
-                  << typeName
-                  << " tile=("
-                  << tileX
-                  << ","
-                  << tileY
-                  << ")"
-                  << std::endl;
         return;
     }
 
     const uint32_t npcId = npcManager.spawnNpc(typeName, tileX, tileY);
-
     occupancy.occupy(tileX, tileY, npcId);
-
-    std::cout << "[WORLD NPC] spawned npcId="
-              << npcId
-              << " typeName="
-              << typeName
-              << " tile=("
-              << tileX
-              << ","
-              << tileY
-              << ")"
-              << std::endl;
 }
 
 void GameWorld::spawnMapNpcs()
 {
-    std::cout << "[WORLD NPC] spawnMapNpcs iniciado. map="
-              << mapData.width()
-              << "x"
-              << mapData.height()
-              << std::endl;
+    spawnCombatNpcsFromMap();
+    spawnCityNpcsFromMap();
+}
 
-    int npcTilesFound = 0;
-    int npcSpawned = 0;
-
+void GameWorld::spawnCombatNpcsFromMap()
+{
     for (uint16_t y = 0; y < mapData.height(); ++y)
     {
         for (uint16_t x = 0; x < mapData.width(); ++x)
         {
             const Tile &tile = mapData.at(x, y);
 
-            // Si el tile no tiene NPC configurado, no hacemos nada.
-            if (tile.npc == NpcType::NONE)
+            if (tile.npc == NpcType::NONE || !isSpawnable(tile.npc))
             {
-                continue;
-            }
-
-            ++npcTilesFound;
-
-            // Evitamos spawnear NPCs no combatibles si el mapa los marca.
-            if (!isSpawnable(tile.npc))
-            {
-                std::cout << "[WORLD NPC] npc no spawnable en x="
-                          << x
-                          << " y="
-                          << y
-                          << " npcType="
-                          << static_cast<int>(tile.npc)
-                          << std::endl;
                 continue;
             }
 
             const std::string typeName = npcTypeKey(tile.npc);
-
-            std::cout << "[WORLD NPC] tile con npc en x="
-                      << x
-                      << " y="
-                      << y
-                      << " npcType="
-                      << static_cast<int>(tile.npc)
-                      << " key="
-                      << typeName
-                      << std::endl;
-
-            // Si no hay key válida, ignoramos el NPC.
             if (typeName.empty())
             {
                 continue;
             }
 
-            // Guardamos el punto base para respawns.
             spawnPoints.push_back({typeName, {x, y}});
-
-            // Spawn inicial con desplazamiento aleatorio alrededor del punto base.
-            bool spawned = false;
 
             for (int attempts = 0; attempts < 10; ++attempts)
             {
@@ -431,29 +334,18 @@ void GameWorld::spawnMapNpcs()
                 const int tx = static_cast<int>(x) + dx;
                 const int ty = static_cast<int>(y) + dy;
 
-                if (collision.isWalkable(tx, ty) &&
-                    !occupancy.isOccupied(tx, ty))
+                if (collision.isWalkable(tx, ty) && !occupancy.isOccupied(tx, ty))
                 {
                     spawnNpc(typeName, tx, ty);
-                    spawned = true;
-                    ++npcSpawned;
                     break;
                 }
             }
-
-            if (!spawned)
-            {
-                std::cout << "[WORLD NPC] no se pudo spawnear typeName="
-                          << typeName
-                          << " alrededor de x="
-                          << x
-                          << " y="
-                          << y
-                          << std::endl;
-            }
         }
     }
+}
 
+void GameWorld::spawnCityNpcsFromMap()
+{
     for (uint16_t y = 0; y < mapData.height(); ++y)
     {
         for (uint16_t x = 0; x < mapData.width(); ++x)
@@ -469,27 +361,85 @@ void GameWorld::spawnMapNpcs()
             if (typeName.empty())
                 continue;
 
-            if (!collision.isWalkable(x, y))
-                continue;
-            if (occupancy.isOccupied(x, y))
+            if (!collision.isWalkable(x, y) || occupancy.isOccupied(x, y))
                 continue;
 
             spawnNpc(typeName, x, y);
         }
     }
-
-    std::cout << "[WORLD NPC] spawnMapNpcs terminado. npcTilesFound="
-              << npcTilesFound
-              << " npcSpawned="
-              << npcSpawned
-              << " spawnPoints="
-              << spawnPoints.size()
-              << std::endl;
 }
 
 const std::unordered_map<uint32_t, Npc> &GameWorld::getNpcs() const
 {
     return npcManager.getNpcs();
+}
+
+void GameWorld::handleResurrectionComplete(uint32_t playerId, int tileX, int tileY,
+                                           WorldTickResult &result)
+{
+    Player &p = getPlayer(playerId);
+    p.stopResurrection();
+    resurrectPlayer(playerId, tileX, tileY);
+
+    result.playersResurrected.push_back({playerId,
+                                         static_cast<uint16_t>(p.getTileX()),
+                                         static_cast<uint16_t>(p.getTileY())});
+    result.playersChanged.push_back(playerId);
+}
+
+bool GameWorld::placeRespawnedNpc(Npc &npc, WorldTickResult &result)
+{
+    const int tx = npc.getSpawnTileX();
+    const int ty = npc.getSpawnTileY();
+
+    if (collision.isWalkable(tx, ty) && !occupancy.isOccupied(tx, ty))
+    {
+        occupancy.occupy(tx, ty, npc.getId());
+        npc.respawn();
+    }
+    else
+    {
+        const std::optional<std::pair<int, int>> freeTile =
+            findAndOccupyAdjacentTile(tx, ty, npc.getId());
+
+        if (!freeTile)
+        {
+            return false;
+        }
+
+        npc.respawn();
+        npc.setTilePos(freeTile->first, freeTile->second);
+    }
+
+    result.spawnedNpcs.push_back({npc.getId(),
+                                  npc.getType(),
+                                  npc.getName(),
+                                  static_cast<uint16_t>(npc.getTileX() * tileSize),
+                                  static_cast<uint16_t>(npc.getTileY() * tileSize),
+                                  static_cast<uint16_t>(npc.getHp()),
+                                  static_cast<uint16_t>(npc.getMaxHp()),
+                                  static_cast<uint16_t>(npc.getStats().level),
+                                  npc.isHostile()});
+    return true;
+}
+
+void GameWorld::processNpcRespawns(float deltaMs, WorldTickResult &result)
+{
+    const std::vector<uint32_t> respawnedNpcIds = npcManager.tickRespawns(deltaMs);
+
+    for (uint32_t npcId : respawnedNpcIds)
+    {
+        Npc *npc = npcManager.findNpc(npcId);
+        if (npc == nullptr)
+        {
+            continue;
+        }
+
+        if (!placeRespawnedNpc(*npc, result))
+        {
+            npcManager.startRespawn(npcId, npcRespawnDelayMs);
+        }
+    }
 }
 
 GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds)
@@ -499,107 +449,18 @@ GameWorld::WorldTickResult GameWorld::tick(float deltaSeconds)
     result.resurrectionStarted = std::move(pendingResurrectionStarts);
     pendingResurrectionStarts.clear();
 
-    float deltaMs = deltaSeconds * 1000.0f;
-    resurrectionSystem.tick(deltaMs, [this, &result](uint32_t pid, int tx, int ty)
-                            {
-                                Player &p = getPlayer(pid);
-                                p.stopResurrection();
-                                resurrectPlayer(pid, tx, ty);
+    const float deltaMs = deltaSeconds * 1000.0f;
 
-                                result.playersResurrected.push_back({pid,
-                                                                     static_cast<uint16_t>(p.getTileX()),
-                                                                     static_cast<uint16_t>(p.getTileY())});  result.playersChanged.push_back(pid); });
+    resurrectionSystem.tick(deltaMs, [this, &result](uint32_t pid, int tx, int ty)
+                            { handleResurrectionComplete(pid, tx, ty, result); });
 
     tickPlayers(deltaSeconds, result);
     tickNpcs(result);
+    processNpcRespawns(deltaMs, result);
 
-    const auto respawnedNpcIds = npcManager.tickRespawns(deltaMs);
-    if (!respawnedNpcIds.empty())
-    {
-        std::cout << "[GameWorld] respawnedNpcIds="
-                  << respawnedNpcIds.size()
-                  << std::endl;
-    }
-
-    for (uint32_t npcId : respawnedNpcIds)
-    {
-
-        Npc *npc = npcManager.findNpc(npcId);
-
-        if (npc == nullptr)
-        {
-            continue;
-        }
-
-        const int tx = npc->getSpawnTileX();
-        const int ty = npc->getSpawnTileY();
-
-        // Si el spawn original está bloqueado, intentamos alrededor.
-        bool placed = false;
-
-        if (collision.isWalkable(tx, ty) && !occupancy.isOccupied(tx, ty))
-        {
-            occupancy.occupy(tx, ty, npcId);
-            npc->respawn();
-            placed = true;
-        }
-        else
-        {
-            for (int dx = -1; dx <= 1 && !placed; ++dx)
-            {
-                for (int dy = -1; dy <= 1 && !placed; ++dy)
-                {
-                    if (dx == 0 && dy == 0)
-                    {
-                        continue;
-                    }
-
-                    const int altX = tx + dx;
-                    const int altY = ty + dy;
-
-                    if (!collision.isWalkable(altX, altY))
-                    {
-                        continue;
-                    }
-
-                    if (occupancy.isOccupied(altX, altY))
-                    {
-                        continue;
-                    }
-
-                    occupancy.occupy(altX, altY, npcId);
-                    npc->respawn();
-                    npc->setTilePos(altX, altY);
-                    placed = true;
-                }
-            }
-        }
-
-        if (!placed)
-        {
-            // Si no encontró lugar, lo mandamos otra vez a respawn corto.
-            npcManager.startRespawn(npcId, npcRespawnDelayMs);
-            continue;
-        }
-
-        result.spawnedNpcs.push_back({npc->getId(),
-                                      npc->getType(),
-                                      npc->getName(),
-                                      static_cast<uint16_t>(npc->getTileX() * tileSize),
-                                      static_cast<uint16_t>(npc->getTileY() * tileSize),
-                                      static_cast<uint16_t>(npc->getHp()),
-                                      static_cast<uint16_t>(npc->getMaxHp()),
-                                      static_cast<uint16_t>(npc->getStats().level),
-                                      npc->isHostile()});
-
-        std::cout << "[GameWorld] NPC respawn mismo id="
-                  << npc->getId()
-                  << " name="
-                  << npc->getName()
-                  << std::endl;
-    }
     return result;
 }
+
 void GameWorld::tickPlayers(float deltaSeconds, WorldTickResult &result)
 {
     for (auto &[id, player] : players)
@@ -607,14 +468,12 @@ void GameWorld::tickPlayers(float deltaSeconds, WorldTickResult &result)
         if (!player.isAlive() && !player.isMeditating())
             continue;
 
-        float hpGained = formulas.calcHpRegen(player.getRace(), deltaSeconds);
-        float manaGained = player.isMeditating()
-                               ? formulas.calcManaRegenMeditating(player.getCls(), player.getRace(), deltaSeconds)
-                               : formulas.calcManaRegen(player.getRace(), deltaSeconds);
+        const float hpGained = formulas.calcHpRegen(player.getRace(), deltaSeconds);
+        const float manaGained = player.isMeditating()
+                                     ? formulas.calcManaRegenMeditating(player.getCls(), player.getRace(), deltaSeconds)
+                                     : formulas.calcManaRegen(player.getRace(), deltaSeconds);
 
-        // PERF: solo notifica si HP o mana cambiaron realmente este tick.
-        const bool changed = player.tick(hpGained, manaGained);
-        if (changed)
+        if (player.tick(hpGained, manaGained))
             result.playersChanged.push_back(id);
     }
 
@@ -646,23 +505,29 @@ void GameWorld::tickPlayers(float deltaSeconds, WorldTickResult &result)
 
 void GameWorld::tickNpcs(WorldTickResult &result)
 {
-    auto npcResult = npcManager.tick(players);
+    NpcTickResult npcResult = npcManager.tick(players);
 
-    for (auto &intent : npcResult.moveIntents)
+    resolveNpcMovement(npcResult, result);
+    resolveNpcAttacks(npcResult, result);
+    resolveNpcDeaths(npcResult, result);
+}
+
+void GameWorld::resolveNpcMovement(NpcTickResult &npcResult, WorldTickResult &result)
+{
+    for (NpcMoveIntent &intent : npcResult.moveIntents)
     {
         int toX = intent.toX;
         int toY = intent.toY;
 
         if (!collision.isWalkable(toX, toY))
         {
-
             const int dx[4] = {1, -1, 0, 0};
             const int dy[4] = {0, 0, 1, -1};
             int order[4] = {0, 1, 2, 3};
 
             for (int i = 3; i > 0; --i)
             {
-                int j = std::rand() % (i + 1);
+                const int j = std::rand() % (i + 1);
                 std::swap(order[i], order[j]);
             }
 
@@ -684,7 +549,7 @@ void GameWorld::tickNpcs(WorldTickResult &result)
 
             if (!foundAlternative)
             {
-                continue; // Las 4 direcciones están bloqueadas, no se mueve este tick.
+                continue;
             }
         }
 
@@ -702,13 +567,13 @@ void GameWorld::tickNpcs(WorldTickResult &result)
         npcManager.applyMove(intent.npcId, toX, toY);
         result.npcsMoved.push_back(intent.npcId);
     }
+}
 
-    for (auto &attack : npcResult.attacks)
+void GameWorld::resolveNpcAttacks(NpcTickResult &npcResult, WorldTickResult &result)
+{
+    for (NpcAttack &attack : npcResult.attacks)
     {
-        // Buscamos al jugador atacado por el NPC.
-        auto it = players.find(attack.targetPlayerId);
-
-        // Si no existe, ignoramos el ataque.
+        std::unordered_map<uint32_t, Player>::iterator it = players.find(attack.targetPlayerId);
         if (it == players.end())
         {
             continue;
@@ -716,7 +581,6 @@ void GameWorld::tickNpcs(WorldTickResult &result)
 
         Player &target = it->second;
 
-        // Un NPC no debe seguir atacando a un jugador muerto/fantasma.
         if (!target.isAlive() || target.isGhost() || target.getHp() == 0)
         {
             continue;
@@ -724,7 +588,6 @@ void GameWorld::tickNpcs(WorldTickResult &result)
 
         target.takeDamage(attack.damage);
 
-        // Registramos hit y cambio de stats para que GameLoop mande HUD actualizado.
         result.playerHits.push_back({attack.targetPlayerId, attack.damage});
         result.playersChanged.push_back(attack.targetPlayerId);
 
@@ -734,11 +597,9 @@ void GameWorld::tickNpcs(WorldTickResult &result)
             const int dx = target.getTileX() - attackerNpc.getTileX();
             const int dy = target.getTileY() - attackerNpc.getTileY();
 
-            Direction dir;
-            if (std::abs(dx) > std::abs(dy))
-                dir = (dx > 0) ? Direction::RIGHT : Direction::LEFT;
-            else
-                dir = (dy > 0) ? Direction::DOWN : Direction::UP;
+            const Direction dir = (std::abs(dx) > std::abs(dy))
+                                      ? (dx > 0 ? Direction::RIGHT : Direction::LEFT)
+                                      : (dy > 0 ? Direction::DOWN : Direction::UP);
 
             result.npcAttacksForAnim.push_back({attack.npcId, dir});
         }
@@ -750,22 +611,21 @@ void GameWorld::tickNpcs(WorldTickResult &result)
                                            attack.targetPlayerId});
         }
 
-        // Si murió con este golpe, avisamos que murio
         if (target.getHp() == 0)
         {
             DeathResult deathResult = handlePlayerDeath(attack.targetPlayerId, 0);
 
             result.playersDied.push_back(attack.targetPlayerId);
             result.playerDeathsByNpc.push_back({attack.targetPlayerId, deathResult});
-
-            // Marcamos stats cambiadas después de la muerte.
             result.playersChanged.push_back(attack.targetPlayerId);
         }
     }
+}
 
-    for (auto &death : npcResult.deaths)
+void GameWorld::resolveNpcDeaths(NpcTickResult &npcResult, WorldTickResult &result)
+{
+    for (NpcDeathResult &death : npcResult.deaths)
     {
-        // El NPC muerto libera el tile.
         occupancy.free(death.tileX, death.tileY);
 
         if (death.goldDrop > 0)
@@ -786,17 +646,8 @@ void GameWorld::tickNpcs(WorldTickResult &result)
             }
         }
 
-        // Se informa la muerte para que GameLoop mande vida 0 al cliente.
         result.npcDeaths.push_back(death);
-
-        // El mismo NPC entra en estado RESPAWNING.
         npcManager.startRespawn(death.npcId, npcRespawnDelayMs);
-
-        std::cout << "[GameWorld] NPC pasa a RESPAWNING id="
-                  << death.npcId
-                  << " respawnMs="
-                  << npcRespawnDelayMs
-                  << std::endl;
     }
 }
 
@@ -808,24 +659,15 @@ void GameWorld::resurrectPlayer(uint32_t id, int spawnTileX, int spawnTileY)
     if (occupancy.occupy(spawnTileX, spawnTileY, id))
     {
         p.resurrect(spawnTileX, spawnTileY);
+        return;
     }
-    else
+
+    const std::optional<std::pair<int, int>> freeTile =
+        findAndOccupyAdjacentTile(spawnTileX, spawnTileY, id);
+
+    if (freeTile)
     {
-        for (int dx = -1; dx <= 1; dx++)
-        {
-            for (int dy = -1; dy <= 1; dy++)
-            {
-                if (dx == 0 && dy == 0)
-                    continue;
-                int tx = spawnTileX + dx;
-                int ty = spawnTileY + dy;
-                if (collision.isWalkable(tx, ty) && occupancy.occupy(tx, ty, id))
-                {
-                    p.resurrect(tx, ty);
-                    return;
-                }
-            }
-        }
+        p.resurrect(freeTile->first, freeTile->second);
     }
 }
 
@@ -834,28 +676,14 @@ bool GameWorld::hasPlayer(uint32_t playerId) const { return players.find(playerI
 
 bool GameWorld::damageNpc(uint32_t npcId, int16_t damage, uint32_t attackerPlayerId)
 {
-
     Npc *npc = npcManager.findNpc(npcId);
-    if (npc == nullptr)
+    if (npc == nullptr || !npc->isAlive())
     {
-        std::cout << "[GameWorld] damageNpc: NPC inexistente id="
-                  << npcId
-                  << std::endl;
-        return false;
-    }
-    if (!npc->isAlive())
-    {
-        std::cout << "[GameWorld] damageNpc: NPC no activo id="
-                  << npcId
-                  << std::endl;
         return false;
     }
 
-    // Guardamos la posición antes de aplicar daño.
-    // Si muere, hay que liberar este tile.
     const int tileX = npc->getTileX();
     const int tileY = npc->getTileY();
-    const int16_t hpBefore = npc->getHp();
 
     const bool damaged = npcManager.damageNpc(npcId, damage, attackerPlayerId);
 
@@ -864,19 +692,10 @@ bool GameWorld::damageNpc(uint32_t npcId, int16_t damage, uint32_t attackerPlaye
         return false;
     }
 
-    // Si murió, no lo borramos del NpcManager.
-    // Lo dejamos en RESPAWNING y liberamos su tile.
     if (!npc->isAlive())
     {
         occupancy.free(tileX, tileY);
-
         npcManager.startRespawn(npcId, npcRespawnDelayMs);
-
-        std::cout << "[GameWorld] NPC pasa a RESPAWNING id="
-                  << npcId
-                  << " respawnMs="
-                  << npcRespawnDelayMs
-                  << std::endl;
     }
 
     return true;
@@ -889,7 +708,6 @@ const std::unordered_map<uint32_t, Player> &GameWorld::getPlayers() const { retu
 
 void GameWorld::loadInitialInventoryForPlayer(Player &player)
 {
-
     if (player.hasReceivedInitialInventory())
     {
         return;
@@ -927,15 +745,12 @@ void GameWorld::loadInitialInventoryForPlayer(Player &player)
     }
     if (className == "Warrior")
     {
-
         player.getInventory().addItem(itemRepo.createItem("casco_hierro"));
         player.getInventory().addItem(itemRepo.createItem("armadura_placas"));
         player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
         return;
     }
 
-    std::cerr << "[GameWorld][Inventory] clase desconocida='" << className
-              << "', cargando inventario default." << std::endl;
     player.getInventory().addItem(itemRepo.createItem("espada"));
     player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
 }
@@ -953,7 +768,8 @@ std::pair<int, int> GameWorld::findSafeSpawnNear(int tileX, int tileY) const
         {
             if (dx == 0 && dy == 0)
                 continue;
-            int tx = tileX + dx, ty = tileY + dy;
+            const int tx = tileX + dx;
+            const int ty = tileY + dy;
             if (!collision.isWalkable(tx, ty))
                 continue;
             const Tile &t = mapData.at(static_cast<uint16_t>(tx), static_cast<uint16_t>(ty));
@@ -990,9 +806,9 @@ std::optional<NpcType> GameWorld::getNpcTypeAtTile(int tileX, int tileY) const
 {
     if (!collision.isInBounds(tileX, tileY))
         return std::nullopt;
-    NpcType t = mapData.at(static_cast<uint16_t>(tileX),
-                           static_cast<uint16_t>(tileY))
-                    .npc;
+    const NpcType t = mapData.at(static_cast<uint16_t>(tileX),
+                                 static_cast<uint16_t>(tileY))
+                          .npc;
     return t != NpcType::NONE ? std::optional<NpcType>(t) : std::nullopt;
 }
 
@@ -1000,13 +816,8 @@ NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
 {
     NpcDropResult dropResult{};
 
-    // Buscamos el NPC muerto.
     Npc *npc = npcManager.findNpc(npcId);
-    if (npc == nullptr)
-    {
-        return dropResult;
-    }
-    if (npc->isRespawning())
+    if (npc == nullptr || npc->isRespawning())
     {
         return dropResult;
     }
@@ -1017,10 +828,8 @@ NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
     dropResult.tileX = tileX;
     dropResult.tileY = tileY;
 
-    // Liberamos el tile ocupado por el NPC muerto.
     occupancy.free(tileX, tileY);
 
-    // Decidimos que dropea segun la zona del NPC.
     const std::string drop = formulas.rollNpcDrop(npc->getStats().homeZone);
 
     if (drop == "GOLD")
@@ -1034,15 +843,8 @@ NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
             dropResult.hasGold = true;
             dropResult.goldInstanceId = goldInstanceId;
             dropResult.goldAmount = goldAmount;
-
-            std::cout << "[NPC DROP] npcId=" << npcId
-                      << " GOLD=" << goldAmount
-                      << " instanceId=" << goldInstanceId
-                      << " tile=(" << tileX << "," << tileY << ")"
-                      << std::endl;
         }
     }
-
     else if (!drop.empty())
     {
         Item item = itemRepo.createItem(drop);
@@ -1050,21 +852,9 @@ NpcDropResult GameWorld::handleNpcDeath(uint32_t npcId, uint32_t killerPlayerId)
 
         dropResult.hasItem = true;
         dropResult.droppedItem = item;
-
-        std::cout << "[NPC DROP] npcId=" << npcId
-                  << " item=" << drop
-                  << " tile=(" << tileX << "," << tileY << ")"
-                  << std::endl;
     }
 
-    // El NPC NO se borra, conserva su ID y entra en RESPAWNING.
     npcManager.startRespawn(npcId, npcRespawnDelayMs);
-
-    std::cout << "[GameWorld] NPC pasa a RESPAWNING id="
-              << npcId
-              << " respawnMs="
-              << npcRespawnDelayMs
-              << std::endl;
 
     return dropResult;
 }
@@ -1081,9 +871,10 @@ std::optional<uint32_t> GameWorld::findPlayerIdByName(const std::string &name) c
 
 int GameWorld::countClanAlliesNear(const Player &player, int radiusTiles) const
 {
-    auto playerClanInfo = clanManager.findClanInfoForMember(player.getName());
+    const std::optional<std::pair<std::string, bool>> playerClanInfo =
+        clanManager.findClanInfoForMember(player.getName());
     if (!playerClanInfo)
-        return 0; // No tiene clan, no tiene aliados cerca
+        return 0;
 
     const std::string &playerClan = playerClanInfo->first;
     int count = 0;
@@ -1093,7 +884,8 @@ int GameWorld::countClanAlliesNear(const Player &player, int radiusTiles) const
         if (id == player.getId() || !other.isAlive())
             continue;
 
-        auto otherClanInfo = clanManager.findClanInfoForMember(other.getName());
+        const std::optional<std::pair<std::string, bool>> otherClanInfo =
+            clanManager.findClanInfoForMember(other.getName());
         if (otherClanInfo && otherClanInfo->first == playerClan)
         {
             const int dx = std::abs(other.getTileX() - player.getTileX());
@@ -1114,7 +906,8 @@ std::vector<uint32_t> GameWorld::getOnlineClanMemberIds(const std::string &clanN
         if (!other.isAlive())
             continue;
 
-        auto otherClanInfo = clanManager.findClanInfoForMember(other.getName());
+        const std::optional<std::pair<std::string, bool>> otherClanInfo =
+            clanManager.findClanInfoForMember(other.getName());
         if (otherClanInfo && otherClanInfo->first == clanName)
         {
             clanMembers.push_back(id);

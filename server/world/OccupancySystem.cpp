@@ -1,4 +1,4 @@
-    #include "OccupancySystem.h"
+#include "OccupancySystem.h"
 
 bool OccupancySystem::occupy(int tileX, int tileY, uint32_t entityId) {
     uint64_t k = key(tileX, tileY);
@@ -43,5 +43,5 @@ bool OccupancySystem::move(int fromX, int fromY, int toX, int toY, uint32_t enti
 }
 
 uint64_t OccupancySystem::key(int tileX, int tileY) const {
-    return (uint64_t)(uint32_t)tileX << 32 | (uint32_t)tileY;
+    return (uint64_t)(uint32_t)tileX << KTileBits | (uint32_t)tileY;
 }

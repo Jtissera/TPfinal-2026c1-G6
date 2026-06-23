@@ -14,4 +14,6 @@ public:
 private:
     uint64_t key(int tileX, int tileY) const;
     std::unordered_map<uint64_t, uint32_t> occupants;
+
+    const int KTileBits = 32;
 };

@@ -23,7 +23,7 @@ recovery_health_ms = 5000   # cada cuanto recupera vida (ms)
 recovery_mana_ms   = 3000   # cada cuanto recupera mana (ms)
 newbie_max_level = 12
 max_inventory_items = 20
-move_step = 4.0
+move_step = 8.0
 
 
 
