@@ -3,7 +3,7 @@
 #include "common/network/messages/client/auth/connectMessage.h"
 #include "common/network/messages/message.h"
 #include "common/network/messages/server/auth/connectOKMessage.h"
-#include "common/network/messages/server/player/EntityMoveMessage.h"
+#include "common/network/messages/server/player/entityMoveMessage.h"
 #include "common/network/protocol/clientOpCode.h"
 #include "common/network/protocol/packetReader.h"
 #include "common/network/protocol/packetWriter.h"
@@ -310,8 +310,7 @@ namespace {
     EXPECT_EQ(msg.opCode(), static_cast<uint8_t>(ServerOpCode::MSG_ENTITY_MOVE));
   }
 
-  TEST(EntityMoveMessageTest, RoundTrip) {
-    // Mensaje original con todos los campos actuales.
+TEST(EntityMoveMessageTest, RoundTrip) {
     EntityMoveMessage original(
         1,
         400,
@@ -325,20 +324,20 @@ namespace {
 
     PacketReader reader(writer.data(), writer.size());
 
-    const auto id = reader.readUint8();
+    const auto id = reader.readUint32();
     const auto x = reader.readUint16();
     const auto y = reader.readUint16();
     const auto direction = static_cast<Direction>(reader.readUint8());
     const bool moving = reader.readUint8() != 0;
 
-    EXPECT_EQ(id, 1);
+    EXPECT_EQ(id, 1u);
     EXPECT_EQ(x, 400);
     EXPECT_EQ(y, 320);
     EXPECT_EQ(direction, Direction::RIGHT);
     EXPECT_TRUE(moving);
 
     EXPECT_FALSE(reader.hasMore());
-  }
+}
 
   TEST(EntityMoveMessageTest, Getters) {
     EntityMoveMessage msg(
@@ -356,8 +355,7 @@ namespace {
     EXPECT_FALSE(msg.isMoving());
   }
 
-  TEST(EntityMoveMessageTest, MaxMapCoords) {
-    // Máximo del mapa: 25*96=2400, 20*96=1920.
+TEST(EntityMoveMessageTest, MaxMapCoords) {
     EntityMoveMessage msg(
         1,
         2400,
@@ -371,7 +369,7 @@ namespace {
 
     PacketReader reader(writer.data(), writer.size());
 
-    reader.readUint8();
+    reader.readUint32();
 
     EXPECT_EQ(reader.readUint16(), 2400);
     EXPECT_EQ(reader.readUint16(), 1920);
@@ -382,8 +380,9 @@ namespace {
     EXPECT_TRUE(reader.readUint8() != 0);
 
     EXPECT_FALSE(reader.hasMore());
-  }
-  TEST(EntityMoveMessageTest, RoundTripNotMoving) {
+}
+
+TEST(EntityMoveMessageTest, RoundTripNotMoving) {
     EntityMoveMessage original(
         7,
         800,
@@ -397,7 +396,7 @@ namespace {
 
     PacketReader reader(writer.data(), writer.size());
 
-    EXPECT_EQ(reader.readUint8(), 7);
+    EXPECT_EQ(reader.readUint32(), 7u);
     EXPECT_EQ(reader.readUint16(), 800);
     EXPECT_EQ(reader.readUint16(), 600);
     EXPECT_EQ(
@@ -407,5 +406,5 @@ namespace {
     EXPECT_FALSE(reader.readUint8() != 0);
 
     EXPECT_FALSE(reader.hasMore());
-  }
+}
 }

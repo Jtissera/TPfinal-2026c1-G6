@@ -1,93 +1,99 @@
 #include <gtest/gtest.h>
 #include "server/city/cityCommandParser.h"
 
-TEST(CityCommandParser, ParseResucitar)
+class CityCommandParserTest : public ::testing::Test
 {
-    auto cmd = CityCommandParser::parse("/resucitar");
+protected:
+    CityCommandParser parser;
+};
+
+TEST_F(CityCommandParserTest, ParseResucitar)
+{
+    auto cmd = parser.parse("/resucitar");
     ASSERT_TRUE(cmd.has_value());
     EXPECT_EQ(cmd->type, CityCommand::Type::RESURRECT);
 }
 
-TEST(CityCommandParser, ParseCurar)
+TEST_F(CityCommandParserTest, ParseCurar)
 {
-    auto cmd = CityCommandParser::parse("/curar");
+    auto cmd = parser.parse("/curar");
     ASSERT_TRUE(cmd.has_value());
     EXPECT_EQ(cmd->type, CityCommand::Type::HEAL);
 }
 
-TEST(CityCommandParser, ParseComprar)
+TEST_F(CityCommandParserTest, ParseComprar)
 {
-    auto cmd = CityCommandParser::parse("/comprar espada");
+    auto cmd = parser.parse("/comprar espada");
     ASSERT_TRUE(cmd.has_value());
     EXPECT_EQ(cmd->type, CityCommand::Type::BUY);
     EXPECT_EQ(cmd->itemName, "espada");
 }
 
-TEST(CityCommandParser, ParseVender)
+TEST_F(CityCommandParserTest, ParseVender)
 {
-    auto cmd = CityCommandParser::parse("/vender hacha");
+    auto cmd = parser.parse("/vender hacha");
     ASSERT_TRUE(cmd.has_value());
     EXPECT_EQ(cmd->type, CityCommand::Type::SELL);
     EXPECT_EQ(cmd->itemName, "hacha");
 }
 
-TEST(CityCommandParser, ParseDepositarItem)
+TEST_F(CityCommandParserTest, ParseDepositarItem)
 {
-    auto cmd = CityCommandParser::parse("/depositar espada");
+    auto cmd = parser.parse("/depositar espada");
     ASSERT_TRUE(cmd.has_value());
     EXPECT_EQ(cmd->type, CityCommand::Type::DEPOSIT);
     EXPECT_FALSE(cmd->isGold);
     EXPECT_EQ(cmd->itemName, "espada");
 }
 
-TEST(CityCommandParser, ParseDepositarOro)
+TEST_F(CityCommandParserTest, ParseDepositarOro)
 {
-    auto cmd = CityCommandParser::parse("/depositar oro 100");
+    auto cmd = parser.parse("/depositar oro 100");
     ASSERT_TRUE(cmd.has_value());
     EXPECT_EQ(cmd->type, CityCommand::Type::DEPOSIT);
     EXPECT_TRUE(cmd->isGold);
     EXPECT_EQ(cmd->goldAmount, 100u);
 }
 
-TEST(CityCommandParser, ParseRetirarOro)
+TEST_F(CityCommandParserTest, ParseRetirarOro)
 {
-    auto cmd = CityCommandParser::parse("/retirar oro 250");
+    auto cmd = parser.parse("/retirar oro 250");
     ASSERT_TRUE(cmd.has_value());
     EXPECT_EQ(cmd->type, CityCommand::Type::WITHDRAW);
     EXPECT_TRUE(cmd->isGold);
     EXPECT_EQ(cmd->goldAmount, 250u);
 }
 
-TEST(CityCommandParser, ParseRetirarItem)
+TEST_F(CityCommandParserTest, ParseRetirarItem)
 {
-    auto cmd = CityCommandParser::parse("/retirar pocion_vida");
+    auto cmd = parser.parse("/retirar pocion_vida");
     ASSERT_TRUE(cmd.has_value());
     EXPECT_EQ(cmd->type, CityCommand::Type::WITHDRAW);
     EXPECT_FALSE(cmd->isGold);
     EXPECT_EQ(cmd->itemName, "pocion_vida");
 }
 
-TEST(CityCommandParser, ComandoInvalidoSinSlash)
+TEST_F(CityCommandParserTest, ComandoInvalidoSinSlash)
 {
-    EXPECT_FALSE(CityCommandParser::parse("comprar espada").has_value());
+    EXPECT_FALSE(parser.parse("comprar espada").has_value());
 }
 
-TEST(CityCommandParser, ComandoDesconocido)
+TEST_F(CityCommandParserTest, ComandoDesconocido)
 {
-    EXPECT_FALSE(CityCommandParser::parse("/bailar").has_value());
+    EXPECT_FALSE(parser.parse("/bailar").has_value());
 }
 
-TEST(CityCommandParser, ComprarSinItem)
+TEST_F(CityCommandParserTest, ComprarSinItem)
 {
-    EXPECT_FALSE(CityCommandParser::parse("/comprar").has_value());
+    EXPECT_FALSE(parser.parse("/comprar").has_value());
 }
 
-TEST(CityCommandParser, DepositarOroSinCantidad)
+TEST_F(CityCommandParserTest, DepositarOroSinCantidad)
 {
-    EXPECT_FALSE(CityCommandParser::parse("/depositar oro").has_value());
+    EXPECT_FALSE(parser.parse("/depositar oro").has_value());
 }
 
-TEST(CityCommandParser, DepositarOroCantidadCero)
+TEST_F(CityCommandParserTest, DepositarOroCantidadCero)
 {
-    EXPECT_FALSE(CityCommandParser::parse("/depositar oro 0").has_value());
+    EXPECT_FALSE(parser.parse("/depositar oro 0").has_value());
 }

@@ -106,7 +106,8 @@
 [[maybe_unused]] static Inventory makeInventory()
 {
   static auto config = makeConfig();
-  return Inventory(config);
+  auto maxItems = config["player"]["max_inventory_items"].value_or<std::size_t>(20);
+  return Inventory(maxItems);
 }
 
 [[maybe_unused]] static RaceStats makeRace()
@@ -307,11 +308,8 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
 
 [[maybe_unused]] static std::unique_ptr<GameWorld> makeTestWorld()
 {
-
   static auto config = makeConfig();
   
-  //esto es para usar usar un directorio tempora y testear tranqui sin llenar todo de archivos,
-  //se puede sacar y hacer que queden en una carpeta fija igual 
   static std::string tempDir = std::filesystem::temp_directory_path().string();
   
   static std::string clanDat = tempDir + "/test_clans.dat";
@@ -322,12 +320,12 @@ makeNpcStats(int16_t hp = 50, uint16_t dmgMin = 5, uint16_t dmgMax = 10,
   static MapData map = makeWalkableMap(20, 20);
   static ItemRepository itemRepo(config);
   static NpcRepository npcRepo(config);
-  static NpcFactory npcFactory(npcRepo);
+  static NpcFactory npcFactory(npcRepo, config);
 
   static ClanArchive clanArchive(clanDat, clanIdx);          
   static CharacterArchive characterArchive(charDat, charIdx); 
 
-  static ClanManager clanManager(clanArchive, characterArchive);
+  static ClanManager clanManager(clanArchive, characterArchive, config);
 
   return std::make_unique<GameWorld>(map, npcFactory, itemRepo, config, clanManager);
 }

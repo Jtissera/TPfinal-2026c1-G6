@@ -10,6 +10,9 @@ static toml::table withCityPrices()
         [city]
         ms_per_tile_resurrection = 500
 
+        [city.priest_catalog]
+items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado", "pocion_vida", "pocion_mana"]
+
         [city.prices]
         vara_fresno      = 100
         flauta_elfica    = 500
