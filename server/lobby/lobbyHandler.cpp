@@ -1,54 +1,32 @@
 #include "lobbyHandler.h"
 
-#include "../common/network/messages/client/auth/loginMessage.h"
-#include "../common/network/messages/client/lobby/createGameMessage.h"
-#include "../common/network/messages/client/lobby/joinGameMessage.h"
-#include "../common/network/messages/client/lobby/listGamesMessage.h"
-#include "../common/network/messages/server/auth/loginOkMessage.h"
-
 LobbyHandler::LobbyHandler(
     Queue<ClientMessage> &lobbyQueue,
     Queue<std::shared_ptr<LeaveEvent>> &leaveQueue,
     Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue,
-    Monitor &lobbyMonitor, GameManager &gameManager,
-    ReceiverRegistry &receiverRegistry, PlayerRepository &playerRepo,
-    PlayerFactory &playerFactory, PlayerArchive &archive,
+    Monitor &lobbyMonitor,
+    GameManager &gameManager,
+    ReceiverRegistry &receiverRegistry,
+    PlayerRepository &playerRepo,
+    PlayerFactory &playerFactory,
+    PlayerArchive &archive,
     CharacterArchive &characterArchive,
     const toml::table &config)
-    : lobbyQueue(lobbyQueue), leaveQueue(leaveQueue),
-      transitionQueue(transitionQueue), lobbyMonitor(lobbyMonitor),
-      gameManager(gameManager), receiverRegistry(receiverRegistry),
-      playerRepo(playerRepo), playerFactory(playerFactory), archive(archive),
-      characterArchive(characterArchive), config(config)
+    : lobbyQueue(lobbyQueue), leaveQueue(leaveQueue), transitionQueue(transitionQueue),
+      lobbyMonitor(lobbyMonitor), gameManager(gameManager), receiverRegistry(receiverRegistry),
+      playerRepo(playerRepo), playerFactory(playerFactory), archive(archive), characterArchive(characterArchive), config(config)
 {
   initHandlers();
 }
 
 void LobbyHandler::initHandlers()
 {
-  handlers[static_cast<uint8_t>(ClientOpCode::MSG_CONNECT)] =
-      [this](uint32_t id, const Message &msg)
-  { handleConnect(id, msg); };
-
-  handlers[static_cast<uint8_t>(ClientOpCode::MSG_LOGIN)] =
-      [this](uint32_t id, const Message &msg)
-  { handleLogin(id, msg); };
-
-  handlers[static_cast<uint8_t>(ClientOpCode::MSG_CREATE_CHAR)] =
-      [this](uint32_t id, const Message &msg)
-  { handleCreateChar(id, msg); };
-
-  handlers[static_cast<uint8_t>(ClientOpCode::MSG_LIST_GAMES)] =
-      [this](uint32_t id, const Message &msg)
-  { handleListGames(id, msg); };
-
-  handlers[static_cast<uint8_t>(ClientOpCode::MSG_CREATE_GAME)] =
-      [this](uint32_t id, const Message &msg)
-  { handleCreateGame(id, msg); };
-
-  handlers[static_cast<uint8_t>(ClientOpCode::MSG_JOIN_GAME)] =
-      [this](uint32_t id, const Message &msg)
-  { handleJoinGame(id, msg); };
+  handlers[static_cast<uint8_t>(ClientOpCode::MSG_CONNECT)] = &LobbyHandler::handleConnect;
+  handlers[static_cast<uint8_t>(ClientOpCode::MSG_LOGIN)] = &LobbyHandler::handleLogin;
+  handlers[static_cast<uint8_t>(ClientOpCode::MSG_CREATE_CHAR)] = &LobbyHandler::handleCreateChar;
+  handlers[static_cast<uint8_t>(ClientOpCode::MSG_LIST_GAMES)] = &LobbyHandler::handleListGames;
+  handlers[static_cast<uint8_t>(ClientOpCode::MSG_CREATE_GAME)] = &LobbyHandler::handleCreateGame;
+  handlers[static_cast<uint8_t>(ClientOpCode::MSG_JOIN_GAME)] = &LobbyHandler::handleJoinGame;
 }
 
 void LobbyHandler::run()
@@ -61,14 +39,19 @@ void LobbyHandler::run()
       while (lobbyQueue.try_pop(incoming))
       {
         uint8_t opcode = incoming.message->opCode();
-        auto it = handlers.find(opcode);
+        std::unordered_map<uint8_t, MemberHandler>::iterator it =
+            handlers.find(opcode);
         if (it != handlers.end())
-          it->second(incoming.clientId, *incoming.message);
+        {
+          (this->*it->second)(incoming.clientId, *incoming.message);
+        }
       }
 
       std::shared_ptr<LeaveEvent> leaveEvent;
       while (leaveQueue.try_pop(leaveEvent))
+      {
         handleLeaveGame(*leaveEvent);
+      }
 
       std::shared_ptr<InstanceTransitionEvent> transition;
       while (transitionQueue.try_pop(transition))
@@ -79,8 +62,9 @@ void LobbyHandler::run()
         }
         catch (const std::exception &e)
         {
-          std::cerr << "[LobbyHandler] Error en transicion de cliente "
-                    << transition->clientId << ": " << e.what() << std::endl;
+          std::cerr << "[LobbyHandler] Error in client transition "
+                    << transition->clientId << ": " << e.what()
+                    << std::endl;
         }
       }
 
@@ -92,7 +76,7 @@ void LobbyHandler::run()
     }
     catch (const std::exception &e)
     {
-      std::cerr << "[LobbyHandler] Error crítico en el loop: " << e.what()
+      std::cerr << "[LobbyHandler] Critical error in loop: " << e.what()
                 << std::endl;
     }
   }
@@ -105,11 +89,9 @@ void LobbyHandler::stop()
   leaveQueue.close();
 }
 
-// ─── handlers ────────────────────────────────────────────────────────────────
-
 void LobbyHandler::handleConnect(uint32_t clientId, const Message &message)
 {
-  const auto &connectMsg = static_cast<const ConnectMessage &>(message);
+  const ConnectMessage &connectMsg = static_cast<const ConnectMessage &>(message);
   std::cout << "[LobbyHandler] client=" << clientId
             << " username=" << connectMsg.getUsername() << " connected"
             << std::endl;
@@ -117,24 +99,50 @@ void LobbyHandler::handleConnect(uint32_t clientId, const Message &message)
   lobbyMonitor.sendTo(clientId, std::make_shared<const ConnectOkMessage>());
 }
 
+void LobbyHandler::handleLogin(uint32_t clientId, const Message &message)
+{
+  const LoginMessage &msg = static_cast<const LoginMessage &>(message);
+  const std::string &characterName = msg.getCharacterName();
+
+  if (!characterArchive.exists(characterName))
+  {
+    lobbyMonitor.sendTo(clientId,
+                        std::make_shared<const ErrorMessage>(
+                            "Character '" + characterName + "' not found."));
+    return;
+  }
+
+  if (!gameManager.tryMarkOnline(clientId, characterName))
+  {
+    lobbyMonitor.sendTo(clientId,
+                        std::make_shared<const ErrorMessage>(
+                            "That character is already connected."));
+    return;
+  }
+
+  pendingCharacterNames[clientId] = characterName;
+  lobbyMonitor.sendTo(clientId, std::make_shared<LoginOkMessage>());
+  std::cout << "[LobbyHandler] Login OK: '" << characterName
+            << "' clientId=" << clientId << std::endl;
+}
+
 void LobbyHandler::handleCreateChar(uint32_t clientId, const Message &message)
 {
-  const auto &msg = static_cast<const CreateCharMessage &>(message);
+  const CreateCharMessage &msg = static_cast<const CreateCharMessage &>(message);
   try
   {
-    // Unicidad: si el nombre ya existe, rechazamos
     if (!characterArchive.save(msg.getName(), msg.getRaza(), msg.getClase()))
     {
-      lobbyMonitor.sendTo(
-          clientId, std::make_shared<const ErrorMessage>(
-                        "El nombre '" + msg.getName() + "' ya está en uso."));
+      lobbyMonitor.sendTo(clientId,
+                          std::make_shared<const ErrorMessage>(
+                              "Name '" + msg.getName() + "' is already taken."));
       return;
     }
 
     gameManager.tryMarkOnline(clientId, msg.getName());
 
-    Player player = playerFactory.create(clientId, msg.getName(), msg.getRaza(),
-                                         msg.getClase(), 2, 2);
+    Player player = playerFactory.create(
+        clientId, msg.getName(), msg.getRaza(), msg.getClase(), 2, 2);
     playerRepo.save(clientId, std::move(player));
     lobbyMonitor.sendTo(clientId, std::make_shared<const CreateOkMessage>());
   }
@@ -147,53 +155,30 @@ void LobbyHandler::handleCreateChar(uint32_t clientId, const Message &message)
 
 void LobbyHandler::handleListGames(uint32_t clientId, const Message &)
 {
-  auto games = gameManager.listGames();
-  lobbyMonitor.sendTo(
-      clientId, std::make_shared<const GameListMessage>(std::move(games)));
-}
-
-void LobbyHandler::handleLogin(uint32_t clientId, const Message &message)
-{
-  const auto &msg = static_cast<const LoginMessage &>(message);
-  const std::string &characterName = msg.getCharacterName();
-
-  if (!characterArchive.exists(characterName))
-  {
-    lobbyMonitor.sendTo(
-        clientId, std::make_shared<const ErrorMessage>(
-                      "Personaje '" + characterName + "' no encontrado."));
-    return;
-  }
-
-  if (!gameManager.tryMarkOnline(clientId, characterName))
-  {
-    lobbyMonitor.sendTo(
-        clientId, std::make_shared<const ErrorMessage>(
-                      "Ese personaje ya está conectado."));
-    return;
-  }
-
-  pendingCharacterNames[clientId] = characterName;
-  lobbyMonitor.sendTo(clientId, std::make_shared<LoginOkMessage>());
-  std::cout << "[LobbyHandler] Login OK: '" << characterName
-            << "' clientId=" << clientId << std::endl;
+  std::vector<GameInfo> games = gameManager.listGames();
+  lobbyMonitor.sendTo(clientId,
+                      std::make_shared<const GameListMessage>(std::move(games)));
 }
 
 void LobbyHandler::handleCreateGame(uint32_t clientId, const Message &message)
 {
-  const auto &createMsg = static_cast<const CreateGameMessage &>(message);
+  const CreateGameMessage &createMsg =
+      static_cast<const CreateGameMessage &>(message);
   try
   {
-    auto gameId = gameManager.createGame(createMsg.getGameName(),
-                                         createMsg.getMaxPlayers(),
-                                         createMsg.getMapPath());
-    lobbyMonitor.sendTo(clientId, std::make_shared<const GameCreatedMessage>(
-                                      gameId, createMsg.getGameName(),
-                                      createMsg.getMaxPlayers()));
+    uint32_t gameId = gameManager.createGame(
+        createMsg.getGameName(),
+        createMsg.getMaxPlayers(),
+        createMsg.getMapPath());
+    lobbyMonitor.sendTo(clientId,
+                        std::make_shared<const GameCreatedMessage>(
+                            gameId,
+                            createMsg.getGameName(),
+                            createMsg.getMaxPlayers()));
   }
   catch (const std::exception &e)
   {
-    std::cerr << "[SERVER] createGame falló: " << e.what() << std::endl;
+    std::cerr << "[LobbyHandler] createGame failed: " << e.what() << std::endl;
     lobbyMonitor.sendTo(clientId,
                         std::make_shared<const ErrorMessage>(e.what()));
   }
@@ -201,7 +186,7 @@ void LobbyHandler::handleCreateGame(uint32_t clientId, const Message &message)
 
 void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message)
 {
-  const auto &joinMsg = static_cast<const JoinGameMessage &>(message);
+  const JoinGameMessage &joinMsg = static_cast<const JoinGameMessage &>(message);
   const uint32_t requestedGameId = joinMsg.getGameId();
 
   Queue<std::shared_ptr<const Message>> *clientQueue =
@@ -214,139 +199,154 @@ void LobbyHandler::handleJoinGame(uint32_t clientId, const Message &message)
     return;
   }
 
-  // ── Resolución del Player ──────────────────────────────────────────────
-  // Caso A: personaje recién creado (está en playerRepo, nunca fue persistido).
-  // Caso B: personaje existente que hizo login (nombre en
-  // pendingCharacterNames, hay que cargarlo del archive con este gameId).
-
-  Player *player = playerRepo.get(clientId);
-
-  // targetGameId puede diferir de requestedGameId si el jugador estaba en
-  // una instancia al desconectarse — en ese caso la recreamos y lo mandamos
-  // directamente ahí.
   uint32_t targetGameId = requestedGameId;
+  Player *player = playerRepo.get(clientId);
 
   if (!player)
   {
-    // Caso B: viene de un login
-    auto it = pendingCharacterNames.find(clientId);
+    std::unordered_map<uint32_t, std::string>::iterator it =
+        pendingCharacterNames.find(clientId);
     if (it == pendingCharacterNames.end())
     {
-      lobbyMonitor.sendTo(
-          clientId, std::make_shared<const ErrorMessage>(
-                        "Must login or create a character before joining"));
+      lobbyMonitor.sendTo(clientId,
+                          std::make_shared<const ErrorMessage>(
+                              "Must login or create a character before joining"));
       return;
     }
 
-    const std::string &characterName = it->second;
-
-    if (auto snap = archive.loadSnapshot(characterName, requestedGameId))
-    {
-      // El jugador ya estuvo en esta sala pública (o en una instancia de ella).
-      if (snap->originGameId != 0)
-      {
-        // Estaba en una instancia cuando se desconectó: recrearla.
-        std::string instanceMap(snap->mapId,
-                                strnlen(snap->mapId, sizeof(snap->mapId)));
-        try
-        {
-          targetGameId =
-              gameManager.getOrCreateInstance(instanceMap, requestedGameId);
-          std::cout << "[LobbyHandler] '" << characterName
-                    << "' reconectando a instancia gameId=" << targetGameId
-                    << " map='" << instanceMap << "'" << std::endl;
-        }
-        catch (const std::exception &e)
-        {
-          // El mapa de la instancia ya no existe en disco (caso raro).
-          // Fallback: unirse a la sala pública normalmente.
-          std::cerr << "[LobbyHandler] No se pudo recrear instancia para '"
-                    << characterName << "': " << e.what()
-                    << " — fallback a sala pública." << std::endl;
-          targetGameId = requestedGameId;
-        }
-      }
-
-      auto loaded = archive.load(characterName, requestedGameId);
-      if (loaded)
-      {
-        loaded->setClientId(clientId);
-        playerRepo.save(clientId, std::move(*loaded));
-      }
-    }
-    else
-    {
-      // Primera vez en esta sala: construir desde cero con raza/clase del registro
-      auto rec = characterArchive.load(characterName);
-      if (!rec)
-      {
-        lobbyMonitor.sendTo(clientId,
-                            std::make_shared<const ErrorMessage>(
-                                "Error interno al cargar el personaje."));
-        pendingCharacterNames.erase(it);
-        return;
-      }
-
-      Player fresh = playerFactory.create(
-          clientId, characterName,
-          std::string(rec->race, strnlen(rec->race, sizeof(rec->race))),
-          std::string(rec->cls, strnlen(rec->cls, sizeof(rec->cls))), 3, 3);
-
-      std::cout << "[LobbyHandler] '" << characterName
-                << "' entra por primera vez a gameId=" << requestedGameId
-                << std::endl;
-      playerRepo.save(clientId, std::move(fresh));
-    }
-
+    const std::string characterName = it->second;
     pendingCharacterNames.erase(it);
-    player = playerRepo.get(clientId);
+
+    player = resolveReturningPlayer(
+        clientId, characterName, requestedGameId, targetGameId);
+
+    if (!player)
+    {
+      lobbyMonitor.sendTo(clientId,
+                          std::make_shared<const ErrorMessage>(
+                              "Internal error: failed to load character."));
+      return;
+    }
   }
 
-  // ── Unirse a la GameRoom (pública o instancia recreada) ───────────────────
+  finalizeJoin(clientId, targetGameId, requestedGameId, *player, *clientQueue);
+}
 
-  if (!gameManager.joinGame(targetGameId, clientId, *clientQueue))
+Player *LobbyHandler::resolveReturningPlayer(uint32_t clientId,
+                                             const std::string &characterName,
+                                             uint32_t requestedGameId,
+                                             uint32_t &targetGameId)
+{
+  std::optional<PlayerSnapshot> snap =
+      archive.loadSnapshot(characterName, requestedGameId);
+
+  if (snap.has_value())
   {
-    lobbyMonitor.sendTo(clientId, std::make_shared<const ErrorMessage>(
-                                      "Game not found or full"));
+    targetGameId = resolveTargetInstance(
+        characterName, requestedGameId, snap.value());
+
+    std::optional<Player> loaded =
+        archive.load(characterName, requestedGameId);
+    if (loaded.has_value())
+    {
+      loaded.value().setClientId(clientId);
+      playerRepo.save(clientId, std::move(loaded.value()));
+    }
+  }
+  else
+  {
+    std::optional<CharacterRecord> rec =
+        characterArchive.load(characterName);
+    if (!rec.has_value())
+    {
+      return nullptr;
+    }
+
+    std::string race(rec->race, strnlen(rec->race, sizeof(rec->race)));
+    std::string cls(rec->cls, strnlen(rec->cls, sizeof(rec->cls)));
+
+    Player fresh = playerFactory.create(
+        clientId, characterName, race, cls, 3, 3);
+    std::cout << "[LobbyHandler] '" << characterName
+              << "' entering game " << requestedGameId
+              << " for the first time" << std::endl;
+    playerRepo.save(clientId, std::move(fresh));
+  }
+
+  return playerRepo.get(clientId);
+}
+
+uint32_t LobbyHandler::resolveTargetInstance(const std::string &characterName,
+                                             uint32_t requestedGameId,
+                                             const PlayerSnapshot &snap)
+{
+  if (snap.originGameId == 0)
+  {
+    return requestedGameId;
+  }
+
+  std::string instanceMap(snap.mapId, strnlen(snap.mapId, sizeof(snap.mapId)));
+  try
+  {
+    uint32_t instanceId =
+        gameManager.getOrCreateInstance(instanceMap, requestedGameId);
+    std::cout << "[LobbyHandler] '" << characterName
+              << "' reconnecting to instance gameId=" << instanceId
+              << " map='" << instanceMap << "'" << std::endl;
+    return instanceId;
+  }
+  catch (const std::exception &e)
+  {
+    std::cerr << "[LobbyHandler] Could not recreate instance for '"
+              << characterName << "': " << e.what()
+              << " — falling back to public room." << std::endl;
+    return requestedGameId;
+  }
+}
+
+void LobbyHandler::finalizeJoin(uint32_t clientId,
+                                uint32_t targetGameId,
+                                uint32_t requestedGameId,
+                                Player &player,
+                                Queue<std::shared_ptr<const Message>> &clientQueue)
+{
+  if (!gameManager.joinGame(targetGameId, clientId, clientQueue))
+  {
+    lobbyMonitor.sendTo(clientId,
+                        std::make_shared<const ErrorMessage>("Game not found or full"));
     return;
   }
 
-  PlayerDto playerDto = buildPlayerDto(*player);
-
+  PlayerDto playerDto = buildPlayerDto(player);
   std::string mapId = gameManager.getRoomMapPath(targetGameId);
   uint32_t originId = gameManager.getOriginRoomId(targetGameId);
+
   archive.enqueue(
-      archive.toSnapshot(*player, mapId, targetGameId, originId),
+      archive.toSnapshot(player, mapId, targetGameId, originId),
       targetGameId);
 
-  gameManager.addPlayerToGame(targetGameId, std::move(*player));
+  gameManager.addPlayerToGame(targetGameId, std::move(player));
   playerRepo.remove(clientId);
 
-  // El nombre de la partida siempre viene de la sala pública.
-  std::string gameName;
-  for (const auto &info : gameManager.listGames())
-  {
-    if (info.gameId == requestedGameId)
-    {
-      gameName = info.gameName;
-      break;
-    }
-  }
+  std::string gameName = findGameName(requestedGameId);
 
-  clientQueue->try_push(std::make_shared<const JoinOkMessage>(
+  clientQueue.try_push(std::make_shared<const JoinOkMessage>(
       targetGameId, gameName, std::move(playerDto)));
 
   if (targetGameId != requestedGameId)
   {
-    clientQueue->try_push(std::make_shared<const MapChangedMessage>(mapId));
-    std::cout << "[LobbyHandler] MapChanged enviado a clientId=" << clientId
-              << " (reconexión a instancia) mapId='" << mapId << "'"
-                  << std::endl;
+    clientQueue.try_push(
+        std::make_shared<const MapChangedMessage>(mapId));
+    std::cout << "[LobbyHandler] MapChanged sent to clientId=" << clientId
+              << " (reconnecting to instance) mapId='" << mapId << "'"
+              << std::endl;
   }
 
-  auto *receiver = receiverRegistry.get(clientId);
+  Receiver *receiver = receiverRegistry.get(clientId);
   if (receiver)
+  {
     receiver->setQueue(gameManager.getGameQueue(targetGameId));
+  }
 
   lobbyMonitor.removeQueue(clientId);
   gameManager.syncPlayerJoin(targetGameId, clientId);
@@ -356,86 +356,117 @@ void LobbyHandler::handleLeaveGame(LeaveEvent &event)
 {
   gameManager.removeClient(event.clientId);
 
-  auto *receiver = receiverRegistry.get(event.clientId);
+  Receiver *receiver = receiverRegistry.get(event.clientId);
   if (receiver)
+  {
     receiver->setQueue(lobbyQueue);
+  }
 
   lobbyMonitor.addQueue(event.clientId, *event.clientQueue);
   playerRepo.save(event.clientId, std::move(event.player));
-  lobbyMonitor.sendTo(event.clientId, std::make_shared<const LeaveOkMessage>());
+  lobbyMonitor.sendTo(event.clientId,
+                      std::make_shared<const LeaveOkMessage>());
 }
 
 void LobbyHandler::handleInstanceTransition(InstanceTransitionEvent &event)
 {
   if (event.targetMap.empty())
   {
-    uint32_t originId = gameManager.getOriginRoomId(event.fromRoomId);
-    if (originId == 0)
-      return;
-
-    gameManager.broadcastDespawnInRoom(event.fromRoomId, event.clientId);
-    gameManager.unregisterClientForTransition(event.clientId);
-
-    event.player.setTilePos(event.spawnTileX, event.spawnTileY);
-
-    std::string originMapPath = gameManager.getRoomMapPath(originId);
-
-    archive.enqueue(
-        archive.toSnapshot(event.player, originMapPath, originId, 0),
-        originId);
-
-
-    gameManager.joinAndAddPlayer(originId, event.clientId,
-                                 *event.clientQueue, std::move(event.player));
-
-    auto *receiver = receiverRegistry.get(event.clientId);
-    if (receiver)
-      receiver->setQueue(gameManager.getGameQueue(originId));
-
-    event.clientQueue->try_push(
-        std::make_shared<const MapChangedMessage>(originMapPath));
-
-    gameManager.syncPlayerJoin(originId, event.clientId);
+    transitionToOrigin(event);
   }
   else
   {
-    std::string fullMapPath = event.targetMap;
-    if (fullMapPath.find("assets/") == std::string::npos)
-      fullMapPath = "assets/sprites/MapAssets/worlds" + fullMapPath + ".argmap";
-
-    uint32_t instanceId =
-        gameManager.getOrCreateInstance(fullMapPath, event.fromRoomId);
-
-    gameManager.broadcastDespawnInRoom(event.fromRoomId, event.clientId);
-    gameManager.unregisterClientForTransition(event.clientId);
-
-    event.player.setTilePos(event.spawnTileX, event.spawnTileY);
-
-    archive.enqueue(
-        archive.toSnapshot(event.player, fullMapPath, instanceId,
-                           event.fromRoomId),
-        instanceId);
-
-    gameManager.joinAndAddPlayer(instanceId, event.clientId,
-                                 *event.clientQueue, std::move(event.player));
-
-    auto *receiver = receiverRegistry.get(event.clientId);
-    if (receiver)
-      receiver->setQueue(gameManager.getGameQueue(instanceId));
-
-    event.clientQueue->try_push(
-        std::make_shared<const MapChangedMessage>(fullMapPath));
-
-    gameManager.syncPlayerJoin(instanceId, event.clientId);
+    transitionToInstance(event);
   }
 }
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+void LobbyHandler::transitionToOrigin(InstanceTransitionEvent &event)
+{
+  uint32_t originId = gameManager.getOriginRoomId(event.fromRoomId);
+  if (originId == 0)
+  {
+    return;
+  }
+
+  gameManager.broadcastDespawnInRoom(event.fromRoomId, event.clientId);
+  gameManager.unregisterClientForTransition(event.clientId);
+  event.player.setTilePos(event.spawnTileX, event.spawnTileY);
+
+  std::string originMapPath = gameManager.getRoomMapPath(originId);
+  completeTransition(originId, event, originMapPath, 0);
+}
+
+void LobbyHandler::transitionToInstance(InstanceTransitionEvent &event)
+{
+  std::string fullMapPath = buildFullMapPath(event.targetMap);
+
+  uint32_t instanceId =
+      gameManager.getOrCreateInstance(fullMapPath, event.fromRoomId);
+
+  gameManager.broadcastDespawnInRoom(event.fromRoomId, event.clientId);
+  gameManager.unregisterClientForTransition(event.clientId);
+  event.player.setTilePos(event.spawnTileX, event.spawnTileY);
+
+  completeTransition(instanceId, event, fullMapPath, event.fromRoomId);
+}
+
+void LobbyHandler::completeTransition(uint32_t targetRoomId,
+                                      InstanceTransitionEvent &event,
+                                      const std::string &mapPath,
+                                      uint32_t originId)
+{
+  archive.enqueue(
+      archive.toSnapshot(event.player, mapPath, targetRoomId, originId),
+      targetRoomId);
+
+  gameManager.joinAndAddPlayer(
+      targetRoomId, event.clientId, *event.clientQueue, std::move(event.player));
+
+  Receiver *receiver = receiverRegistry.get(event.clientId);
+  if (receiver)
+  {
+    receiver->setQueue(gameManager.getGameQueue(targetRoomId));
+  }
+
+  event.clientQueue->try_push(
+      std::make_shared<const MapChangedMessage>(mapPath));
+
+  gameManager.syncPlayerJoin(targetRoomId, event.clientId);
+}
+
+std::string LobbyHandler::findGameName(uint32_t gameId) const
+{
+  std::vector<GameInfo> games = gameManager.listGames();
+  for (std::vector<GameInfo>::const_iterator it = games.begin();
+       it != games.end(); ++it)
+  {
+    if (it->gameId == gameId)
+    {
+      return it->gameName;
+    }
+  }
+  return "";
+}
+
+std::string LobbyHandler::buildFullMapPath(const std::string &targetMap) const
+{
+  if (targetMap.find("assets/") != std::string::npos)
+  {
+    return targetMap;
+  }
+  return "assets/sprites/MapAssets/worlds" + targetMap + ".argmap";
+}
 
 PlayerDto LobbyHandler::buildPlayerDto(const Player &player) const
 {
-  PlayerDto dto{};
+  const int16_t defaultExpMax =
+      config["player"]["default_exp_max"].value_or<int16_t>(1000);
+  const uint8_t defaultIntelligence =
+      config["player"]["default_intelligence"].value_or<uint8_t>(10);
+  const uint8_t defaultConstitution =
+      config["player"]["default_constitution"].value_or<uint8_t>(10);
 
+  PlayerDto dto{};
   dto.playerID = player.getClientId();
   dto.nombre = player.getName();
   dto.raza = player.getRace().name;
@@ -452,15 +483,15 @@ PlayerDto LobbyHandler::buildPlayerDto(const Player &player) const
   dto.xpos = static_cast<uint16_t>(player.getPixelX());
   dto.ypos = static_cast<uint16_t>(player.getPixelY());
   dto.exp = static_cast<int>(player.getExp());
-  dto.expMax = 1000;
+  dto.expMax = defaultExpMax;
   dto.esFantasma = player.isGhost();
   dto.fuerza = player.getStrength();
   dto.agilidad = player.getAgility();
-  dto.inteligencia = 10;
-  dto.constitucion = 10;
+  dto.inteligencia = defaultIntelligence;
+  dto.constitucion = defaultConstitution;
 
-  std::cout << "[SERVER DTO] raza='" << dto.raza << "' clase='" << dto.clase
-            << "'" << std::endl;
+  std::cout << "[LobbyHandler] PlayerDto built: race='" << dto.raza
+            << "' class='" << dto.clase << "'" << std::endl;
 
   return dto;
 }
