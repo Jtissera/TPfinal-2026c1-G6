@@ -491,6 +491,7 @@ void AssetManager::LoadTexturesFromJson(const std::string &jsonPath)
                     anim.row = animJson.value("row", 0);
                     anim.frames = animJson.value("frames", 1);
                     anim.speed = animJson.value("speed_ms", 150);
+                    anim.columns = animJson.value("columns", anim.frames);
                     def.animations.emplace(animIt.key(), anim);
                 }
             }
