@@ -25,6 +25,8 @@
 #include "../common/queue.h"
 #include "../common/thread.h"
 #include "ActionDispatcher.h"
+#include "../../world/WorldTickResult.h"
+
 
 #include <fstream>
 #include <iostream>
@@ -63,7 +65,7 @@ private:
   float tickRateMs;
 
   Queue<std::shared_ptr<InstanceTransitionEvent>> &transitionQueue;
-  void handleInstanceTransition(const GameWorld::InstanceEntry &entry);
+  void handleInstanceTransition(const InstanceEntry &entry);
   std::string resolveMapPath(const std::string &targetMap) const;
 
   void processMessage(const ClientMessage &incoming);

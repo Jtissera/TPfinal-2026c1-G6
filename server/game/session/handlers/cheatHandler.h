@@ -14,6 +14,7 @@
 #include "common/network/messages/server/player/playerDiedMessage.h"
 #include "common/network/messages/server/player/playerHealthMessage.h"
 #include "common/network/messages/server/player/playerStatsMessage.h"
+#include "../../../world/DeathResult.h"
 
 class CheatHandler
 {

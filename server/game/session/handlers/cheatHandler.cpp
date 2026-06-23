@@ -81,7 +81,7 @@ void CheatHandler::handle(uint32_t clientId,
         {
             return;
         }
-        GameWorld::DeathResult deathResult =
+            DeathResult deathResult =
             world.handlePlayerDeath(clientId, 0);
         if (deathResult.excessGold > 0)
         {

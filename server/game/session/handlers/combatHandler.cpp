@@ -199,7 +199,7 @@ void CombatHandler::handleAttackPlayer(uint32_t attackerId,
 
     if (result.killed || target.getHp() <= 0)
     {
-        GameWorld::DeathResult deathResult =
+            DeathResult deathResult =
             world.handlePlayerDeath(targetId, attackerId);
 
         if (deathResult.excessGold > 0)

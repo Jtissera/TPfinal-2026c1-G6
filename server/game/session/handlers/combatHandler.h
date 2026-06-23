@@ -25,6 +25,7 @@
 #include "common/network/messages/server/player/playerStatsMessage.h"
 #include "server/game/clan/clanManager.h"
 #include "server/game/combat/combatResolver.h"
+#include "../../../world/DeathResult.h"
 
 class CombatHandler
 {
