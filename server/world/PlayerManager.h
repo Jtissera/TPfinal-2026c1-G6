@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <cctype>
 
 class PlayerManager
 {
@@ -77,6 +78,8 @@ private:
     ItemRepository &itemRepo;
     ResurrectionSystem &resurrectionSystem;
     ClanManager &clanManager;
+
+    const toml::table &config;
 
     std::unordered_map<uint32_t, Player> players;
 

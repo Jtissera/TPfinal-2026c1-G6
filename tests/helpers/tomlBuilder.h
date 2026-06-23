@@ -11,8 +11,10 @@ static toml::table withCityPrices()
         ms_per_tile_resurrection = 500
 
         [city.priest_catalog]
-items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado", "pocion_vida", "pocion_mana"]
+        items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado", "pocion_vida", "pocion_mana"]
 
+        [city.merchant_catalog]
+        items = ["espada", "hacha", "martillo", "arco_simple", "arco_compuesto", "armadura_cuero", "armadura_placas", "tunica_azul", "capucha", "casco_hierro", "escudo_tortuga", "escudo_hierro", "sombrero_magico", "pocion_vida", "pocion_mana"]
         [city.prices]
         vara_fresno      = 100
         flauta_elfica    = 500
@@ -221,7 +223,7 @@ items = ["vara_fresno", "flauta_elfica", "baculo_nudoso", "baculo_engarzado", "p
 
         # --- AGREGADO: Inventario inicial del warrior para evitar fallback roto ---
         [initial_inventory.warrior]
-        items = [ "espada" ]
+        items = []
 
         [combat]
         attack_range        = 1

@@ -78,8 +78,9 @@ protected:
   toml::table config = makeConfig();
   NpcRepository npcRepo{config};
   NpcFactory npcFact{npcRepo, config};
-  ItemRepository itemRepo{toml::parse(R"([items])")};
-  
+  //ItemRepository itemRepo{toml::parse(R"([items])")};
+  ItemRepository itemRepo{config};
+
   std::string tempDir = std::filesystem::temp_directory_path().string();
 
   ClanArchive clanArchive{tempDir + "/test_clans.dat", tempDir + "/test_clans.idx"};

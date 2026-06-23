@@ -131,6 +131,12 @@ private:
         gold_level_base     = 100
         gold_level_exponent = 1.1
         overflow_drop       = 0.20
+
+        [initial_inventory.warrior]
+        items = []
+
+        [initial_inventory.mage]
+        items = []
     )");
     }
 };

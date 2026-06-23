@@ -7,11 +7,18 @@ PlayerManager::PlayerManager(OccupancySystem &occupancy,
                              ResurrectionSystem &resurrectionSystem,
                              ClanManager &clanManager,
                              const toml::table &config)
-    : occupancy(occupancy), collision(collision), formulas(formulas),
-      itemRepo(itemRepo), resurrectionSystem(resurrectionSystem),
-      clanManager(clanManager), players(),
+    : occupancy(occupancy),
+      collision(collision),
+      formulas(formulas),
+      itemRepo(itemRepo),
+      resurrectionSystem(resurrectionSystem),
+      clanManager(clanManager),
+      config(config),
+      players(),
       tileSize(config["world"]["tile_size"].value_or(96)),
-      playerMoveStep(config["player"]["move_step"].value_or(8.0f)) {}
+      playerMoveStep(config["player"]["move_step"].value_or(8.0f))
+{
+}
 
 std::optional<std::pair<int, int>>
 PlayerManager::findAndOccupyAdjacentTile(int tileX, int tileY,
@@ -347,45 +354,53 @@ const std::unordered_map<uint32_t, Player> &PlayerManager::getPlayers() const {
   return players;
 }
 
-void PlayerManager::loadInitialInventoryForPlayer(Player &player) {
+void PlayerManager::loadInitialInventoryForPlayer(Player &player)
+{
+  // Si ya se cargó una vez, no volvemos a cargarlo.
   if (player.hasReceivedInitialInventory())
+  {
     return;
+  }
 
+  // Marcamos que ya se procesó el inventario inicial.
   player.markInitialInventoryGiven();
+  std::string className = player.getCls().name;
 
-  const std::string &className = player.getCls().name;
+  // Warrior -> warrior, Mage -> mage, Paladin -> paladin.
+  std::transform(className.begin(), className.end(), className.begin(),
+                 [](unsigned char c)
+                 {
+                   return static_cast<char>(std::tolower(c));
+                 });
 
-  if (className == "Cleric") {
-    player.getInventory().addItem(itemRepo.createItem("capucha"));
-    player.getInventory().addItem(itemRepo.createItem("tunica_iniciado"));
-    player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
-    player.getInventory().addItem(itemRepo.createItem("vara_fresno"));
-    return;
-  }
-  if (className == "Mage") {
-    player.getInventory().addItem(itemRepo.createItem("baculo_nudoso"));
-    player.getInventory().addItem(itemRepo.createItem("capucha"));
-    player.getInventory().addItem(itemRepo.createItem("pocion_mana"));
-    player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
-    player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
-    return;
-  }
-  if (className == "Paladin") {
-    player.getInventory().addItem(itemRepo.createItem("espada"));
-    player.getInventory().addItem(itemRepo.createItem("armadura_placas"));
-    player.getInventory().addItem(itemRepo.createItem("baculo_nudoso"));
-    player.getInventory().addItem(itemRepo.createItem("casco_hierro"));
-    player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
-    return;
-  }
-  if (className == "Warrior") {
-    player.getInventory().addItem(itemRepo.createItem("casco_hierro"));
-    player.getInventory().addItem(itemRepo.createItem("armadura_placas"));
-    player.getInventory().addItem(itemRepo.createItem("uniforme_argentino"));
-    player.getInventory().addItem(itemRepo.createItem("espada"));
+  // Buscamos [initial_inventory.<className>].items.
+  const toml::array *items =
+      config["initial_inventory"][className]["items"].as_array();
+
+  // Si no existe la sección, no agregamos nada.
+  if (items == nullptr)
+  {
     return;
   }
 
-  player.getInventory().addItem(itemRepo.createItem("espada"));
-  player.getInventory().addItem(itemRepo.createItem("pocion_vida"));
+  // Cargamos solo los items declarados explícitamente en el TOML.
+  for (const toml::node &entry : *items)
+  {
+    const std::optional<std::string> maybeItemName =
+        entry.value<std::string>();
+
+    if (!maybeItemName.has_value())
+    {
+      continue;
+    }
+
+    const std::string itemName = maybeItemName.value();
+
+    if (!itemRepo.exists(itemName))
+    {
+      continue;
+    }
+
+    player.getInventory().addItem(itemRepo.createItem(itemName));
+  }
 }
